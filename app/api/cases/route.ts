@@ -4,6 +4,7 @@ import { extractCase } from "@/lib/agents/intake-extractor";
 import { rejectCrossOrigin } from "@/lib/auth/origin";
 import { getOwnerStore } from "@/lib/auth/ownership";
 import { ensureSession } from "@/lib/auth/session";
+import { checkRateLimit, clientIp, CREATE_CASE_IP_LIMITS, getRateLimitStore, rateLimitedResponse } from "@/lib/rate-limit";
 import { jsonError, parseBody } from "./_lib/http";
 import { ingestSummarySafely } from "./_lib/case-summary";
 import { getServices } from "./_lib/services";
@@ -21,6 +22,9 @@ export async function POST(req: Request) {
   const body = await parseBody(req, bodySchema);
   if (!body.ok) return body.response;
   try {
+    // Each case is a model extraction and opens fresh per-case research budgets: cap creations per client.
+    const limit = await checkRateLimit(getRateLimitStore(), CREATE_CASE_IP_LIMITS(clientIp(req)), new Date());
+    if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
     const input = await extractCase(body.data.reportText);
     const created = await getServices().cases.create(input, "draft");
     await getOwnerStore().setOwner(created.id, session.id);

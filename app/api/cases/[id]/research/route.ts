@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { guardCase } from "@/lib/auth/ownership";
 import { readSession } from "@/lib/auth/session";
-import { checkRateLimit, getRateLimitStore, RESEARCH_LIMITS, rateLimitedResponse } from "@/lib/rate-limit";
+import { checkRateLimit, clientIp, getRateLimitStore, RESEARCH_IP_LIMITS, RESEARCH_LIMITS, rateLimitedResponse } from "@/lib/rate-limit";
 import { isOffline } from "@/lib/env";
 import { inngest } from "@/lib/workflows/inngest";
 import { RESEARCH_EVENT, RESEARCH_STARTABLE, executeResearch, failResearch } from "@/lib/workflows/research-workflow";
@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     // Session is null only for demo-unowned cases; those share one bucket.
-    const limit = await checkRateLimit(getRateLimitStore(), RESEARCH_LIMITS(id, readSession(req) ?? "anonymous"), new Date());
+    const limit = await checkRateLimit(getRateLimitStore(), [...RESEARCH_LIMITS(id, readSession(req) ?? "anonymous"), ...RESEARCH_IP_LIMITS(clientIp(req))], new Date());
     if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
 
     if (!await services.cases.compareAndSetStatus(id, RESEARCH_STARTABLE, "researching")) {

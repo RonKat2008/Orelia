@@ -86,6 +86,24 @@ export const REFRESH_RESEARCH_LIMITS = (caseId: string, sessionId: string): Rate
   { key: `refresh-research:case:${caseId}`, max: 3, windowMs: HOUR_MS },
   { key: `refresh-research:session:${sessionId}`, max: 10, windowMs: HOUR_MS },
 ];
+/**
+ * The platform-provided client IP: request.ip when the runtime sets it, else Vercel's x-real-ip (set by the edge,
+ * not the client). The client-controlled X-Forwarded-For is never used. Null when neither is present (local runs).
+ */
+export function clientIp(req: Request): string | null {
+  const platform = (req as Request & { ip?: string }).ip?.trim();
+  const ip = platform || req.headers.get("x-real-ip")?.trim();
+  return ip ? ip.slice(0, 64) : null;
+}
+/**
+ * Per-client caps for work that costs money. Session ids are free (dropping the cookie mints a new one, and each
+ * new case has its own per-case budget), so per-session and per-case limits alone do not bound one client.
+ * No rules when the platform gives no client IP.
+ */
+export const CREATE_CASE_IP_LIMITS = (ip: string | null): RateRule[] =>
+  ip ? [{ key: `create-case:ip:${ip}`, max: 10, windowMs: HOUR_MS }] : [];
+export const RESEARCH_IP_LIMITS = (ip: string | null): RateRule[] =>
+  ip ? [{ key: `research:ip:${ip}`, max: 10, windowMs: HOUR_MS }] : [];
 /** Deleting a case is rare and destructive: a small per-session budget stops a runaway script. */
 export const DELETE_CASE_LIMITS = (sessionId: string): RateRule[] => [
   { key: `delete-case:session:${sessionId}`, max: 20, windowMs: HOUR_MS },

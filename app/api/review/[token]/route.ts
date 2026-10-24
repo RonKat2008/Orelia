@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { rejectCrossOrigin } from '@/lib/auth/origin';
 import { reviewDecisionBodySchema } from '@/lib/coordination/contract';
 import { ConsultError, getConsultService } from '@/lib/coordination/consult';
-import { checkRateLimit, getRateLimitStore, rateLimitedResponse, type RateRule } from '@/lib/rate-limit';
+import { checkRateLimit, clientIp as platformIp, getRateLimitStore, rateLimitedResponse, type RateRule } from '@/lib/rate-limit';
 import { jsonError, parseBody } from '../../cases/_lib/http';
 
 export const runtime = 'nodejs';
@@ -17,13 +17,9 @@ type Ctx = { params: Promise<{ token: string }> };
 const MINUTE = 60_000;
 const notFound = () => NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
-/**
- * The platform-provided client IP (security review #6): request.ip when the runtime sets it, else Vercel's
- * x-real-ip (set by the edge, not the client). The client-controlled X-Forwarded-For is never used.
- */
+/** Security review #6: the platform-provided IP only (never X-Forwarded-For). */
 function clientIp(req: Request): string {
-  const platform = (req as Request & { ip?: string }).ip?.trim();
-  return (platform || req.headers.get('x-real-ip')?.trim() || 'unknown').slice(0, 64);
+  return platformIp(req) ?? 'unknown';
 }
 
 function rules(req: Request, method: 'get' | 'post'): RateRule[] {

@@ -1,10 +1,12 @@
 import { HOW_IT_WORKS_ID, HOW_STEPS } from "./content";
+import { StepFramesIsland } from "./StepFramesIsland";
 import { VIGNETTES } from "./Vignettes";
 
 /**
  * Section 2: the five-scene story (details, swarm, validation, plan, outreach). On wide screens the vignette stage is sticky
  * and LandingChoreography flips `data-active` as each step crosses the middle of the
- * viewport. On phones (and without JS) each step shows its own vignette inline.
+ * viewport. On phones each step shows its own vignette inline. The wide-screen stage is a
+ * client island (StepFramesIsland), so its duplicate vignettes stay out of the HTML.
  */
 export function HowItWorks() {
   return (
@@ -62,22 +64,7 @@ export function HowItWorks() {
           </ol>
 
           <div aria-hidden className="hidden lg:col-span-7 lg:block">
-            <div className="sticky top-[calc(50vh-16.5rem)] h-[33rem]">
-              <div aria-hidden className="absolute inset-6 rotate-[-1.5deg] rounded-lg border border-line bg-paper shadow-md" />
-              {HOW_STEPS.map((step, i) => {
-                const Vignette = VIGNETTES[step.id];
-                return (
-                  <div
-                    key={step.id}
-                    data-step-frame={i}
-                    data-active={i === 0}
-                    className="group/scene absolute inset-x-0 top-1/2 -translate-y-1/2 px-2 opacity-0 transition-[opacity,transform] duration-700 ease-out-expo data-[active=false]:translate-y-[calc(-50%+1.5rem)] data-[active=true]:opacity-100 motion-reduce:transition-none"
-                  >
-                    {Vignette ? <Vignette /> : null}
-                  </div>
-                );
-              })}
-            </div>
+            <StepFramesIsland />
           </div>
         </div>
       </div>

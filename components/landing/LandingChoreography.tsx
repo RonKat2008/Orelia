@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { whenIdleAfterLoad } from "@/lib/ui/defer";
 import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
+import { STEP_FRAMES_QUERY } from "./StepFramesIsland";
 
 /**
  * Scroll choreography for the landing page. Renders nothing; after hydration it
@@ -16,6 +18,29 @@ import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
  */
 /** Upper bound on waiting for an idle moment before wiring scroll motion (keeps GSAP off first paint). */
 const CHOREOGRAPHY_IDLE_TIMEOUT_MS = 1500;
+/** Upper bound on waiting for the wide-screen step stage (a lazy island) to mount. */
+const STEP_FRAMES_WAIT_MS = 3000;
+
+/**
+ * On wide screens the How-it-works stage is a client island that may mount after this
+ * runs; wait for it (bounded) so its frames get their entrance state when wired.
+ */
+function waitForStepFrames(): Promise<void> {
+  if (!window.matchMedia(STEP_FRAMES_QUERY).matches) return Promise.resolve();
+  if (document.querySelector("[data-step-frame]")) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve();
+    };
+    const observer = new MutationObserver(() => {
+      if (document.querySelector("[data-step-frame]")) done();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    const timer = setTimeout(done, STEP_FRAMES_WAIT_MS);
+  });
+}
 
 export function LandingChoreography() {
   const reduced = useReducedMotionGate();
@@ -30,7 +55,7 @@ export function LandingChoreography() {
         import("gsap/ScrollTrigger"),
         import("gsap/SplitText"),
       ]);
-      await document.fonts?.ready;
+      await Promise.all([document.fonts?.ready, waitForStepFrames()]);
       if (isCancelled) return;
       gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -123,14 +148,7 @@ export function LandingChoreography() {
         // Motion is an enhancement: if the libraries fail to load, the page is already complete.
       });
     };
-    let cancelIdle: () => void;
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(start, { timeout: CHOREOGRAPHY_IDLE_TIMEOUT_MS });
-      cancelIdle = () => window.cancelIdleCallback(id);
-    } else {
-      const id = setTimeout(start, CHOREOGRAPHY_IDLE_TIMEOUT_MS / 2);
-      cancelIdle = () => clearTimeout(id);
-    }
+    const cancelIdle = whenIdleAfterLoad(start, CHOREOGRAPHY_IDLE_TIMEOUT_MS);
 
     return () => {
       isCancelled = true;
@@ -158,11 +176,13 @@ function wireSteps(ScrollTrigger: ScrollTriggerApi, shouldPlay: boolean) {
     [...steps, ...frames].forEach((scene) => scene.removeAttribute("data-played"));
   }
   const activate = (index: number) => {
+    // Re-query: the wide-screen stage is a lazy island and can mount (or remount) later.
+    const currentFrames = Array.from(document.querySelectorAll<HTMLElement>("[data-step-frame]"));
     steps.forEach((step, i) => step.setAttribute("data-active", String(i === index)));
-    frames.forEach((frame, i) => frame.setAttribute("data-active", String(i === index)));
+    currentFrames.forEach((frame, i) => frame.setAttribute("data-active", String(i === index)));
     if (shouldPlay) {
       steps[index]?.setAttribute("data-played", "true");
-      frames[index]?.setAttribute("data-played", "true");
+      currentFrames[index]?.setAttribute("data-played", "true");
     }
   };
   steps.forEach((step, index) => {

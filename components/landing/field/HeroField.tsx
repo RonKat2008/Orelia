@@ -3,16 +3,16 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
 import { cn } from "@/lib/ui/cn";
+import { isCapableForAutoMotion, onFirstInteraction, readDeviceSignals, whenIdleAfterLoad } from "@/lib/ui/defer";
 import { useHeroMotion } from "../HeroMotion";
 
 type FieldCanvasComponent = ComponentType<{ isPaused: boolean; onReady: () => void }>;
 
-/** Waits for the page to settle (idle, or a short timeout) before pulling in WebGL. */
-const IDLE_TIMEOUT_MS = 1200;
-
 /**
- * Mounts the live field over the server-rendered poster once the browser is idle.
- * Reduced motion: never loads; the poster is the experience.
+ * Mounts the live field over the server-rendered poster, off the critical path:
+ * - large, capable devices (wide viewport, fine pointer, not low-end): after `load`, when idle;
+ * - phones, tablets and low-end devices: only after the visitor's first interaction.
+ * Reduced motion: never loads; the poster is the experience. No WebGL: the poster stays.
  */
 export function HeroField() {
   const reduced = useReducedMotionGate();
@@ -24,8 +24,8 @@ export function HeroField() {
   useEffect(() => {
     if (reduced) return;
     let isCancelled = false;
-    // A plain dynamic import (not next/dynamic) so the ogl chunk is not preloaded in the
-    // initial HTML: it is fetched only once the page is idle.
+    // A plain dynamic import (not next/dynamic) so the ogl chunk is never preloaded in the
+    // initial HTML.
     const start = () => {
       import("./FieldCanvas")
         .then((mod) => {
@@ -35,17 +35,12 @@ export function HeroField() {
           // The static poster stays as the hero art.
         });
     };
-    let cancelIdle: () => void;
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(start, { timeout: IDLE_TIMEOUT_MS });
-      cancelIdle = () => window.cancelIdleCallback(id);
-    } else {
-      const id = setTimeout(start, IDLE_TIMEOUT_MS / 2);
-      cancelIdle = () => clearTimeout(id);
-    }
+    const cancel = isCapableForAutoMotion(readDeviceSignals())
+      ? whenIdleAfterLoad(start)
+      : onFirstInteraction(start);
     return () => {
       isCancelled = true;
-      cancelIdle();
+      cancel();
     };
   }, [reduced]);
 

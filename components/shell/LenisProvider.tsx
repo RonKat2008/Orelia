@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
 import type Lenis from "lenis";
+import { whenIdleAfterLoad } from "@/lib/ui/defer";
 
 /** Upper bound on waiting for an idle moment before loading smooth scroll. */
 const SMOOTH_SCROLL_IDLE_TIMEOUT_MS = 1500;
@@ -55,14 +56,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
         // Native scrolling still works if the libraries fail to load.
       });
     };
-    let cancelIdle: () => void;
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(run, { timeout: SMOOTH_SCROLL_IDLE_TIMEOUT_MS });
-      cancelIdle = () => window.cancelIdleCallback(id);
-    } else {
-      const id = setTimeout(run, SMOOTH_SCROLL_IDLE_TIMEOUT_MS / 2);
-      cancelIdle = () => clearTimeout(id);
-    }
+    const cancelIdle = whenIdleAfterLoad(run, SMOOTH_SCROLL_IDLE_TIMEOUT_MS);
 
     return () => {
       isCancelled = true;

@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AgentRunPanel } from "./AgentRunPanel";
+import { AgentRunIsland } from "./AgentRunIsland";
+import { AgentRunPanelView } from "./AgentRunPanelView";
 import { HERO_PROMISE, HOW_IT_WORKS_ID, START_HREF, TRUST_LINE } from "./content";
 import { FieldPoster } from "./field/FieldPoster";
 import { HeroField } from "./field/HeroField";
 import { HeroMotionProvider, HeroPauseButton } from "./HeroMotion";
 import { ScrollToLink } from "./ScrollToLink";
+import { RUN_KEYFRAMES, frameAt } from "./run-script";
+
+/** The run's first frame, server-rendered so the panel paints before any JS. */
+const FIRST_FRAME = frameAt(RUN_KEYFRAMES[0] ?? 0);
 
 /**
  * The landing hero. The h1, lede and CTAs are server-rendered (the LCP element is the
@@ -86,7 +91,9 @@ export function Hero() {
           </div>
 
           <div className="flex justify-center lg:col-span-6 lg:justify-end xl:col-span-5 xl:col-start-8">
-            <AgentRunPanel />
+            <AgentRunIsland>
+              <AgentRunPanelView frame={FIRST_FRAME} />
+            </AgentRunIsland>
           </div>
         </div>
 

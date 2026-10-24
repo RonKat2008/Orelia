@@ -95,3 +95,4 @@ export {
 } from "./question";
 export { LoadingState, CheckedMark, SLOW_LOADING_MS, type LoadingStateProps, type CheckedMarkProps } from "./states";
 export { JudgeOnly, PatientOnly, useActiveView, useIsJudgeView } from "../view-mode/ViewOnly";
+export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from "./segmented-control";

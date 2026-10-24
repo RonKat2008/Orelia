@@ -64,8 +64,20 @@ import {
   TooltipTrigger,
   toast,
 } from "@/components/ui";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Section, SubHead } from "./Section";
 import { JOURNEY } from "./tokens-data";
+
+const FILTERS = [
+  { value: "all", label: "All", count: 16 },
+  { value: "clinics", label: "Clinics", count: 6 },
+  { value: "trials", label: "Trials", count: 4 },
+] as const;
+
+function FilterDemo() {
+  const [value, setValue] = useState<(typeof FILTERS)[number]["value"]>("all");
+  return <SegmentedControl label="Filter the list" options={FILTERS} value={value} onValueChange={setValue} />;
+}
 
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -363,14 +375,8 @@ export function NavigationSection() {
               </TabsContent>
             </Tabs>
             <div className="mt-8">
-              <SubHead>Tabs · pill</SubHead>
-              <Tabs defaultValue="all">
-                <TabsList variant="pill">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="waiting">Waiting on you</TabsTrigger>
-                  <TabsTrigger value="sent">Sent</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <SubHead>Segmented control (filters, no panels)</SubHead>
+              <FilterDemo />
             </div>
           </div>
           <div>
@@ -508,7 +514,7 @@ export function StatusSection() {
           <Progress label="Replies received" value={2} max={2} valueText="All replied" tone="ok" />
           <Progress label="Awaiting approval" value={1} max={4} valueText="1 of 4 approved" tone="warn" />
           <Separator className="my-2" />
-          <div aria-busy="true" aria-label="Loading results" className="grid gap-3">
+          <div role="status" aria-busy="true" aria-label="Loading results" className="grid gap-3">
             <Skeleton className="h-6 w-2/3" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />

@@ -32,8 +32,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="bg-paper font-sans text-ink antialiased">
         <Providers>
-          {/* The safety notice sits outside the transition so it never moves or fades. */}
-          <SafetyBanner />
+          {/* The safety notice sits outside the transition so it never moves or fades. Its landmark keeps every
+              piece of content inside a region (axe "region"). */}
+          <section aria-label="Safety notice">
+            <SafetyBanner />
+          </section>
           <PageTransition>{children}</PageTransition>
         </Providers>
       </body>

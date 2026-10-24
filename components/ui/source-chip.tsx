@@ -39,7 +39,8 @@ export function SourceChip({ url, domain, date, verified, title, className }: So
         <StatusIcon aria-hidden className="size-3.5" strokeWidth={2.25} />
         {status}
       </span>
-      <span className="truncate font-medium text-ink">{shownDomain}</span>
+      {/* Literal spaces: flex ignores them visually, but they keep words apart in the accessible text. */}{" "}
+      <span className="truncate font-medium text-ink">{shownDomain}</span>{" "}
       {shownDate ? (
         <time
           className="hidden shrink-0 text-ink-3 sm:inline"
@@ -58,14 +59,16 @@ export function SourceChip({ url, domain, date, verified, title, className }: So
   );
 
   const classes = cn(
-    "group/source inline-flex h-7 max-w-full items-center gap-2 rounded-pill border px-2.5 text-micro leading-none",
+    "group/source inline-flex h-7 max-w-full items-center gap-2 rounded-pill border px-2.5 text-small leading-none",
     verified
       ? "border-ok/30 bg-ok-soft/70"
       : "border-dashed border-line-strong bg-card",
     className,
   );
 
-  const label = [title, shownDomain, shownDate, status].filter(Boolean).join(", ");
+  // Starts with the visible text in reading order, so the name contains what sighted users see (WCAG 2.5.3).
+  const visible = [status, shownDomain, shownDate].filter(Boolean).join(" ");
+  const label = title ? `${visible}: ${title}` : visible;
 
   if (!source.href) {
     return (

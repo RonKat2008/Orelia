@@ -41,7 +41,11 @@ function V2Specimen({ theme }: { theme: "light" | "dark" }) {
         </List>
         <ActionCard
           titleAs="h3"
-          title="Can we tell them your city?"
+          title={
+            <>
+              Can we tell them your state?<span className="sr-only"> ({theme} theme)</span>
+            </>
+          }
           lede="It helps them find care near you."
           action={<Button size="lg">Continue</Button>}
           secondaryAction={<Button variant="link">Skip for now</Button>}

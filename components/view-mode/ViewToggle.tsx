@@ -46,9 +46,10 @@ export function ViewToggle({ className }: { className?: string }) {
             )}
           >
             <Icon aria-hidden className={cn("size-4", active ? "text-teal" : "text-ink-3")} />
-            <span>
+            {/* Icon-only below 360 px so the header never overflows at 320 px; the words stay for screen readers. */}
+            <span className="max-[22.5rem]:sr-only">
               {label}
-              <span className="sr-only sm:not-sr-only xl:sr-only"> view</span>
+              <span className="sr-only sm:not-sr-only lg:sr-only"> view</span>
             </span>
           </button>
         );

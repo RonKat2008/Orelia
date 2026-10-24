@@ -1,18 +1,30 @@
 "use client";
 
+import type * as React from "react";
 import { useEffect } from "react";
 import Link from "next/link";
-import { FileText, LogOut, User, UserRound } from "lucide-react";
+import { Check, CircleUserRound, FileText, LogIn, LogOut, Monitor, Moon, Sun, SunMoon, User, UserPlus, UserRound } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { SheetClose } from "@/components/ui/sheet";
 import { AvatarInitials } from "@/components/ui/display";
 import { apiRequest } from "@/components/account/helpers/api";
 import { claimIfPending, useAccount } from "@/components/account/helpers/use-account";
 import { cn } from "@/lib/ui/cn";
+import { setThemePreference, useThemePreference, type ThemePreference } from "./theme";
 
 const ITEM =
-  "flex min-h-10 cursor-pointer select-none items-center gap-3 rounded-sm px-3 text-small font-semibold text-ink no-underline outline-none " +
+  "flex min-h-11 cursor-pointer select-none items-center gap-3 rounded-sm px-3 text-small font-semibold text-ink no-underline outline-none " +
   "transition-colors duration-150 data-[highlighted]:bg-teal-soft data-[highlighted]:text-teal-ink dark:data-[highlighted]:text-teal [&_svg]:size-4 [&_svg]:text-ink-2";
+
+const TRIGGER =
+  "inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-pill border border-line bg-card text-ink-2 " +
+  "transition-[border-color,color] duration-150 hover:border-line-strong hover:text-ink focus-ring data-[state=open]:border-teal";
+
+const THEMES: { value: ThemePreference; label: string; Icon: typeof Sun }[] = [
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "system", label: "Match device", Icon: Monitor },
+  { value: "dark", label: "Dark", Icon: Moon },
+];
 
 async function signOut() {
   await apiRequest("/api/account/sign-out", { method: "POST" });
@@ -21,9 +33,48 @@ async function signOut() {
   window.location.assign("/");
 }
 
+/** Appearance: one labelled radio group inside the menu (the old three-way header toggle, docs/DESIGN-v2.md 6). */
+function AppearanceItems() {
+  const preference = useThemePreference();
+  return (
+    <>
+      <DropdownMenu.Label className="px-3 pb-1 pt-2 text-small text-ink-2">Appearance</DropdownMenu.Label>
+      <DropdownMenu.RadioGroup value={preference} onValueChange={(value) => setThemePreference(value as ThemePreference)}>
+        {THEMES.map(({ value, label, Icon }) => (
+          <DropdownMenu.RadioItem key={value} value={value} className={cn(ITEM, "data-[state=checked]:text-teal-ink dark:data-[state=checked]:text-teal")}>
+            <Icon aria-hidden />
+            <span className="flex-1">{label}</span>
+            <DropdownMenu.ItemIndicator className="[&_svg]:text-teal">
+              <Check aria-hidden />
+            </DropdownMenu.ItemIndicator>
+          </DropdownMenu.RadioItem>
+        ))}
+      </DropdownMenu.RadioGroup>
+    </>
+  );
+}
+
+function MenuContent({ children }: { children: React.ReactNode }) {
+  return (
+    <DropdownMenu.Portal>
+      <DropdownMenu.Content
+        align="end"
+        sideOffset={8}
+        className={cn(
+          "z-50 min-w-60 rounded-md border border-line bg-card p-1.5 text-ink shadow-md",
+          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] motion-reduce:animate-none",
+        )}
+      >
+        {children}
+      </DropdownMenu.Content>
+    </DropdownMenu.Portal>
+  );
+}
+
 /**
- * Header account control. Renders nothing until GET /api/account says accounts are enabled:
- * a "Sign in" link when signed out, an avatar menu (Account, Profile, Documents, Sign out) when signed in.
+ * Header account control: always one round button that opens a menu holding the account links (when accounts are
+ * on) and Appearance (light / match device / dark). Signed in it shows the avatar. Renders a same-size placeholder
+ * while the account state loads, so the header never shifts.
  */
 export function AccountMenu({ className }: { className?: string }) {
   const state = useAccount();
@@ -33,66 +84,81 @@ export function AccountMenu({ className }: { className?: string }) {
     if (signedIn) void claimIfPending();
   }, [signedIn]);
 
-  if (state.status !== "ready" || !state.enabled) return null;
+  if (state.status !== "ready") return <span aria-hidden className={cn("inline-block size-10 shrink-0", className)} />;
 
-  if (!state.account) {
-    return (
-      <Link
-        href="/auth/sign-in"
-        className={cn(
-          "hidden rounded-sm px-3 py-2 text-small font-semibold text-ink-2 no-underline transition-colors duration-150 hover:text-ink focus-ring sm:inline-flex",
-          className,
-        )}
-      >
-        Sign in
-      </Link>
-    );
-  }
+  const account = state.enabled ? state.account : null;
+  const label = account ? account.name?.trim() || account.email : null;
+  const triggerLabel = label ? `Account menu for ${label}` : state.enabled ? "Account and appearance" : "Appearance";
 
-  const label = state.account.name?.trim() || state.account.email;
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger
-        aria-label={`Account menu for ${label}`}
-        className={cn(
-          "group inline-flex h-10 cursor-pointer items-center gap-2 rounded-pill border border-line bg-card py-1 pl-1 pr-3 text-small font-semibold text-ink",
-          "transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-sm focus-ring data-[state=open]:border-teal",
-          className,
+      <DropdownMenu.Trigger aria-label={triggerLabel} className={cn(TRIGGER, account && "border-transparent bg-transparent p-0", className)}>
+        {account && label ? (
+          <AvatarInitials name={label} size="sm" />
+        ) : state.enabled ? (
+          <CircleUserRound aria-hidden className="size-5" />
+        ) : (
+          <SunMoon aria-hidden className="size-5" />
         )}
-      >
-        <AvatarInitials name={label} size="sm" />
-        <span className="hidden max-w-32 truncate sm:inline">{state.account.name?.trim().split(/\s+/)[0] ?? "Account"}</span>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={8}
-          className={cn(
-            "z-50 min-w-56 rounded-md border border-line bg-card p-1.5 text-ink shadow-lg",
-            "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] motion-reduce:animate-none",
-          )}
-        >
-          <div className="px-3 pb-2 pt-1.5">
-            <p className="m-0 truncate text-small font-semibold text-ink">{state.account.name ?? "Your account"}</p>
-            <p className="m-0 truncate text-micro text-ink-3">{state.account.email}</p>
-          </div>
-          <DropdownMenu.Separator className="my-1 h-px bg-line" />
-          <DropdownMenu.Item asChild className={ITEM}>
-            <Link href="/account"><UserRound aria-hidden />Account</Link>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item asChild className={ITEM}>
-            <Link href="/account/profile"><User aria-hidden />Profile</Link>
-          </DropdownMenu.Item>
-          <DropdownMenu.Item asChild className={ITEM}>
-            <Link href="/account/documents"><FileText aria-hidden />Documents</Link>
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator className="my-1 h-px bg-line" />
-          <DropdownMenu.Item className={ITEM} onSelect={() => void signOut()}>
-            <LogOut aria-hidden />Sign out
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
+      <MenuContent>
+        {account ? (
+          <>
+            <div className="px-3 pb-2 pt-1.5">
+              <p className="m-0 truncate text-small font-semibold text-ink">{account.name ?? "Your account"}</p>
+              <p className="m-0 truncate text-small text-ink-2">{account.email}</p>
+            </div>
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+            <DropdownMenu.Item asChild className={ITEM}>
+              <Link href="/account"><UserRound aria-hidden />Account</Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item asChild className={ITEM}>
+              <Link href="/account/profile"><User aria-hidden />Profile</Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item asChild className={ITEM}>
+              <Link href="/account/documents"><FileText aria-hidden />Documents</Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+          </>
+        ) : state.enabled ? (
+          <>
+            <DropdownMenu.Item asChild className={ITEM}>
+              <Link href="/auth/sign-in"><LogIn aria-hidden />Sign in</Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Item asChild className={ITEM}>
+              <Link href="/auth/sign-up"><UserPlus aria-hidden />Create an account</Link>
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+          </>
+        ) : null}
+        <AppearanceItems />
+        {account ? (
+          <>
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+            <DropdownMenu.Item className={ITEM} onSelect={() => void signOut()}>
+              <LogOut aria-hidden />Sign out
+            </DropdownMenu.Item>
+          </>
+        ) : null}
+      </MenuContent>
     </DropdownMenu.Root>
+  );
+}
+
+/** "Sign in" text link for marketing headers when accounts are on and nobody is signed in. */
+export function SignInLink({ className }: { className?: string }) {
+  const state = useAccount();
+  if (state.status !== "ready" || !state.enabled || state.account) return null;
+  return (
+    <Link
+      href="/auth/sign-in"
+      className={cn(
+        "hidden whitespace-nowrap rounded-sm px-3 py-2 text-small font-semibold text-ink-2 no-underline transition-colors duration-150 hover:text-ink focus-ring sm:inline-flex",
+        className,
+      )}
+    >
+      Sign in
+    </Link>
   );
 }
 

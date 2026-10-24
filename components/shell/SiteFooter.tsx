@@ -11,6 +11,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
       { href: "/how-it-works", label: "How it works" },
       { href: "/about", label: "About" },
       { href: "/demo", label: "See a demo" },
+      { href: "/start?view=judge", label: "For judges: watch the agents work" },
     ],
   },
   {
@@ -42,7 +43,7 @@ export function SiteFooter({ className }: { className?: string }) {
         </div>
         {footerColumns(process.env).map((column) => (
           <nav key={column.heading} aria-label={column.heading} className="grid content-start gap-3">
-            <h2 className="m-0 max-w-none font-sans text-micro font-semibold uppercase text-ink-3">{column.heading}</h2>
+            <h2 className="m-0 max-w-none font-sans text-small font-semibold text-ink-2">{column.heading}</h2>
             <ul className="m-0 grid list-none gap-2 p-0">
               {column.links.map((link) => (
                 <li key={link.href}>

@@ -16,5 +16,5 @@ export function PageIntro({
   lede: ReactNode;
   actions?: ReactNode;
 }) {
-  return <PageHeader eyebrow={eyebrow} title={title} lede={lede} action={actions} as="h2" />;
+  return <PageHeader eyebrow={eyebrow} title={title} lede={lede} action={actions} />;
 }

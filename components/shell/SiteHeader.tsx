@@ -1,29 +1,29 @@
 "use client";
 
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/ui/cn";
-import { AccountMenu } from "./AccountMenu";
+import { AccountMenu, SignInLink } from "./AccountMenu";
 import { MobileMenu } from "./MobileMenu";
 import { isNavItemActive, type NavItem } from "./nav";
-import { ThemeToggle } from "./ThemeToggle";
 import { ViewToggle } from "@/components/view-mode/ViewToggle";
 import { Wordmark } from "./Wordmark";
 
 export type { NavItem } from "./nav";
 
+/** Marketing nav (docs/DESIGN-v2.md 6): three items; the wordmark is the way home. */
 export const MARKETING_NAV: NavItem[] = [
-  { href: "/", label: "Home" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/trust", label: "Trust" },
   { href: "/about", label: "About" },
 ];
 
-/** Header nav for case pages: the four always-available destinations. */
+/** Links the case menu offers besides the case itself. Kept for callers that still pass it as `nav`. */
 export const CASE_NAV: NavItem[] = [
   { href: "/", label: "Home" },
-  { href: "/start", label: "Start a case" },
+  { href: "/start", label: "Start a new case" },
   { href: "/calendar", label: "Appointments" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/trust", label: "Trust & safety" },
@@ -31,22 +31,94 @@ export const CASE_NAV: NavItem[] = [
 
 export interface SiteHeaderProps {
   nav?: NavItem[];
-  /** Primary call to action. Defaults to starting a case. */
+  /** Primary call to action. Defaults to starting a case. Pass null on /start and case pages. */
   cta?: NavItem | null;
   className?: string;
-  /** Show the "Patient view / Judge view" switch (landing, /start and case pages). */
+  /** Show the "Patient / Judge" switch (landing, /start and case pages). */
   viewToggle?: boolean;
+  /**
+   * Hide the header CTA while an element matching this selector is on screen (the landing hero, "[data-hero]"),
+   * so there is one "start" button per screen. The slot keeps its width: no layout shift.
+   */
+  ctaHideWhileVisible?: string;
+  /** Case pages: the case menu replaces the marketing nav, the CTA and the phone menu. */
+  caseMenu?: ReactNode;
 }
 
-/** Calm sticky header: translucent paper with blur, hairline underneath. */
-export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label: "Start a case" }, className, viewToggle = false }: SiteHeaderProps) {
+/** True while any element matching `selector` intersects the viewport (false when there is none). */
+function useInView(selector: string | undefined): boolean {
+  const [inView, setInView] = useState(Boolean(selector));
+  useEffect(() => {
+    if (!selector) return;
+    const targets = Array.from(document.querySelectorAll(selector));
+    if (targets.length === 0 || typeof IntersectionObserver === "undefined") {
+      // Nothing to watch: show the CTA (deferred so the effect only subscribes).
+      const frame = window.requestAnimationFrame(() => setInView(false));
+      return () => window.cancelAnimationFrame(frame);
+    }
+    const visible = new Set<Element>();
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) visible.add(entry.target);
+        else visible.delete(entry.target);
+      }
+      setInView(visible.size > 0);
+    });
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [selector]);
+  return Boolean(selector) && inView;
+}
+
+function MarketingNav({ nav, pathname, wideOnly }: { nav: NavItem[]; pathname: string; wideOnly: boolean }) {
+  return (
+    <nav aria-label="Main" className={cn("ml-auto hidden items-center gap-1", wideOnly ? "lg:flex" : "md:flex")}>
+      {nav.map((item) => {
+        const active = isNavItemActive(pathname, item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "relative whitespace-nowrap rounded-sm px-3 py-2 text-small font-semibold text-ink-2 no-underline transition-colors duration-150",
+              "hover:text-ink focus-ring",
+              "after:absolute after:inset-x-3 after:bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-pill after:bg-teal",
+              "after:transition-transform after:duration-300 after:ease-out-expo hover:after:scale-x-100 motion-reduce:after:transition-none",
+              active && "text-ink after:scale-x-100",
+            )}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * Calm sticky header: translucent paper with blur, hairline underneath. Never wraps: every label is nowrap, the
+ * marketing nav collapses into the phone menu below 1024 px (768 px without the view switch), and case pages swap
+ * the nav for one case menu. The theme control lives in the account menu.
+ */
+export function SiteHeader({
+  nav = MARKETING_NAV,
+  cta = { href: "/start", label: "Start a case" },
+  className,
+  viewToggle = false,
+  ctaHideWhileVisible,
+  caseMenu,
+}: SiteHeaderProps) {
   const pathname = usePathname() ?? "/";
+  const ctaHidden = useInView(ctaHideWhileVisible);
+  const isCase = Boolean(caseMenu);
+  const wideOnly = viewToggle;
 
   return (
     <header
       data-slot="site-header"
       className={cn(
-        "sticky top-0 z-40 border-b border-line/80 bg-paper/80 backdrop-blur-md backdrop-saturate-150",
+        "sticky top-0 z-40 border-b border-line/80 bg-paper/85 backdrop-blur-md backdrop-saturate-150",
         "supports-[not(backdrop-filter:blur(1px))]:bg-paper",
         className,
       )}
@@ -57,44 +129,37 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
       >
         Skip to content
       </a>
-      <div className="page-container flex h-16 items-center gap-3 sm:h-18 sm:gap-6">
-        <Wordmark compact={viewToggle} />
+      <div className="page-container flex h-16 items-center gap-3 sm:gap-6">
+        <Wordmark compact={viewToggle || isCase} />
 
-        <nav aria-label="Main" className={cn("ml-auto hidden items-center gap-1", viewToggle ? "xl:flex" : "md:flex")}>
-          {nav.map((item) => {
-            const active = isNavItemActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative rounded-sm px-3 py-2 text-small font-semibold text-ink-2 no-underline transition-colors duration-150",
-                  "hover:text-ink focus-ring",
-                  "after:absolute after:inset-x-3 after:bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-teal",
-                  "after:transition-transform after:duration-300 after:ease-out-expo hover:after:scale-x-100",
-                  viewToggle && "whitespace-nowrap",
-                  active && "text-ink after:scale-x-100",
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {isCase ? <div className="flex min-w-0 items-center">{caseMenu}</div> : <MarketingNav nav={nav} pathname={pathname} wideOnly={wideOnly} />}
 
-        <div className={cn("ml-auto flex min-w-0 items-center gap-2 sm:gap-3", viewToggle ? "xl:ml-0" : "md:ml-0")}>
+        <div
+          className={cn(
+            "flex shrink-0 items-center gap-2 sm:gap-3",
+            isCase ? "ml-auto" : wideOnly ? "ml-auto lg:ml-0" : "ml-auto md:ml-0",
+          )}
+        >
           {viewToggle ? <ViewToggle /> : null}
+          {isCase ? null : <SignInLink />}
           <AccountMenu />
-          <ThemeToggle className="hidden sm:inline-flex" />
-          {cta ? (
-            <Button asChild size="sm" className="hidden sm:inline-flex">
+          {cta && !isCase ? (
+            <Button
+              asChild
+              size="sm"
+              className={cn("hidden whitespace-nowrap sm:inline-flex", ctaHidden && "invisible")}
+              aria-hidden={ctaHidden || undefined}
+              tabIndex={ctaHidden ? -1 : undefined}
+              data-cta-hidden={ctaHidden || undefined}
+            >
               <Link href={cta.href}>{cta.label}</Link>
             </Button>
           ) : null}
-          <div className={viewToggle ? "xl:hidden" : "md:hidden"}>
-            <MobileMenu nav={nav} cta={cta} pathname={pathname} />
-          </div>
+          {isCase ? null : (
+            <div className={wideOnly ? "lg:hidden" : "md:hidden"}>
+              <MobileMenu nav={nav} cta={cta} pathname={pathname} />
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -7,3 +7,8 @@ export { ThemeToggle } from "./ThemeToggle";
 export { Wordmark } from "./Wordmark";
 export { SafetyBanner } from "../SafetyBanner";
 export { setThemePreference, useThemePreference, useResolvedTheme, type ThemePreference } from "./theme";
+export { type AppShellMode } from "./AppShell";
+export { StageBar, stageForPath, type StageBarProps } from "./StageBar";
+export { PatientProgress, PATIENT_STEP_FOR_STAGE, type PatientProgressProps } from "./PatientProgress";
+export { CaseMenu, type CaseMenuProps } from "./CaseMenu";
+export { AccountMenu, SignInLink } from "./AccountMenu";

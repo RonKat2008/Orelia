@@ -47,7 +47,7 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
         "group-data-[variant=underline]/tabs:data-[state=active]:after:scale-x-100 data-[state=active]:text-ink",
         // pill
         "group-data-[variant=pill]/tabs:min-h-9 group-data-[variant=pill]/tabs:rounded-pill group-data-[variant=pill]/tabs:px-4 group-data-[variant=pill]/tabs:text-small",
-        "group-data-[variant=pill]/tabs:data-[state=active]:bg-card group-data-[variant=pill]/tabs:data-[state=active]:shadow-sm",
+        "group-data-[variant=pill]/tabs:data-[state=active]:bg-teal-soft group-data-[variant=pill]/tabs:data-[state=active]:text-teal-ink dark:group-data-[variant=pill]/tabs:data-[state=active]:text-teal",
         className,
       )}
       {...props}

@@ -79,7 +79,7 @@ export default function DesignSystemPage() {
     <div className="ds-root bg-paper text-ink">
       <SiteHeader />
 
-      <header className="grain overflow-hidden border-b border-line bg-paper-2">
+      <section aria-label="About this design system" className="grain overflow-hidden border-b border-line bg-paper-2">
         <div className="page-container grid gap-10 py-section lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
           <div className="grid gap-6">
             <p className="m-0 flex items-center gap-3 text-micro font-semibold uppercase text-ink-3">
@@ -120,7 +120,7 @@ export default function DesignSystemPage() {
             </ol>
           </nav>
         </div>
-      </header>
+      </section>
 
       <main id="main" className="page-container">
         <ColorSection />

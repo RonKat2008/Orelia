@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Mail, PhoneCall, TriangleAlert } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { contactLabel, readStoredOutreach, type ApiContact } from "@/components/outreach/client";
+import { loadCaseContacts, withDisplayNames } from "@/components/outreach/case-activity";
 import { formatWhen, titleCase } from "@/components/outreach/format";
 import { DisclosureLine } from "@/components/outreach/LetterSheet";
 import { splitDisclosure } from "@/components/outreach/letter";
@@ -27,9 +28,9 @@ export function ThreadsView({ caseId, focusContactId }: { caseId: string; focusC
 
   useEffect(() => {
     let active = true;
-    void loadThreads(caseId).then((result) => {
+    void Promise.all([loadThreads(caseId), loadCaseContacts(caseId)]).then(([result, live]) => {
       if (!active) return;
-      setContacts(readStoredOutreach(caseId)?.contacts ?? []);
+      setContacts(withDisplayNames(readStoredOutreach(caseId)?.contacts ?? [], live));
       if (result.status === "unavailable") setPhase({ kind: "unavailable" });
       else if (result.status === "error" || !result.threads) setPhase({ kind: "error" });
       else setPhase({ kind: "ready", threads: result.threads });

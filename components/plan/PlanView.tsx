@@ -1,21 +1,22 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button, EmptyState, Skeleton, toast } from '@/components/ui';
+import { ArrowRight } from 'lucide-react';
 import type { ContactPlan, PlanEdit } from '@/lib/plan/contract';
 import { buildPlan, getOrBuildPlan, patchPlan, type PlanResult } from './client';
-import { movedIds, toggleEdit, withOrder, withToggle } from './model';
+import { approveOutcome, type ApproveOutcome, movedIds, parseMaterialized, toggleEdit, withOrder, withToggle } from './model';
 import { PlanBoard } from './PlanBoard';
 
 type Phase = 'loading' | 'ready' | 'error';
 
 export function PlanView({ caseId }: { caseId: string }) {
-  const router = useRouter();
   const [plan, setPlan] = useState<ContactPlan | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [outcome, setOutcome] = useState<ApproveOutcome | null>(null);
   const planRef = useRef<ContactPlan | null>(null);
   useEffect(() => {
     planRef.current = plan;
@@ -87,7 +88,12 @@ export function PlanView({ caseId }: { caseId: string }) {
 
   const onApprove = async () => {
     const res = await edit([{ type: 'approve' }], null);
-    if (res?.ok) router.push(`/cases/${caseId}/outbox`);
+    if (res?.ok) {
+      const result = approveOutcome(parseMaterialized(res.materialized));
+      setOutcome(result);
+      if (result.count > 0) toast.success(result.headline);
+      else toast.info(result.headline);
+    }
   };
 
   const onRebuild = async () => {
@@ -133,5 +139,20 @@ export function PlanView({ caseId }: { caseId: string }) {
     );
   }
 
-  return <PlanBoard plan={plan} busy={busy} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />;
+  return (
+    <div className="flex flex-col gap-6">
+      {outcome ? (
+        <section role="status" aria-labelledby="plan-outcome-heading" className="rounded-md border border-teal/40 bg-teal-soft p-4 sm:p-5">
+          <h3 id="plan-outcome-heading" className="m-0 text-h4 font-semibold text-ink">{outcome.headline}</h3>
+          <p className="m-0 mt-1 max-w-prose text-body text-ink-2">{outcome.detail}</p>
+          <Button asChild variant="secondary" size="sm" className="mt-3">
+            <Link href={`/cases/${caseId}/outbox`}>
+              Open the outbox <ArrowRight aria-hidden />
+            </Link>
+          </Button>
+        </section>
+      ) : null}
+      <PlanBoard plan={plan} busy={busy} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />
+    </div>
+  );
 }

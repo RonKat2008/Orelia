@@ -25,6 +25,7 @@ export type NoteInput = z.infer<typeof noteInputSchema>;
 
 export const KIND_LABELS: Record<string, string> = {
   case_summary: "Facts from your case",
+  medical_record: "Records you added",
   intake_report: "Your intake report",
   patient_note: "Notes you added",
   public_resource: "Public resource info",
@@ -53,6 +54,7 @@ function fieldKey(raw: string): string | null {
 
 /** "disease_program" -> "Disease program"; "HomeCity" -> "Your city"; "experts.authorship" -> "Experts authorship". */
 export function humanizeTitle(title: string): string {
+  title = title.replace(/\s*\([0-9a-f]{8}-[0-9a-f-]{27,}\)\s*$/i, "");
   const key = fieldKey(title);
   if (key) return FIELD_LABELS[key];
   const spaced = title

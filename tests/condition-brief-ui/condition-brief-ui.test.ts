@@ -131,9 +131,9 @@ describe("evidence markers and chips", () => {
   });
   it("names chips with number, kind, design and year", () => {
     const src = sampleBrief.sources[1];
-    expect(chipAriaLabel(2, src)).toBe("Source 2: PubMed review, 2021");
-    expect(doc("all")).toContain('aria-label="Source 2: PubMed review, 2021"');
-    expect(chipAriaLabel(1, sampleBrief.sources[0])).toBe("Source 1: Orphanet, 2024");
+    expect(chipAriaLabel(2, src)).toBe("2 PubMed 2021, PubMed review");
+    expect(doc("all")).toContain('aria-label="2 PubMed 2021, PubMed review"');
+    expect(chipAriaLabel(1, sampleBrief.sources[0])).toBe("1 Orphanet 2024, Orphanet");
   });
   it("opens the drawer: clicking a chip hands its source to onOpen", () => {
     const onOpen = vi.fn();
@@ -180,6 +180,26 @@ describe("source details", () => {
   });
 });
 
+describe("patient view", () => {
+  const patientDoc = () =>
+    renderToStaticMarkup(
+      createElement(MotionPreference, { reducedMotion: true }, createElement(BriefDocument, { brief: sampleBrief, level: "all", onOpenSource: noop, view: "patient" })),
+    );
+  it("shows only What it is, Who treats it and Questions to ask", () => {
+    const html = patientDoc();
+    expect(html).toContain("What it is");
+    expect(html).toContain("Who treats it");
+    expect(html).toContain("Questions to ask your doctor");
+    expect(html).not.toContain("Key published studies");
+    expect(html).not.toContain("Ongoing research");
+  });
+  it("keeps the evidence words and every source chip", () => {
+    const html = patientDoc();
+    expect(html).toContain('data-level="established"');
+    expect(html).toContain('aria-label="1 ');
+  });
+});
+
 describe("legend and header", () => {
   const legend = (value: LevelFilter, reduced = false) =>
     renderToStaticMarkup(
@@ -196,6 +216,9 @@ describe("legend and header", () => {
     expect(out).toContain("guidelines, systematic reviews, consensus statements, GeneReviews or curated reference pages");
     expect(out).toContain("single studies, early trials or funded projects");
     expect(out).toContain("case reports or limited sources");
+  });
+  it("keeps the level explanations inside one disclosure", () => {
+    expect(legend("all")).toContain("what these labels mean");
   });
   it("renders without the animated pill under reduced motion", () => {
     expect(legend("emerging", true)).toContain("bg-teal");

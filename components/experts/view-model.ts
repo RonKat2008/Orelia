@@ -82,7 +82,7 @@ export function pubmedUrl(pmid: string): string {
 
 /** The one dynamic fact a row shows: this person is documented as seeing patients. Anything else stays in the detail. */
 export function rowBadge(chain: Pick<ExpertChain, "seesPatients">): VerdictView | null {
-  return chain.seesPatients.verdict === "yes" ? verdictView("sees", "yes") : null;
+  return chain.seesPatients.verdict === "yes" ? { label: "Sees patients", tone: "ok" } : null;
 }
 
 /** Second line of a row: where they work, and how many papers connect them to your condition. */

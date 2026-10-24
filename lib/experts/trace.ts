@@ -222,7 +222,7 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
       else if (nppesResult.reason === 'lookup_failed') seesText = 'The provider registry could not be reached, so seeing patients could not be confirmed.';
       if (instName) {
         const clinic = await safe(() => ports.exa.search({ query: `"${expert.name}" "${instName}" appointments patients`, numResults: 5 }));
-        const hit = clinic?.find((r) => /^https?:/i.test(r.url) && pageMatchesInstitution(instName, { url: r.url, title: cleanField(r.title, 100) })
+        const hit = clinic?.find((r) => /^https?:/i.test(r.url) && !/\.(?:pdf|docx?)(?:$|[?#])/i.test(r.url) && pageMatchesInstitution(instName, { url: r.url, title: cleanField(r.title, 100) })
           && pageShowsPatientCare(cleanField(r.text, 4000), cleanField(r.title, 100), first, last));
         if (hit) {
           seesRowId = addRow(mk(`xp:${slug}:sees_patients`, EXPERT_CLAIM_TYPES.seesPatients,

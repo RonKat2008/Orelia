@@ -105,6 +105,13 @@ describe('tracer on live-shaped data (no profile, identity.affiliation rows)', (
     expect(row).toMatchObject({ claimType: 'contact_point.voice.new_patient_line', sourceKind: 'exa', sourceUrl: intake.url, targetKind: 'institution' });
   });
 
+  it('a PDF on the institution host is never its institution or consultation page', async () => {
+    const pdf: ExaResult = { url: 'https://dmice.northgate.example.org/papers/consult-2002.pdf', title: `${INST} asynchronous consultation service`, text: 'A web-based e-consult service.' };
+    const t = await traceExperts(input([authorship('111'), affRow('111')]), { nppes: nppes([]).port, exa: exa(() => [pdf]), now: NOW });
+    expect(t.chains[0]!.consultation.verdict).toBe('unknown');
+    expect(t.chains[0]!.institution.pageUrl).toBeNull();
+  });
+
   it('a shortlist card holding the stamped NPPES row can be verified by phone', async () => {
     const t = await traceExperts(input([authorship('111'), affRow('111')]), { nppes: nppes([provider()]).port, exa: noExa, now: NOW });
     const row = t.evidence.find((e) => e.claimType.startsWith('contact_point.voice'))!;

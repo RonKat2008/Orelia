@@ -13,8 +13,15 @@ export const intakeQuery = (institution: string): string =>
 
 export interface AcceptedPage { url: string; title: string }
 
+/** Documents (papers, brochures) are never an institution's program page. */
+const DOCUMENT = /\.(?:pdf|docx?|pptx?|xlsx?)$/i;
+
 const safeHttp = (u: string): string | null => {
-  try { const p = new URL(u); return (p.protocol === 'https:' || p.protocol === 'http:') && !p.username && !p.password ? p.href : null; } catch { return null; }
+  try {
+    const p = new URL(u);
+    if (DOCUMENT.test(p.pathname)) return null;
+    return (p.protocol === 'https:' || p.protocol === 'http:') && !p.username && !p.password ? p.href : null;
+  } catch { return null; }
 };
 
 /**

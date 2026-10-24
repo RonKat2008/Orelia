@@ -4,7 +4,7 @@ import {
   particleFade,
   particlePoint,
   planRingAngles,
-  smoothstep,
+  legibilityMask,
   targetInField,
   type FieldLayout,
   type Point,
@@ -48,8 +48,14 @@ export function toPercent(point: Point, aspect: number): Point {
   return { x: round2(((point.x / aspect + 1) / 2) * 100), y: round2(((1 - point.y) / 2) * 100) };
 }
 
-/** Builds the poster for one layout at a reference aspect ratio (hero width / height). */
-export function buildPoster(layout: FieldLayout, aspect: number, trailCount: number): PosterGeometry {
+/** Builds the poster for one layout at a reference hero aspect ratio (width / height). */
+export function buildPoster(
+  layout: FieldLayout,
+  aspect: number,
+  trailCount: number,
+  /** Reference hero height in CSS px, for the legibility mask. */
+  heightPx = 900,
+): PosterGeometry {
   const target = targetInField(layout, aspect);
   const random = createRandom(31);
   const dots: PosterDot[] = [];
@@ -60,13 +66,13 @@ export function buildPoster(layout: FieldLayout, aspect: number, trailCount: num
       const p = head - k * TRAIL_SPACING;
       if (p <= 0) break;
       const position = toPercent(particlePoint(seed, p, target, aspect), aspect);
-      const mask = 1 - smoothstep(layout.fadeBelowY, layout.fadeBelowY + 0.16, position.y / 100);
+      const mask = legibilityMask(layout, (position.y / 100) * heightPx);
       // A still has no motion to catch the eye, so it draws a touch stronger than the live field.
-      const opacity = Math.min(seed.alpha * particleFade(p) * (1 - k / DOTS_PER_TRAIL) * mask * 1.25, 0.9);
+      const opacity = Math.min(seed.alpha * particleFade(p) * (1 - k / DOTS_PER_TRAIL) * mask * 1.5, 0.95);
       if (opacity < MIN_OPACITY) continue;
       dots.push({
         ...position,
-        r: round2((0.35 + seed.size / 2) * (1 - k * 0.1)),
+        r: round2((0.45 + seed.size / 2) * (1 - k * 0.1)),
         opacity: round2(opacity),
         type: seed.type,
       });

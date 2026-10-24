@@ -121,7 +121,7 @@ export function createField({ canvas, container, palette, isLowPower, onFirstFra
     uDpr: { value: renderer.dpr },
   };
   const sizes = { uRingPx: { value: 24 }, uGlowPx: { value: 110 }, uMergePx: { value: 60 }, uQuadPx: { value: 160 } };
-  const mask = { uFadeBelowY: { value: 2 } };
+  const mask = { uFadeTopPx: { value: 1e5 }, uFadeSpanPx: { value: 1 } };
   const opacity = { particles: { value: palette.particleOpacity }, halo: { value: palette.haloOpacity } };
   const colours = {
     uSrc0: { value: palette.sources[0] },
@@ -181,7 +181,8 @@ export function createField({ canvas, container, palette, isLowPower, onFirstFra
     shared.uAspect.value = aspect;
     shared.uTarget.value = [target.x, target.y];
     shared.uPx.value = 2 / height;
-    mask.uFadeBelowY.value = layout.fadeBelowY;
+    mask.uFadeTopPx.value = layout.fadeTopPx;
+    mask.uFadeSpanPx.value = layout.fadeSpanPx;
     sizes.uRingPx.value = layout.ringPx;
     sizes.uGlowPx.value = layout.glowPx;
     sizes.uMergePx.value = layout.glowPx * MERGE_PX_SCALE;

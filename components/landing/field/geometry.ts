@@ -45,14 +45,16 @@ export interface FieldLayout {
   ringPx: number;
   /** Radius of the soft glow, CSS px. */
   glowPx: number;
-  /** Particles fade out below this share of the hero height (keeps copy on clean paper). */
-  fadeBelowY: number;
+  /** Particles fade out from this many CSS px below the hero top (keeps copy on clean paper)... */
+  fadeTopPx: number;
+  /** ...reaching zero this many px further down. */
+  fadeSpanPx: number;
 }
 
 /** Desktop: in the open gap between the headline column and the agents panel. */
-export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.31, ringPx: 26, glowPx: 120, fadeBelowY: 2 };
+export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.31, ringPx: 28, glowPx: 150, fadeTopPx: 1e5, fadeSpanPx: 1 };
 /** Mobile: top-right, above the headline, so the copy stays on clean paper. */
-export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.88, targetY: 0.03, ringPx: 17, glowPx: 70, fadeBelowY: 0.26 };
+export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.88, targetY: 0.03, ringPx: 18, glowPx: 84, fadeTopPx: 60, fadeSpanPx: 170 };
 export const WIDE_BREAKPOINT_PX = 1024;
 
 export const PARTICLE_COUNT_DESKTOP = 880;
@@ -138,8 +140,8 @@ export function makeParticleSeeds(count: number, seed = 7): ParticleSeed[] {
     const look = {
       phase: random(),
       speed: 1 / (7 + random() * 9),
-      size: 1.2 + 1.8 * sizeRoll * sizeRoll,
-      alpha: 0.4 + random() * 0.38,
+      size: 1.4 + 1.6 * Math.pow(sizeRoll, 1.5),
+      alpha: 0.5 + random() * 0.38,
     };
     if (random() < STREAM_SHARE) {
       const stream = streams[Math.floor(random() * streams.length)];
@@ -159,7 +161,7 @@ export function makeParticleSeeds(count: number, seed = 7): ParticleSeed[] {
       angle: random() * Math.PI * 2,
       reach: 1.04 + random() * 0.5,
       swirl: direction * (0.45 + random() * 0.95),
-      alpha: look.alpha * 0.7,
+      alpha: look.alpha * 0.75,
       type: pickType(random()),
     };
   });
@@ -197,6 +199,11 @@ export function particlePoint(seed: ParticleSeed, p: number, target: Point, aspe
   return { x: target.x + Math.cos(theta) * radius, y: target.y + Math.sin(theta) * radius };
 }
 
+/** Legibility mask: 1 above the fade band, 0 below it. */
+export function legibilityMask(layout: FieldLayout, fromTopPx: number): number {
+  return 1 - smoothstep(layout.fadeTopPx, layout.fadeTopPx + layout.fadeSpanPx, fromTopPx);
+}
+
 /** Opacity multiplier along the path: fades in at the edge, out as it merges. Mirrors the shader. */
 export function particleFade(p: number): number {
   const e = easeArrival(p);
@@ -205,9 +212,9 @@ export function particleFade(p: number): number {
   return fadeIn * fadeOut * proximityBoost(e);
 }
 
-/** Faint near the edges (over the copy), brighter as sources gather at the node. */
+/** Quieter at the far edges, strong through the middle band, brightest at the node. */
 export function proximityBoost(e: number): number {
-  return 0.5 + 0.8 * smoothstep(0.25, 0.85, e);
+  return 0.72 + 0.6 * smoothstep(0.12, 0.7, e);
 }
 
 export function smoothstep(edge0: number, edge1: number, x: number): number {

@@ -5,6 +5,8 @@ import { buildPoster } from "./poster-geometry";
 /** Reference hero aspect ratios (width / height) the poster is composed for. */
 const DESKTOP_ASPECT = 1.6;
 const MOBILE_ASPECT = 0.36;
+/** Reference mobile hero height (375 px wide at MOBILE_ASPECT). */
+const MOBILE_HEIGHT_PX = 1040;
 const DESKTOP_TRAILS = 58;
 const MOBILE_TRAILS = 34;
 
@@ -21,18 +23,24 @@ interface PosterSvgProps {
   layout: FieldLayout;
   aspect: number;
   trails: number;
+  heightPx?: number;
   className: string;
 }
 
-function PosterSvg({ id, layout, aspect, trails, className }: PosterSvgProps) {
-  const poster = buildPoster(layout, aspect, trails);
+function PosterSvg({ id, layout, aspect, trails, heightPx, className }: PosterSvgProps) {
+  const poster = buildPoster(layout, aspect, trails, heightPx);
   const glowId = `hero-glow-${id}`;
   return (
-    <svg className={cn("absolute inset-0 size-full overflow-visible", className)} aria-hidden focusable="false">
+    // saturate-[1.3] mirrors the live field's source-colour boost (palette.ts).
+    <svg
+      className={cn("absolute inset-0 size-full overflow-visible saturate-[1.3] dark:saturate-[1.15]", className)}
+      aria-hidden
+      focusable="false"
+    >
       <defs>
         <radialGradient id={glowId}>
-          <stop offset="0%" className="[stop-color:var(--gold)]" stopOpacity={0.42} />
-          <stop offset="45%" className="[stop-color:var(--gold)]" stopOpacity={0.14} />
+          <stop offset="0%" className="[stop-color:var(--gold)]" stopOpacity={0.55} />
+          <stop offset="45%" className="[stop-color:var(--gold)]" stopOpacity={0.2} />
           <stop offset="100%" className="[stop-color:var(--gold)]" stopOpacity={0} />
         </radialGradient>
       </defs>
@@ -48,11 +56,11 @@ function PosterSvg({ id, layout, aspect, trails, className }: PosterSvgProps) {
       {/* The node: a nested viewport at the centre so the glow and plan ring stay round. */}
       <svg x={`${poster.target.x}%`} y={`${poster.target.y}%`} overflow="visible">
         <circle r={poster.glowPx} fill={`url(#${glowId})`} />
-        <circle r={poster.ringPx} className="fill-none stroke-teal/30" strokeWidth={1} />
-        <circle r={3.5} className="fill-gold" />
+        <circle r={poster.ringPx} className="fill-none stroke-teal/55" strokeWidth={1.25} />
+        <circle r={4.5} className="fill-gold" />
         <g className="fill-teal">
           {poster.plan.map((point, i) => (
-            <circle key={i} cx={point.x} cy={point.y} r={2.1} />
+            <circle key={i} cx={point.x} cy={point.y} r={2.4} />
           ))}
         </g>
       </svg>
@@ -71,7 +79,14 @@ export function FieldPoster() {
       aria-hidden
       className="absolute inset-0 transition-opacity duration-[1600ms] ease-out-expo group-data-[field=live]/hero:opacity-0 motion-reduce:transition-none"
     >
-      <PosterSvg id="mobile" layout={MOBILE_LAYOUT} aspect={MOBILE_ASPECT} trails={MOBILE_TRAILS} className="lg:hidden" />
+      <PosterSvg
+        id="mobile"
+        layout={MOBILE_LAYOUT}
+        aspect={MOBILE_ASPECT}
+        trails={MOBILE_TRAILS}
+        heightPx={MOBILE_HEIGHT_PX}
+        className="lg:hidden"
+      />
       <PosterSvg
         id="desktop"
         layout={DESKTOP_LAYOUT}

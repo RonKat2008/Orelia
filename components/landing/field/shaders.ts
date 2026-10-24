@@ -28,7 +28,8 @@ uniform vec3 uSrc1;
 uniform vec3 uSrc2;
 uniform vec3 uSrc3;
 uniform float uMergePx;
-uniform float uFadeBelowY; // share of hero height, from the top
+uniform float uFadeTopPx;
+uniform float uFadeSpanPx;
 varying vec3 vColor;
 varying float vAlpha;
 varying float vRadius;
@@ -56,9 +57,9 @@ void main() {
   float fadeOut = 1.0 - smoothstep(0.86, 0.99, e);
   // Dissolve into the glow rather than piling up on the node.
   float merge = smoothstep(uMergePx * 0.15, uMergePx, radius / uPx);
-  float fromTop = (1.0 - pos.y) * 0.5;
-  float mask = 1.0 - smoothstep(uFadeBelowY, uFadeBelowY + 0.16, fromTop);
-  float boost = 0.5 + 0.8 * smoothstep(0.25, 0.85, e);
+  float fromTopPx = (1.0 - pos.y) / uPx;
+  float mask = 1.0 - smoothstep(uFadeTopPx, uFadeTopPx + uFadeSpanPx, fromTopPx);
+  float boost = 0.72 + 0.6 * smoothstep(0.12, 0.7, e);
   vAlpha = min(aLook.z * boost, 1.0) * fadeIn * fadeOut * merge * ghost * mask;
 
   float t = aLook.w;
@@ -120,7 +121,7 @@ void main() {
   vec2 pos = uTarget + vec2(cos(angle), sin(angle)) * uRingPx * loose * uPx;
   vAlpha = appear * (1.0 - dissolve) * mix(0.55, 1.0, settle);
   vColor = uColor;
-  float sizePx = mix(2.6, 4.2, settle);
+  float sizePx = mix(2.8, 4.8, settle);
   vRadius = sizePx * 0.5 * uDpr;
   gl_PointSize = sizePx * uDpr + 2.0;
   gl_Position = toClip(pos);
@@ -160,14 +161,14 @@ void main() {
   // The halo swells briefly as the plan settles.
   float swell = 1.0 + 0.45 * exp(-pow((c - 0.58) / 0.09, 2.0));
   float halo = exp(-pow(d / (uGlowPx * 0.5), 2.0)) * uHaloOpacity * swell;
-  float core = 1.0 - smoothstep(2.6, 4.2, d);
+  float core = 1.0 - smoothstep(3.4, 5.0, d);
   // One soft ring expanding outward from the settled plan.
   float rt = clamp((c - 0.58) / 0.3, 0.0, 1.0);
   float ringR = uRingPx * (1.0 + rt * 3.2);
-  float ring = (1.0 - smoothstep(0.0, 1.4, abs(d - ringR))) * pow(1.0 - rt, 2.0) * step(0.001, rt) * 0.55;
+  float ring = (1.0 - smoothstep(0.4, 1.3, abs(d - ringR))) * pow(1.0 - rt, 2.0) * step(0.001, rt) * 0.75;
   // A faint guide circle while the plan holds its shape.
   float hold = smoothstep(0.5, 0.62, c) * (1.0 - smoothstep(0.84, 0.97, c));
-  float guide = (1.0 - smoothstep(0.0, 1.0, abs(d - uRingPx))) * hold * 0.28;
+  float guide = (1.0 - smoothstep(0.35, 1.0, abs(d - uRingPx))) * hold * 0.5;
 
   float glowA = clamp(halo + core * 0.95, 0.0, 1.0);
   vec3 glowRgb = uGlow * glowA;

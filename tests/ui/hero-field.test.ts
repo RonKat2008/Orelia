@@ -10,6 +10,7 @@ import {
   easeArrival,
   edgeDistance,
   layoutForWidth,
+  legibilityMask,
   makeParticleSeeds,
   particleFade,
   particlePoint,
@@ -17,7 +18,7 @@ import {
   targetInField,
 } from "@/components/landing/field/geometry";
 import { buildPoster, toPercent } from "@/components/landing/field/poster-geometry";
-import { hexToRgb } from "@/components/landing/field/palette";
+import { hexToRgb, saturate } from "@/components/landing/field/palette";
 
 const isOutsideField = (point: { x: number; y: number }, aspect: number) =>
   Math.abs(point.x) >= aspect - 1e-9 || Math.abs(point.y) >= 1 - 1e-9;
@@ -41,7 +42,7 @@ describe("hero convergence field geometry", () => {
     for (const seed of seeds) {
       expect(seed.size).toBeGreaterThanOrEqual(1);
       expect(seed.size).toBeLessThanOrEqual(3);
-      expect(seed.alpha).toBeLessThan(0.8);
+      expect(seed.alpha).toBeLessThanOrEqual(0.9);
       expect(seed.reach).toBeGreaterThanOrEqual(1);
       expect(Number.isInteger(seed.type) && seed.type >= 0 && seed.type < SOURCE_TYPES.length).toBe(true);
     }
@@ -83,7 +84,7 @@ describe("hero convergence field geometry", () => {
     expect(particleFade(0)).toBe(0);
     // Brighter as sources gather at the node than at the edge.
     expect(particleFade(0.6)).toBeGreaterThan(particleFade(0.1));
-    expect(particleFade(0.6)).toBeLessThanOrEqual(1.3);
+    expect(particleFade(0.6)).toBeLessThanOrEqual(1.35);
     expect(particleFade(1)).toBe(0);
   });
 
@@ -103,6 +104,15 @@ describe("hero convergence field geometry", () => {
     expect(MOBILE_LAYOUT.targetY).toBeLessThan(0.1);
   });
 
+  it("keeps mobile body copy clear of particles", () => {
+    expect(legibilityMask(MOBILE_LAYOUT, 0)).toBe(1);
+    expect(legibilityMask(MOBILE_LAYOUT, MOBILE_LAYOUT.fadeTopPx + MOBILE_LAYOUT.fadeSpanPx)).toBe(0);
+    expect(legibilityMask(DESKTOP_LAYOUT, 2000)).toBe(1);
+    const poster = buildPoster(MOBILE_LAYOUT, 0.36, 34, 1040);
+    const clearFromPct = ((MOBILE_LAYOUT.fadeTopPx + MOBILE_LAYOUT.fadeSpanPx) / 1040) * 100;
+    expect(poster.dots.every((dot) => dot.y <= clearFromPct + 0.5)).toBe(true);
+  });
+
   it("spaces the plan ring evenly", () => {
     const angles = planRingAngles();
     expect(angles).toHaveLength(PLAN_POINTS);
@@ -114,7 +124,7 @@ describe("hero convergence field geometry", () => {
 describe("hero field poster", () => {
   it("is deterministic and stays light", () => {
     const desktop = buildPoster(DESKTOP_LAYOUT, 1.6, 58);
-    const mobile = buildPoster(MOBILE_LAYOUT, 0.36, 34);
+    const mobile = buildPoster(MOBILE_LAYOUT, 0.36, 34, 1040);
     expect(buildPoster(DESKTOP_LAYOUT, 1.6, 58)).toEqual(desktop);
     expect(desktop.dots.length).toBeGreaterThan(120);
     expect(desktop.dots.length).toBeLessThanOrEqual(300);
@@ -147,5 +157,12 @@ describe("hero field palette", () => {
     expect(hexToRgb("#ffffff")).toEqual([1, 1, 1]);
     expect(hexToRgb(" #000 ")).toEqual([0, 0, 0]);
     expect(hexToRgb("oklch(50% 0 0)")).toEqual([0.3, 0.4, 0.5]);
+  });
+
+  it("saturates source colours without leaving 0..1 or shifting greys", () => {
+    expect(saturate([0.5, 0.5, 0.5], 1.3)).toEqual([0.5, 0.5, 0.5]);
+    const [r, g, b] = saturate([0.23, 0.31, 0.85], 1.3);
+    expect(b - r).toBeGreaterThan(0.85 - 0.23);
+    for (const c of [r, g, b]) expect(c >= 0 && c <= 1).toBe(true);
   });
 });

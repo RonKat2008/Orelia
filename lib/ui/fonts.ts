@@ -1,20 +1,22 @@
-import { Atkinson_Hyperlegible_Next, Fraunces } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Newsreader } from "next/font/google";
 
 /**
- * Warm Paper type pairing.
- * - Fraunces: a soft, editorial variable serif with an optical-size axis. Display and
- *   headings only. One italic word per headline is the signature move.
+ * Clear Day type pairing.
+ * - Newsreader: a crisp, literary variable serif with an optical-size axis, cut for
+ *   reading on screens. Display and headings only (h1-h3, hero lines).
  * - Atkinson Hyperlegible Next: designed by the Braille Institute for low-vision
  *   readers. Everything people read or operate: body, labels, data, controls.
  *
+ * The serif is exposed as `--font-serif`; app/styles/theme.css aliases the old
+ * `--font-fraunces` name to it so existing utilities keep working.
  * `--font-text` keeps its old name so legacy CSS (app/styles/tokens.css) keeps working.
  */
-const display = Fraunces({
+const display = Newsreader({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-serif",
   display: "swap",
   style: ["normal", "italic"],
-  axes: ["opsz", "SOFT"],
+  axes: ["opsz"],
 });
 
 const text = Atkinson_Hyperlegible_Next({

@@ -92,7 +92,7 @@
   --color-transparent: transparent;
   --color-current: currentColor;
 
-  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  --font-display: var(--font-serif), "Iowan Old Style", Georgia, serif;
   --font-sans: var(--font-text), system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
 
@@ -181,6 +181,11 @@
  * [data-theme="dark"] on any element (the style guide scopes themes this way).
  * ------------------------------------------------------------------------ */
 @layer base {
+  :root {
+    /* Old display-font name, now the Newsreader serif (lib/ui/fonts.ts). */
+    --font-fraunces: var(--font-serif);
+  }
+
   :root,
   [data-theme="light"] {
     color-scheme: light;
@@ -497,7 +502,7 @@
 
 /* Fraunces italic for the one emphasised word in a headline. */
 @utility emph {
-  font-family: var(--font-fraunces), Georgia, serif;
+  font-family: var(--font-serif), Georgia, serif;
   font-style: italic;
   font-weight: 400;
   font-variation-settings: "SOFT" 100;

@@ -38,7 +38,7 @@
   --wf-shadow: var(--elev-md);
 
   /* Type */
-  --wf-font-display: var(--font-fraunces, var(--font-display, "Iowan Old Style")), Georgia, serif;
+  --wf-font-display: var(--font-serif, var(--font-display, "Iowan Old Style")), Georgia, serif;
   --wf-font-text: var(--font-text, system-ui), system-ui, sans-serif;
   --wf-text-sm: 0.875rem;
   --wf-text-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);

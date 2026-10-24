@@ -20,3 +20,9 @@ export function formatDay(iso: string | null | undefined, fallback = "No date"):
 export function titleCase(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** Capitalise each word of an all-lowercase name; names that already carry casing are left exactly as given. */
+export function properName(text: string): string {
+  if (text !== text.toLowerCase()) return text;
+  return text.replace(/(^|[\s\-'(])(\p{L})/gu, (_m, lead: string, ch: string) => lead + ch.toUpperCase());
+}

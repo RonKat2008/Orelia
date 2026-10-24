@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, Globe, Mail, Phone, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Badge, Button, Card, CardEyebrow, CardTitle, IconButton, Switch } from '@/components/ui';
 import { useReducedMotionGate } from '@/lib/motion/MotionPreference';
@@ -26,10 +27,18 @@ export interface PlanBoardProps {
   onMove: (resourceKey: string, stepId: string, delta: -1 | 1) => void;
   onApprove: () => void;
   onRebuild: () => void;
+  /** Needed to link to the outbox once the plan is approved. */
+  caseId?: string;
+  /** Drafts written when approved; null/undefined when not known (e.g. after a reload). */
+  draftCount?: number | null;
+  /** True after the user chose Edit plan; shows the approve controls again. */
+  editing?: boolean;
+  onEdit?: () => void;
 }
 
-export function PlanBoard({ plan, busy = false, onToggle, onMove, onApprove, onRebuild }: PlanBoardProps) {
+export function PlanBoard({ plan, busy = false, onToggle, onMove, onApprove, onRebuild, caseId, draftCount, editing = false, onEdit }: PlanBoardProps) {
   const enabled = enabledStepCount(plan);
+  const showApproved = plan.status === 'approved' && !editing;
   return (
     <div className="ds-root flex flex-col gap-stack">
       <p className="max-w-prose text-lead text-ink-2 text-pretty" data-testid="plan-summary">
@@ -45,21 +54,43 @@ export function PlanBoard({ plan, busy = false, onToggle, onMove, onApprove, onR
           </li>
         ))}
       </ul>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button size="lg" disabled={busy || enabled === 0} onClick={onApprove}>
-          Approve plan &amp; draft messages
-        </Button>
-        <Button variant="secondary" size="lg" disabled={busy} onClick={onRebuild}>
-          Rebuild plan
-        </Button>
-      </div>
-      {enabled === 0 ? (
+      {showApproved ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center" data-testid="plan-approved">
+          <p className="m-0 text-body font-semibold text-teal-ink" role="status">
+            {approvedText(draftCount)}
+          </p>
+          {caseId ? (
+            <Button asChild size="lg">
+              <Link href={`/cases/${caseId}/outbox`}>Open the outbox</Link>
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="lg" disabled={busy} onClick={onEdit}>
+            Edit plan
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button size="lg" disabled={busy || enabled === 0} onClick={onApprove}>
+            Approve plan &amp; draft messages
+          </Button>
+          <Button variant="secondary" size="lg" disabled={busy} onClick={onRebuild}>
+            Rebuild plan
+          </Button>
+        </div>
+      )}
+      {enabled === 0 && !showApproved ? (
         <p className="text-small text-warn-ink" role="status">
           Turn on at least one step to continue.
         </p>
       ) : null}
     </div>
   );
+}
+
+/** Status line for an approved plan. */
+export function approvedText(draftCount: number | null | undefined): string {
+  if (draftCount == null) return 'Plan approved · drafts are in the outbox';
+  return `Plan approved · ${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'} in the outbox`;
 }
 
 function ResourceCard({

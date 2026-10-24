@@ -39,6 +39,7 @@ import {
   type UnavailableContact,
 } from "./client";
 import { loadCaseContacts, loadShortlistNames, withDisplayNames } from "./case-activity";
+import { properName } from "./format";
 import { buildLetterPreview } from "./letter";
 import { LetterSheet } from "./LetterSheet";
 import { cn } from "@/lib/ui/cn";
@@ -48,10 +49,6 @@ type Phase =
   | { kind: "nothing" }
   | { kind: "failed"; reasons: string[] }
   | { kind: "ready" };
-
-function titleCase(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 
 export function ConsentForm({ caseId }: { caseId: string }) {
   const [caseRecord, setCaseRecord] = useState<CaseInput | null>(null);
@@ -148,7 +145,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
     const failures: string[] = [];
     for (const contact of contacts) {
       const result = await saveContactConsent(contact.id, sharedByContact[contact.id] ?? []);
-      if (!result.ok) failures.push(`${titleCase(contactLabel(contact))}: ${result.reasons.join(" ")}`);
+      if (!result.ok) failures.push(`${properName(contactLabel(contact))}: ${result.reasons.join(" ")}`);
     }
     setSaving(false);
     if (failures.length > 0) {
@@ -207,7 +204,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       </p>
 
       {summary.map(({ contact, shared, preview, withheld }, index) => {
-        const name = titleCase(contactLabel(contact));
+        const name = properName(contactLabel(contact));
         const ChannelIcon = contact.channel === "email" ? Mail : PhoneCall;
         const letter = buildLetterPreview(contact.channel, preview);
         return (
@@ -243,7 +240,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
 
                 <fieldset className="m-0 grid min-w-0 gap-3 border-0 p-0">
                   <legend className="mb-1 p-0 font-display text-h4 font-normal text-ink display-soft">
-                    What may {name.toLowerCase()} see?
+                    What may {name} see?
                   </legend>
                   <p className="m-0 text-small text-ink-2">Tick a detail to include it. Leave it blank to keep it private.</p>
                   <div className="grid gap-2">
@@ -408,7 +405,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
         <ul className="m-0 grid list-none gap-4 p-0">
           {summary.map(({ contact, shared, withheld }) => (
             <li key={contact.id} className="grid gap-1 border-t border-line-strong pt-4 first:border-t-0 first:pt-0">
-              <span className="break-words font-semibold text-ink">{titleCase(contactLabel(contact))}</span>
+              <span className="break-words font-semibold text-ink">{properName(contactLabel(contact))}</span>
               <span className="text-body text-ink-2">
                 {shared.length === 0
                   ? "Sees no case details."

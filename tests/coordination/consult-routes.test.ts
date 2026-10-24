@@ -95,6 +95,19 @@ describe('patient routes', () => {
   });
 });
 
+describe('public review page', () => {
+  it('404s server-side for a bad token and renders for a valid one', async () => {
+    const { default: ReviewPage } = await import('@/app/review/[token]/page');
+    await expect(ReviewPage(rctx('abc'))).rejects.toMatchObject({ digest: expect.stringContaining('404') });
+    const { consult: c } = await setup();
+    await patch(c.id, { version: 1, action: 'send_to_doctor' });
+    const token = tokenFrom(h.mailer.sent[0].body);
+    await expect(ReviewPage(rctx(token))).resolves.toBeTruthy();
+    await patch(c.id, { version: 2, action: 'cancel' });
+    await expect(ReviewPage(rctx(token))).rejects.toMatchObject({ digest: expect.stringContaining('404') });
+  });
+});
+
 describe('public review route', () => {
   async function linked() {
     const { consult: c } = await setup();

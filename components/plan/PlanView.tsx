@@ -17,6 +17,7 @@ export function PlanView({ caseId }: { caseId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ApproveOutcome | null>(null);
+  const [editing, setEditing] = useState(false);
   const planRef = useRef<ContactPlan | null>(null);
   useEffect(() => {
     planRef.current = plan;
@@ -91,6 +92,7 @@ export function PlanView({ caseId }: { caseId: string }) {
     if (res?.ok) {
       const result = approveOutcome(parseMaterialized(res.materialized));
       setOutcome(result);
+      setEditing(false);
       if (result.count > 0) toast.success(result.headline);
       else toast.info(result.headline);
     }
@@ -141,7 +143,7 @@ export function PlanView({ caseId }: { caseId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {outcome ? (
+      {outcome && plan.status === 'approved' ? (
         <section role="status" aria-labelledby="plan-outcome-heading" className="rounded-md border border-teal/40 bg-teal-soft p-4 sm:p-5">
           <h3 id="plan-outcome-heading" className="m-0 text-h4 font-semibold text-ink">{outcome.headline}</h3>
           <p className="m-0 mt-1 max-w-prose text-body text-ink-2">{outcome.detail}</p>
@@ -152,7 +154,7 @@ export function PlanView({ caseId }: { caseId: string }) {
           </Button>
         </section>
       ) : null}
-      <PlanBoard plan={plan} busy={busy} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />
+      <PlanBoard plan={plan} busy={busy} caseId={caseId} draftCount={outcome?.count ?? null} editing={editing} onEdit={() => setEditing(true)} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />
     </div>
   );
 }

@@ -38,10 +38,10 @@ const plan = {
 } as unknown as ContactPlan;
 
 const noop = () => {};
-function render(p: ContactPlan, reduced = false) {
+function render(p: ContactPlan, reduced = false, extra: Record<string, unknown> = {}) {
   return renderToStaticMarkup(
     createElement(MotionPreference, { reducedMotion: reduced },
-      createElement(PlanBoard, { plan: p, onToggle: noop, onMove: noop, onApprove: noop, onRebuild: noop })),
+      createElement(PlanBoard, { plan: p, onToggle: noop, onMove: noop, onApprove: noop, onRebuild: noop, ...extra })),
   );
 }
 
@@ -93,6 +93,26 @@ describe('PlanBoard render', () => {
     const approveTag = (html: string) => /<button\b[^>]*>(?=Approve plan)/.exec(html)?.[0] ?? '';
     expect(approveTag(render(off))).toContain('disabled=""');
     expect(approveTag(render(plan))).not.toContain('disabled=""');
+  });
+});
+
+describe('approved plan', () => {
+  const approved = { ...plan, status: 'approved', approvedAt: now } as ContactPlan;
+  it('shows the outbox link and Edit plan instead of the approve button', () => {
+    const html = render(approved, false, { caseId, draftCount: 3, onEdit: noop });
+    expect(html).not.toContain('Approve plan');
+    expect(html).toContain('Plan approved');
+    expect(html).toContain('3 drafts in the outbox');
+    expect(html).toContain(`/cases/${caseId}/outbox`);
+    expect(html).toContain('Edit plan');
+  });
+  it('words a single draft and an unknown count', () => {
+    expect(render(approved, false, { caseId, draftCount: 1, onEdit: noop })).toContain('1 draft in the outbox');
+    expect(render(approved, false, { caseId, draftCount: null, onEdit: noop })).toContain('Plan approved');
+  });
+  it('offers approval again while editing, and for drafts', () => {
+    expect(render(approved, false, { caseId, editing: true })).toContain('Approve plan');
+    expect(render(plan)).toContain('Approve plan');
   });
 });
 

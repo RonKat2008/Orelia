@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getConsultService } from "@/lib/coordination/consult";
 import { ReviewForm } from "@/components/coordinate/ReviewForm";
 import { Wordmark } from "@/components/shell/Wordmark";
 
@@ -12,6 +14,15 @@ export const metadata: Metadata = {
 /** Public, token-gated page outside the case layout: its own minimal chrome and the only <main>. */
 export default async function ReviewPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  // Same lookup the API uses: unknown, forged, expired, cancelled and already-decided links all 404 (no detail leaks).
+  // A lookup failure (not a miss) falls through so the client form can show its own retry state.
+  let found = true;
+  try {
+    found = (await getConsultService().reviewView(token)) !== null;
+  } catch {
+    found = true;
+  }
+  if (!found) notFound();
   return (
     <div className="ds-root min-h-dvh bg-paper text-ink">
       <header className="border-b border-line">

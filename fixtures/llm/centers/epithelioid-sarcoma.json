@@ -1,0 +1,162 @@
+{
+  "records": [
+    {
+      "kind": "institution",
+      "id": "inst:mayo-clinic-cancer-center",
+      "name": "Mayo Clinic Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Phoenix",
+      "state": "AZ",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/mayoclinic"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:university-of-arizona-cancer-center",
+      "name": "University of Arizona Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Tucson",
+      "state": "AZ",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/arizonacc"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:university-of-new-mexico-cancer-research-and-treatment-center",
+      "name": "University of New Mexico Cancer Research and Treatment Center",
+      "institutionKind": "cancer_center",
+      "city": "Albuquerque",
+      "state": "NM",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/newmexicocrtc"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:huntsman-cancer-institute",
+      "name": "Huntsman Cancer Institute",
+      "institutionKind": "cancer_center",
+      "city": "Salt Lake City",
+      "state": "UT",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/utahhuntsman"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:university-of-colorado-cancer-center",
+      "name": "University of Colorado Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Aurora",
+      "state": "CO",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucolorado"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:chao-family-comprehensive-cancer-center",
+      "name": "Chao Family Comprehensive Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Orange",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucirvinechao"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:city-of-hope-comprehensive-cancer-center",
+      "name": "City of Hope Comprehensive Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Duarte",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/beckmancityofhope"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:jonsson-comprehensive-cancer-center",
+      "name": "Jonsson Comprehensive Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Los Angeles",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uclajonsson"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:tampa-general-hospital-cancer-institute-sarcoma-center-of-excellence",
+      "name": "Tampa General Hospital Cancer Institute Sarcoma Center of Excellence",
+      "institutionKind": "cancer_center",
+      "evidenceRefs": [
+        "https://www.tgh.org/institutes-and-services/cancer-institute/sarcoma-center-of-excellence"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:duke-sarcoma-center",
+      "name": "Duke Sarcoma Center",
+      "institutionKind": "cancer_center",
+      "evidenceRefs": [
+        "https://www.dukecancerinstitute.org/center/duke-sarcoma-center"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists Mayo Clinic Cancer Center in Phoenix, AZ as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/mayoclinic"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists University of Arizona Cancer Center in Tucson, AZ as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/arizonacc"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists University of New Mexico Cancer Research and Treatment Center in Albuquerque, NM as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/newmexicocrtc"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists Huntsman Cancer Institute in Salt Lake City, UT as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/utahhuntsman"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists University of Colorado Cancer Center in Aurora, CO as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucolorado"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists Chao Family Comprehensive Cancer Center in Orange, CA as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucirvinechao"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists City of Hope Comprehensive Cancer Center in Duarte, CA as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/beckmancityofhope"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists Jonsson Comprehensive Cancer Center in Los Angeles, CA as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uclajonsson"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "A Tampa General Hospital Cancer Institute page describes a Sarcoma Center of Excellence that offers telehealth appointments.",
+      "sourceUrl": "https://www.tgh.org/institutes-and-services/cancer-institute/sarcoma-center-of-excellence"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "The Duke Cancer Institute lists the Duke Sarcoma Center and describes itself as an NCI-designated Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.dukecancerinstitute.org/center/duke-sarcoma-center"
+    }
+  ]
+}

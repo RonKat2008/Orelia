@@ -1,0 +1,17 @@
+{
+  "diseaseName": "Epithelioid sarcoma",
+  "diseaseCodes": {
+    "icd10": "C49.9"
+  },
+  "subtype": "Proximal-type",
+  "stageSummary": "Grade 3, 7.2 cm, deep margin positive, pT4 pNX, INI1/SMARCB1 loss",
+  "homeCity": "Tucson",
+  "homeState": "AZ",
+  "insurer": "Bluepeak Health PPO",
+  "planId": "BPH-7731-4402-AZ",
+  "travelLimitMiles": 600,
+  "goals": [
+    "second_opinion",
+    "trial"
+  ]
+}

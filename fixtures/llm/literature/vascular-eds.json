@@ -1,0 +1,104 @@
+{
+  "records": [
+    {
+      "kind": "expert",
+      "id": "expert:peter-byers",
+      "name": "Peter Byers",
+      "evidenceRefs": [
+        "lit:peter-byers:20301667",
+        "lit:peter-byers:28306228"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:melanie-pepin",
+      "name": "Melanie Pepin",
+      "evidenceRefs": [
+        "lit:melanie-pepin:28306228",
+        "lit:melanie-pepin:24922459"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:dru-leistritz",
+      "name": "Dru Leistritz",
+      "evidenceRefs": [
+        "lit:dru-leistritz:24922459"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:kenneth-rice",
+      "name": "Kenneth Rice",
+      "evidenceRefs": [
+        "lit:kenneth-rice:24922459"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:matthew-eagleton",
+      "name": "Matthew Eagleton",
+      "evidenceRefs": [
+        "lit:matthew-eagleton:27687326"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:mingdong-liu",
+      "name": "Mingdong Liu",
+      "evidenceRefs": [
+        "lit:mingdong-liu:24922459"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "lit:peter-byers:20301667",
+      "claimType": "disease_publications",
+      "claim": "Peter Byers is listed as an author of PMID 20301667. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Peter Byers appears on 3 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/20301667/"
+    },
+    {
+      "id": "lit:peter-byers:28306228",
+      "claimType": "disease_publications",
+      "claim": "Peter Byers is listed as an author of PMID 28306228. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Peter Byers appears on 3 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28306228/"
+    },
+    {
+      "id": "lit:melanie-pepin:28306228",
+      "claimType": "disease_publications",
+      "claim": "Melanie Pepin is listed as an author of PMID 28306228. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Melanie Pepin appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28306228/"
+    },
+    {
+      "id": "lit:melanie-pepin:24922459",
+      "claimType": "disease_publications",
+      "claim": "Melanie Pepin is listed as an author of PMID 24922459. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Melanie Pepin appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24922459/"
+    },
+    {
+      "id": "lit:dru-leistritz:24922459",
+      "claimType": "disease_publications",
+      "claim": "Dru Leistritz is listed as an author of PMID 24922459. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Dru Leistritz appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24922459/"
+    },
+    {
+      "id": "lit:kenneth-rice:24922459",
+      "claimType": "disease_publications",
+      "claim": "Kenneth Rice is listed as an author of PMID 24922459. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Kenneth Rice appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24922459/"
+    },
+    {
+      "id": "lit:matthew-eagleton:27687326",
+      "claimType": "disease_publications",
+      "claim": "Matthew Eagleton is listed as an author of PMID 27687326. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Matthew Eagleton appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/27687326/"
+    },
+    {
+      "id": "lit:mingdong-liu:24922459",
+      "claimType": "disease_publications",
+      "claim": "Mingdong Liu is listed as an author of PMID 24922459. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Mingdong Liu appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24922459/"
+    }
+  ]
+}

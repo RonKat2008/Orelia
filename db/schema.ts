@@ -90,9 +90,9 @@ export const cases = pgTable("cases", {
   id: uuid("id").primaryKey().defaultRandom(),
   diseaseName: text("disease_name").notNull(),
   diseaseCodes: jsonb("disease_codes").$type<{
-    orpha?: string;
-    mesh?: string;
-    icd10?: string;
+    orpha?: string | null;
+    mesh?: string | null;
+    icd10?: string | null;
   }>(),
   subtype: text("subtype"),
   stageSummary: text("stage_summary"),

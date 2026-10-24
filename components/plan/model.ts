@@ -40,8 +40,12 @@ export function isHttpUrl(value: string): boolean {
   }
 }
 
+// Same value as DEMO_COORDINATOR_EVIDENCE_PREFIX in lib/plan/contact-points (kept literal: that module is server-side).
+const DEMO_COORDINATOR_EVIDENCE_PREFIX = 'contact_point:demo_coordinator:';
+
 /** Short label for an evidence id (ids can be long uuids). */
 export function shortEvidenceId(id: string): string {
+  if (id.startsWith(DEMO_COORDINATOR_EVIDENCE_PREFIX)) return 'Demo coordinator (test inbox)';
   const tail = id.replace(/[^A-Za-z0-9]/g, '').slice(-6);
   return `Source ${tail || id.slice(0, 6)}`;
 }

@@ -3,7 +3,8 @@
  * lib/workflows/connection-workflow.ts). It NEVER sends by itself:
  *   - email / voice steps go through deps.dispatchGated, whose real implementation is the existing outbox path
  *     (patient approval -> checkOutbound -> channel). A step without an approved message reports 'awaiting_approval'.
- *   - web_form steps go through the WebFormChannel; 'not_available' is recorded and the next step continues.
+ *   - web_form steps draft the application via the WebFormChannel (never submit); 'not_available' is recorded and
+ *     the next step continues. Submission happens only in the application approval route, through checkOutbound.
  * Only an APPROVED plan (status 'approved' AND approvedAt set) is executable; disabled steps are skipped; at most
  * MAX_PLAN_RESOURCES resources run. A reply (or decline) from the contact stops that resource's remaining steps.
  *
@@ -16,7 +17,6 @@ import { scaleDeadline, type Clock } from '../workflows/clock';
 import { addBusinessDays } from '../workflows/business-days';
 import { MAX_PLAN_RESOURCES, type ContactPlan, type PlanStep, type ResourcePlan } from './contract';
 import type { WebFormChannel } from './channels';
-import type { GatedDraft } from '../safety/outbound-gate';
 
 export type StepStatus =
   | 'sent'
@@ -47,14 +47,8 @@ export interface PlanExecDeps {
   dispatchGated(input: { caseId: string; contactId: string; resource: ResourcePlan; step: PlanStep }): Promise<DispatchResult>;
   /** True when the contact replied or declined (stops remaining steps). */
   hasReply(contactId: string): Promise<boolean>;
+  /** Drafts web forms (fill + screenshot + review task); submission happens only after the patient approves it. */
   webForm: WebFormChannel;
-  /** Web-form fill values: the patient's ticked/consented fields only. */
-  sharedValues?(input: { caseId: string; contactId: string | null }): Promise<Record<string, string>>;
-  /**
-   * Returns the checkOutbound-minted GatedDraft for an already patient-approved form message, or null when none
-   * exists yet. Without it a form is drafted but never submitted.
-   */
-  gatedFormDraft?(input: { caseId: string; contactId: string; step: PlanStep }): Promise<GatedDraft | null>;
   record(outcome: StepOutcome): Promise<void>;
 }
 
@@ -141,17 +135,10 @@ async function runStep(
 }
 
 async function runWebForm(caseId: string, resource: ResourcePlan, s: PlanStep, deps: PlanExecDeps) {
-  const probe = await deps.webForm.probeForm(s.targetRef);
-  if (!probe.ok) return { status: 'not_available' as const, detail: probe.reason };
-  const shared = (await deps.sharedValues?.({ caseId, contactId: resource.contactId })) ?? {};
-  const fill = await deps.webForm.draftFill({ url: probe.url, fields: probe.fields, sharedValues: shared });
+  // draftFill is idempotent per case + contact + url, so the approval-time drafting and this run never duplicate.
+  const fill = await deps.webForm.draftFill({ caseId, contactId: resource.contactId, url: s.targetRef });
   if (!fill.ok) return { status: 'not_available' as const, detail: fill.reason };
-  // A submission needs a GatedDraft from checkOutbound, which only the approval path can mint. Without it the
-  // executor stops here: the filled draft awaits the patient's approval like any other outbound message.
-  const gated = resource.contactId ? await deps.gatedFormDraft?.({ caseId, contactId: resource.contactId, step: s }) : null;
-  if (gated) {
-    const sent = await deps.webForm.submitGated(gated, fill.draft);
-    return sent.ok ? { status: 'submitted' as const } : { status: 'not_available' as const, detail: sent.reason };
-  }
-  return { status: 'awaiting_approval' as const, detail: 'form draft ready; submission requires patient approval' };
+  if (fill.draft.status === 'submitted') return { status: 'submitted' as const };
+  // Submitting needs a GatedDraft from checkOutbound, minted only when the patient approves the reviewed application.
+  return { status: 'awaiting_approval' as const, detail: 'application drafted; submission waits for the patient to review and approve it' };
 }

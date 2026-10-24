@@ -146,21 +146,19 @@ describe('executePlan', () => {
     expect(recorded).toHaveLength(2);
   });
 
-  it('web_form submits only when an approved GatedDraft exists', async () => {
+  it('web_form drafts the application (idempotently) and never submits; a submitted application reports submitted', async () => {
     const submit = vi.fn(async () => ({ ok: true as const, status: 'submitted' as const }));
-    const webForm: WebFormChannel = {
-      probeForm: async url => ({ ok: true, url, fields: [{ name: 'q', label: 'Q', required: false }] }),
-      draftFill: async ({ url }) => ({ ok: true, draft: { url, values: {} } }),
-      submitGated: submit,
-    };
+    let status: 'draft' | 'submitted' = 'draft';
+    const draftFill = vi.fn(async ({ url }: { url: string }) => ({ ok: true as const, draft: { applicationId: 'app-1', url, status, missingCount: 2 } }));
+    const webForm: WebFormChannel = { probeForm: async () => ({ ok: false, status: 'not_available', reason: 'unused' }), draftFill, submitGated: submit };
     const plan = approved({ resources: [resource('e1', [step('s1', 1, { channel: 'web_form', targetRef: 'https://example.org/apply' })])] });
-    const none = makeDeps({ webForm });
-    expect((await executePlan(new FakeStep(), plan, none.deps))[0].status).toBe('awaiting_approval');
+    const first = (await executePlan(new FakeStep(), plan, makeDeps({ webForm }).deps))[0];
+    expect(first).toMatchObject({ status: 'awaiting_approval' });
+    expect(first.detail).toMatch(/review/i);
+    expect(draftFill).toHaveBeenCalledWith({ caseId: 'case-1', contactId: 'contact-e1', url: 'https://example.org/apply' });
+    status = 'submitted';
+    expect((await executePlan(new FakeStep(), plan, makeDeps({ webForm }).deps))[0].status).toBe('submitted');
     expect(submit).not.toHaveBeenCalled();
-    const gated = {} as never;
-    const yes = makeDeps({ webForm, gatedFormDraft: async () => gated });
-    expect((await executePlan(new FakeStep(), plan, yes.deps))[0].status).toBe('submitted');
-    expect(submit).toHaveBeenCalledTimes(1);
   });
 
   it('resources run independently of each other', async () => {

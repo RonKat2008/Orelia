@@ -76,6 +76,7 @@ function parseArticles(xml: string): Array<{
   pmid: string;
   title: string;
   year?: number;
+  journal?: string;
   authors: Array<{ first: string; last: string; middleName?: string; affiliation?: string }>;
 }> {
   const blocks = xml.split(/<(?=PubmedArticle>|PubmedBookArticle>)/).slice(1);
@@ -84,6 +85,7 @@ function parseArticles(xml: string): Array<{
     const title = /<(?:ArticleTitle|BookTitle)[^>]*>([\s\S]*?)<\/(?:ArticleTitle|BookTitle)>/.exec(block)?.[1];
     if (!pmid || !title) return [];
     const articleTitle = /<ArticleTitle[^>]*>([\s\S]*?)<\/ArticleTitle>/.exec(block)?.[1] ?? title;
+    const journal = /<Journal>[\s\S]*?<Title>([\s\S]*?)<\/Title>/.exec(block)?.[1];
     const year = /<PubDate>\s*<Year>(\d{4})<\/Year>/.exec(block)?.[1];
     const authors = [...block.matchAll(/<AuthorList(?![^>]*editors)[^>]*>([\s\S]*?)<\/AuthorList>/g)]
       .flatMap((list) => [...(list[1] ?? "").matchAll(/<Author [^>]*>([\s\S]*?)<\/Author>/g)])
@@ -96,7 +98,7 @@ function parseArticles(xml: string): Array<{
         if (!last || !first || first.length < 2) return [];
         return [{ first, middleName: fore ? decode(fore).split(/\s+/).slice(1).join(" ") : undefined, last: decode(last), affiliation: affiliation ? decode(affiliation) : undefined }];
       });
-    return [{ pmid, title: decode(articleTitle), year: year ? Number(year) : undefined, authors }];
+    return [{ pmid, title: decode(articleTitle), ...(journal ? { journal: decode(journal) } : {}), year: year ? Number(year) : undefined, authors }];
   });
 }
 
@@ -147,7 +149,7 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
             paperCount: hit.paperCount + 1,
             recentPaperCount:
               hit.recentPaperCount + (article.year && article.year >= asOfYear - RECENT_YEARS ? 1 : 0),
-            papers: [...hit.papers, { pmid: article.pmid, title: article.title, year: article.year, ...(a.affiliation ? { affiliation: a.affiliation } : {}) }],
+            papers: [...hit.papers, { pmid: article.pmid, title: article.title, ...(article.journal ? { journal: article.journal } : {}), year: article.year, ...(a.affiliation ? { affiliation: a.affiliation } : {}) }],
           });
         }
       }

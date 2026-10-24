@@ -28,7 +28,7 @@ async function seeded(): Promise<MemoryPersist> {
 }
 
 const pubmed: PubmedPort = { searchAuthors: vi.fn(async () => [{ name: 'Ada Example', firstName: 'Ada', lastName: 'Example', paperCount: 2, recentPaperCount: 1,
-  papers: [{ pmid: '111', title: 'Paper', affiliation: `Department of Genetics, ${INST}, Springfield, IL, USA. Electronic address: ada@example.org` }] }]) };
+  papers: [{ pmid: '111', title: 'Vascular outcomes in vEDS', journal: 'J Vasc Surg', year: 2025, affiliation: `Department of Genetics, ${INST}, Springfield, IL, USA. Electronic address: ada@example.org` }] }]) };
 const provider: NppesProvider = { npi: '1234567890', firstName: 'Ada', lastName: 'Example', state: 'IL', city: 'Springfield',
   raw: { number: '1234567890', enumeration_type: 'NPI-1', basic: {}, taxonomies: [{ code: '207SG0201X', desc: 'Clinical Genetics (M.D.)', primary: true }],
     addresses: [{ address_purpose: 'LOCATION', city: 'Springfield', state: 'IL', telephone_number: '217-555-0100' }] } as never };
@@ -51,6 +51,8 @@ describe('refreshResearch (existing case, no full re-run)', () => {
     const r = (await refreshResearch(CASE, 'Vascular EDS', { persist: p, ports: { pubmed, nppes, exa, now: NOW }, loadTraceInput: loader(p), saveTrace }))!;
     expect(r.added.affiliations).toBe(1);
     expect(r.added.contactPoints).toBe(2);
+    expect(r.added.papers).toBe(1);
+    expect(r.trace.chains[0]!.papers).toMatchObject([{ pmid: '111', title: 'Vascular outcomes in vEDS', journal: 'J Vasc Surg', year: 2025 }]);
 
     const [x] = await p.getCaseExperts(CASE);
     const aff = x!.evidence.find((e) => e.claimType === 'identity.affiliation')!;
@@ -74,7 +76,7 @@ describe('refreshResearch (existing case, no full re-run)', () => {
     await refreshResearch(CASE, 'Vascular EDS', deps);
     const before = (await p.getCaseExperts(CASE))[0]!.evidence.length;
     const again = (await refreshResearch(CASE, 'Vascular EDS', deps))!;
-    expect(again.added).toEqual({ affiliations: 0, contactPoints: 0 });
+    expect(again.added).toEqual({ affiliations: 0, contactPoints: 0, papers: 0 });
     expect((await p.getCaseExperts(CASE))[0]!.evidence.length).toBe(before);
   });
 
@@ -86,5 +88,16 @@ describe('refreshResearch (existing case, no full re-run)', () => {
     ] };
     const r = (await refreshResearch(CASE, 'Vascular EDS', { persist: p, ports: { pubmed: twins, nppes, exa, now: NOW }, loadTraceInput: loader(p), saveTrace: async (t) => t }))!;
     expect(r.added.affiliations).toBe(0);
+  });
+
+  it('stores no paper title when the namesake is ambiguous', async () => {
+    const p = await seeded();
+    const twins: PubmedPort = { searchAuthors: async () => [
+      { name: 'Ada Example', firstName: 'Ada', lastName: 'Example', paperCount: 1, recentPaperCount: 1, papers: [{ pmid: '111', title: 'a' }] },
+      { name: 'Ada Example', firstName: 'Ada', lastName: 'Example', paperCount: 1, recentPaperCount: 1, papers: [{ pmid: '222', title: 'b' }] },
+    ] };
+    const r = (await refreshResearch(CASE, 'Vascular EDS', { persist: p, ports: { pubmed: twins, nppes, exa, now: NOW }, loadTraceInput: loader(p), saveTrace: async (t) => t }))!;
+    expect(r.added.papers).toBe(0);
+    expect(r.trace.chains[0]!.papers![0]!.title).toBe('PubMed article 111');
   });
 });

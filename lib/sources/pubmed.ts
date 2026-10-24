@@ -4,7 +4,7 @@ import { evidence, type SourceResult } from "./types";
 import { parseXml, descendants, value } from "./xml";
 
 export interface PubmedAuthor { name: string; firstName: string; lastName: string; affiliations: string[] }
-export interface PubmedArticle { pmid: string; title: string; year: number | null; authors: PubmedAuthor[]; sourceUrl: string; fetchedAt?: string }
+export interface PubmedArticle { pmid: string; title: string; journal?: string; year: number | null; authors: PubmedAuthor[]; sourceUrl: string; fetchedAt?: string }
 export interface AggregatedAuthor extends PubmedAuthor { paperCount: number; recentPaperCount: number; pmids: string[]; evidence: Evidence[] }
 export function buildPubmedQuery(term: string, mesh?: string): string {
   const quote = (s: string) => `"${s.replace(/["\\]/g, " ").trim()}"`;
@@ -23,7 +23,8 @@ export function parsePubmedXml(xml: string): PubmedArticle[] {
     if (!/^\d+$/.test(pmid)) throw new SourceError("pubmed", "Invalid PMID");
     const pubdate = descendants(node, "PubDate")[0];
     const yearString = pubdate ? value(pubdate, "Year") || value(pubdate, "MedlineDate").match(/\d{4}/)?.[0] : undefined;
-    return { pmid, title: value(node, "ArticleTitle"), year: yearString ? Number(yearString) : null,
+    const journal = value(node, "Journal") ? value(descendants(node, "Journal")[0]!, "Title") : "";
+    return { pmid, title: value(node, "ArticleTitle"), ...(journal ? { journal } : {}), year: yearString ? Number(yearString) : null,
       sourceUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
       authors: descendants(node, "Author").map(author => ({
         firstName: value(author, "ForeName") || value(author, "Initials"), lastName: value(author, "LastName"),

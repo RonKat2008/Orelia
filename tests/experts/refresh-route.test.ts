@@ -52,7 +52,7 @@ describe('POST /api/cases/[id]/experts/refresh', () => {
     expect(first.status).toBe(201);
     const body = await first.json() as { trace: { caseId: string }; added: { affiliations: number; contactPoints: number } };
     expect(body.trace.caseId).toBe(CASE);
-    expect(body.added).toEqual({ affiliations: 0, contactPoints: 0 });
+    expect(body.added).toEqual({ affiliations: 0, contactPoints: 0, papers: 0 });
     expect((await POST(req('owner'), ctx)).status).toBe(201);
     expect((await POST(req('owner'), ctx)).status).toBe(201);
     expect((await POST(req('owner'), ctx)).status).toBe(429);

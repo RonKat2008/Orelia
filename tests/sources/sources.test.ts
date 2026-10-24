@@ -105,6 +105,7 @@ describe("PubMed", () => {
   it("rejects error envelopes and malformed XML", async () => {
     await expect(new PubMedClient(mock({error:"failed"}),{limiter:immediate()}).search("x")).rejects.toBeInstanceOf(SourceError);
     expect(() => parsePubmedXml("<PubmedArticleSet>")).toThrow("Invalid XML");
+    expect(parsePubmedXml('<PubmedArticleSet><PubmedArticle><PMID>5</PMID><Journal><ISSN>1</ISSN><Title>Genetics in Medicine</Title></Journal><ArticleTitle>T</ArticleTitle></PubmedArticle></PubmedArticleSet>')[0]!.journal).toBe('Genetics in Medicine');
     expect(() => parsePubmedXml("<eFetchResult><ERROR>failed</ERROR></eFetchResult>")).toThrow("failed");
     await expect(new PubMedClient(mock("{}",500),{limiter:immediate()}).fetch(["1"])).rejects.toMatchObject({status:500});
   });

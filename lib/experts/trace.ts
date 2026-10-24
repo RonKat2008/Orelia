@@ -2,17 +2,18 @@ import type { Evidence } from '@/lib/contracts/evidence';
 import type { ExaPort, NppesPort, NppesProvider } from '@/lib/agents/research/source-ports';
 import { cleanField } from '@/lib/agents/research/untrusted';
 import { parsePlanContactPoints } from '@/lib/plan/contact-points';
-import { EXPERT_CLAIM_TYPES, expertTraceSchema, type ExpertChain, type ExpertTrace, type ReachRoute, type TraceEvidence } from './contract';
+import { EXPERT_CLAIM_TYPES, expertTraceSchema, type ChainPaper, type ExpertChain, type ExpertTrace, type ReachRoute, type TraceEvidence } from './contract';
 import { stateFromAffiliation } from '@/lib/agents/research/geo';
 import { extractInstitution, pageMatchesInstitution, slugify } from './affiliation';
 import { assessNppes, nppesRegistryUrl, pageShowsPatientCare, type NppesAssessment } from './sees-patients';
 import { classifyInstitutionPages, consultationQuery, intakeQuery, type AcceptedPage } from './consultation';
 import { parseAffiliationEvidence } from '@/lib/identity/affiliation-evidence';
+import { parsePaperEvidence } from '@/lib/identity/paper-evidence';
 import { classifyIntakeDoors } from '@/lib/contact-finder';
 import { contactPointEvidence, contactPointsFromDoors, usPhoneToE164 } from '@/lib/contact-finder/contact-points';
 
 export const MAX_AUTHORS = 6;
-export const MAX_PAPERS_PER_AUTHOR = 2;
+export const MAX_PAPERS_PER_AUTHOR = 5;
 export const MAX_CHAINS = 30;
 const CONCURRENCY = 3;
 
@@ -40,22 +41,65 @@ export interface TraceInput {
 
 export interface TracePorts { nppes: NppesPort; exa: ExaPort; now: Date }
 
-interface Paper { pmid: string; title: string; url: string; year?: number }
+interface Paper { pmid: string; title: string; url: string; year?: number; journal?: string }
 
 const PUBMED_URL = /^https:\/\/pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)\/?$/;
 
-/** Papers cited by this expert's pubmed evidence rows (URL carries the PMID; title only when the claim names one). */
+/**
+ * Papers cited by this expert's pubmed evidence rows, newest first (unknown year last). The URL carries the PMID; the
+ * title / journal / year come from the stored publication.citation row, else from an older claim that names the
+ * title, else "PubMed article <PMID>".
+ */
 export function papersFor(expert: TraceExpert, evidence: readonly TraceInputEvidence[]): Paper[] {
+  const own = evidence.filter((e) => e.targetKind === 'expert' && e.targetId === expert.id && e.sourceKind === 'pubmed');
+  const cited = new Map<string, ReturnType<typeof parsePaperEvidence>>();
+  for (const e of own) { const c = parsePaperEvidence(e); if (c) cited.set(c.pmid, c); }
   const seen = new Map<string, Paper>();
-  for (const e of evidence) {
-    if (e.targetKind !== 'expert' || e.targetId !== expert.id || e.sourceKind !== 'pubmed') continue;
+  for (const e of own) {
     const pmid = PUBMED_URL.exec(e.sourceUrl)?.[1];
     if (!pmid || seen.has(pmid)) continue;
+    const stored = cited.get(pmid);
     const titled = /is listed as an author of (?!PMID)([^;]+?)(?:;|$)/.exec(e.claim)?.[1];
-    const title = cleanField(titled, 300) || `PubMed article ${pmid}`;
-    seen.set(pmid, { pmid, title, url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` });
+    const title = stored?.title ?? (cleanField(titled, 300) || `PubMed article ${pmid}`);
+    seen.set(pmid, { pmid, title, url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`, ...(stored?.journal ? { journal: stored.journal } : {}), ...(stored?.year ? { year: stored.year } : {}) });
   }
-  return [...seen.values()];
+  return [...seen.values()].sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || Number(b.pmid) - Number(a.pmid));
+}
+
+const normName = (name: string): string => {
+  const t = name.toLowerCase().normalize('NFKD').replace(/[^a-z\s]/g, ' ').trim().split(/\s+/);
+  return `${t[0] ?? ''}|${t.at(-1) ?? ''}`;
+};
+const normInstitution = (name: string | null): string => (name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+const uniq = <T,>(items: readonly T[], key: (t: T) => string): T[] => [...new Map(items.map((i) => [key(i), i])).values()];
+const strongest = <V extends { verdict: string }>(items: readonly V[]): V => items.find((i) => i.verdict === 'yes') ?? items.find((i) => i.verdict === 'no') ?? items[0]!;
+
+/** Merge chains of the same person (normalised name + institution) into one chain listing every paper, newest first. */
+export function groupChainsByAuthor(chains: readonly ExpertChain[]): ExpertChain[] {
+  const groups = new Map<string, ExpertChain[]>();
+  for (const c of chains) {
+    const key = `${normName(c.author.name)}@${normInstitution(c.institution.name)}`;
+    groups.set(key, [...(groups.get(key) ?? []), c]);
+  }
+  return [...groups.values()].map((group): ExpertChain => {
+    const first = group[0]!;
+    if (group.length === 1 && first.papers) return first;
+    const papers: ChainPaper[] = uniq(group.flatMap((c) => c.papers ?? [c.paper]), (p) => p.pmid)
+      .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || Number(b.pmid) - Number(a.pmid)).slice(0, 8);
+    const ids = (pick: (c: ExpertChain) => readonly string[]) => [...new Set(group.flatMap(pick))].slice(0, 12);
+    const consultation = strongest(group.map((c) => c.consultation));
+    return {
+      ...first,
+      paper: papers[0]!,
+      papers,
+      author: { ...first.author, npi: group.find((c) => c.author.npi)?.author.npi ?? null, evidenceIds: ids((c) => c.author.evidenceIds) },
+      institution: { ...first.institution, pageUrl: group.find((c) => c.institution.pageUrl)?.institution.pageUrl ?? null, evidenceIds: ids((c) => c.institution.evidenceIds) },
+      seesPatients: strongest(group.map((c) => c.seesPatients)),
+      consultation,
+      howToReach: uniq(group.flatMap((c) => c.howToReach), (r) => `${r.channel}:${r.address}`).slice(0, 6),
+    };
+  });
 }
 
 const AFFILIATIONS = /listed affiliations?: (.+)$/;
@@ -268,25 +312,34 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
     ];
     const reach = reachRoutes(expert, input.evidence, facts, consultId, instRowIds[0] ?? null, addRow, fetchedAt, extra);
 
-    return chosen.map((paper): ExpertChain => {
-      const authorshipId = addRow(mk(`xp:${slug}:${paper.pmid}:authorship`, EXPERT_CLAIM_TYPES.authorship,
+    const chainPapers: ChainPaper[] = chosen.map((paper) => {
+      const evidenceId = addRow(mk(`xp:${slug}:${paper.pmid}:authorship`, EXPERT_CLAIM_TYPES.authorship,
         `${expert.name} is listed as an author of PMID ${paper.pmid}.`, paper.url, 'pubmed'));
-      return {
-        id: `${slug}:${paper.pmid}`,
-        paper: { pmid: paper.pmid, title: paper.title, ...(paper.year ? { year: paper.year } : {}), url: paper.url, evidenceId: authorshipId },
-        author: { name: expert.name, expertId: expert.id, npi, evidenceIds: [authorshipId, ...(nppesResult.kind === 'yes' && seesRowId ? [seesRowId] : [])] },
+      return { pmid: paper.pmid, title: paper.title, ...(paper.journal ? { journal: paper.journal } : {}), ...(paper.year ? { year: paper.year } : {}), url: paper.url, evidenceId };
+    });
+    const authorshipIds = chainPapers.map((p) => p.evidenceId).slice(0, 8);
+    const chain: ExpertChain = {
+        id: slug,
+        paper: chainPapers[0]!,
+        papers: chainPapers,
+        author: { name: expert.name, expertId: expert.id, npi, evidenceIds: [...authorshipIds, ...(nppesResult.kind === 'yes' && seesRowId ? [seesRowId] : [])] },
         institution: { name: instName, pageUrl, evidenceIds: [...(affId ? [affId] : []), ...instRowIds] },
         seesPatients: { verdict: seesRowId ? 'yes' : 'unknown', text: trunc(seesText, 400), evidenceIds: seesRowId ? [seesRowId] : [] },
         consultation: consultId && facts.consultation
           ? { verdict: 'yes', text: trunc(`${instName} has a page describing a second-opinion or e-consultation program.`, 400), evidenceIds: [consultId], url: facts.consultation.url }
           : { verdict: 'unknown', text: instName ? 'No second-opinion or e-consultation program page was found for this institution.' : 'No institution was identified, so no consultation program could be looked up.', evidenceIds: [], url: null },
         howToReach: reach,
-      };
-    });
+    };
+    return [chain];
   });
 
-  const chains = perAuthor.flat().slice(0, MAX_CHAINS);
-  const used = new Set(chains.flatMap((c) => [c.paper.evidenceId, ...c.author.evidenceIds, ...c.institution.evidenceIds,
+  const seenIds = new Map<string, number>();
+  const chains = groupChainsByAuthor(perAuthor.flat()).slice(0, MAX_CHAINS).map((c) => {
+    const n = (seenIds.get(c.id) ?? 0) + 1;
+    seenIds.set(c.id, n);
+    return n === 1 ? c : { ...c, id: `${c.id}-${n}` };
+  });
+  const used = new Set(chains.flatMap((c) => [...(c.papers ?? [c.paper]).map((p) => p.evidenceId), ...c.author.evidenceIds, ...c.institution.evidenceIds,
     ...c.seesPatients.evidenceIds, ...c.consultation.evidenceIds, ...c.howToReach.map((r) => r.evidenceId)]));
   const trace = {
     caseId: input.caseId,

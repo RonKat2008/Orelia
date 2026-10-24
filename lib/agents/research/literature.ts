@@ -3,6 +3,7 @@ import { runResearch, type ProvenanceTracker } from "./shared";
 import type { ResearchAgent } from "./types";
 import { HAIKU } from "@/lib/agents/models";
 import type { Evidence, Resource } from "@/lib/contracts";
+import { paperEvidence } from "@/lib/identity/paper-evidence";
 import { affiliationEvidence } from "@/lib/identity/affiliation-evidence";
 
 const INSTRUCTIONS = `ROLE: Literature agent. Identify people who publish most often on the patient's disease, using PubMed results from tools.
@@ -45,12 +46,17 @@ const RESTATED = /^(.+?) is listed as an author of PMID (\d+)\./;
 export function stampAffiliations(record: Resource, cited: readonly Evidence[], tracker: ProvenanceTracker): Evidence[] {
   if (record.kind !== "expert") return [];
   const out: Evidence[] = [];
+  const pmids = new Set<string>();
   for (const e of cited) {
-    if (out.length >= MAX_AFFILIATION_ROWS || e.sourceKind !== "pubmed") continue;
+    if (pmids.size >= MAX_AFFILIATION_ROWS || e.sourceKind !== "pubmed") continue;
     const m = RESTATED.exec(e.claim);
     if (!m) continue;
+    pmids.add(m[2]!);
     const row = affiliationEvidence({ name: m[1]!, pmid: m[2]!, affiliation: tracker.paperAffiliation(m[1]!, m[2]!), fetchedAt: e.fetchedAt });
     if (row && !out.some((o) => o.id === row.id)) out.push(row);
+    const meta = tracker.paperMeta(m[2]!);
+    const paper = meta ? paperEvidence({ name: m[1]!, pmid: m[2]!, ...meta, fetchedAt: e.fetchedAt }) : null;
+    if (paper && !out.some((o) => o.id === paper.id)) out.push(paper);
   }
   return out;
 }

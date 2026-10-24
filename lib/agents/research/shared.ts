@@ -17,6 +17,7 @@ import {
 import { contactPointEvidence, isContactPointClaimType, type ContactPoint } from "@/lib/contact-finder/contact-points";
 import { checkClaimGrounding } from "./grounding";
 import { isAffiliationClaimType } from "@/lib/identity/affiliation-evidence";
+import { isPaperClaimType } from "@/lib/identity/paper-evidence";
 import type { SourcePorts } from "./source-ports";
 import type { ResearchContext } from "./types";
 
@@ -72,6 +73,7 @@ export class ProvenanceTracker {
   private readonly recordTexts = new Map<string, string>();
   private readonly contactPoints = new Map<string, ContactPoint[]>();
   private readonly paperAffiliations = new Map<string, string>();
+  private readonly papers = new Map<string, { title: string; journal?: string; year?: number }>();
   private corpus = "";
 
   constructor(private readonly now: () => Date = () => new Date()) {}
@@ -153,6 +155,15 @@ export class ProvenanceTracker {
     this.paperAffiliations.set(`${nameKey(name)}|${pmid}`, affiliation);
   }
 
+  /** A paper's title / journal / year exactly as the PubMed tool returned them (raw; sanitize before use). */
+  rememberPaper(pmid: string, paper: { title: string; journal?: string; year?: number }): void {
+    this.papers.set(pmid, paper);
+  }
+
+  paperMeta(pmid: string): { title: string; journal?: string; year?: number } | undefined {
+    return this.papers.get(pmid);
+  }
+
   paperAffiliation(name: string, pmid: string): string | undefined {
     return this.paperAffiliations.get(`${nameKey(name)}|${pmid}`);
   }
@@ -230,6 +241,10 @@ export function finalizeOutput(
     }
     if (isAffiliationClaimType(item.claimType)) {
       onDrop(item, "affiliations are stamped from tool output by code, never by a model");
+      continue;
+    }
+    if (isPaperClaimType(item.claimType)) {
+      onDrop(item, "paper citations are stamped from tool output by code, never by a model");
       continue;
     }
     let claim = item.claim;

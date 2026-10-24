@@ -1,7 +1,7 @@
 /**
  * Research-to-care contract (FROZEN for the rd-experts lane; UI and backend both code against it).
  *
- * A chain answers, for one paper about the patient's disease and one of its authors:
+ * A chain answers, for one author of papers about the patient's disease (all their papers listed together):
  *   Paper -> author -> current institution -> does this person see patients? -> is there a professional
  *   e-consultation / second-opinion route? -> how to reach them.
  * Every conclusion (affiliation, sees-patients, consultation, contact route) cites code-stamped Evidence rows by id.
@@ -44,16 +44,23 @@ export const reachRouteSchema = z.object({
 });
 export type ReachRoute = z.infer<typeof reachRouteSchema>;
 
+export const chainPaperSchema = z.object({
+  pmid: z.string().regex(/^\d+$/),
+  title: z.string().min(1).max(500),
+  journal: z.string().min(1).max(200).optional(),
+  year: z.number().int().optional(),
+  url: z.url(),
+  evidenceId: z.string().min(1),
+});
+export type ChainPaper = z.infer<typeof chainPaperSchema>;
+
 export const expertChainSchema = z.object({
-  /** `${authorSlug}:${pmid}` — stable per trace. */
+  /** One chain per author identity (normalised name + institution): the author slug, suffixed when it repeats. */
   id: z.string().min(1),
-  paper: z.object({
-    pmid: z.string().regex(/^\d+$/),
-    title: z.string().min(1).max(500),
-    year: z.number().int().optional(),
-    url: z.url(),
-    evidenceId: z.string().min(1),
-  }),
+  /** The author's newest paper in this chain (always also papers[0] on traces written since grouping). */
+  paper: chainPaperSchema,
+  /** Every paper of this author in the trace, newest first. Absent on traces saved before grouping: use chainPapers(). */
+  papers: z.array(chainPaperSchema).min(1).max(8).optional(),
   author: z.object({
     name: z.string().min(1),
     /** Resource id of the matching expert record on this case, when one exists. */
@@ -72,6 +79,9 @@ export const expertChainSchema = z.object({
   howToReach: z.array(reachRouteSchema).max(6),
 });
 export type ExpertChain = z.infer<typeof expertChainSchema>;
+
+/** All papers of a chain, newest first (older saved traces carry only `paper`). */
+export const chainPapers = (chain: ExpertChain): ChainPaper[] => (chain.papers?.length ? chain.papers : [chain.paper]);
 
 /** Evidence row written by the tracer: id required, scoped to the resource it describes. */
 export const traceEvidenceSchema = evidenceSchema.extend({

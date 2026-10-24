@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { vi } from "vitest";
 import { affiliationEvidence, parseAffiliationEvidence, sanitizeAffiliation, AFFILIATION_CLAIM_TYPE } from "@/lib/identity/affiliation-evidence";
+import { PAPER_CLAIM_TYPE, parsePaperEvidence } from "@/lib/identity/paper-evidence";
 import { createFixturePorts } from "@/lib/agents/research/fixture-ports";
 import { literatureAgent } from "@/lib/agents/research/literature";
 import { finalizeOutput, ProvenanceTracker } from "@/lib/agents/research/shared";
@@ -59,5 +60,35 @@ describe("literature agent stamps affiliations from the PubMed tool record (offl
       expect(row.claim).not.toMatch(/@/);
       expect(result.records.some((r) => r.evidenceRefs.includes(row.id!))).toBe(true);
     }
+  });
+});
+
+describe("literature agent stamps real paper citations (offline fixtures)", () => {
+  beforeEach(() => vi.stubEnv("WAYFINDER_OFFLINE", "1"));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("adds publication.citation rows with a real title, cited by the expert record", async () => {
+    const result = await literatureAgent.run({ diseaseName: "Vascular Ehlers-Danlos syndrome", homeState: "OH", goals: ["second_opinion"] }, { ports: createFixturePorts(), store: new MemoryRunStore(), caseId: "c" });
+    expect(result.status).toBe("ok");
+    if (result.status !== "ok") return;
+    const rows = result.evidence.filter((e) => e.claimType === PAPER_CLAIM_TYPE);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const paper = parsePaperEvidence(row)!;
+      expect(paper.title.length).toBeGreaterThan(5);
+      expect(paper.title).not.toMatch(/^PubMed article/);
+      expect(result.records.some((r) => r.evidenceRefs.includes(row.id!))).toBe(true);
+    }
+    expect(rows.some((r) => parsePaperEvidence(r)?.journal)).toBe(true);
+  });
+
+  it("never accepts a model-written publication.citation row", () => {
+    const tracker = new ProvenanceTracker(() => new Date(AT));
+    tracker.collect("pubmed", { sourceUrl: "https://pubmed.ncbi.nlm.nih.gov/123/", name: "Ada Example" });
+    const out = finalizeOutput({
+      records: [{ kind: "expert", id: "expert:ada-example", name: "Ada Example", evidenceRefs: ["https://pubmed.ncbi.nlm.nih.gov/123/"] }],
+      evidence: [{ claimType: PAPER_CLAIM_TYPE, claim: 'PMID 123 is titled "Fake".', sourceUrl: "https://pubmed.ncbi.nlm.nih.gov/123/" }],
+    }, tracker, { allowedKinds: ["expert"] });
+    expect(out.evidence.filter((e) => e.claimType === PAPER_CLAIM_TYPE)).toEqual([]);
   });
 });

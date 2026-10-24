@@ -96,7 +96,7 @@ describe('safety review: affiliation claim cites the evidence that supports it',
     const experts = [{ id: 'e1', name: 'Ada Example', profile: { paperCount: 3, recentPaperCount: 2, state: 'IL' } }];
     const evidence = [ev(), ev({ claim: `Ada Example is listed as an author of A study; listed affiliations: ${AFFIL}`, sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/222/' })];
     const t = await run(input({ experts, evidence }), nppes([provider()]), exa([]));
-    expect(t.chains.length).toBe(2);
+    expect(t.chains.length).toBe(1);
     for (const c of t.chains) {
       const row = t.evidence.find((e) => e.claimType === 'experts.affiliation' && c.institution.evidenceIds.includes(e.id))!;
       expect(row.claim).toBe(`PMID 222 lists Ada Example with the affiliation ${INST}.`);
@@ -140,7 +140,8 @@ describe('sees patients', () => {
   });
   it('port failure degrades to unknown without throwing', async () => {
     const t = await run(input(), nppes(new Error('boom')), exa(new Error('down')));
-    expect(t.chains.length).toBe(2);
+    expect(t.chains.length).toBe(1);
+    expect(t.chains[0]!.papers).toHaveLength(2);
     expect(t.chains[0]!.seesPatients.verdict).toBe('unknown');
     expect(t.chains[0]!.consultation.verdict).toBe('unknown');
     expect(t.chains[0]!.institution.name).toBe(INST);
@@ -197,9 +198,10 @@ describe('howToReach and schema', () => {
     const t = await run(input({ experts, evidence }), nppes([]), exa([consultPage]));
     expect(expertTraceSchema.safeParse(t).success).toBe(true);
     expect(new Set(t.chains.map((c) => c.author.name)).size).toBe(6);
-    expect(t.chains.length).toBe(12);
+    expect(t.chains.length).toBe(6);
+    expect(t.chains.every((c) => c.papers?.length === 3)).toBe(true);
     expect(t.evidence.every((e) => e.id.startsWith('xp:') && e.fetchedAt === NOW.toISOString())).toBe(true);
-    expect(t.chains[0]!.id).toMatch(/^persona-example:\d+$/);
+    expect(t.chains[0]!.id).toBe('persona-example');
   });
   it('memory store round-trips a valid trace', async () => {
     const store = new MemoryExpertTraceStore();
@@ -207,5 +209,51 @@ describe('howToReach and schema', () => {
     expect(await store.latest('case-1')).toBeNull();
     await store.save(t);
     expect(await store.latest('case-1')).toEqual(t);
+  });
+});
+
+describe('paper titles and one chain per author', () => {
+  const cite = (pmid: string, title: string, journal: string, year: number, targetId = 'e1') => ev({
+    targetId, claimType: 'publication.citation', claim: `PMID ${pmid} is titled "${title}" (${journal}, ${year}).`,
+    sourceUrl: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+  });
+  it('shows the stored title, journal and year instead of "PubMed article <PMID>"', async () => {
+    const evidence = [ev(), ev({ claim: 'Ada Example is listed as an author of PMID 222.', sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/222/' }),
+      cite('111', 'Older paper', 'Genet Med', 2021), cite('222', 'Newer paper', 'J Vasc Surg', 2025)];
+    const t = await run(input({ evidence }), nppes([]), exa([]));
+    expect(t.chains).toHaveLength(1);
+    expect(t.chains[0]!.papers!.map((p) => [p.pmid, p.title, p.journal, p.year])).toEqual([
+      ['222', 'Newer paper', 'J Vasc Surg', 2025], ['111', 'Older paper', 'Genet Med', 2021]]);
+    expect(t.chains[0]!.paper.pmid).toBe('222');
+    expect(JSON.stringify(t)).not.toContain('PubMed article');
+  });
+  it('falls back to the PMID label only when no title is stored', async () => {
+    const t = await run(input(), nppes([]), exa([]));
+    expect(t.chains[0]!.papers!.map((p) => p.title)).toEqual(['PubMed article 222', 'PubMed article 111']);
+  });
+  it('merges two expert records of the same person at the same institution into one chain, keeping every source', async () => {
+    const experts = [
+      { id: 'e1', name: 'Ada Example', profile: { paperCount: 3, recentPaperCount: 2, affiliation: AFFIL, state: 'IL' } },
+      { id: 'e2', name: 'Ada  Example', profile: { paperCount: 1, recentPaperCount: 1, affiliation: AFFIL, state: 'IL' } },
+    ];
+    const evidence = [ev(), cite('111', 'First', 'Genet Med', 2022),
+      ev({ targetId: 'e2', claim: 'Ada Example is listed as an author of PMID 333.', sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/333/' }), cite('333', 'Third', 'Lancet', 2024, 'e2')];
+    const t = await run(input({ experts, evidence }), nppes([provider()]), exa([consultPage]));
+    expect(t.chains).toHaveLength(1);
+    const c = t.chains[0]!;
+    expect(c.papers!.map((p) => p.pmid)).toEqual(['333', '111']);
+    for (const p of c.papers!) expect(t.evidence.some((e) => e.id === p.evidenceId)).toBe(true);
+    expect(c.author.evidenceIds.length).toBeGreaterThanOrEqual(2);
+    expect(expertTraceSchema.safeParse(t).success).toBe(true);
+  });
+  it('keeps same-named authors at different institutions apart', async () => {
+    const experts = [
+      { id: 'e1', name: 'Ada Example', profile: { affiliation: AFFIL, state: 'IL' } },
+      { id: 'e2', name: 'Ada Example', profile: { affiliation: 'Division of Genetics, Southgate Health System, Austin, TX, USA.', state: 'TX' } },
+    ];
+    const evidence = [ev(), ev({ targetId: 'e2', claim: 'Ada Example is listed as an author of PMID 444.', sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/444/' })];
+    const t = await run(input({ experts, evidence }), nppes([]), exa([]));
+    expect(t.chains).toHaveLength(2);
+    expect(new Set(t.chains.map((c) => c.id)).size).toBe(2);
   });
 });

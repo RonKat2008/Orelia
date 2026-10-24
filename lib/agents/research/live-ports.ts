@@ -79,7 +79,7 @@ function toAuthorHits(
           if (!article) return [];
           const key = `${a.lastName}|${a.firstName}`.toLowerCase();
           const onPaper = article.authors.find((x) => `${x.lastName}|${x.firstName}`.toLowerCase() === key)?.affiliations[0];
-          return [{ pmid, title: article.title, ...(article.year ? { year: article.year } : {}), ...(onPaper ? { affiliation: onPaper } : {}) }];
+          return [{ pmid, title: article.title, ...(article.journal ? { journal: article.journal } : {}), ...(article.year ? { year: article.year } : {}), ...(onPaper ? { affiliation: onPaper } : {}) }];
         }),
       };
       return [hit];

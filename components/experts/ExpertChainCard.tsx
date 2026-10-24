@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
-import type { ExpertChain, ExpertTrace } from "@/lib/experts/contract";
+import { chainPapers, type ExpertChain, type ExpertTrace } from "@/lib/experts/contract";
+import { formatCitation } from "@/lib/identity/paper-evidence";
 import { cn } from "@/lib/ui/cn";
 import { ChainConnector } from "./ChainConnector";
 import { SourceLinks } from "./SourceLinks";
@@ -38,14 +39,20 @@ function ExtLink({ href, children }: { href: string | null; children: ReactNode 
 }
 
 export function ExpertChainCard({ chain, trace, index }: { chain: ExpertChain; trace: ExpertTrace; index: number }) {
-  const { paper, author, institution, seesPatients, consultation, howToReach } = chain;
-  const paperHref = safeHref(paper.url) ?? pubmedUrl(paper.pmid);
+  const { author, institution, seesPatients, consultation, howToReach } = chain;
+  const papers = chainPapers(chain);
   const nodes = [
-    <Node key="paper" title={CHAIN_NODES[0].title} index={0}>
-      <h4 className="m-0 font-display text-body font-normal text-ink text-pretty">{paper.title}</h4>
-      <p className="m-0 text-small text-ink-2">{paper.year ? `${paper.year} · ` : ""}PMID {paper.pmid}</p>
-      <ExtLink href={paperHref}>PubMed record</ExtLink>
-      <SourceLinks trace={trace} ids={[paper.evidenceId]} />
+    <Node key="paper" title={papers.length > 1 ? `${CHAIN_NODES[0].title}s` : CHAIN_NODES[0].title} index={0}>
+      <ul className="m-0 grid list-none gap-3 p-0" aria-label="Papers by this author">
+        {papers.map((paper) => (
+          <li key={paper.pmid} className="grid gap-1">
+            <h4 className="m-0 font-display text-body font-normal text-ink text-pretty">{formatCitation(paper)}</h4>
+            <p className="m-0 text-small text-ink-2">PMID {paper.pmid}</p>
+            <ExtLink href={safeHref(paper.url) ?? pubmedUrl(paper.pmid)}>PubMed record</ExtLink>
+            <SourceLinks trace={trace} ids={[paper.evidenceId]} />
+          </li>
+        ))}
+      </ul>
     </Node>,
     <Node key="author" title={CHAIN_NODES[1].title} index={1}>
       <h4 className="m-0 font-display text-body font-normal text-ink">{author.name}</h4>
@@ -93,7 +100,7 @@ export function ExpertChainCard({ chain, trace, index }: { chain: ExpertChain; t
   ];
 
   return (
-    <article aria-label={`${author.name}, from PMID ${paper.pmid}`} className="min-w-0">
+    <article aria-label={`${author.name}, ${papers.length} ${papers.length === 1 ? "paper" : "papers"}`} className="min-w-0">
       <ol
         className={cn(
           "m-0 grid list-none grid-cols-[minmax(0,1fr)] items-stretch gap-2 p-0",

@@ -9,6 +9,7 @@ import { deterministicUuid } from '@/lib/agents/verifier';
 import { enrichInstitutions } from '@/lib/contact-finder/enrich';
 import { isContactPointClaimType } from '@/lib/contact-finder/contact-points';
 import { affiliationEvidence, isAffiliationClaimType } from '@/lib/identity/affiliation-evidence';
+import { isPaperClaimType, paperEvidence } from '@/lib/identity/paper-evidence';
 import type { ExpertTrace } from './contract';
 import { traceExperts, type TraceInput } from './trace';
 
@@ -24,10 +25,11 @@ export interface RefreshDeps {
 
 export interface RefreshResult {
   trace: ExpertTrace;
-  added: { affiliations: number; contactPoints: number };
+  added: { affiliations: number; contactPoints: number; papers: number };
 }
 
 const MAX_AFFILIATIONS_PER_EXPERT = 2;
+const MAX_PAPER_ROWS_PER_EXPERT = 5;
 const AUTHOR_SEARCH_LIMIT = 15;
 const PUBMED = /^https:\/\/pubmed\.ncbi\.nlm\.nih\.gov\/(\d+)\/?$/;
 
@@ -60,6 +62,28 @@ export function affiliationAdditions(caseId: string, experts: readonly CaseExper
   });
 }
 
+const citedPmids = (x: CaseExpert): string[] => [...new Set(x.evidence.flatMap((e) => (e.sourceKind === 'pubmed' ? [PUBMED.exec(e.sourceUrl)?.[1]] : [])).filter((p): p is string => !!p))];
+const hasPaperRows = (x: CaseExpert, pmid: string): boolean => x.evidence.some((e) => isPaperClaimType(e.claimType) && e.sourceUrl === `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`);
+
+/** True when an expert cites a PubMed paper that has no stored title / journal / year row yet. */
+export const needsPaperRows = (x: CaseExpert): boolean => citedPmids(x).some((p) => !hasPaperRows(x, p));
+
+/** publication.citation rows (title, journal, year) for the PubMed papers an expert already cites, from one PubMed author search. */
+export function paperAdditions(caseId: string, experts: readonly CaseExpert[], hits: readonly PubmedAuthorHit[], fetchedAt: string): EvidenceAddition[] {
+  const byName = new Map<string, PubmedAuthorHit[]>();
+  for (const h of hits) byName.set(nameKey(h.name), [...(byName.get(nameKey(h.name)) ?? []), h]);
+  return experts.flatMap((x): EvidenceAddition[] => {
+    const matches = byName.get(nameKey(x.name)) ?? [];
+    if (matches.length !== 1) return []; // none, or two namesakes: never guess
+    const rows = citedPmids(x).filter((p) => !hasPaperRows(x, p)).slice(0, MAX_PAPER_ROWS_PER_EXPERT).flatMap((pmid) => {
+      const paper = matches[0]!.papers.find((p) => p.pmid === pmid);
+      const row = paper ? paperEvidence({ name: x.name, pmid, title: paper.title, journal: paper.journal, year: paper.year, fetchedAt }) : null;
+      return row ? [toRow(row, stableId(caseId, { targetKind: 'expert', targetId: x.id }, row))] : [];
+    });
+    return rows.length ? [{ targetKind: 'expert', targetId: x.id, evidence: rows }] : [];
+  });
+}
+
 /** Contact point rows the tracer stamped on an expert (NPPES practice phone) that the expert does not have yet. */
 export function traceContactAdditions(caseId: string, trace: ExpertTrace, experts: readonly CaseExpert[]): EvidenceAddition[] {
   return experts.flatMap((x): EvidenceAddition[] => {
@@ -78,10 +102,12 @@ export async function refreshResearch(caseId: string, diseaseName: string, deps:
 
   // 1. Author affiliations (PubMed, one search).
   const needAffiliation = experts.filter((x) => !x.evidence.some((e) => isAffiliationClaimType(e.claimType)));
-  const hits = needAffiliation.length
+  const needPapers = experts.filter(needsPaperRows);
+  const hits = needAffiliation.length || needPapers.length
     ? await deps.ports.pubmed.searchAuthors({ disease: diseaseName, limit: AUTHOR_SEARCH_LIMIT }).catch(() => [] as PubmedAuthorHit[])
     : [];
   const affiliations = affiliationAdditions(caseId, needAffiliation, hits, fetchedAt);
+  const papers = paperAdditions(caseId, needPapers, hits, fetchedAt);
 
   // 2. Institution intake contact points (Exa, institution's own site only).
   const institutions = shortlist.filter((i) => i.targetKind === 'institution');
@@ -90,7 +116,7 @@ export async function refreshResearch(caseId: string, diseaseName: string, deps:
     targetKind: 'institution', targetId, evidence: rows.map((r) => toRow(r, stableId(caseId, { targetKind: 'institution', targetId }, r))),
   }));
 
-  await deps.persist.appendEvidence(caseId, [...affiliations, ...contacts]);
+  await deps.persist.appendEvidence(caseId, [...affiliations, ...papers, ...contacts]);
 
   // 3. Trace (NPPES + Exa), then keep the tracer's code-stamped expert phone rows on the experts themselves.
   const input = await deps.loadTraceInput(caseId);
@@ -101,5 +127,5 @@ export async function refreshResearch(caseId: string, diseaseName: string, deps:
   const saved = await deps.saveTrace(trace);
   if (!saved) throw new Error('The trace could not be saved');
   const count = (adds: readonly EvidenceAddition[]) => adds.reduce((n, a) => n + a.evidence.length, 0);
-  return { trace: saved, added: { affiliations: count(affiliations), contactPoints: count(contacts) + count(expertPhones) } };
+  return { trace: saved, added: { affiliations: count(affiliations), contactPoints: count(contacts) + count(expertPhones), papers: count(papers) } };
 }

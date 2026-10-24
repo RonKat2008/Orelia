@@ -1,17 +1,17 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { AppShell, CASE_NAV } from "@/components/shell";
+import { Skeleton } from "@/components/ui/feedback";
 import { JourneyStepper } from "./JourneyStepper";
 import { loadJourney, type JourneyData } from "./load";
 import { resolveJourney, type JourneyPlan } from "./model";
-import { LoadingSkeleton } from "@/components/threads/states";
-import "./journey.css";
 
 const waiting: JourneyPlan = {
   current: "intake",
   steps: [],
-  nextLabel: "Finish intake",
-  nextHref: "/",
+  nextLabel: "Finish your case",
+  nextHref: "/start",
   documentsHref: "/cases/pending/documents",
   notes: [],
 };
@@ -21,6 +21,22 @@ const JourneyContext = createContext<{ plan: JourneyPlan; data: JourneyData | nu
   data: null,
 });
 
+function RailSkeleton() {
+  return (
+    <div role="status" aria-busy="true" className="grid gap-4">
+      <span className="sr-only">Loading case progress</span>
+      <Skeleton className="h-2 w-full" />
+      {[0, 1, 2, 3, 4, 5].map((n) => (
+        <div key={n} className="flex items-center gap-3">
+          <Skeleton className="size-8 rounded-pill" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Case shell: AppShell with the journey rail. Child pages render inside <main id="main">. */
 export function JourneyShell({ caseId, children }: { caseId: string; children: ReactNode }) {
   const [plan, setPlan] = useState<JourneyPlan>(waiting);
   const [data, setData] = useState<JourneyData | null>(null);
@@ -44,16 +60,15 @@ export function JourneyShell({ caseId, children }: { caseId: string; children: R
     };
   }, [caseId]);
 
+  const sidebar = data ? plan.steps.length > 0 ? <JourneyStepper plan={plan} /> : null : <RailSkeleton />;
+
   return (
     <JourneyContext.Provider value={{ plan, data }}>
-      <div className="journey" data-journey={plan.current} data-case-id={caseId}>
-        {data ? (
-          plan.steps.length > 0 ? <JourneyStepper plan={plan} /> : null
-        ) : (
-          <LoadingSkeleton label="Loading case progress" />
-        )}
-        {children}
-      </div>
+      <AppShell nav={CASE_NAV} sidebar={sidebar}>
+        <div data-journey={plan.current} data-case-id={caseId}>
+          {children}
+        </div>
+      </AppShell>
     </JourneyContext.Provider>
   );
 }

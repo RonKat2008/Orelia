@@ -102,7 +102,8 @@ export const createDocumentSchema = documentMetadataSchema.extend({
 }).strict();
 export type CreateDocumentBody = z.infer<typeof createDocumentSchema>;
 
-export const updateDocumentSchema = documentMetadataSchema.partial().strict();
+/** Partial update: the docType default must not apply (a title edit would silently reset the type to 'other'). */
+export const updateDocumentSchema = documentMetadataSchema.extend({ docType: libraryDocTypeSchema }).partial().strict();
 
 /** What the API returns for a library document (never the blob URL, never the text). */
 export interface LibraryDocument {

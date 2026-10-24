@@ -5,10 +5,9 @@ import { JudgeOnly, PageHeader } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
 
 /**
- * Heading level for case sub-page titles. Lane A part 2 removes the shell's h1 (the disease name); until then a page
- * title must be an h2 so each page has exactly one h1. Flip this to "h1" when part 2 lands (one line, all pages).
+ * Heading level for case sub-page titles. The case shell prints no h1 (lane A part 2), so each page title is the h1.
  */
-export const CASE_PAGE_HEADING = "h2" as "h1" | "h2";
+export const CASE_PAGE_HEADING = "h1" as "h1" | "h2";
 /** Section headings under the page title (one level below it). */
 export const CASE_SECTION_HEADING = CASE_PAGE_HEADING === "h1" ? "h2" : "h3";
 /** Sub-section headings (two levels below the page title). */

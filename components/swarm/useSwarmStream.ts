@@ -97,7 +97,7 @@ function reducer(state: SwarmState, action: Action): SwarmState {
 
 const PREVIEW_AFTER_MS = 6000;
 
-/** Live research swarm: SSE from the stream route, with a typed preview when no service answers. */
+/** Live research swarm: SSE from the stream route, with a labelled typed preview only in offline mode. */
 export function useSwarmStream(caseId: string) {
   const [state, dispatch] = useReducer(reducer, INITIAL);
   const [attempt, setAttempt] = useState(0);
@@ -110,8 +110,15 @@ export function useSwarmStream(caseId: string) {
     let finished = false;
     const stream = new EventSource(`/api/cases/${caseId}/stream`);
 
+    const offline = ["1", "true"].includes((process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "").trim().toLowerCase());
     const startPreview = () => {
       if (previewing || sawEvent) return;
+      if (!offline) {
+        // Live case: never show invented progress. Report the lost connection instead.
+        stream.close();
+        dispatch({ type: "connection", connection: "lost" });
+        return;
+      }
       previewing = true;
       stream.close();
       dispatch({ type: "preview" });
@@ -154,10 +161,10 @@ export function useSwarmStream(caseId: string) {
       else dispatch({ type: "connection", connection: stream.readyState === EventSource.CLOSED ? "lost" : "reconnecting" });
     });
 
-    const giveUp = window.setTimeout(startPreview, PREVIEW_AFTER_MS);
+    const giveUp = offline ? window.setTimeout(startPreview, PREVIEW_AFTER_MS) : undefined;
 
     return () => {
-      window.clearTimeout(giveUp);
+      if (giveUp !== undefined) window.clearTimeout(giveUp);
       stream.close();
       stopMock();
     };

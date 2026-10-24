@@ -117,6 +117,12 @@ export function groupDocuments(
   return order.map((kind) => ({ kind, items: groups.get(kind) ?? [] }));
 }
 
+/** Sample documents only appear when the app is explicitly offline; live cases never fall back silently. */
+function offlinePreview(): boolean {
+  const raw = process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "";
+  return ["1", "true"].includes(raw.trim().toLowerCase());
+}
+
 export type DocumentsLoad =
   | { status: "ready"; documents: CaseDocument[]; preview: boolean }
   | { status: "empty"; preview: boolean }
@@ -128,7 +134,7 @@ export async function loadDocuments(
 ): Promise<DocumentsLoad> {
   try {
     const response = await fetchImpl(`/api/cases/${caseId}/documents`);
-    if (response.status === 404) {
+    if (response.status === 404 && offlinePreview()) {
       return previewDocuments.length
         ? { status: "ready", documents: previewDocuments, preview: true }
         : { status: "empty", preview: true };
@@ -144,7 +150,8 @@ export async function loadDocuments(
     if (documents.length === 0) return { status: "empty", preview: false };
     return { status: "ready", documents, preview: false };
   } catch {
-    return { status: "ready", documents: previewDocuments, preview: true };
+    if (offlinePreview()) return { status: "ready", documents: previewDocuments, preview: true };
+    return { status: "error", message: "Documents could not be loaded." };
   }
 }
 
@@ -184,9 +191,9 @@ export async function addPatientNote(
         preview: false,
       };
     }
-    if (response.status !== 404) return { error: "The note was not saved." };
+    if (response.status !== 404 || !offlinePreview()) return { error: "The note was not saved." };
   } catch {
-    // API from task 25 may not be mounted yet.
+    if (!offlinePreview()) return { error: "The note was not saved. Check your connection and try again." };
   }
   return {
     document: noteToDocument(note, `note-local-${Date.now()}`),

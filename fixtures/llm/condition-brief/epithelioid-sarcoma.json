@@ -1,0 +1,231 @@
+{
+  "statements": [
+    {
+      "id": "s1",
+      "section": "rarity",
+      "text": "Epithelioid sarcoma is a rare cancerous tumor.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "gard:10181-epithelioid-sarcoma"
+      ]
+    },
+    {
+      "id": "s2",
+      "section": "mechanism",
+      "text": "Epithelioid sarcoma is characterized by loss of SMARCB1/INI1 (integrase interactor 1) or other proteins of the SWI/SNF complex.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s3",
+      "section": "mechanism",
+      "text": "Epithelioid sarcoma usually begins as a painless, firm growth or bump that may be accompanied by an open wound (ulceration) in the skin covering the growth.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "gard:10181-epithelioid-sarcoma"
+      ]
+    },
+    {
+      "id": "s4",
+      "section": "mechanism",
+      "text": "Epithelioid sarcoma is known for aggressive behavior, including a high recurrence rate and regional lymph node metastases.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s5",
+      "section": "natural_history",
+      "text": "Epithelioid sarcoma most often occurs in the soft tissue of the fingers, hands and forearms of young adults, with a peak incidence at 35 years of age.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "gard:10181-epithelioid-sarcoma",
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s6",
+      "section": "natural_history",
+      "text": "Two distinct types of epithelioid sarcoma, proximal and distal, are distinguished with varying biology and treatment outcomes.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s8",
+      "section": "natural_history",
+      "text": "Among staged patients with epithelioid sarcoma, lymph node metastasis occurs in approximately 17.5% of cases.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42612459"
+      ]
+    },
+    {
+      "id": "s9",
+      "section": "natural_history",
+      "text": "Locoregional recurrence within the ipsilateral limb occurs in 27% of epithelioid sarcoma patients at a median time of 56 months post-primary treatment.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42748586"
+      ]
+    },
+    {
+      "id": "s10",
+      "section": "natural_history",
+      "text": "Distant metastases in epithelioid sarcoma develop in 21% of patients, with all occurring in the chest.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42748586"
+      ]
+    },
+    {
+      "id": "s11",
+      "section": "natural_history",
+      "text": "At presentation, 31% of epithelioid sarcoma patients had metastases, the majority of which were lymph node metastases identified on radionuclide imaging with PET CT.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42748586"
+      ]
+    },
+    {
+      "id": "s12",
+      "section": "studies",
+      "text": "Epithelioid sarcoma is diagnosed by clinical examination and by testing a small sample of the tumor (biopsy) in a laboratory.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "gard:10181-epithelioid-sarcoma"
+      ]
+    },
+    {
+      "id": "s14",
+      "section": "studies",
+      "text": "Neo-adjuvant or adjuvant radiotherapy may be recommended for epithelioid sarcoma, as it reduces the local recurrence rate.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s15",
+      "section": "studies",
+      "text": "Sentinel lymph node biopsy should be considered in epithelioid sarcoma patients.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s16",
+      "section": "research",
+      "text": "Doxorubicin-based regimens are recommended for advanced epithelioid sarcoma.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s17",
+      "section": "research",
+      "text": "Tazemetostat, an EZH2 methyltransferase inhibitor, has shown promising results in epithelioid sarcoma patients and was approved by the FDA in 2020 for use in patients with advanced epithelioid sarcoma.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32751241",
+        "pubmed:38520556"
+      ]
+    },
+    {
+      "id": "s18",
+      "section": "research",
+      "text": "Novel therapies, including immunotherapy, are still being investigated for epithelioid sarcoma.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "s19",
+      "section": "registries",
+      "text": "A prospective Italian observational study aimed to provide a description of the population affected by epithelioid sarcoma.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT03099681"
+      ]
+    },
+    {
+      "id": "s20",
+      "section": "registries",
+      "text": "Clinical trials are evaluating immunotherapy combinations and novel agents for epithelioid sarcoma, including pembrolizumab and ONO-4538HSC.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT07089992",
+        "ctgov:NCT07734116"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What genetic changes are associated with epithelioid sarcoma?",
+      "statementIds": [
+        "s2"
+      ]
+    },
+    {
+      "id": "q2",
+      "text": "What are the typical early signs of epithelioid sarcoma?",
+      "statementIds": [
+        "s3"
+      ]
+    },
+    {
+      "id": "q3",
+      "text": "Why is epithelioid sarcoma considered aggressive?",
+      "statementIds": [
+        "s4"
+      ]
+    },
+    {
+      "id": "q4",
+      "text": "What is the difference between proximal and distal types of epithelioid sarcoma?",
+      "statementIds": [
+        "s6"
+      ]
+    },
+    {
+      "id": "q5",
+      "text": "How is epithelioid sarcoma diagnosed?",
+      "statementIds": [
+        "s12"
+      ]
+    },
+    {
+      "id": "q6",
+      "text": "What are the main treatment approaches for localized epithelioid sarcoma?",
+      "statementIds": [
+        "s14",
+        "s15"
+      ]
+    },
+    {
+      "id": "q7",
+      "text": "What medications are being used or studied for advanced epithelioid sarcoma?",
+      "statementIds": [
+        "s16",
+        "s17",
+        "s18"
+      ]
+    },
+    {
+      "id": "q8",
+      "text": "What is the role of lymph node evaluation in epithelioid sarcoma management?",
+      "statementIds": [
+        "s8",
+        "s15"
+      ]
+    }
+  ]
+}

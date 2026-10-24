@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ctgovPhaseDesign, designCeiling, pubmedDesign } from "@/lib/condition-brief/sources/design";
+import { ctgovPhaseDesign, pubmedDesign } from "@/lib/condition-brief/sources/design";
+import { designCeiling } from "@/lib/condition-brief/tagging";
 import { sourceDesignSchema } from "@/lib/condition-brief/contract";
 
 describe("pubmedDesign", () => {

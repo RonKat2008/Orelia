@@ -3,33 +3,10 @@
  * Policy lives in the rd-research brief and lib/condition-brief/tagging.ts; this file only maps raw
  * registry/PubMed labels to SourceDesign and a SourceDesign to its evidence-level ceiling.
  */
-import type { EvidenceLevel, SourceDesign } from "../contract";
+import type { SourceDesign } from "../contract";
 
-const ESTABLISHED: ReadonlySet<SourceDesign> = new Set([
-  "guideline",
-  "consensus",
-  "systematic_review",
-  "meta_analysis",
-  "genereviews",
-  "reference_page",
-]);
-const EMERGING: ReadonlySet<SourceDesign> = new Set([
-  "narrative_review",
-  "primary_study",
-  "preprint",
-  "trial_early",
-  "trial_late",
-  "grant",
-  "registry",
-]);
-
-/** Ceiling of a design: established | emerging | uncertain (case_report, other, unknown). */
-export function designCeiling(design: SourceDesign | undefined | null): EvidenceLevel {
-  if (!design) return "uncertain";
-  if (ESTABLISHED.has(design)) return "established";
-  if (EMERGING.has(design)) return "emerging";
-  return "uncertain";
-}
+/** Canonical ceiling policy lives in ../tagging; re-exported so collectors keep one import site. */
+export { designCeiling } from "../tagging";
 
 export interface PubmedDesignOptions {
   /** NCBI Bookshelf accession (NBK...) when the record is a GeneReviews chapter. */

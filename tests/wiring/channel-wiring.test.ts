@@ -108,7 +108,7 @@ describe('selectChannels', () => {
     expect(selectChannels({ AGENTCALL_FROM_NUMBER_ID: 'n' }).providers.voice).toBe('mock-caller');
   });
   it('guardFromEnv maps allowlist, mode and allow-real', () => {
-    expect(guardFromEnv({ OUTBOUND_ALLOWLIST: 'A@Example.com, junk', NODE_ENV: 'production', OUTBOUND_ALLOW_REAL: 'true' })).toEqual({ allowlist: ['a@example.com'], mode: 'prod', outboundAllowReal: 'true' });
+    expect(guardFromEnv({ OUTBOUND_ALLOWLIST: 'A@Example.com, junk', NODE_ENV: 'production', OUTBOUND_ALLOW_REAL: 'true' })).toEqual({ allowlist: ['a@example.com'], mode: 'prod', outboundAllowReal: 'true', webAllowlist: [] });
     expect(guardFromEnv({}).mode).toBe('dev');
   });
 });

@@ -18,6 +18,8 @@ export interface DocumentStore {
   insert(rows: NewDocument[]): Promise<CaseDocument[]>;
   search(input: VectorSearch): Promise<Snippet[]>;
   list(caseId: string): Promise<DocumentMetadata[]>;
+  /** One document's text (chunks joined in order), scoped by case so another case's id returns undefined. */
+  text(caseId: string, documentId: string): Promise<{ id: string; kind: DocumentKind; title: string; content: string } | undefined>;
 }
 export const PUBLIC_KINDS = ['resource_page', 'evidence'] as const;
 export function consentFields(fields: readonly string[]) {
@@ -36,6 +38,12 @@ export class MemoryDocumentStore implements DocumentStore {
     return structuredClone(inserted);
   }
   async list(caseId: string) { return this.rows.filter(row => row.caseId === caseId).map(row => metadata(structuredClone(row))); }
+  async text(caseId: string, documentId: string) {
+    const row = this.rows.find(r => r.caseId === caseId && r.id === documentId);
+    if (!row) return undefined;
+    const same = this.rows.filter(r => r.caseId === caseId && r.title === row.title && r.kind === row.kind && r.contactId === row.contactId);
+    return { id: row.id, kind: row.kind, title: row.title, content: same.sort((a, b) => a.chunkIndex - b.chunkIndex).map(r => r.content).join('\n') };
+  }
   async search(input: VectorSearch) {
     const allowed = consentFields(input.allowedFields);
     return this.rows.filter(row => row.caseId === input.caseId && row.embedModel === input.embedModel

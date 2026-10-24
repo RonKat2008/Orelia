@@ -1,0 +1,6 @@
+[
+  { "fieldKey": "city", "source": { "kind": "consent", "key": "homeCity" } },
+  { "fieldKey": "state", "source": { "kind": "consent", "key": "homeState" } },
+  { "fieldKey": "insurer", "source": { "kind": "consent", "key": "insurer" } },
+  { "fieldKey": "diagnosis", "source": { "kind": "consent", "key": "diseaseName" } }
+]

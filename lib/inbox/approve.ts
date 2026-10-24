@@ -19,6 +19,8 @@ export async function approveTask(taskId: string, deps: ApproveDeps, input: Appr
   const task = await tasks.task(taskId);
   if (!task) throw new OutreachError(404, ['task_not_found']);
   if (task.status !== 'open') throw new OutreachError(409, ['already_approved']);
+  // Application tasks are approved on the application draft itself (web_application store), never through this generic path.
+  if (task.kind === 'application') throw new OutreachError(422, ['use_application_approval']);
   if (['referral', 'slides', 'records', 'redirect'].includes(task.kind)) return approveLetter(task, now, deps, input);
   if (!await tasks.markApproved(taskId, now)) throw new OutreachError(409, ['already_approved']);
   const done = { ...task, status: 'done' as const, approvedAt: now };

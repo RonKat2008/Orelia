@@ -64,6 +64,13 @@
       "when": 1792821500000,
       "tag": "0030_walkaway_notify",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792821600000,
+      "tag": "0031_web_applications",
+      "breakpoints": true
     }
   ]
 }

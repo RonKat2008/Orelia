@@ -4,6 +4,7 @@ import { AI_DISCLOSURE_EMAIL, AI_DISCLOSURE_VOICE } from './disclosure';
 import { containsUnsharedField, minimize } from './minimize';
 import { flagMedicalAdvice } from './no-medical-advice';
 import type { CaseRecord, GateRefusal, SafetyConsent, SafetyContact, SafetyDraft, Timestamp } from './types';
+import { checkWebFormDraft } from './web-gate';
 export type { GateRefusal } from './types';
 export interface OutboundInput {
   draft: SafetyDraft;
@@ -15,6 +16,8 @@ export interface OutboundInput {
   mode: 'dev' | 'demo' | 'prod';
   /** Caller supplies OUTBOUND_ALLOW_REAL explicitly; never defaulted or read from environment here. */
   outboundAllowReal?: string;
+  /** Parsed OUTBOUND_WEB_ALLOWLIST hosts (see parseWebAllowlist); only used for channel 'web_form'. */
+  webAllowlist?: readonly string[];
 }
 const gated: unique symbol = Symbol('GatedDraft');
 /** Only checkOutbound constructs this type. It is a snapshot of the approved content. */
@@ -23,6 +26,8 @@ export type GatedDraft = Readonly<SafetyDraft & {
   readonly approvedAt: string;
   readonly sharedFields: readonly string[];
   readonly caseData: CaseRecord;
+  /** web_form only: document ids the patient ticked for upload. */
+  readonly sharedDocIds?: readonly string[];
 }>;
 /** Every payload checkOutbound has produced. Membership, not shape, proves a draft is gated. */
 const issued = new WeakSet<object>();
@@ -40,6 +45,26 @@ function deepFreeze<T>(value: T): T {
   }
   return value;
 }
+function checkWebOutbound(input: OutboundInput, approvalTime: number, reasons: GateRefusal[]): OutboundResult {
+  const { draft, caseRecord, consent } = input;
+  for (const reason of checkWebFormDraft(input)) if (!reasons.includes(reason)) reasons.push(reason);
+  if (reasons.length) return { ok: false, reasons };
+  // Whitelist output keys; webForm is a deep copy so later caller mutation cannot change what was approved.
+  const payload = deepFreeze({
+    [gated]: true as const,
+    channel: draft.channel, address: draft.address.trim(), body: draft.body,
+    ...(draft.subject !== undefined ? { subject: draft.subject } : {}),
+    ...(draft.contactId !== undefined ? { contactId: draft.contactId } : {}),
+    ...(draft.caseId !== undefined ? { caseId: draft.caseId } : {}),
+    approvedAt: new Date(approvalTime).toISOString(),
+    sharedFields: [...consent.sharedFields],
+    sharedDocIds: [...(consent.sharedDocIds ?? [])],
+    caseData: minimize(caseRecord, consent.sharedFields),
+    webForm: structuredClone(draft.webForm!),
+  });
+  issued.add(payload);
+  return { ok: true, payload };
+}
 export function checkOutbound(input: OutboundInput): OutboundResult {
   const { draft, caseRecord, consent, contacts, allowlist, now, mode } = input;
   const reasons: GateRefusal[] = [];
@@ -47,6 +72,7 @@ export function checkOutbound(input: OutboundInput): OutboundResult {
   const nowTime = new Date(now).getTime();
   const approvalTime = draft.approvedAt ? new Date(draft.approvedAt).getTime() : NaN;
   if (!Number.isFinite(approvalTime) || !Number.isFinite(nowTime) || approvalTime > nowTime) refuse('not_approved');
+  if (draft.channel === 'web_form') return checkWebOutbound(input, approvalTime, reasons);
   const address = normalizeAddress(draft.address);
   if (!address || !draft.body.trim() || (draft.channel === 'email' ? !address.includes('@') : draft.channel !== 'voice' || !address.startsWith('+'))) refuse('invalid_draft');
   if (!(mode === 'prod' && input.outboundAllowReal === 'true') && !isAllowed(draft.address, allowlist)) refuse('not_allowlisted');

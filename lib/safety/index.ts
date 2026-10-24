@@ -5,3 +5,5 @@ export * from './disclosure';
 export * from './caps';
 export * from './no-medical-advice';
 export * from './outbound-gate';
+export * from './web-allowlist';
+export * from './web-gate';

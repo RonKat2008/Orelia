@@ -32,6 +32,10 @@ const envSchema = z.object({
   NEON_AI_GATEWAY_BASE_URL: optionalEnv,
   NEON_AI_GATEWAY_TOKEN: optionalEnv,
   // --- end task #38 additions ---
+  // --- task #58 (web application channel) ---
+  KERNEL_API_KEY: optionalEnv,
+  OUTBOUND_WEB_ALLOWLIST: optionalEnv,
+  // --- end task #58 ---
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -121,6 +125,8 @@ export const TRACKED_ENV_NAMES: readonly string[] = [
   "WAYFINDER_DEMO_STATE",
   "WAYFINDER_SIM_TIME_SCALE",
   "WAYFINDER_RECORD_LLM",
+  "KERNEL_API_KEY",
+  "OUTBOUND_WEB_ALLOWLIST",
 ];
 
 function entrySatisfied(source: EnvSource, entry: string): boolean {

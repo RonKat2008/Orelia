@@ -1,169 +1,236 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { approveTask, contactLabel, loadTaskConfirmation, type TaskConfirmation, outreachSnapshot, readStoredOutreach, subscribeOutreach, type ApiContact } from "./client";
-import { CONTACT_STATES, STATE_LABELS, TASK_KIND_LABELS, type ContactState, type OutreachTask } from "./types";
+import Link from "next/link";
+import { ArrowRight, CalendarClock, Mail, MessageSquareText, PhoneCall } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  AvatarInitials,
+  Badge,
+  Button,
+  Card,
+  CardEyebrow,
+  CardTitle,
+  Stepper,
+} from "@/components/ui";
+import { EmptyState } from "@/components/threads/states";
+import { loadThreads } from "@/components/threads/load";
+import { contactLabel, outreachSnapshot, readStoredOutreach, subscribeOutreach, type ApiContact } from "./client";
+import { formatDay, titleCase } from "./format";
+import { TaskCard } from "./TaskCard";
+import { CONTACT_STATES, STATE_LABELS, type ContactState, type OutreachTask } from "./types";
 
-function formatWhen(iso: string | null): string {
-  if (!iso) return "None scheduled";
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "America/New_York",
-  }).format(new Date(iso));
-}
+/** The happy path. Declined and stalled are exits from it, not steps on it. */
+const JOURNEY: readonly ContactState[] = [
+  "drafted",
+  "sent",
+  "replied",
+  "task_open",
+  "records_sent",
+  "appointment_booked",
+  "connected",
+];
+
+const STATE_NOTES: Record<ContactState, string> = {
+  drafted: "A draft is written and waiting for your approval. Nothing has been sent.",
+  sent: "Your approved message went out. We are waiting for a reply.",
+  replied: "They answered. Read the reply, then decide what comes next.",
+  task_open: "They asked for something. It is waiting for your approval.",
+  records_sent: "What they asked for was sent, with your approval.",
+  appointment_booked: "An appointment is on the calendar.",
+  connected: "You are connected. This one is done.",
+  declined: "They said no. We will not contact them again.",
+  stalled: "No reply after our follow-ups, so we stopped. You can choose to try again.",
+};
 
 function asState(value: string): ContactState {
   return (CONTACT_STATES as readonly string[]).includes(value) ? (value as ContactState) : "drafted";
 }
 
-function RedirectTaskActions({
-  task,
-  onApprove,
-}: {
-  task: OutreachTask;
-  onApprove: (task: OutreachTask, confirmAddress: string) => Promise<void>;
-}) {
-  const [confirmation, setConfirmation] = useState<TaskConfirmation | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const checkId = `confirm-address-${task.id}`;
-
-  useEffect(() => {
-    let active = true;
-    void loadTaskConfirmation(task.id).then((value) => {
-      if (!active) return;
-      setConfirmation(value);
-      setLoaded(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, [task.id]);
-
-  if (!loaded) return <p role="status">Loading the address from their reply...</p>;
-  if (!confirmation) {
-    return <p role="status">We couldn&apos;t load the address from their reply, so this task can&apos;t be approved yet.</p>;
-  }
-  return (
-    <div>
-      <p>They suggested contacting this address. Check it matches their reply exactly.</p>
-      <p>
-        <code style={{ fontFamily: "monospace", userSelect: "all", wordBreak: "break-all" }}>{confirmation.address}</code>
-      </p>
-      {confirmation.quote ? <blockquote>{confirmation.quote}</blockquote> : null}
-      <p className="note">This counts toward your 5 active contacts.</p>
-      <p>
-        <input id={checkId} type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />{" "}
-        <label htmlFor={checkId}>I confirm this is the address in their reply</label>
-      </p>
-      <div className="actions">
-        <button type="button" disabled={!confirmed} onClick={() => void onApprove(task, confirmation.address)}>
-          Approve task
-        </button>
-      </div>
-    </div>
-  );
+function followUpNote(contact: ApiContact, state: ContactState): string {
+  if (contact.nextFollowUpAt) return `Next follow-up ${formatDay(contact.nextFollowUpAt)}, if there is no reply. You approve it first.`;
+  if (state === "drafted") return "No follow-up yet. The schedule starts when the first message is sent.";
+  if (state === "sent" || state === "replied") return "Follow-ups are planned for business days 3 and 7 after sending. You approve each one.";
+  return "No follow-up needed right now.";
 }
 
 export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: OutreachTask[] }) {
   const raw = useSyncExternalStore(subscribeOutreach, () => outreachSnapshot(caseId), () => null);
   const contacts: ApiContact[] = raw ? (readStoredOutreach(caseId)?.contacts ?? []) : [];
-  const [openTasks, setOpenTasks] = useState(tasks);
-  const [taskNote, setTaskNote] = useState<string | null>(null);
-  const [taskErrors, setTaskErrors] = useState<string[]>([]);
+  const [done, setDone] = useState<Record<string, OutreachTask["status"]>>({});
 
-  async function approve(task: OutreachTask, confirmAddress?: string) {
-    setTaskErrors([]);
-    const result = await approveTask(task.id, fetch, confirmAddress !== undefined ? { confirmAddress } : {});
-    if (!result.available) {
-      setTaskNote(result.reasons.join(" "));
-      return;
-    }
-    if (!result.approved) {
-      setTaskErrors(result.reasons);
-      setTaskNote("The server did not approve this task.");
-      return;
-    }
-    setOpenTasks((current) => current.map((entry) => (entry.id === task.id ? { ...entry, status: "approved" } : entry)));
-    setTaskNote("The server approved this task. Nothing is sent until the connection workflow runs.");
+  const [threadTasks, setThreadTasks] = useState<OutreachTask[]>([]);
+
+  // Tasks live inside conversation threads. If that API is not connected yet, the list simply stays empty.
+  useEffect(() => {
+    let active = true;
+    void loadThreads(caseId).then((result) => {
+      if (!active || result.status !== "ok" || !result.threads) return;
+      setThreadTasks(
+        result.threads.flatMap((thread) =>
+          thread.entries.flatMap((entry) =>
+            entry.task
+              ? [{ ...entry.task, contactId: thread.contactId, contactName: thread.label, dueAt: null } satisfies OutreachTask]
+              : [],
+          ),
+        ),
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId]);
+
+  const allTasks = [...tasks, ...threadTasks.filter((task) => !tasks.some((known) => known.id === task.id))];
+  const openTasks = allTasks.filter((task) => (done[task.id] ?? task.status) === "open");
+  const waitingDrafts = contacts.filter((contact) => asState(contact.state) === "drafted");
+  const nothingNow = openTasks.length === 0 && waitingDrafts.length === 0;
+
+  if (contacts.length === 0) {
+    return (
+      <EmptyState
+        title="No one has been contacted yet"
+        detail="Choose resources from your shortlist and decide what each may see. Their journeys will show up here."
+        actionHref={`/cases/${caseId}/shortlist`}
+        actionLabel="Choose resources"
+      />
+    );
   }
 
   return (
-    <div>
-      <section aria-labelledby="states-heading">
-        <h2 id="states-heading">Contacts</h2>
-        {contacts.length === 0 ? (
-          <p>
-            No contacts yet. <a href={`/cases/${caseId}/shortlist`}>Choose resources</a>, then save consent.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-16">
+      <section aria-labelledby="now-heading" className="grid gap-6">
+        <div className="grid gap-2">
+          <h3 id="now-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">
+            Needs you <em className="emph">now</em>
+          </h3>
+          <p className="m-0 max-w-prose text-body text-ink-2">
+            {nothingNow
+              ? "Nothing is waiting on you. We will tell you here when a contact asks for something."
+              : "These are the only things holding your outreach up."}
           </p>
-        ) : null}
-        <ul className="plain">
-          {contacts.map((contact) => {
-            const state = asState(contact.state);
-            return (
+        </div>
+        {!nothingNow ? (
+          <ul className="m-0 grid list-none gap-3 p-0">
+            {waitingDrafts.map((contact) => (
               <li key={contact.id}>
-                <article data-contact-state={state}>
-                  <h3>{contactLabel(contact)}</h3>
-                  <p className="note">
-                    {contact.channel === "email" ? "Email" : "Phone"} · {contact.address}
-                  </p>
-                  <p>
-                    State: <span className="status">{STATE_LABELS[state]}</span>
-                  </p>
-                  <ol className="note" aria-label={`${contactLabel(contact)} possible states`}>
-                    {CONTACT_STATES.map((step) => (
-                      <li key={step} aria-current={step === state ? "step" : undefined}>
-                        {STATE_LABELS[step]}
-                      </li>
-                    ))}
-                  </ol>
-                  <p>Next follow-up: {formatWhen(null)}</p>
-                  <p>
-                    <a href={`/cases/${caseId}/threads?contact=${encodeURIComponent(contact.id)}`}>Open conversation</a>
-                  </p>
-                </article>
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-line bg-card p-4 shadow-xs sm:p-5">
+                  <div className="grid min-w-0 gap-1">
+                    <Badge tone="gold" dot>
+                      Needs you
+                    </Badge>
+                    <span className="break-words font-semibold text-ink">Approve the draft for {contactLabel(contact)}</span>
+                    <span className="text-small text-ink-2">Nothing has been sent to them yet.</span>
+                  </div>
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href={`/cases/${caseId}/outbox`}>
+                      Read the draft <ArrowRight aria-hidden />
+                    </Link>
+                  </Button>
+                </div>
               </li>
-            );
-          })}
-        </ul>
-      </section>
-      <section aria-labelledby="tasks-heading">
-        <h2 id="tasks-heading">Tasks needing approval</h2>
-        {taskNote ? <p role="status">{taskNote}</p> : null}
-        {taskErrors.length > 0 ? (
-          <ul>
-            {taskErrors.map((error) => (
-              <li key={error}>{error}</li>
+            ))}
+            {openTasks.map((task) => (
+              <li key={task.id}>
+                <TaskCard
+                  task={task}
+                  status={done[task.id] ?? task.status}
+                  onStatus={(next) => setDone((current) => ({ ...current, [task.id]: next }))}
+                />
+              </li>
             ))}
           </ul>
         ) : null}
-        {openTasks.filter((task) => task.status === "open").length === 0 ? (
-          <p>No open tasks are loaded. When the inbox agent creates one, approving it uses the task approval API and stays open until that API confirms.</p>
-        ) : null}
-        <ul className="plain">
-          {openTasks.map((task) => (
-            <li key={task.id}>
-              <article data-task-status={task.status}>
-                <h3>{TASK_KIND_LABELS[task.kind]}</h3>
-                <p>{task.summary}</p>
-                <p className="note">
-                  {task.contactName} · due {formatWhen(task.dueAt)} · {task.status}
-                </p>
-                {task.status === "open" && task.kind === "redirect" ? (
-                  <RedirectTaskActions task={task} onApprove={approve} />
-                ) : task.status === "open" ? (
-                  <div className="actions">
-                    <button type="button" onClick={() => void approve(task)}>
-                      Approve task
-                    </button>
+      </section>
+
+      <section aria-labelledby="journeys-heading" className="grid gap-6">
+        <h3 id="journeys-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">
+          Each <em className="emph">journey</em>
+        </h3>
+        <ul className="m-0 grid list-none gap-6 p-0">
+          {contacts.map((contact) => {
+            const state = asState(contact.state);
+            const name = titleCase(contactLabel(contact));
+            const index = JOURNEY.indexOf(state);
+            const offPath = index === -1;
+            const ChannelIcon = contact.channel === "email" ? Mail : PhoneCall;
+            return (
+              <li key={contact.id}>
+                <Card variant="raised" data-contact-state={state} aria-labelledby={`journey-${contact.id}`}>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <AvatarInitials name={name.replace(/[()]/g, "")} size="md" />
+                    <div className="grid min-w-0 flex-1 gap-1">
+                      <CardEyebrow className="flex items-center gap-1.5">
+                        <ChannelIcon aria-hidden className="size-3.5" /> {contact.channel === "email" ? "Email" : "Phone"}
+                      </CardEyebrow>
+                      <CardTitle id={`journey-${contact.id}`} className="break-words text-h4">
+                        {name}
+                      </CardTitle>
+                    </div>
+                    <Badge
+                      tone={state === "connected" ? "ok" : state === "declined" ? "danger" : state === "stalled" ? "warn" : "teal"}
+                      size="md"
+                    >
+                      {STATE_LABELS[state]}
+                    </Badge>
                   </div>
-                ) : (
-                  <p role="status">Approved by the server. Nothing is sent until the connection workflow runs.</p>
-                )}
-              </article>
-            </li>
-          ))}
+
+                  {!offPath ? (
+                    <div
+                      aria-hidden
+                      className="mt-6 grid gap-1"
+                      style={{ gridTemplateColumns: `repeat(${JOURNEY.length}, minmax(0, 1fr))` }}
+                    >
+                      {JOURNEY.map((step, stepIndex) => (
+                        <span
+                          key={step}
+                          className={
+                            stepIndex < index
+                              ? "h-1.5 rounded-pill bg-teal"
+                              : stepIndex === index
+                                ? "h-1.5 rounded-pill bg-teal ring-2 ring-teal/25"
+                                : "h-1.5 rounded-pill bg-paper-2 shadow-inset"
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  <p className="m-0 mt-4 max-w-prose text-body text-ink">{STATE_NOTES[state]}</p>
+                  <p className="m-0 mt-2 flex items-start gap-2 text-small text-ink-2">
+                    <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
+                    {followUpNote(contact, state)}
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <Button asChild variant="secondary" size="sm">
+                      <Link href={`/cases/${caseId}/threads?contact=${encodeURIComponent(contact.id)}`}>
+                        <MessageSquareText aria-hidden /> Open conversation
+                      </Link>
+                    </Button>
+                  </div>
+
+                  {!offPath ? (
+                    <Accordion type="single" collapsible className="mt-4">
+                      <AccordionItem value="journey">
+                        <AccordionTrigger>The full journey</AccordionTrigger>
+                        <AccordionContent>
+                          <Stepper
+                            orientation="vertical"
+                            current={index}
+                            aria-label={`${name} journey`}
+                            steps={JOURNEY.map((step) => ({ id: step, label: STATE_LABELS[step] }))}
+                          />
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ) : null}
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>

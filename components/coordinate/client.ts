@@ -29,7 +29,8 @@ const arr = <T,>(key: string) => (b: Record<string, unknown>) => (Array.isArray(
 const one = <T,>(key: string) => (b: Record<string, unknown>) => (b[key] && typeof b[key] === 'object' ? (b[key] as T) : undefined);
 
 export const loadResources = (caseId: string) =>
-  call<Resource[]>(`/api/cases/${encodeURIComponent(caseId)}/plan`, undefined, b => {
+  call<Resource[]>(`/api/cases/${encodeURIComponent(caseId)}/plan?optional=1`, undefined, b => {
+    if (b.plan === null) return [];
     const plan = b.plan as { resources?: Resource[] } | undefined;
     return plan && Array.isArray(plan.resources) ? plan.resources.map(r => ({ resourceKey: r.resourceKey, name: r.name, contactId: r.contactId ?? null })) : undefined;
   });

@@ -123,6 +123,12 @@ describe('plan client', () => {
     const res = await getPlan(caseId, f as unknown as typeof fetch);
     expect(res).toMatchObject({ ok: false, status: 404 });
   });
+  it('GET peeks with ?optional=1 and reads 200 { plan: null } as the same 404 "none yet"', async () => {
+    const f = vi.fn(async (u: string) => { void u; return ok({ plan: null }); });
+    const res = await getPlan(caseId, f as unknown as typeof fetch);
+    expect(res).toMatchObject({ ok: false, status: 404 });
+    expect(f.mock.calls[0][0]).toBe(`/api/cases/${caseId}/plan?optional=1`);
+  });
   it('PATCH sends version and edits, and returns the plan', async () => {
     const f = vi.fn(async (_u: string, init?: RequestInit) => {
       expect(init?.method).toBe('PATCH');

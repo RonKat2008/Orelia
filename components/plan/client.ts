@@ -13,6 +13,7 @@ async function read(res: Response): Promise<PlanResult> {
   } catch {
     body = null;
   }
+  if (res.ok && (body as { plan?: unknown } | null)?.plan === null) return { ok: false, status: 404, message: 'No contact plan yet' };
   if (res.ok) {
     const parsed = contactPlanSchema.safeParse((body as { plan?: unknown } | null)?.plan);
     if (parsed.success) return { ok: true, plan: parsed.data, materialized: (body as { materialized?: unknown } | null)?.materialized };
@@ -25,9 +26,9 @@ async function read(res: Response): Promise<PlanResult> {
   return { ok: false, status: res.status, message };
 }
 
-async function call(f: Fetch, caseId: string, init?: RequestInit): Promise<PlanResult> {
+async function call(f: Fetch, target: string, init?: RequestInit): Promise<PlanResult> {
   try {
-    return await read(await f(url(caseId), init));
+    return await read(await f(target, init));
   } catch {
     return { ok: false, status: 0, message: 'Could not reach the server. Nothing was sent.' };
   }
@@ -39,10 +40,11 @@ const json = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-export const getPlan = (caseId: string, f: Fetch = fetch) => call(f, caseId);
-export const buildPlan = (caseId: string, f: Fetch = fetch) => call(f, caseId, json('POST', {}));
+/** Peeks with ?optional=1 (200 { plan: null } instead of a logged 404); "none yet" still reads as status 404. */
+export const getPlan = (caseId: string, f: Fetch = fetch) => call(f, `${url(caseId)}?optional=1`);
+export const buildPlan = (caseId: string, f: Fetch = fetch) => call(f, url(caseId), json('POST', {}));
 export const patchPlan = (caseId: string, version: number, edits: PlanEdit[], f: Fetch = fetch) =>
-  call(f, caseId, json('PATCH', { version, edits }));
+  call(f, url(caseId), json('PATCH', { version, edits }));
 
 /** GET the plan; when none exists yet (404) build it. */
 export async function getOrBuildPlan(caseId: string, f: Fetch = fetch): Promise<PlanResult> {

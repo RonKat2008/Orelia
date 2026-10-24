@@ -137,7 +137,7 @@ export function MotionLab() {
             getKey={(a) => a.name}
             reorder={false}
             aria-label="Agent cards"
-            renderItem={(a) => <AgentCardMotion name={a.name} status={a.status} counts={a.counts} />}
+            renderItem={(a) => <AgentCardMotion name={a.name} status={a.status} counts={a.counts} entrance={false} />}
           />
         </section>
 

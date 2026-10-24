@@ -13,6 +13,8 @@ type Props = {
   max?: number;
   /** Visible heading for the breakdown. */
   label?: string;
+  /** The ranker's score, when it is authoritative; defaults to the sum of the factors. */
+  total?: number;
 };
 
 /**
@@ -20,16 +22,16 @@ type Props = {
  * its left edge (scaleX, compositor-only); the legend below carries the words
  * and points, so the bar is never the only source of the information.
  */
-export function ScoreBar({ items, max, label = "Why this ranks here" }: Props) {
+export function ScoreBar({ items, max, label = "Why this ranks here", total }: Props) {
   const reduced = useReducedMotionGate();
   const segments = computeScoreSegments(items, max);
-  const total = items.reduce((sum, item) => sum + item.points, 0);
+  const shownTotal = total ?? items.reduce((sum, item) => sum + item.points, 0);
 
   return (
     <section className="wf-score" aria-label={label}>
       <div className="wf-score__head">
         <span className="wf-score__label">{label}</span>
-        <span className="wf-score__total">{formatPoints(total).replace(/^\+/, "")} points</span>
+        <span className="wf-score__total">{formatPoints(shownTotal).replace(/^\+/, "")} points</span>
       </div>
       <div className="wf-score__track" aria-hidden="true">
         {segments

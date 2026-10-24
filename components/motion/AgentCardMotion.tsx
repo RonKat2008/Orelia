@@ -17,6 +17,8 @@ type Props = {
   title?: string;
   /** Put the status line in a polite live region. Off by default to avoid double announcements. */
   live?: boolean;
+  /** Fade the card up on mount. Turn off when a parent (e.g. StaggerList) already animates entry. */
+  entrance?: boolean;
   children?: ReactNode;
 };
 
@@ -25,7 +27,7 @@ type Props = {
  * line cross-fades when the status changes, so the change is noticed without
  * the card itself moving.
  */
-export function AgentCardMotion({ name, status, counts, title, live = false, children }: Props) {
+export function AgentCardMotion({ name, status, counts, title, live = false, entrance = true, children }: Props) {
   const reduced = useReducedMotionGate();
   const presentation = STATUS_PRESENTATION[status];
   const swap = enterVariants(reduced, DISTANCE.xs);
@@ -37,7 +39,7 @@ export function AgentCardMotion({ name, status, counts, title, live = false, chi
       data-tone={presentation.tone}
       data-status={status}
       variants={enterVariants(reduced)}
-      initial={reduced ? false : "hidden"}
+      initial={reduced || !entrance ? false : "hidden"}
       animate="visible"
     >
       <header className="wf-agent-card__head">

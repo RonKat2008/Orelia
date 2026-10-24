@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
-import { Button, IconButton } from "@/components/ui/button";
-import { Sheet, SheetClose } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/ui/cn";
+import { MobileMenu } from "./MobileMenu";
+import { isNavItemActive, type NavItem } from "./nav";
 import { ThemeToggle } from "./ThemeToggle";
 import { Wordmark } from "./Wordmark";
 
-export interface NavItem {
-  href: string;
-  label: string;
-}
+export type { NavItem } from "./nav";
 
 export const MARKETING_NAV: NavItem[] = [
   { href: "/", label: "Home" },
@@ -34,10 +31,6 @@ export interface SiteHeaderProps {
   /** Primary call to action. Defaults to starting a case. */
   cta?: NavItem | null;
   className?: string;
-}
-
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 /** Calm sticky header: translucent paper with blur, hairline underneath. */
@@ -64,7 +57,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
 
         <nav aria-label="Main" className="ml-auto hidden items-center gap-1 md:flex">
           {nav.map((item) => {
-            const active = isActive(pathname, item.href);
+            const active = isNavItemActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -92,41 +85,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
             </Button>
           ) : null}
           <div className="md:hidden">
-            <Sheet
-              title="Menu"
-              trigger={
-                <IconButton label="Open menu">
-                  <Menu aria-hidden />
-                </IconButton>
-              }
-              footer={
-                cta ? (
-                  <SheetClose>
-                    <Button asChild size="lg" className="w-full">
-                      <Link href={cta.href}>{cta.label}</Link>
-                    </Button>
-                  </SheetClose>
-                ) : undefined
-              }
-            >
-              <nav aria-label="Main" className="grid">
-                {nav.map((item) => (
-                  <SheetClose key={item.href}>
-                    <Link
-                      href={item.href}
-                      aria-current={isActive(pathname, item.href) ? "page" : undefined}
-                      className="flex min-h-12 items-center border-b border-line font-display text-h3 text-ink no-underline focus-ring aria-[current=page]:text-teal"
-                    >
-                      {item.label}
-                    </Link>
-                  </SheetClose>
-                ))}
-              </nav>
-              <div className="mt-6 flex items-center justify-between gap-4">
-                <span className="text-small font-semibold text-ink-2">Theme</span>
-                <ThemeToggle />
-              </div>
-            </Sheet>
+            <MobileMenu nav={nav} cta={cta} pathname={pathname} />
           </div>
         </div>
       </div>

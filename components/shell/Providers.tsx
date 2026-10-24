@@ -1,15 +1,27 @@
 "use client";
 
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
-import { MotionConfig } from "motion/react";
-import { Tooltip as TooltipPrimitive } from "radix-ui";
+import { MotionConfigContext } from "motion/react";
 
 const TOASTER_DELAY_MS = 1500;
 
 /**
- * App-wide client providers: motion respects the OS reduced-motion setting,
- * one Toaster, one tooltip delay. Theme lives on <html data-theme> (see theme.ts),
- * so it needs no React provider.
+ * What `<MotionConfig reducedMotion="user">` provides, set on motion's context
+ * directly: importing only the context keeps the motion runtime (~50 KB gzipped)
+ * out of the root bundle, so pages that animate nothing never download it.
+ * Module-level so the value is stable and motion components never re-render for it.
+ */
+const MOTION_CONFIG = {
+  transformPagePoint: (point: { x: number; y: number }) => point,
+  isStatic: false,
+  reducedMotion: "user",
+} as const;
+
+/**
+ * App-wide client providers: motion respects the OS reduced-motion setting and
+ * one Toaster. Each Tooltip carries its own provider (components/ui/overlay.tsx),
+ * so none is mounted here. Theme lives on <html data-theme> (see theme.ts), so it
+ * needs no React provider.
  */
 export function Providers({ children }: { children: ReactNode }) {
   // Toasts only follow a user action, so the Toaster (sonner) loads after first paint.
@@ -31,11 +43,9 @@ export function Providers({ children }: { children: ReactNode }) {
     };
   }, []);
   return (
-    <MotionConfig reducedMotion="user">
-      <TooltipPrimitive.Provider delayDuration={250}>
-        {children}
-        {Toaster ? <Toaster /> : null}
-      </TooltipPrimitive.Provider>
-    </MotionConfig>
+    <MotionConfigContext.Provider value={MOTION_CONFIG}>
+      {children}
+      {Toaster ? <Toaster /> : null}
+    </MotionConfigContext.Provider>
   );
 }

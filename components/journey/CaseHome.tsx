@@ -25,7 +25,7 @@ export function CaseHome({ caseId }: { caseId: string }) {
 
       {!data ? null : data.missingCase ? (
         <p className="error" role="alert">
-          This case was not found. <a href="/">Start from intake</a>.
+          This case was not found. <Link href="/">Start from intake</Link>.
         </p>
       ) : null}
       {data && !data.missingCase && !summary ? (

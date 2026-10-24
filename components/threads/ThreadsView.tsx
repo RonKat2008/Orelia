@@ -31,11 +31,9 @@ export function ThreadsView({ caseId, focusContactId }: { caseId: string; focusC
 
   useEffect(() => {
     let active = true;
-    setPhase({ kind: "loading" });
-    const stored = readStoredOutreach(caseId);
-    setContacts(stored?.contacts ?? []);
     void loadThreads(caseId).then((result) => {
       if (!active) return;
+      setContacts(readStoredOutreach(caseId)?.contacts ?? []);
       if (result.status === "unavailable") setPhase({ kind: "unavailable" });
       else if (result.status === "error" || !result.threads) setPhase({ kind: "error" });
       else setPhase({ kind: "ready", threads: result.threads });
@@ -63,7 +61,10 @@ export function ThreadsView({ caseId, focusContactId }: { caseId: string; focusC
       <ErrorState
         title="Conversations could not be loaded"
         detail="The thread list did not come back. Nothing was sent."
-        onRetry={() => setAttempt((value) => value + 1)}
+        onRetry={() => {
+          setPhase({ kind: "loading" });
+          setAttempt((value) => value + 1);
+        }}
         actionHref={`/cases/${caseId}/tracker`}
         actionLabel="Back to the tracker"
       />

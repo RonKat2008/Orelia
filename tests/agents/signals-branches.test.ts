@@ -105,8 +105,9 @@ describe("expert signals", () => {
     const led = trialRec({ investigators: ["Ada Strong, MD"] });
     const e = expertRec();
     const s = computeSignals(e, [e, led], baseCase);
-    expect(s.subtypeExpertise!.text).toMatch(/^0 PubMed paper\(s\).*\(0 in the last 5 years\); listed as an overall official on 1 recruiting trial/);
-    expect(s.subtypeExpertise!.value).toBe(0.13);
+    // Documented-experience scoring (rd-experts): trials led alone are 1 of 2 for full credit at weight 0.2.
+    expect(s.subtypeExpertise!.text).toMatch(/^Documented experience: overall official on 1 recruiting trial/);
+    expect(s.subtypeExpertise!.value).toBe(0.1);
   });
 
   it("ignores led-trial evidence when other trials lack a registry or have different investigators", () => {
@@ -114,7 +115,8 @@ describe("expert signals", () => {
     const other = trialRec({ investigators: ["Someone Else"] });
     const e = expertRec({ profile: { paperCount: 6, recentPaperCount: 3 } });
     const s = computeSignals(e, [e, noRegistry, other], baseCase);
-    expect(s.subtypeExpertise!.value).toBe(0.75);
+    // 6 papers (0.4) + 3 recent (0.2); no led trials, no center designation.
+    expect(s.subtypeExpertise!.value).toBe(0.6);
     expect(s.subtypeExpertise!.text).not.toMatch(/overall official/);
   });
 

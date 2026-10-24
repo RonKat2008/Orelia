@@ -52,12 +52,14 @@ class Store implements Partial<OutreachStore> {
   async candidates(_c: string, ids: string[]) { return this.choices.filter(c => ids.includes(c.id)); }
   async contacts() { return [...this.people]; }
   // Mirrors PostgresOutreachStore: one contact per case and address; returns every contact on a proposed address.
-  async select(_c: string, contacts: Contact[], cap: number) {
+  async select(_c: string, contacts: Contact[], cap: number, opts: { sharedAddresses?: readonly string[] } = {}) {
     const norm = (a: string) => a.trim().toLowerCase();
-    const fresh = contacts.filter((p, i) => !this.people.some(c => norm(c.address) === norm(p.address)) && contacts.findIndex(o => norm(o.address) === norm(p.address)) === i);
+    const shared = new Set((opts.sharedAddresses ?? []).map(norm));
+    const key = (c: Contact) => shared.has(norm(c.address)) ? `${norm(c.address)}|${c.targetKind}:${c.targetId}` : norm(c.address);
+    const fresh = contacts.filter((p, i) => !this.people.some(c => key(c) === key(p)) && contacts.findIndex(o => key(o) === key(p)) === i);
     if (activeContactCount(this.people) + fresh.length > cap) throw new OutreachError(422, ['contact_cap']);
     this.people.push(...fresh);
-    return this.people.filter(c => contacts.some(p => norm(p.address) === norm(c.address)));
+    return this.people.filter(c => contacts.some(p => key(p) === key(c)));
   }
 }
 
@@ -79,16 +81,19 @@ describe('OutreachService.select in demo coordinator mode', () => {
     expect(new Set(res.contacts.map(c => c.address))).toEqual(new Set(['demo@agentmail.to', 'demo2@agentmail.to']));
   });
 
-  it('reports a resource as unavailable when every demo inbox is already used, instead of dropping it', async () => {
-    const { svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to' });
+  it('lets several contacts share the single demo inbox (one contact per resource), up to the cap of 5', async () => {
+    const { store, svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to' });
+    for (let i = 3; i <= 7; i++) store.choices.push({ id: `c${i}`, caseId: 'case-1', targetId: `t${i}`, targetKind: 'institution', evidence: [] });
     const res = await svc.select('case-1', ['c1', 'c2']);
-    expect(res.contacts.map(c => c.address)).toEqual(['demo@agentmail.to']);
-    expect(res.unavailable).toHaveLength(1);
-    expect(res.unavailable[0].reason).toMatch(/demo coordinator inbox is already used/);
-    // Selecting again returns the existing contact once, never a duplicate.
-    const again = await svc.select('case-1', ['c1', 'c2']);
-    expect(again.contacts).toHaveLength(1);
-    expect(again.unavailable).toHaveLength(1);
+    expect(res.unavailable).toEqual([]);
+    expect(res.contacts.map(c => c.address)).toEqual(['demo@agentmail.to', 'demo@agentmail.to']);
+    expect(new Set(res.contacts.map(c => c.id)).size).toBe(2);
+    // Re-selecting is idempotent: still one contact per resource.
+    expect((await svc.select('case-1', ['c1', 'c2'])).contacts).toHaveLength(2);
+    // Contacts 3-5 fit; the sixth active contact is refused by the cap, never silently dropped.
+    await svc.select('case-1', ['c3', 'c4', 'c5']);
+    expect(store.people).toHaveLength(5);
+    await expect(svc.select('case-1', ['c6'])).rejects.toMatchObject({ status: 422, reasons: ['contact_cap'] });
   });
 
   it('reports a resource whose only real address is already used by another contact', async () => {

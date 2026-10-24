@@ -7,13 +7,19 @@ export interface Consent { contactId: string; sharedFields: string[]; approvedAt
 export interface Draft extends Omit<SafetyDraft, 'channel'> { channel: 'email' | 'voice'; contextDocIds?: string[]; id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null }
 export interface ProviderRef { messageId?: string; threadId?: string; callId?: string }
 export interface Channel { kind: 'email' | 'voice'; send(draft: GatedDraft): Promise<ProviderRef> }
+export interface SelectOptions { sharedAddresses?: readonly string[] }
 /** Atomic methods must serialize competing requests in the backing store. */
 export interface OutreachStore {
   getCase(id: string): Promise<CaseRecord | undefined>;
   candidates(caseId: string, ids: string[]): Promise<Candidate[]>;
   contacts(caseId: string): Promise<Contact[]>;
   contact(id: string): Promise<Contact | undefined>;
-  select(caseId: string, contacts: Contact[], cap: number): Promise<Contact[]>;
+  /**
+   * Insert contacts, skipping any whose normalized address a contact on the case already uses. `sharedAddresses`
+   * (demo coordinator inboxes only) lists addresses that MAY be used by several contacts: for those the dedupe
+   * key is address + target, so each resource still gets at most one contact.
+   */
+  select(caseId: string, contacts: Contact[], cap: number, opts?: SelectOptions): Promise<Contact[]>;
   consent(id: string): Promise<Consent | undefined>;
   saveConsent(consent: Consent): Promise<void>;
   saveDraft(draft: Draft): Promise<void>;

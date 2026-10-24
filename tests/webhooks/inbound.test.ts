@@ -246,3 +246,19 @@ describe('AgentCall webhook', () => {
     expect(callEvents).toHaveLength(0); expect(events).toHaveLength(0);
   });
 });
+
+describe('contacts sharing one coordinator inbox (demo mode)', () => {
+  it('routes each reply to its own contact by provider thread id, not by the from-address', async () => {
+    const a = { contactId: 'contact-a', caseId: 'case-1' };
+    const b = { contactId: 'contact-b', caseId: 'case-1' };
+    const { deps, stored, ingested } = setup();
+    deps.lookupThread = async id => (id === 'thread-a' ? a : id === 'thread-b' ? b : undefined);
+    const from = 'la-county-dpss-demo@agentmail.to'; // identical sender for both contacts
+    const replyA = mailBody({ thread_id: 'thread-a', message_id: 'pm-a', from, text: 'Reply for A' });
+    const replyB = mailBody({ thread_id: 'thread-b', message_id: 'pm-b', from, text: 'Reply for B' });
+    expect((await handleAgentMailWebhook(post(replyB, svixHeaders(replyB, { id: 'msg_b' })), deps)).status).toBe(200);
+    expect((await handleAgentMailWebhook(post(replyA, svixHeaders(replyA, { id: 'msg_a' })), deps)).status).toBe(200);
+    expect(stored.map(m => [m.contactId, m.body])).toEqual([['contact-b', 'Reply for B'], ['contact-a', 'Reply for A']]);
+    expect(ingested.map(e => e.contactId)).toEqual(['contact-b', 'contact-a']);
+  });
+});

@@ -4,6 +4,9 @@
  *
  *   npx tsx scripts/demo-coordinators.ts [--dry-run] [--live] [--once] [--interval 5]
  *
+ * One coordinator inbox may serve up to 5 contacts of a case: each message is answered inside its own provider
+ * thread (reply-to-message), and the tagged reply lets the webhook route it back to the right contact by thread id.
+ *
  * Live mode requires --live AND AGENTMAIL_API_KEY. Everything else is dry-run.
  */
 import path from 'node:path';

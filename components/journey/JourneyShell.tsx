@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { AppShell, CASE_NAV } from "@/components/shell";
 import { Skeleton } from "@/components/ui/feedback";
+import { DeleteCaseControl } from "./DeleteCaseControl";
 import { JourneyStepper } from "./JourneyStepper";
 import { loadJourney, type JourneyData } from "./load";
 import { resolveJourney, type JourneyPlan } from "./model";
@@ -64,7 +65,14 @@ export function JourneyShell({ caseId, children }: { caseId: string; children: R
     };
   }, [caseId]);
 
-  const sidebar = data ? plan.steps.length > 0 ? <JourneyStepper plan={plan} /> : null : <RailSkeleton />;
+  const sidebar = data ? (
+    <>
+      {plan.steps.length > 0 ? <JourneyStepper plan={plan} /> : null}
+      <DeleteCaseControl caseId={caseId} />
+    </>
+  ) : (
+    <RailSkeleton />
+  );
 
   return (
     <JourneyContext.Provider value={{ plan, data }}>

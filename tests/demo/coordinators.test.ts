@@ -189,3 +189,22 @@ describe('planReplies notBefore (borrowed inboxes)', () => {
     expect(p.due.map((d) => d.messageId)).toEqual(['new']);
   });
 });
+
+describe('one coordinator inbox serving several contacts', () => {
+  it('answers each contact thread separately and tags the reply with its own thread', () => {
+    const t = [msg('slides', 'a', { threadId: 'thr-aaaa1111' }), msg('slides', 'b', { threadId: 'thr-bbbb2222' })];
+    const due = plan(t, { now: T0 + 60_000 }).due;
+    expect(due.map((r) => r.messageId)).toEqual(['a', 'b']);
+    expect(due.map((r) => r.threadId)).toEqual(['thr-aaaa1111', 'thr-bbbb2222']);
+    expect(due[0].text).toContain('AAAA1111');
+    expect(due[1].text).toContain('BBBB2222');
+    expect(due[0].text).not.toBe(due[1].text);
+  });
+
+  it('does not re-answer a thread and leaves a lone thread untagged', () => {
+    const t = [msg('slides', 'a', { threadId: 'thr-1' }), msg('slides', 'b', { threadId: 'thr-2' })];
+    expect(plan(t, { now: T0 + 60_000, repliedMessageIds: ['a'] }).due.map((r) => r.messageId)).toEqual(['b']);
+    const solo = plan([msg('slides', 'a')], { now: T0 + 60_000 }).due[0];
+    expect(solo.text).toBe(coordinators.find((c) => c.key === 'slides')!.reply);
+  });
+});

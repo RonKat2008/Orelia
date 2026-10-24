@@ -86,6 +86,10 @@ export const REFRESH_RESEARCH_LIMITS = (caseId: string, sessionId: string): Rate
   { key: `refresh-research:case:${caseId}`, max: 3, windowMs: HOUR_MS },
   { key: `refresh-research:session:${sessionId}`, max: 10, windowMs: HOUR_MS },
 ];
+/** Deleting a case is rare and destructive: a small per-session budget stops a runaway script. */
+export const DELETE_CASE_LIMITS = (sessionId: string): RateRule[] => [
+  { key: `delete-case:session:${sessionId}`, max: 20, windowMs: HOUR_MS },
+];
 export const MODEL_CALL_LIMITS = (scope: "inbox" | "curator", caseId: string): RateRule[] => [
   { key: `model:${scope}:case:${caseId}`, max: 60, windowMs: HOUR_MS },
 ];

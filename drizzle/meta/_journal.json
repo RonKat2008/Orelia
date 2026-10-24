@@ -120,6 +120,13 @@
       "when": 1792822300000,
       "tag": "0038_condition_briefs",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792822400000,
+      "tag": "0039_case_delete_cascade",
+      "breakpoints": true
     }
   ]
 }

@@ -1,16 +1,23 @@
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import * as s from '../../db/schema';
-import { OutreachError, type Candidate, type Consent, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
+import { OutreachError, type SelectOptions, type Candidate, type Consent, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
 const normAddress = (address: string) => address.trim().toLowerCase();
 /**
  * Pure dedupe decision: a proposed contact is skipped only when a contact with the same normalized address
  * already exists in the case (or an earlier proposal carries it). Same target + different address is kept.
  * The SQL in PostgresOutreachStore.select mirrors this (lower(btrim(address))).
  */
-export function dedupeProposedContacts<T extends { address: string }>(existing: { address: string }[], proposed: T[]): T[] {
-  const seen = new Set(existing.map(c => normAddress(c.address)));
-  return proposed.filter(p => { const key = normAddress(p.address); if (seen.has(key)) return false; seen.add(key); return true; });
+export function dedupeProposedContacts<T extends { address: string; targetId?: string; targetKind?: string }>(
+  existing: { address: string; targetId?: string; targetKind?: string }[], proposed: T[], sharedAddresses: readonly string[] = [],
+): T[] {
+  const shared = new Set(sharedAddresses.map(normAddress));
+  const keyOf = (c: { address: string; targetId?: string; targetKind?: string }) => {
+    const a = normAddress(c.address);
+    return shared.has(a) ? `${a}|${c.targetKind}:${c.targetId}` : a;
+  };
+  const seen = new Set(existing.map(keyOf));
+  return proposed.filter(p => { const key = keyOf(p); if (seen.has(key)) return false; seen.add(key); return true; });
 }
 /** All draft channels use messages for draft identity; delivered voice drafts additionally create calls. */
 export class PostgresOutreachStore implements OutreachStore {
@@ -37,9 +44,11 @@ export class PostgresOutreachStore implements OutreachStore {
     const [org] = contact.targetKind === 'organization' ? await this.db.select().from(s.organizations).where(eq(s.organizations.id, contact.targetId)) : [];
     return { ...contact, purpose: org?.kind };
   }
-  async select(caseId: string, proposed: Contact[], cap: number): Promise<Contact[]> {
+  async select(caseId: string, proposed: Contact[], cap: number, opts: SelectOptions = {}): Promise<Contact[]> {
     if (!proposed.length) return [];
     const payload = JSON.stringify(proposed);
+    const shared = new Set((opts.sharedAddresses ?? []).map(normAddress));
+    const sharedJson = JSON.stringify([...shared]);
     // Lock case first; the following statement gets a fresh READ COMMITTED snapshot after lock acquisition.
     const result = await this.db.batch([
       this.db.update(s.cases).set({ status: sql`${s.cases.status}` }).where(eq(s.cases.id, caseId)).returning({ id: s.cases.id }),
@@ -48,8 +57,12 @@ export class PostgresOutreachStore implements OutreachStore {
           SELECT * FROM jsonb_to_recordset(${payload}::jsonb)
           AS p(id uuid, "caseId" uuid, "targetId" uuid, "targetKind" text, channel text, address text)
         ), fresh AS (
-          SELECT DISTINCT ON (lower(btrim(p.address))) p.* FROM proposed p WHERE NOT EXISTS (
+          SELECT DISTINCT ON (CASE WHEN sh.is_shared THEN lower(btrim(p.address)) || '|' || p."targetKind" || ':' || p."targetId"::text ELSE lower(btrim(p.address)) END) p.*
+          FROM proposed p
+          CROSS JOIN LATERAL (SELECT lower(btrim(p.address)) IN (SELECT jsonb_array_elements_text(${sharedJson}::jsonb)) AS is_shared) sh
+          WHERE NOT EXISTS (
             SELECT 1 FROM contacts c WHERE c.case_id = ${caseId}::uuid AND lower(btrim(c.address)) = lower(btrim(p.address))
+              AND (NOT sh.is_shared OR (c.target_id = p."targetId" AND c.target_kind::text = p."targetKind"))
           )
         ), inserted AS (
           INSERT INTO contacts (id, case_id, target_id, target_kind, channel, address, state)
@@ -61,9 +74,12 @@ export class PostgresOutreachStore implements OutreachStore {
     ]);
     const inserted = result[1].rows as { id: string }[];
     const all = await this.contacts(caseId);
-    const present = (p: Contact) => all.some(c => normAddress(c.address) === normAddress(p.address));
+    // Same address; for a shared (demo coordinator) address the target must match too.
+    const same = (c: Contact, p: Contact) => normAddress(c.address) === normAddress(p.address)
+      && (!shared.has(normAddress(p.address)) || (c.targetId === p.targetId && c.targetKind === p.targetKind));
+    const present = (p: Contact) => all.some(c => same(c, p));
     if (!inserted.length && proposed.some(p => !present(p))) throw new OutreachError(422, ['contact_cap']);
-    return all.filter(c => proposed.some(p => normAddress(c.address) === normAddress(p.address)));
+    return all.filter(c => proposed.some(p => same(c, p)));
   }
   async consent(id: string): Promise<Consent | undefined> {
     const [row] = await this.db.select().from(s.consents).where(eq(s.consents.contactId, id));

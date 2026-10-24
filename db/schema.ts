@@ -192,7 +192,7 @@ export const evidence = pgTable("evidence", {
   id: uuid("id").notNull().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()
-    .references(() => cases.id),
+    .references(() => cases.id, { onDelete: "cascade" }),
   targetKind: targetKindEnum("target_kind").notNull(),
   targetId: uuid("target_id").notNull(),
   claimType: text("claim_type").notNull(),
@@ -206,7 +206,7 @@ export const caseCandidates = pgTable("case_candidates", {
   id: uuid("id").primaryKey().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()
-    .references(() => cases.id),
+    .references(() => cases.id, { onDelete: "cascade" }),
   targetKind: targetKindEnum("target_kind").notNull(),
   targetId: uuid("target_id").notNull(),
   rank: integer("rank"),
@@ -224,7 +224,7 @@ export const contacts = pgTable("contacts", {
   id: uuid("id").primaryKey().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()
-    .references(() => cases.id),
+    .references(() => cases.id, { onDelete: "cascade" }),
   targetKind: targetKindEnum("target_kind").notNull(),
   targetId: uuid("target_id").notNull(),
   channel: channelEnum("channel").notNull(),
@@ -240,7 +240,7 @@ export const consents = pgTable("consents", {
   id: uuid("id").primaryKey().defaultRandom(),
   contactId: uuid("contact_id")
     .notNull()
-    .references(() => contacts.id),
+    .references(() => contacts.id, { onDelete: "cascade" }),
   sharedFields: text("shared_fields").array().notNull().default(sql`ARRAY[]::text[]`),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
 });
@@ -249,7 +249,7 @@ export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
   contactId: uuid("contact_id")
     .notNull()
-    .references(() => contacts.id),
+    .references(() => contacts.id, { onDelete: "cascade" }),
   direction: text("direction").notNull(),
   channel: channelEnum("channel").notNull(),
   providerThreadId: text("provider_thread_id"),
@@ -268,7 +268,7 @@ export const calls = pgTable("calls", {
   id: uuid("id").primaryKey().defaultRandom(),
   contactId: uuid("contact_id")
     .notNull()
-    .references(() => contacts.id),
+    .references(() => contacts.id, { onDelete: "cascade" }),
   providerCallId: text("provider_call_id"),
   toNumber: text("to_number").notNull(),
   script: text("script").notNull(),
@@ -285,14 +285,14 @@ export const tasks = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     contactId: uuid("contact_id")
       .notNull()
-      .references(() => contacts.id),
+      .references(() => contacts.id, { onDelete: "cascade" }),
     kind: taskKindEnum("kind").notNull(),
     draftBody: text("draft_body"),
     dueAt: timestamp("due_at", { withTimezone: true }),
     status: taskStatusEnum("status").notNull().default("open"),
     title: text("title"),
     details: jsonb("details").$type<Record<string, unknown>>(),
-    caseId: uuid("case_id").references(() => cases.id),
+    caseId: uuid("case_id").references(() => cases.id, { onDelete: "cascade" }),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
   },
   (table) => [index("tasks_case_id_idx").on(table.caseId)],
@@ -302,7 +302,7 @@ export const reviews = pgTable("reviews", {
   id: uuid("id").primaryKey().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()
-    .references(() => cases.id),
+    .references(() => cases.id, { onDelete: "cascade" }),
   targetKind: targetKindEnum("target_kind").notNull(),
   targetId: uuid("target_id").notNull(),
   reviewer: text("reviewer").notNull(),
@@ -319,7 +319,7 @@ export const agentRuns = pgTable("agent_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()
-    .references(() => cases.id),
+    .references(() => cases.id, { onDelete: "cascade" }),
   agent: text("agent").notNull(),
   status: agentRunStatusEnum("status").notNull().default("queued"),
   counts: jsonb("counts").$type<Record<string, number>>(),
@@ -335,8 +335,8 @@ export const documentKindEnum = pgEnum("document_kind", [
 ]);
 export const caseDocuments = pgTable("case_documents", {
   id: uuid("id").primaryKey().defaultRandom(),
-  caseId: uuid("case_id").notNull().references(() => cases.id),
-  contactId: uuid("contact_id").references(() => contacts.id),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
   kind: documentKindEnum("kind").notNull(),
   title: text("title").notNull(),
   sourceUrl: text("source_url"),
@@ -366,9 +366,9 @@ export const contactPlans = pgTable("contact_plans", {
 /** Drafts of online application forms filled by the web_form channel (task #58). Nothing is submitted without approved_at. */
 export const webApplications = pgTable("web_applications", {
   id: uuid("id").primaryKey().defaultRandom(),
-  caseId: uuid("case_id").notNull().references(() => cases.id),
-  contactId: uuid("contact_id").references(() => contacts.id),
-  taskId: uuid("task_id").references(() => tasks.id),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
+  taskId: uuid("task_id").references(() => tasks.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
   fields: jsonb("fields").$type<unknown[]>().notNull(),
   missing: jsonb("missing").$type<unknown[]>().notNull(),

@@ -59,6 +59,12 @@ export function parseReplyAllowlist(
   return [...new Set(fallback)];
 }
 
+/** Short stable tag for a provider thread id. */
+export function threadRef(threadId: string): string {
+  const t = threadId.replace(/[^a-zA-Z0-9]/g, '');
+  return t.slice(-8).toUpperCase();
+}
+
 /** Borrowed inboxes: mail up to this long before the seed still counts (a message may be approved just before seeding). */
 export const BORROWED_LOOKBACK_MS = 6 * 60 * 60 * 1000;
 
@@ -100,6 +106,9 @@ export function planReplies(input: PlanInput): ReplyPlan {
         Date.parse(a.receivedAt) - Date.parse(b.receivedAt) ||
         a.messageId.localeCompare(b.messageId),
     );
+    // Several contacts can share one coordinator inbox: tag each scripted reply with its own thread so the reply
+    // is visibly (and testably) bound to the message it answers. Routing back to a contact is by thread id.
+    const threadCount = new Set(msgs.filter(m => input.notBefore === undefined || Date.parse(m.receivedAt) >= input.notBefore).map(m => m.threadId)).size;
     const repliedThreads = new Set(
       msgs.filter((m) => replied.has(m.messageId)).map((m) => m.threadId),
     );
@@ -126,7 +135,7 @@ export function planReplies(input: PlanInput): ReplyPlan {
         continue;
       }
       repliedThreads.add(m.threadId);
-      due.push({ ...base, threadId: m.threadId, to: sender, text: c.reply, dueAt });
+      due.push({ ...base, threadId: m.threadId, to: sender, text: threadCount > 1 ? `${c.reply}\n\n(Reference ${threadRef(m.threadId)}: this answers your message in thread ${m.threadId}.)` : c.reply, dueAt });
     }
   }
   due.sort((a, b) => a.dueAt - b.dueAt || a.messageId.localeCompare(b.messageId));

@@ -12,6 +12,8 @@ export interface CaseStore {
   setStatus(id: string, status: string): Promise<void>;
   /** Atomically claim a case, including across server instances. */
   compareAndSetStatus(id: string, expected: readonly string[], status: string): Promise<boolean>;
+  /** Delete the case; every dependent row goes with it (ON DELETE CASCADE). False when it does not exist. */
+  delete(id: string): Promise<boolean>;
 }
 
 type Row = typeof cases.$inferSelect;
@@ -75,6 +77,11 @@ export class DbCaseStore implements CaseStore {
     return rows.length === 1;
   }
 
+  async delete(id: string): Promise<boolean> {
+    const rows = await this.db.delete(cases).where(eq(cases.id, id)).returning({ id: cases.id });
+    return rows.length === 1;
+  }
+
   async setStatus(id: string, status: string): Promise<void> {
     await this.db.update(cases).set({ status }).where(eq(cases.id, id));
   }
@@ -106,6 +113,10 @@ export class MemoryCaseStore implements CaseStore {
     if (!prev || !expected.includes(prev.status)) return false;
     this.rows.set(id, { ...prev, status });
     return true;
+  }
+
+  async delete(id: string): Promise<boolean> {
+    return this.rows.delete(id);
   }
 
   async setStatus(id: string, status: string): Promise<void> {

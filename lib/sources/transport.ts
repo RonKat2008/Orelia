@@ -16,16 +16,97 @@ export class SourceError extends Error {
     super(`${source}: ${message}`); this.name = "SourceError";
   }
 }
+const RETRY_LIMIT = 3;
+const MAX_BACKOFF_MS = 30_000;
+
+/** Origin and path only, so API keys and caller addresses in the query string never appear in errors. */
+export function endpointOf(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return "unknown-endpoint";
+  }
+}
+
+/** Retry-After (seconds or HTTP-date), otherwise exponential backoff. Capped so a bad header cannot stall a run. */
+export function retryDelayMs(retryAfter: string | null, attempt: number, now = Date.now()): number {
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_BACKOFF_MS);
+    const when = Date.parse(retryAfter);
+    if (Number.isFinite(when)) return Math.min(Math.max(0, when - now), MAX_BACKOFF_MS);
+  }
+  return Math.min(1000 * 2 ** attempt, MAX_BACKOFF_MS);
+}
+
+function publicFailure(body: string): string {
+  let detail = "";
+  try {
+    const parsed = JSON.parse(body) as { error?: unknown };
+    const message = typeof parsed.error === "string" ? parsed.error : "";
+    // NCBI puts the caller IP in `api-key`. Never copy that field, an address, or a credential into the error.
+    if (message && !/(\d{1,3}\.){3}\d{1,3}/.test(message) && !/key|token|secret/i.test(message)) detail = `: ${message.slice(0, 160)}`;
+  } catch { /* non-JSON body */ }
+  return detail;
+}
+
+/** One limiter per source and rate, shared by every client in the process. */
+const sharedLimiters = new Map<string, RateLimiter>();
+export function sharedLimiter(bucket: string, perSecond: number): RateLimiter {
+  const key = `${bucket}:${perSecond}`;
+  let limiter = sharedLimiters.get(key);
+  if (!limiter) {
+    limiter = new RateLimiter(perSecond);
+    sharedLimiters.set(key, limiter);
+  }
+  return limiter;
+}
+
+function liveBucket(url: string): { bucket: string; perSecond: number } | undefined {
+  let host = "";
+  let keyed = false;
+  try {
+    const u = new URL(url);
+    host = u.hostname;
+    const apiKey = u.searchParams.get("api_key");
+    keyed = !!apiKey && apiKey.length > 0;
+  } catch {
+    return undefined;
+  }
+  if (host.endsWith("ncbi.nlm.nih.gov")) return { bucket: keyed ? "pubmed-keyed" : "pubmed", perSecond: keyed ? 10 : 3 };
+  if (host.endsWith("npiregistry.cms.hhs.gov")) return { bucket: "nppes", perSecond: 3 };
+  if (host.endsWith("clinicaltrials.gov")) return { bucket: "ctgov", perSecond: 3 };
+  return undefined;
+}
+
 export class FetchTransport implements Transport {
-  constructor(private fetcher: typeof fetch = fetch, private now = () => new Date()) {}
+  constructor(
+    private fetcher: typeof fetch = fetch,
+    private now = () => new Date(),
+    private sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms)),
+  ) {}
   async request(request: SourceRequest): Promise<SourceResponse> {
-    const response = await this.fetcher(request.url, {
+    const endpoint = endpointOf(request.url);
+    const bucket = liveBucket(request.url);
+    for (let attempt = 0; ; attempt++) {
+      const response = await this.send(request, bucket);
+      if (response.status === 429 && attempt < RETRY_LIMIT) {
+        await this.sleep(retryDelayMs(response.headers.get("retry-after"), attempt, this.now().getTime()));
+        continue;
+      }
+      const body = await response.text();
+      if (!response.ok) throw new SourceError("http", `HTTP ${response.status} ${endpoint}${publicFailure(body)}`, response.status);
+      return { body, fetchedAt: this.now().toISOString(), status: response.status, requestUrl: request.url };
+    }
+  }
+  private send(request: SourceRequest, bucket: { bucket: string; perSecond: number } | undefined): Promise<Response> {
+    const exec = () => this.fetcher(request.url, {
       method: request.method ?? "GET", headers: request.headers,
       body: request.body === undefined ? undefined : JSON.stringify(request.body),
       signal: AbortSignal.timeout(30_000),
     });
-    if (!response.ok) throw new SourceError("http", "Request failed", response.status);
-    return { body: await response.text(), fetchedAt: this.now().toISOString(), status: response.status };
+    return bucket ? sharedLimiter(bucket.bucket, bucket.perSecond).run(exec) : exec();
   }
 }
 type ManifestEntry = {file: string; url: string; method?: string; fetched_at: string; status: number};
@@ -66,7 +147,7 @@ export class RateLimiter {
   }
 }
 export function json<T>(response: SourceResponse, source: string): T {
-  if (response.status >= 400) throw new SourceError(source, "Request failed", response.status);
+  if (response.status >= 400) throw new SourceError(source, `HTTP ${response.status} ${response.requestUrl ? endpointOf(response.requestUrl) : "unknown-endpoint"}`, response.status);
   try { return JSON.parse(response.body) as T; }
   catch { throw new SourceError(source, "Invalid JSON response"); }
 }

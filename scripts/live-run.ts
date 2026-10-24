@@ -128,7 +128,8 @@ function prepareEnv(): void {
   for (const key of ["AGENTMAIL_API_KEY", "AGENTCALL_API_KEY", "AGENTMAIL_WEBHOOK_SECRET", "AGENTCALL_WEBHOOK_SECRET", "AGENTCALL_FROM_NUMBER_ID"]) {
     delete process.env[key];
   }
-  process.env.WAYFINDER_RECORD_LLM = "1";
+  if (process.argv.includes("--record")) process.env.WAYFINDER_RECORD_LLM = "1";
+  else delete process.env.WAYFINDER_RECORD_LLM;
   if (process.env.OUTBOUND_ALLOWLIST && !process.env.OUTBOUND_ALLOWLIST.includes(".example")) {
     delete process.env.OUTBOUND_ALLOWLIST;
   }
@@ -244,14 +245,6 @@ async function runCase(slug: string) {
   }
   const researchMs = Date.now() - tResearch;
 
-  let curator: { present: boolean; note: string } = { present: false, note: "lib/agents/curator.ts is not in this worktree; curator step skipped" };
-  try {
-    await import("@/lib/agents/curator");
-    curator = { present: true, note: "curator module loaded but this script does not call an untyped export" };
-  } catch {
-    /* absent */
-  }
-
   const runs = await store.listByCase(created.id);
   const shortlist = summary ? await persist.getShortlist(created.id) : [];
   const byKind: Record<string, number> = {};
@@ -289,7 +282,12 @@ async function runCase(slug: string) {
     researchError,
     shortlistByKind: byKind,
     shortlistSize: shortlist.length,
-    curator,
+    experts: (summary?.verified.kept ?? []).flatMap((rec) =>
+      rec.resource.kind === "expert"
+        ? [{ name: rec.resource.name, npi: rec.resource.npi ?? null, verified: rec.resource.verified ?? false, eligible: rec.shortlistEligibility?.eligible ?? false }]
+        : [],
+    ),
+    curator: summary?.curation ?? null,
     ledger: cost,
     totalUsd,
     drift,

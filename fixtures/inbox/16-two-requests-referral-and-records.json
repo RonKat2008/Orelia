@@ -7,7 +7,8 @@
     "from": "intake@crestline-institute.example.org",
     "subject": "Re: Request for appointment",
     "body": "Hello,\n\nWe need two things. First, a referral from your treating physician is required before we can open a new-patient file. Second, once that is in place please send your recent imaging reports. We cannot book until the referral arrives.\n\nCrestline Intake Team",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "16-two-requests-referral-and-records"
   },
   "expected": {
     "class": "needs_referral",

@@ -1,0 +1,8 @@
+{
+  "class": "call_to_schedule",
+  "confidence": 0.96,
+  "rationale": "The office asks the patient to phone the scheduling line during stated hours.",
+  "quote": "Please call our scheduling line at +1 202-555-0147",
+  "phone": "+1 202-555-0147",
+  "hours": "Monday to Friday, 8:00 am to 4:30 pm Eastern"
+}

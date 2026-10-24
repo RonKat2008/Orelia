@@ -1,0 +1,6 @@
+{
+  "class": "needs_referral",
+  "confidence": 0.93,
+  "rationale": "The callee stated a referral from the primary doctor is required before booking.",
+  "quote": "we need a referral from their primary doctor before we can book anything"
+}

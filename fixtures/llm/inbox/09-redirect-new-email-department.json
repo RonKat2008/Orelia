@@ -1,0 +1,11 @@
+{
+  "class": "redirect",
+  "confidence": 0.94,
+  "rationale": "The sender points to another department and gives its email address.",
+  "quote": "Please write to our Rare Disease Access Office at access@clearwater-health.example.org",
+  "redirect": {
+    "name": "Marcus Hale",
+    "email": "access@clearwater-health.example.org",
+    "department": "Rare Disease Access Office"
+  }
+}

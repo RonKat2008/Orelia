@@ -7,7 +7,8 @@
     "from": "hello@orchard-health.example.com",
     "subject": "Re: Your message",
     "body": "Thanks for writing. Someone will look into this and may follow up.\n\nOrchard Health",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "13-unclear-vague"
   },
   "expected": {
     "class": "unclear",

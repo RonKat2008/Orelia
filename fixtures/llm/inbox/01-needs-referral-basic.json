@@ -1,0 +1,6 @@
+{
+  "class": "needs_referral",
+  "confidence": 0.95,
+  "rationale": "The center says it needs a written referral from the patient's treating physician before scheduling.",
+  "quote": "We can only schedule new patients who have a written referral from their treating physician."
+}

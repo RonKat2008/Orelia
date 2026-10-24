@@ -6,7 +6,8 @@
     "providerCallId": "call_needs_referral_voice",
     "from": "+1 202-555-0114",
     "body": "AI: Hello, this is an AI assistant calling on behalf of a patient to ask about scheduling a new-patient visit.\nCallee: Okay. Do they have a referral?\nAI: I do not have that information. Is a referral required?\nCallee: Yes, we need a referral from their primary doctor before we can book anything.\nAI: Thank you, I will pass that along.\nCallee: Sounds good.",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "02-needs-referral-voice"
   },
   "expected": {
     "class": "needs_referral",

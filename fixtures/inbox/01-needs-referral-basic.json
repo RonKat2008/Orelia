@@ -7,7 +7,8 @@
     "from": "intake@lakeview-sarcoma.example.org",
     "subject": "Re: New patient inquiry",
     "body": "Hello,\n\nThank you for reaching out to the Lakeview University Sarcoma Center. We can only schedule new patients who have a written referral from their treating physician. Please have your doctor's office send a referral and we will take it from there.\n\nRegards,\nPriya Nandakumar\nNew Patient Intake",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "01-needs-referral-basic"
   },
   "expected": {
     "class": "needs_referral",

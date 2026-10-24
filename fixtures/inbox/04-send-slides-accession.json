@@ -7,7 +7,8 @@
     "from": "slides@eastgate-medical.example.org",
     "subject": "Re: Case review",
     "body": "Hello,\n\nWe would like the pathology slides for review. Ask the lab (Maple Street Pathology Associates) to release them and reference accession number S26-04417. Slides can be couriered to our receiving desk.\n\nCordially,\nWen Liu-Barrett",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "04-send-slides-accession"
   },
   "expected": {
     "class": "send_slides",

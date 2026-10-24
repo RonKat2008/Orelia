@@ -147,7 +147,7 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
             paperCount: hit.paperCount + 1,
             recentPaperCount:
               hit.recentPaperCount + (article.year && article.year >= asOfYear - RECENT_YEARS ? 1 : 0),
-            papers: [...hit.papers, { pmid: article.pmid, title: article.title, year: article.year }],
+            papers: [...hit.papers, { pmid: article.pmid, title: article.title, year: article.year, ...(a.affiliation ? { affiliation: a.affiliation } : {}) }],
           });
         }
       }

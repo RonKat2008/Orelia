@@ -2,6 +2,8 @@ import { pubmedAuthorsTool } from "./pubmed-tool";
 import { runResearch, type ProvenanceTracker } from "./shared";
 import type { ResearchAgent } from "./types";
 import { HAIKU } from "@/lib/agents/models";
+import type { Evidence, Resource } from "@/lib/contracts";
+import { affiliationEvidence } from "@/lib/identity/affiliation-evidence";
 
 const INSTRUCTIONS = `ROLE: Literature agent. Identify people who publish most often on the patient's disease, using PubMed results from tools.
 
@@ -33,13 +35,33 @@ export function publicationClaim(item: { id?: string; claim: string; sourceUrl: 
   return `${author.name} is listed as an author of PMID ${pmid}.${counts}`;
 }
 
+const MAX_AFFILIATION_ROWS = 2;
+const RESTATED = /^(.+?) is listed as an author of PMID (\d+)\./;
+
+/**
+ * identity.affiliation rows for an expert: for each paper its restated authorship claim cites (at most two), the
+ * author's affiliation on THAT paper as the PubMed tool returned it. Source = the PubMed record.
+ */
+export function stampAffiliations(record: Resource, cited: readonly Evidence[], tracker: ProvenanceTracker): Evidence[] {
+  if (record.kind !== "expert") return [];
+  const out: Evidence[] = [];
+  for (const e of cited) {
+    if (out.length >= MAX_AFFILIATION_ROWS || e.sourceKind !== "pubmed") continue;
+    const m = RESTATED.exec(e.claim);
+    if (!m) continue;
+    const row = affiliationEvidence({ name: m[1]!, pmid: m[2]!, affiliation: tracker.paperAffiliation(m[1]!, m[2]!), fetchedAt: e.fetchedAt });
+    if (row && !out.some((o) => o.id === row.id)) out.push(row);
+  }
+  return out;
+}
+
 export const literatureAgent: ResearchAgent = {
   name: "literature",
   model: HAIKU,
   run: runResearch({
     name: "literature",
     instructions: INSTRUCTIONS,
-    rules: { allowedKinds: ["expert"], restateClaim: publicationClaim },
+    rules: { allowedKinds: ["expert"], restateClaim: publicationClaim, stampEvidence: stampAffiliations },
     makeTools: (ports, tracker) => [pubmedAuthorsTool(ports.pubmed, tracker)],
     seed: (call, c) => call("search_pubmed_authors", { disease: c.diseaseName }),
   }),

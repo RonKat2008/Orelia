@@ -1,12 +1,15 @@
 import type { Evidence } from '@/lib/contracts/evidence';
-import type { ExaPort, NppesPort } from '@/lib/agents/research/source-ports';
+import type { ExaPort, NppesPort, NppesProvider } from '@/lib/agents/research/source-ports';
 import { cleanField } from '@/lib/agents/research/untrusted';
 import { parsePlanContactPoints } from '@/lib/plan/contact-points';
 import { EXPERT_CLAIM_TYPES, expertTraceSchema, type ExpertChain, type ExpertTrace, type ReachRoute, type TraceEvidence } from './contract';
 import { stateFromAffiliation } from '@/lib/agents/research/geo';
 import { extractInstitution, pageMatchesInstitution, slugify } from './affiliation';
 import { assessNppes, nppesRegistryUrl, pageShowsPatientCare, type NppesAssessment } from './sees-patients';
-import { classifyInstitutionPages, consultationQuery, type AcceptedPage } from './consultation';
+import { classifyInstitutionPages, consultationQuery, intakeQuery, type AcceptedPage } from './consultation';
+import { parseAffiliationEvidence } from '@/lib/identity/affiliation-evidence';
+import { classifyIntakeDoors } from '@/lib/contact-finder';
+import { contactPointEvidence, contactPointsFromDoors, usPhoneToE164 } from '@/lib/contact-finder/contact-points';
 
 export const MAX_AUTHORS = 6;
 export const MAX_PAPERS_PER_AUTHOR = 2;
@@ -57,15 +60,28 @@ export function papersFor(expert: TraceExpert, evidence: readonly TraceInputEvid
 
 const AFFILIATIONS = /listed affiliations?: (.+)$/;
 
-/** The expert's affiliation text: the PubMed profile first, else the first pubmed row that lists one. */
+const ownRows = (expert: TraceExpert, evidence: readonly TraceInputEvidence[]) =>
+  evidence.filter((e) => e.targetKind === 'expert' && e.targetId === expert.id);
+
+/** Stored identity.affiliation rows (code-stamped from the PubMed record), in evidence order. */
+function storedAffiliations(expert: TraceExpert, evidence: readonly TraceInputEvidence[]): Array<{ pmid: string; affiliation: string }> {
+  return ownRows(expert, evidence).flatMap((e) => { const a = parseAffiliationEvidence(e); return a ? [a] : []; });
+}
+
+/**
+ * The expert's affiliation text: a stored identity.affiliation row naming an institution first (that is what survives
+ * in Postgres), then the in-memory PubMed profile, then any older pubmed row that lists one.
+ */
 function affiliationFor(expert: TraceExpert, evidence: readonly TraceInputEvidence[]): string | undefined {
+  const stored = storedAffiliations(expert, evidence);
+  const named = stored.find((a) => extractInstitution(a.affiliation));
+  if (named) return named.affiliation;
   if (expert.profile?.affiliation) return expert.profile.affiliation;
-  for (const e of evidence) {
-    if (e.targetKind !== 'expert' || e.targetId !== expert.id) continue;
+  for (const e of ownRows(expert, evidence)) {
     const m = AFFILIATIONS.exec(e.claim);
     if (m?.[1]) return m[1];
   }
-  return undefined;
+  return stored[0]?.affiliation;
 }
 
 /**
@@ -73,8 +89,10 @@ function affiliationFor(expert: TraceExpert, evidence: readonly TraceInputEviden
  * "PMID X lists NAME with affiliation INST"; a profile-level affiliation is not tied to one paper.
  */
 function affiliationPaper(expert: TraceExpert, evidence: readonly TraceInputEvidence[], instName: string): { pmid: string; url: string } | null {
-  for (const e of evidence) {
-    if (e.targetKind !== 'expert' || e.targetId !== expert.id || e.sourceKind !== 'pubmed') continue;
+  const stored = storedAffiliations(expert, evidence).find((a) => extractInstitution(a.affiliation) === instName);
+  if (stored) return { pmid: stored.pmid, url: `https://pubmed.ncbi.nlm.nih.gov/${stored.pmid}/` };
+  for (const e of ownRows(expert, evidence)) {
+    if (e.sourceKind !== 'pubmed') continue;
     const pmid = PUBMED_URL.exec(e.sourceUrl)?.[1];
     const listed = AFFILIATIONS.exec(e.claim)?.[1];
     if (!pmid || !listed) continue;
@@ -115,7 +133,28 @@ const splitName = (name: string): { first: string; last: string } => {
 
 const trunc = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-interface InstitutionFacts { institutionPage: AcceptedPage | null; consultation: AcceptedPage | null }
+interface InstitutionFacts {
+  institutionPage: AcceptedPage | null;
+  consultation: AcceptedPage | null;
+  /** Code-stamped phone / email contact points from intake pages on the institution's own host. */
+  contacts: Array<{ evidence: Evidence & { id: string }; origin: string }>;
+}
+
+const NO_FACTS: InstitutionFacts = { institutionPage: null, consultation: null, contacts: [] };
+const MAX_INSTITUTION_CONTACTS = 3;
+
+/** Intake contact points (phone / role email) on result pages that belong to the institution. */
+export function institutionContacts(institution: string, results: readonly { url: string; title?: string; text?: string }[], fetchedAt: string): InstitutionFacts['contacts'] {
+  const out: InstitutionFacts['contacts'] = [];
+  for (const r of results) {
+    if (!/^https?:/i.test(r.url) || !pageMatchesInstitution(institution, { url: r.url })) continue;
+    for (const cp of contactPointsFromDoors(classifyIntakeDoors({ url: r.url, title: r.title, text: r.text }))) {
+      const row = contactPointEvidence(cp, fetchedAt);
+      if (row?.id && !out.some((o) => o.evidence.id === row.id) && out.length < MAX_INSTITUTION_CONTACTS) out.push({ evidence: row as Evidence & { id: string }, origin: cp.origin });
+    }
+  }
+  return out;
+}
 
 export async function traceExperts(input: TraceInput, ports: TracePorts): Promise<ExpertTrace> {
   const fetchedAt = ports.now.toISOString();
@@ -133,8 +172,13 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
   const institutionFacts = (name: string): Promise<InstitutionFacts> => {
     let p = instCache.get(name);
     if (!p) {
-      p = safe(() => ports.exa.search({ query: consultationQuery(name), numResults: 6 }))
-        .then((results) => (results ? classifyInstitutionPages(name, results) : { institutionPage: null, consultation: null }));
+      p = Promise.all([
+        safe(() => ports.exa.search({ query: consultationQuery(name), numResults: 6 })),
+        safe(() => ports.exa.search({ query: intakeQuery(name), numResults: 5 })),
+      ]).then(([consult, intake]) => {
+        const pages = classifyInstitutionPages(name, [...(consult ?? []), ...(intake ?? [])]);
+        return { ...pages, contacts: institutionContacts(name, [...(intake ?? []), ...(consult ?? [])], fetchedAt) };
+      });
       instCache.set(name, p);
     }
     return p;
@@ -144,18 +188,22 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
     const slug = slugify(expert.name);
     const { first, last } = splitName(expert.name);
     const affText = affiliationFor(expert, input.evidence);
-    const instName = extractInstitution(affText);
-    const instSlug = instName ? slugify(instName) : null;
+    const affInst = extractInstitution(affText);
+    const anchor = affiliationAnchor(affText, affInst);
+    const lookupState = expert.profile?.state ?? anchor.state;
     const chosen = papers.slice(0, MAX_PAPERS_PER_AUTHOR);
+    // Sees patients is a per-author fact, shared by that author's chains.
+    const nppesResult: NppesAssessment = await safe(() => ports.nppes.lookup({ firstName: first, lastName: last, ...(lookupState ? { state: lookupState } : {}) }))
+      .then((r) => (r ? assessNppes(r.providers, first, last, anchor) : ({ kind: 'unknown', reason: 'lookup_failed' } as const)));
+    // Institution: the paper affiliation; else the confirmed registry entry's organization name.
+    const nppesOrg = nppesResult.kind === 'yes' ? cleanField(nppesResult.provider.raw?.basic?.organization_name, MAX_ORG)?.trim() || null : null;
+    const instName = affInst ?? nppesOrg;
+    const instSlug = instName ? slugify(instName) : null;
     const mk = (id: string, claimType: string, claim: string, sourceUrl: string, sourceKind: Evidence['sourceKind'], kind: 'expert' | 'institution' = 'expert'): TraceEvidence => ({
       id, claimType, claim: trunc(claim, 500), sourceUrl, sourceKind, fetchedAt,
       targetKind: kind, targetId: kind === 'expert' ? expert.id : `inst:${instSlug}`,
     });
-
-    // Sees patients is a per-author fact, shared by that author's chains.
-    const nppesResult: NppesAssessment = await safe(() => ports.nppes.lookup({ firstName: first, lastName: last, ...(expert.profile?.state ? { state: expert.profile.state } : {}) }))
-      .then((r) => (r ? assessNppes(r.providers, first, last, affiliationAnchor(affText, instName)) : ({ kind: 'unknown', reason: 'lookup_failed' } as const)));
-    const facts = instName ? await institutionFacts(instName) : { institutionPage: null, consultation: null };
+    const facts = instName ? await institutionFacts(instName) : NO_FACTS;
 
     let seesRowId: string | null = null;
     let seesText = 'No patient-care listing could be confirmed from the national provider registry.';
@@ -201,14 +249,24 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
     }
 
     // Affiliation: cite the paper whose own row lists the institution; otherwise word it as PubMed results.
-    const affPaper = instName ? affiliationPaper(expert, input.evidence, instName) : null;
-    const affId = !instName ? null : affPaper
+    // An institution known only from the registry cites the registry entry.
+    const affPaper = affInst ? affiliationPaper(expert, input.evidence, affInst) : null;
+    const affId = !instName ? null : !affInst && nppesOrg && nppesResult.kind === 'yes'
+      ? addRow(mk(`xp:${slug}:nppes_organization`, EXPERT_CLAIM_TYPES.affiliation,
+        `The national provider registry lists ${expert.name} (NPI ${nppesResult.provider.npi}) with the organization ${nppesOrg}.`, nppesRegistryUrl(nppesResult.provider.npi), 'nppes'))
+      : affPaper
       ? addRow(mk(`xp:${slug}:${affPaper.pmid}:affiliation`, EXPERT_CLAIM_TYPES.affiliation,
         `PMID ${affPaper.pmid} lists ${expert.name} with the affiliation ${instName}.`, affPaper.url, 'pubmed'))
       : addRow(mk(`xp:${slug}:affiliation`, EXPERT_CLAIM_TYPES.affiliation,
         `PubMed results list ${expert.name} with the affiliation ${instName}.`, pubmedAuthorSearchUrl(expert.name), 'pubmed'));
 
-    const reach = reachRoutes(expert, input.evidence, facts, consultId, instRowIds[0] ?? null, addRow, fetchedAt);
+    // Practice-location phone from the confirmed registry entry (structured field; never the mailing address phone).
+    const nppesPhone = nppesResult.kind === 'yes' ? nppesVoiceRow(nppesResult.provider, fetchedAt) : null;
+    const extra: TraceEvidence[] = [
+      ...(nppesPhone ? [{ ...nppesPhone, targetKind: 'expert' as const, targetId: expert.id }] : []),
+      ...(instSlug ? facts.contacts.map((c) => ({ ...c.evidence, targetKind: 'institution' as const, targetId: `inst:${instSlug}` })) : []),
+    ];
+    const reach = reachRoutes(expert, input.evidence, facts, consultId, instRowIds[0] ?? null, addRow, fetchedAt, extra);
 
     return chosen.map((paper): ExpertChain => {
       const authorshipId = addRow(mk(`xp:${slug}:${paper.pmid}:authorship`, EXPERT_CLAIM_TYPES.authorship,
@@ -239,19 +297,46 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
   return expertTraceSchema.parse(trace);
 }
 
+const MAX_ORG = 120;
+
+/** The registry entry's practice-location phone as a code-stamped voice contact point row. */
+function nppesVoiceRow(p: NppesProvider, fetchedAt: string): (Evidence & { id: string }) | null {
+  const location = (p.raw?.addresses ?? []).find((a) => a.address_purpose === 'LOCATION' && a.telephone_number);
+  const phone = usPhoneToE164(location?.telephone_number);
+  if (!phone) return null;
+  const row = contactPointEvidence({ channel: 'voice', address: phone, origin: 'nppes_location_phone', sourceUrl: nppesRegistryUrl(p.npi), sourceKind: 'nppes' }, fetchedAt);
+  return row?.id ? (row as Evidence & { id: string }) : null;
+}
+
+const ROUTE_LABELS: Record<string, string> = {
+  nppes_location_phone: 'Practice phone listed in the national provider registry',
+  new_patient_line: 'New-patient line on the institution site',
+  referral_coordinator: 'Referral line on the institution site',
+  second_opinion_program: 'Second-opinion program contact',
+  pathology_consult: 'Pathology consultation contact',
+  nurse_navigator: 'Nurse navigator contact',
+};
+
 /** howToReach: only code-stamped contact_point.* rows on the expert / its institution, plus accepted pages. */
 function reachRoutes(
   expert: TraceExpert, evidence: readonly TraceInputEvidence[], facts: InstitutionFacts,
   consultId: string | null, instPageId: string | null, addRow: (r: TraceEvidence) => string, fetchedAt: string,
+  extra: readonly TraceEvidence[] = [],
 ): ReachRoute[] {
   const routes: ReachRoute[] = [];
-  const owned = evidence.filter((e) => (e.targetKind === 'expert' && e.targetId === expert.id)
-    || (e.targetKind === 'institution' && expert.institutionId !== undefined && e.targetId === expert.institutionId));
+  const owned = [
+    ...evidence.filter((e) => (e.targetKind === 'expert' && e.targetId === expert.id)
+      || (e.targetKind === 'institution' && expert.institutionId !== undefined && e.targetId === expert.institutionId)),
+    ...extra,
+  ];
+  const seen = new Set<string>();
   for (const cp of parsePlanContactPoints(owned.flatMap((e) => (e.id ? [{ ...e, id: e.id }] : [])))) {
     const src = owned.find((e) => e.id === cp.evidenceId);
-    if (!src) continue;
+    const key = `${cp.channel}:${cp.address}`;
+    if (!src || seen.has(key)) continue;
+    seen.add(key);
     addRow({ ...src, id: cp.evidenceId, fetchedAt: src.fetchedAt || fetchedAt, targetKind: src.targetKind === 'institution' ? 'institution' : 'expert' } as TraceEvidence);
-    routes.push({ channel: cp.channel as ReachRoute['channel'], label: `${cp.origin.replace(/_/g, ' ')} (${cp.sourceKind})`, address: cp.address, evidenceId: cp.evidenceId });
+    routes.push({ channel: cp.channel as ReachRoute['channel'], label: ROUTE_LABELS[cp.origin] ?? `${cp.origin.replace(/_/g, ' ')} (${cp.sourceKind})`, address: cp.address, evidenceId: cp.evidenceId });
   }
   if (facts.consultation && consultId) routes.push({ channel: 'page', label: 'Second-opinion / e-consultation program page', address: facts.consultation.url, evidenceId: consultId });
   if (facts.institutionPage && instPageId && facts.institutionPage.url !== facts.consultation?.url) routes.push({ channel: 'page', label: 'Institution page', address: facts.institutionPage.url, evidenceId: instPageId });

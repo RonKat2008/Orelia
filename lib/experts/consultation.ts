@@ -7,6 +7,10 @@ export const CONSULT_PATTERN = /second opinion|e-?consult|remote consult|virtual
 export const consultationQuery = (institution: string): string =>
   `"${institution}" second opinion OR e-consult OR remote consultation program`;
 
+/** Institution intake pages: where a new-patient / appointment / referral phone line is published. */
+export const intakeQuery = (institution: string): string =>
+  `"${institution}" new patient appointments referral phone`;
+
 export interface AcceptedPage { url: string; title: string }
 
 const safeHttp = (u: string): string | null => {

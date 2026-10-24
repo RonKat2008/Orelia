@@ -26,6 +26,7 @@ export function pubmedAuthorsTool(pubmed: PubmedPort, tracker: ProvenanceTracker
       const hits = await pubmed.searchAuthors({ disease, limit: limit ?? DEFAULT_AUTHOR_LIMIT });
       for (const h of hits) {
         tracker.rememberAuthorPapers(h.name, disease, h.papers.map((p) => p.pmid));
+        for (const p of h.papers) if (p.affiliation) tracker.rememberPaperAffiliation(h.name, p.pmid, p.affiliation);
         // Counts are stamped on the final record from this tool output, never from model prose.
         tracker.rememberAuthor(h.name, {
           paperCount: h.paperCount,
@@ -44,7 +45,13 @@ export function pubmedAuthorsTool(pubmed: PubmedPort, tracker: ProvenanceTracker
           state: h.state,
           paperCount: h.paperCount,
           recentPaperCount: h.recentPaperCount,
-          papers: h.papers.map((p) => ({ ...p, title: cleanField(p.title) ?? "", sourceUrl: pubmedUrl(p.pmid) })),
+          papers: h.papers.map((p) => ({
+            pmid: p.pmid,
+            title: cleanField(p.title) ?? "",
+            ...(p.year ? { year: p.year } : {}),
+            ...(p.affiliation ? { affiliation: cleanField(p.affiliation) } : {}),
+            sourceUrl: pubmedUrl(p.pmid),
+          })),
         })),
       };
     },

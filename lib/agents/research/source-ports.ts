@@ -20,7 +20,8 @@ export interface PubmedAuthorHit {
   paperCount: number;
   /** Subset of paperCount published in the last 5 years. */
   recentPaperCount: number;
-  papers: Array<{ pmid: string; title: string; year?: number }>;
+  /** affiliation: this author's first listed affiliation on THAT paper, when PubMed has one. */
+  papers: Array<{ pmid: string; title: string; year?: number; affiliation?: string }>;
 }
 
 export interface PubmedPort {

@@ -16,6 +16,7 @@ import {
 } from "@/lib/contracts";
 import { contactPointEvidence, isContactPointClaimType, type ContactPoint } from "@/lib/contact-finder/contact-points";
 import { checkClaimGrounding } from "./grounding";
+import { isAffiliationClaimType } from "@/lib/identity/affiliation-evidence";
 import type { SourcePorts } from "./source-ports";
 import type { ResearchContext } from "./types";
 
@@ -70,6 +71,7 @@ export class ProvenanceTracker {
   private readonly authorPapers = new Map<string, { name: string; disease: string; pmids: Set<string> }>();
   private readonly recordTexts = new Map<string, string>();
   private readonly contactPoints = new Map<string, ContactPoint[]>();
+  private readonly paperAffiliations = new Map<string, string>();
   private corpus = "";
 
   constructor(private readonly now: () => Date = () => new Date()) {}
@@ -146,6 +148,15 @@ export class ProvenanceTracker {
       .map(([key, a]) => ({ name: a.name, disease: a.disease, profile: this.authorFacts.get(key) }));
   }
 
+  /** The author's affiliation on one paper, exactly as the PubMed tool returned it (raw; sanitize before use). */
+  rememberPaperAffiliation(name: string, pmid: string, affiliation: string): void {
+    this.paperAffiliations.set(`${nameKey(name)}|${pmid}`, affiliation);
+  }
+
+  paperAffiliation(name: string, pmid: string): string | undefined {
+    return this.paperAffiliations.get(`${nameKey(name)}|${pmid}`);
+  }
+
   authorProfile(name: string): ExpertProfile | undefined {
     return this.authorFacts.get(nameKey(name));
   }
@@ -182,6 +193,11 @@ export interface FinalizeRules {
    * Used where the claim is fully determined by tool facts, so no model prose reaches the user at all.
    */
   restateClaim?: (item: ResearchOutput["evidence"][number], tracker: ProvenanceTracker) => string | null;
+  /**
+   * Code-stamped rows built from tool records for a kept record (e.g. identity.affiliation). Each must carry an id;
+   * it is appended to the record's evidenceRefs. Never fed from model prose.
+   */
+  stampEvidence?: (record: Resource, cited: readonly Evidence[], tracker: ProvenanceTracker) => Evidence[];
 }
 
 /**
@@ -210,6 +226,10 @@ export function finalizeOutput(
     }
     if (isContactPointClaimType(item.claimType)) {
       onDrop(item, "contact points are stamped from tool output by code, never by a model");
+      continue;
+    }
+    if (isAffiliationClaimType(item.claimType)) {
+      onDrop(item, "affiliations are stamped from tool output by code, never by a model");
       continue;
     }
     let claim = item.claim;
@@ -264,10 +284,12 @@ export function finalizeOutput(
       const source = tracker.sourceFor(url);
       return source ? tracker.contactPointsFor(url).flatMap((cp) => contactPointEvidence(cp, source.fetchedAt) ?? []) : [];
     });
+    const cited = [...new Set(refs.flatMap(resolve))];
+    const stamped = (rules.stampEvidence?.(sanitized, cited, tracker) ?? []).filter((e) => !!e.id);
     seenIds.add(sanitized.id);
-    records.push({ ...sanitized, evidenceRefs: [...sanitized.evidenceRefs, ...contacts.flatMap((e) => (e.id ? [e.id] : []))] });
+    records.push({ ...sanitized, evidenceRefs: [...sanitized.evidenceRefs, ...[...contacts, ...stamped].flatMap((e) => (e.id ? [e.id] : []))] });
     for (const ref of refs) resolve(ref).forEach((e) => referenced.add(e));
-    for (const e of contacts) if (!contactEvidence.has(e.id ?? "")) contactEvidence.set(e.id ?? "", e);
+    for (const e of [...contacts, ...stamped]) if (!contactEvidence.has(e.id ?? "")) contactEvidence.set(e.id ?? "", e);
   }
 
   const evidence = [...[...evidenceByUrl.values()].flat().filter((e) => referenced.has(e)), ...contactEvidence.values()];

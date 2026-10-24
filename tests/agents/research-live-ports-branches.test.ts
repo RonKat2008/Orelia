@@ -112,6 +112,15 @@ describe("live pubmed port", () => {
     expect(hits.find((h) => h.lastName === "Lastseen")?.state).toBeUndefined();
   });
 
+  it("carries each author's affiliation on each specific paper", async () => {
+    const ports = createLivePorts({ transport: transport(), env: NO_ENV, now: NOW, limiters });
+    const jordan = (await ports.pubmed.searchAuthors({ disease: "synthetic disease" })).find((h) => h.lastName === "Testwell")!;
+    expect(jordan.papers.find((p) => p.pmid === "1001")?.affiliation).toBe("Dept of Pathology, Example Hospital, Phoenix, Arizona.");
+    expect(jordan.papers.find((p) => p.pmid === "1002")?.affiliation).toBe("Example Hospital, Phoenix, Arizona.");
+    const riley = (await ports.pubmed.searchAuthors({ disease: "synthetic disease" })).find((h) => h.lastName === "Norolefirst")!;
+    expect(riley.papers.every((p) => !("affiliation" in p))).toBe(true);
+  });
+
   it("honours the limit", async () => {
     const ports = createLivePorts({ transport: transport(), env: NO_ENV, now: NOW, limiters });
     expect(await ports.pubmed.searchAuthors({ disease: "synthetic disease", limit: 1 })).toHaveLength(1);

@@ -40,13 +40,7 @@ const isHttpUrl = (url: string): boolean => {
   try { return ['https:', 'http:'].includes(new URL(url).protocol); } catch { return false; }
 };
 
-/** US phone as listed by NPPES / CT.gov ("617-632-3000", "(617) 632 3000") to E.164; null if not a 10-digit US number. */
-export function usPhoneToE164(raw: string | undefined): string | null {
-  if (!raw) return null;
-  const d = raw.replace(/\D/g, '');
-  const ten = d.length === 11 && d.startsWith('1') ? d.slice(1) : d;
-  return /^[2-9]\d{2}[2-9]\d{6}$/.test(ten) ? `+1${ten}` : null;
-}
+export { usPhoneToE164 } from './phone';
 
 /** Validate and normalize a contact point; null when it is not one outreach may ever use. */
 export function contactPoint(input: ContactPoint): ContactPoint | null {
@@ -72,10 +66,13 @@ export function contactPointEvidence(input: ContactPoint, fetchedAt: string): Ev
   };
 }
 
-/** Email contact points from an intake-door classification of a fetched page. */
+/** Email and phone contact points from an intake-door classification of a fetched page. */
 export function contactPointsFromDoors(doors: readonly IntakeDoor[]): ContactPoint[] {
-  return doors.flatMap(door => door.emails.flatMap(email => {
-    const cp = contactPoint({ channel: 'email', address: email, origin: door.kind, sourceUrl: door.evidenceUrl, sourceKind: 'exa' });
+  return doors.flatMap(door => [
+    ...door.emails.map(address => ({ channel: 'email' as const, address })),
+    ...(door.phones ?? []).map(address => ({ channel: 'voice' as const, address })),
+  ].flatMap(({ channel, address }) => {
+    const cp = contactPoint({ channel, address, origin: door.kind, sourceUrl: door.evidenceUrl, sourceKind: 'exa' });
     return cp ? [cp] : [];
   }));
 }

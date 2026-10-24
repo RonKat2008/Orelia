@@ -1,15 +1,19 @@
 import type { ExaPage } from '../sources/exa';
+import { intakePhonesIn } from './phone';
 export type IntakeDoorKind = 'new_patient_line' | 'referral_coordinator' | 'second_opinion_program' | 'pathology_consult' | 'nurse_navigator' | 'trial_contact' | 'org_contact';
-export interface IntakeDoor { kind: IntakeDoorKind; evidenceUrl: string; excerpt: string; emails: string[] }
+/** phones: E.164 practice / intake lines next to new-patient, appointment or referral wording (never fax / cell). */
+export interface IntakeDoor { kind: IntakeDoorKind; evidenceUrl: string; excerpt: string; emails: string[]; phones?: string[] }
 const rules: [IntakeDoorKind, RegExp][] = [
-  ['new_patient_line', /\b(?:new[- ]patient (?:line|appointments?|intake|office)|patient intake|request an appointment)\b/i],
-  ['referral_coordinator', /\b(?:referral coordinator|referral office|physician referrals?|refer a patient)\b/i],
+  ['new_patient_line', /\b(?:new[- ]patient (?:line|appointments?|intake|office)|patient intake|(?:request|make|schedule|book) an appointment|appointments?\s*(?:line|desk)|appointments?\s*:)/i],
+  ['referral_coordinator', /\b(?:referral coordinator|referral office|physician referrals?|refer a patient|referrals?\s*:)/i],
   ['second_opinion_program', /\bsecond[- ]opinion(?:s)?\b/i],
   ['pathology_consult', /\b(?:pathology consult(?:ation)?s?|pathology (?:review|second opinion)|slide review)\b/i],
   ['nurse_navigator', /\b(?:nurse navigator|patient navigator|nurse navigation)\b/i],
   ['trial_contact', /\b(?:trial (?:contact|coordinator)|study (?:contact|coordinator))\b/i],
   ['org_contact', /\b(?:contact us|general inquiries|organization contact)\b/i],
 ];
+/** Door kinds whose block may carry a practice intake phone line (not trial or general contact lines). */
+const PHONE_DOORS: ReadonlySet<IntakeDoorKind> = new Set(['new_patient_line', 'referral_coordinator', 'second_opinion_program', 'pathology_consult', 'nurse_navigator']);
 /** Fail closed: only explicitly role-based mailbox names are candidates, never named people. */
 export function isRoleEmail(email: string): boolean {
   const parts = email.trim().toLowerCase().split('@');
@@ -28,7 +32,8 @@ export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
     if (!block) continue;
     const emails = [...new Set((block.match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? []).filter(isRoleEmail).map(s => s.toLowerCase()))];
     // Evidence excerpt is the matching phrase only, avoiding incidental personal addresses/medical prose.
-    found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)?.[0] ?? "", emails });
+    const phones = PHONE_DOORS.has(kind) ? intakePhonesIn(block) : [];
+    found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)?.[0] ?? "", emails, ...(phones.length ? { phones } : {}) });
   }
   return found;
 }

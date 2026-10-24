@@ -1,0 +1,261 @@
+[
+  {
+    "file": "pubmed/epithelioid-sarcoma/esearch.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=epithelioid+sarcoma&retmax=50&retmode=json&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:34.604Z"
+  },
+  {
+    "file": "pubmed/epithelioid-sarcoma/efetch.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=3473316%2C16778474%2C9336649%2C26645461%2C33176534%2C41874585%2C37326105%2C33289402%2C12502927%2C38497120%2C19997734%2C17179622%2C33494986%2C33247294%2C33394376%2C36999367%2C37316954%2C32275460%2C35504627%2C36604864%2C31087789%2C10821502%2C36078034%2C33051050%2C4405886%2C2764450%2C11925150%2C37191372%2C1569689%2C9035681%2C35516973%2C3972150%2C4093952%2C32589100%2C2759252%2C10774940%2C40907264%2C14562141%2C34243995%2C24674671%2C3312866%2C24337357%2C32113803%2C34405755%2C33414109%2C37752442%2C22715439%2C34193249%2C21724432%2C40947015&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:36.425Z"
+  },
+  {
+    "file": "ctgov/epithelioid-sarcoma/studies.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=epithelioid+sarcoma&filter.overallStatus=RECRUITING&pageSize=20",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:37.163Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/billings-steven.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Steven&last_name=Billings&state=IN&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:38.432Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/diaz-perez-julio.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Julio&last_name=Diaz-Perez&state=FL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:39.104Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/spasic-smiljana.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Smiljana&last_name=Spasic&state=FL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:39.584Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/velez-torres-jaylou.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Jaylou&last_name=Velez-Torres&state=FL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:39.961Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/mccarthy-edward.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Edward&last_name=McCarthy&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:40.665Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/rosenberg-andrew.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Andrew&last_name=Rosenberg&state=FL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:41.020Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/huang-xiao.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Xiao&last_name=Huang&state=IL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:42.036Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/nayar-ritu.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Ritu&last_name=Nayar&state=IL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:43.153Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/ambiguous-smith.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Michael&last_name=Smith&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:43.788Z"
+  },
+  {
+    "file": "pubmed/vascular-eds/esearch.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=vascular+Ehlers-Danlos+syndrome&retmax=50&retmode=json&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:44.928Z"
+  },
+  {
+    "file": "pubmed/vascular-eds/efetch.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=20301667%2C28306228%2C36977837%2C38926786%2C24922459%2C15127738%2C40247137%2C36062645%2C10706896%2C32197145%2C36503916%2C37460211%2C31763130%2C22143279%2C30999998%2C27687326%2C19462862%2C40559232%2C17640391%2C39730285%2C19023163%2C35202939%2C36754639%2C39906986%2C39064294%2C34845584%2C35964932%2C42057351%2C29700641%2C21852761%2C40598578%2C42798186%2C24967021%2C30999999%2C39018432%2C41905459%2C40345454%2C40740991%2C36637850%2C24550430%2C41338889%2C37623198%2C29216800%2C32127191%2C23751452%2C40938243%2C40533125%2C36878244%2C12016538%2C29940997&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:49.016Z"
+  },
+  {
+    "file": "ctgov/vascular-eds/studies.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=vascular+Ehlers-Danlos+syndrome&filter.overallStatus=RECRUITING&pageSize=20",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:58.074Z"
+  },
+  {
+    "file": "nppes/vascular-eds/byers-peter.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Peter&last_name=Byers&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:30:59.839Z"
+  },
+  {
+    "file": "nppes/vascular-eds/pepin-melanie.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Melanie&last_name=Pepin&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:00.421Z"
+  },
+  {
+    "file": "nppes/vascular-eds/schwarze-ulrike.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Ulrike&last_name=Schwarze&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:00.946Z"
+  },
+  {
+    "file": "nppes/vascular-eds/rice-kenneth.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kenneth&last_name=Rice&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:01.580Z"
+  },
+  {
+    "file": "nppes/vascular-eds/liu-mingdong.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mingdong&last_name=Liu&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:02.156Z"
+  },
+  {
+    "file": "nppes/vascular-eds/leistritz-dru.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dru&last_name=Leistritz&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:02.514Z"
+  },
+  {
+    "file": "nppes/vascular-eds/beridze-natalia.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Natalia&last_name=Beridze&state=NY&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:03.042Z"
+  },
+  {
+    "file": "nppes/vascular-eds/eagleton-matthew.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Matthew&last_name=Eagleton&state=OH&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:04.154Z"
+  },
+  {
+    "file": "nppes/vascular-eds/ambiguous-johnson.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=David&last_name=Johnson&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:05.084Z"
+  },
+  {
+    "file": "pubmed/igg4-related-disease/esearch.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=IgG4-related+disease&retmax=50&retmode=json&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:05.926Z"
+  },
+  {
+    "file": "pubmed/igg4-related-disease/efetch.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=34669430%2C40071397%2C32939060%2C38574746%2C40195520%2C32348524%2C30474465%2C38574744%2C40528331%2C29413316%2C40508133%2C31722794%2C38702764%2C39306708%2C31148902%2C40785550%2C39266448%2C35788361%2C30334637%2C33845982%2C34369362%2C39450944%2C40628311%2C31104539%2C33689549%2C31791079%2C37421192%2C41241577%2C38787572%2C30705099%2C31852351%2C31046976%2C34305927%2C37632955%2C34024478%2C31641859%2C41261290%2C41082275%2C31425659%2C33880637%2C34447384%2C30234659%2C36379910%2C38000975%2C32732082%2C38769126%2C35949057%2C33590421%2C33906357%2C40999941&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:07.331Z"
+  },
+  {
+    "file": "ctgov/igg4-related-disease/studies.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=IgG4-related+disease&filter.overallStatus=RECRUITING&pageSize=20",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:08.603Z"
+  },
+  {
+    "file": "ctgov/igg4-related-disease/studies-page2.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=IgG4-related+disease&filter.overallStatus=RECRUITING&pageSize=20&pageToken=ZVNj7o2Elu8o3lpzV8ikv62tmpOQJJxrZfOk2_QckA",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:09.797Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/katz-guy.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Guy&last_name=Katz&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:10.206Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/stone-john.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=John&last_name=Stone&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:10.597Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/perugino-cory.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Cory&last_name=Perugino&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:11.036Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/sharma-amita.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Amita&last_name=Sharma&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:11.542Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/hernandez-barco-yasmin.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Yasmin&last_name=Hernandez-Barco&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:12.002Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/guy-thomas.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Thomas&last_name=Guy&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:12.351Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/parums-dinah.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dinah&last_name=Parums&state=NY&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:12.980Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/abdelrazek-mahmoud.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mahmoud&last_name=AbdelRazek&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:13.534Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/ambiguous-williams.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=James&last_name=Williams&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T04:31:14.097Z"
+  }
+]

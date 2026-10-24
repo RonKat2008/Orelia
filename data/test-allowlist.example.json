@@ -1,0 +1,5 @@
+{
+  "emails": ["coordinator-1@example-test.agentmail.to"],
+  "phones": ["+15555550100"],
+  "note": "Placeholder test destinations only. Real allowlist lives in OUTBOUND_ALLOWLIST in .env.local."
+}

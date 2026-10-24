@@ -1,0 +1,19 @@
+{
+  "diseaseName": "IgG4-related disease",
+  "diseaseCodes": {
+    "orpha": null,
+    "mesh": null,
+    "icd10": "D89.84"
+  },
+  "subtype": null,
+  "stageSummary": "Multi-organ; serum IgG4 412 mg/dL; IgG4+/IgG+ ratio approx. 55%; high disease activity (RI 14)",
+  "homeCity": "Asheville",
+  "homeState": "NC",
+  "insurer": "Bluepeak Health PPO",
+  "planId": "BPH-5518-0973-NC",
+  "travelLimitMiles": 150,
+  "goals": [
+    "treatment",
+    "aid"
+  ]
+}

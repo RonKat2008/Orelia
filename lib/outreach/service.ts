@@ -4,7 +4,8 @@ import { checkOutbound } from '../safety/outbound-gate';
 import { parseAllowlist } from '../safety/allowlist';
 import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
-import { demoCoordinatorFor, demoCoordinatorInboxes } from './demo-coordinators';
+import { demoCoordinatorInboxes, pickDemoCoordinator } from './demo-coordinators';
+import { normalizeAddress } from '../safety/allowlist';
 import { isWebFormOnly, type ReachabilityEvidence } from './reachability';
 import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore, type ProviderRef } from './types';
 /**
@@ -29,9 +30,18 @@ export class OutreachService {
     // Demo coordinator mode (demo only, see demo-coordinators.ts): every new contact goes to one of our own
     // allowlisted AgentMail test inboxes instead of the resource's real contact point.
     const demoInboxes = demoCoordinatorInboxes(this.env);
+    const norm = (a: string) => normalizeAddress(a) ?? a.trim().toLowerCase();
+    const usedAddresses = new Set(existing.map(e => norm(e.address)));
     const proposed = fresh.flatMap(c => {
-      const demo = demoCoordinatorFor(`${c.targetKind}:${c.targetId}`, demoInboxes);
-      if (demo) return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: 'email' as const, address: demo, state: 'drafted' } satisfies Contact];
+      if (demoInboxes.length > 0) {
+        const demo = pickDemoCoordinator(`${c.targetKind}:${c.targetId}`, demoInboxes, usedAddresses);
+        if (!demo) {
+          unavailable.push({ candidateId: c.id, channel: 'none', reason: 'Demo mode: every demo coordinator inbox is already used by another contact on this case, and Wayfinder never writes to one address twice.' });
+          return [];
+        }
+        usedAddresses.add(demo);
+        return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: 'email' as const, address: demo, state: 'drafted' } satisfies Contact];
+      }
       const door = address(c);
       if (!door && isWebFormOnly(c.evidence as ReachabilityEvidence[])) {
         // Reachable only through an online intake/application form (Kernel web-application channel), which has no email/phone contact row.
@@ -48,7 +58,17 @@ export class OutreachService {
     const stored = await Promise.allSettled(created.flatMap(contact => fresh.filter(c => c.targetId === contact.targetId && c.targetKind === contact.targetKind)
       .flatMap(c => c.evidence.map(e => ingest({ caseId, contactId: contact.id, kind: 'evidence', title: e.claimType, sourceUrl: e.sourceUrl, text: e.claim })))));
     if (stored.some(r => r.status === 'rejected')) console.error('Contact evidence ingest failed for some docs; drafts get less public context');
-    return { contacts: [...existing.filter(e => candidates.some(c => e.targetId === c.targetId && e.targetKind === c.targetKind)), ...created], unavailable };
+    // The store never creates two contacts for one address on a case. A resource whose only address is already
+    // used by another contact gets no contact of its own: report it instead of letting it vanish.
+    for (const c of fresh) {
+      const mine = proposed.find(p => p.targetId === c.targetId && p.targetKind === c.targetKind);
+      if (mine && !created.some(x => x.targetId === c.targetId && x.targetKind === c.targetKind)) {
+        unavailable.push({ candidateId: c.id, channel: 'none', reason: 'Its only address is already used by another contact on this case, and Wayfinder never writes to one address twice.' });
+      }
+    }
+    const own = (x: Contact) => candidates.some(c => x.targetId === c.targetId && x.targetKind === c.targetKind);
+    const contacts = [...existing.filter(own), ...created.filter(own)].filter((x, i, all) => all.findIndex(y => y.id === x.id) === i);
+    return { contacts, unavailable };
   }
   async requireContact(id: string) { const c = await this.store.contact(id); if (!c) throw new OutreachError(404, ['contact_not_found']); return c; }
   async consent(id: string, sharedFields: string[]) {

@@ -7,3 +7,6 @@ coverage/
 .next/
 .agentteams/
 *.tsbuildinfo
+
+# Browser QA screenshots
+.qa-final-*/

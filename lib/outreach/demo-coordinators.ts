@@ -54,3 +54,14 @@ export function isDemoCoordinatorAddress(address: string | null | undefined, env
   const normalized = normalizeAddress(address);
   return normalized !== null && demoCoordinatorInboxes(env).includes(normalized);
 }
+
+/**
+ * Like demoCoordinatorFor, but skips inboxes this case already uses: Wayfinder never writes to one address twice
+ * on a case (contacts are unique per case and address), so a second resource on the same inbox would silently
+ * collapse into the first. Returns undefined when every inbox is taken.
+ */
+export function pickDemoCoordinator(targetKey: string, inboxes: readonly string[], used: ReadonlySet<string>): string | undefined {
+  const preferred = demoCoordinatorFor(targetKey, inboxes);
+  if (preferred && !used.has(preferred)) return preferred;
+  return inboxes.find(inbox => !used.has(inbox));
+}

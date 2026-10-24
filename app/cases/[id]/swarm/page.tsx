@@ -6,7 +6,7 @@ export default async function SwarmPage({ params }: { params: Promise<{ id: stri
   return (
     <section aria-labelledby="swarm-heading" className="ds-root grid gap-10">
       <header className="grid max-w-3xl gap-3">
-        <p className="m-0 text-micro font-semibold uppercase text-ink-3">Research in progress</p>
+        <p className="m-0 text-micro font-semibold uppercase text-ink-3">Case research</p>
         <h2 id="swarm-heading" className="m-0 font-display text-h1 font-light text-ink display-soft text-balance">
           Nine researchers, <em className="emph">one</em> map
         </h2>

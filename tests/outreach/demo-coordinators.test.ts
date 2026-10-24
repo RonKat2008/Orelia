@@ -51,9 +51,13 @@ class Store implements Partial<OutreachStore> {
   async getCase() { return { diseaseName: 'vEDS', homeState: 'OH' }; }
   async candidates(_c: string, ids: string[]) { return this.choices.filter(c => ids.includes(c.id)); }
   async contacts() { return [...this.people]; }
+  // Mirrors PostgresOutreachStore: one contact per case and address; returns every contact on a proposed address.
   async select(_c: string, contacts: Contact[], cap: number) {
-    if (activeContactCount(this.people) + contacts.length > cap) throw new OutreachError(422, ['contact_cap']);
-    this.people.push(...contacts); return contacts;
+    const norm = (a: string) => a.trim().toLowerCase();
+    const fresh = contacts.filter((p, i) => !this.people.some(c => norm(c.address) === norm(p.address)) && contacts.findIndex(o => norm(o.address) === norm(p.address)) === i);
+    if (activeContactCount(this.people) + fresh.length > cap) throw new OutreachError(422, ['contact_cap']);
+    this.people.push(...fresh);
+    return this.people.filter(c => contacts.some(p => norm(p.address) === norm(c.address)));
   }
 }
 
@@ -67,11 +71,33 @@ function service(env: Record<string, string>) {
 }
 
 describe('OutreachService.select in demo coordinator mode', () => {
-  it('routes every selected resource (even doorless ones) to a demo inbox, never the real address', async () => {
-    const { svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to' });
+  it('routes every selected resource (even doorless ones) to a distinct demo inbox, never the real address', async () => {
+    const { svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to,demo2@agentmail.to' });
     const res = await svc.select('case-1', ['c1', 'c2']);
     expect(res.unavailable).toEqual([]);
-    expect(res.contacts.map(c => [c.channel, c.address])).toEqual([['email', 'demo@agentmail.to'], ['email', 'demo@agentmail.to']]);
+    expect(res.contacts.map(c => c.channel)).toEqual(['email', 'email']);
+    expect(new Set(res.contacts.map(c => c.address))).toEqual(new Set(['demo@agentmail.to', 'demo2@agentmail.to']));
+  });
+
+  it('reports a resource as unavailable when every demo inbox is already used, instead of dropping it', async () => {
+    const { svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to' });
+    const res = await svc.select('case-1', ['c1', 'c2']);
+    expect(res.contacts.map(c => c.address)).toEqual(['demo@agentmail.to']);
+    expect(res.unavailable).toHaveLength(1);
+    expect(res.unavailable[0].reason).toMatch(/demo coordinator inbox is already used/);
+    // Selecting again returns the existing contact once, never a duplicate.
+    const again = await svc.select('case-1', ['c1', 'c2']);
+    expect(again.contacts).toHaveLength(1);
+    expect(again.unavailable).toHaveLength(1);
+  });
+
+  it('reports a resource whose only real address is already used by another contact', async () => {
+    const { store, svc } = service({ OUTBOUND_ALLOWLIST: 'intake@hospital.org' });
+    const door = store.choices[1].evidence;
+    store.choices.push({ id: 'c3', caseId: 'case-1', targetId: 't3', targetKind: 'expert', evidence: door });
+    const res = await svc.select('case-1', ['c2', 'c3']);
+    expect(res.contacts.map(c => c.targetId)).toEqual(['t2']);
+    expect(res.unavailable.map(u => u.candidateId)).toEqual(['c3']);
   });
 
   it('keeps the real contact points when the mode is off', async () => {

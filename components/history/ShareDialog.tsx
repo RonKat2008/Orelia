@@ -152,6 +152,9 @@ export function ShareDialog({ caseId, disabled }: { caseId: string; disabled?: b
                   </div>
                 ))}
               </div>
+              <p className="m-0 text-small text-ink-2">
+                Conflicts only quote records from the sections you tick above.
+              </p>
             </fieldset>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Link expires after" htmlFor="share-days">

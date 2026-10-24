@@ -6,6 +6,7 @@ import { PostgresDocumentStore } from './postgres-store';
 export { chunk } from './chunk';
 export * from './store';
 export { PostgresDocumentStore } from './postgres-store';
+export { ingestCaseSummary } from './hooks';
 
 const state = globalThis as unknown as { __wayfinderDocuments?: DocumentStore };
 export function getDocumentStore(): DocumentStore {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ingest, search, MemoryDocumentStore } from '../../lib/case-docs';
-import { ingestCaseSummary } from '../../lib/case-docs/hooks';
+import { ingestCaseSummary } from '../../lib/case-docs';
 import { createDraft } from '../../lib/outreach/draft';
 import { createCallScript } from '../../lib/outreach/call-script';
 import type { Contact } from '../../lib/outreach/types';

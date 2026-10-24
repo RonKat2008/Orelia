@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Test application form (synthetic)', robots: { index: false, follow: false } };
 
 const field = { display: 'grid', gap: 4, marginBlock: 14 } as const;
-const input = { font: 'inherit', padding: '8px 10px', border: '1px solid currentColor', borderRadius: 4, background: 'transparent', color: 'inherit' } as const;
+const input = { font: 'inherit', padding: '8px 10px', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', border: '1px solid currentColor', borderRadius: 4, background: 'transparent', color: 'inherit' } as const;
 
 /** Synthetic application form for exercising the web_form channel. Collects nothing and is disabled in production. */
 export default function TestApplicationPage() {

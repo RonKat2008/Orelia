@@ -125,11 +125,11 @@ describe('PostgresCaseActivity.threads', () => {
     expect(threads).toHaveLength(2);
     const first = threads[0].messages;
     expect(first.map((m) => [m.direction, m.channel, m.at])).toEqual([
-      ['inbound', 'email', D2.toISOString()], ['outbound', 'email', D1.toISOString()], ['outbound', 'email', null],
+      ['inbound', 'email', D2.toISOString()], ['outbound', 'email', D1.toISOString()],
       ['outbound', 'voice', D1.toISOString()],
     ]);
-    expect(first[3]).toMatchObject({ body: 'Transcript text', subject: null, sharedFields: [], classification: null });
-    expect(threads[1].messages).toEqual([expect.objectContaining({ body: 'Other contact', at: null })]);
+    expect(first[2]).toMatchObject({ body: 'Transcript text', subject: null, sharedFields: [], classification: null });
+    expect(threads[1].messages).toEqual([]); // call that never started is not a real call
   });
 });
 
@@ -152,7 +152,7 @@ describe('MemoryCaseActivity', () => {
     m.seedContact(CASE, a); m.seedContact(CASE, b);
     const taskId = id();
     m.seedTask(CASE, { id: taskId, contactId: a.id, kind: 'review', title: 'T', status: 'open', dueAt: null });
-    m.seedMessage(CASE, { id: id(), contactId: a.id, direction: 'outbound', channel: 'email', subject: null, body: 'Hello', sharedFields: [], at: null, classification: null });
+    m.seedMessage(CASE, { id: id(), contactId: a.id, direction: 'outbound', channel: 'email', subject: null, body: 'Hello', sharedFields: [], at: D1.toISOString(), classification: null });
     const contacts = await m.contacts(CASE);
     contacts[0].displayName = 'mutated';
     expect((await m.contacts(CASE))[0].displayName).toBe('Dr Seed');

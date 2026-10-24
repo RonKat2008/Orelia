@@ -1,0 +1,18 @@
+{
+  "id": "05-send-records-imaging",
+  "description": "Asks for imaging and operative records.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_send_records_imaging",
+    "from": "records@summitview-cancer.example.org",
+    "subject": "Re: Inquiry about visit",
+    "body": "Good afternoon,\n\nTo evaluate your request we need your imaging reports and the operative report from your last procedure. Please send those records by reply and we will review them.\n\nBest,\nDenise Alvarado\nClinical Coordinator",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "send_records",
+    "confidence": 0.93,
+    "rationale": "The coordinator asks for imaging reports and an operative report before reviewing.",
+    "quote": "we need your imaging reports and the operative report from your last procedure"
+  }
+}

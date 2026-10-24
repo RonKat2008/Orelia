@@ -1,0 +1,22 @@
+{
+  "id": "18-declined-suggests-other-center",
+  "description": "Polite decline that suggests another center: still declined, with redirect filled.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_declined_suggests_other_center",
+    "from": "intake@westmoor-health.example.org",
+    "subject": "Re: New patient inquiry",
+    "body": "Hello,\n\nWe are unable to take on this case at Westmoor. You may wish to contact the Lakeview University Sarcoma Center, which can be reached at lakeview-intake@example.org.\n\nKind regards,\nWestmoor Intake",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "declined",
+    "confidence": 0.88,
+    "rationale": "The sender declines and names another center for the patient to contact.",
+    "quote": "We are unable to take on this case at Westmoor.",
+    "redirect": {
+      "name": "Lakeview University Sarcoma Center",
+      "email": "lakeview-intake@example.org"
+    }
+  }
+}

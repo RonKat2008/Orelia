@@ -1,0 +1,22 @@
+{
+  "id": "04-send-slides-accession",
+  "description": "Slide request that includes an accession number to quote.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_send_slides_accession",
+    "from": "slides@eastgate-medical.example.org",
+    "subject": "Re: Case review",
+    "body": "Hello,\n\nWe would like the pathology slides for review. Ask the lab (Maple Street Pathology Associates) to release them and reference accession number S26-04417. Slides can be couriered to our receiving desk.\n\nCordially,\nWen Liu-Barrett",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "send_slides",
+    "confidence": 0.95,
+    "rationale": "The sender asks for pathology slides and gives the lab and accession number to reference.",
+    "quote": "We would like the pathology slides for review.",
+    "lab": {
+      "name": "Maple Street Pathology Associates",
+      "accession": "S26-04417"
+    }
+  }
+}

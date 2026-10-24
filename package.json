@@ -12,7 +12,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "demo:offline": "tsx scripts/demo-offline.ts"
+    "demo:offline": "tsx scripts/demo-offline.ts",
+    "test:coverage": "vitest run --coverage"
   },
   "engines": {
     "node": ">=22"
@@ -22,6 +23,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vercel/config": "0.13.0",
+    "@vitest/coverage-v8": "^5.0.5",
     "dotenv": "18.0.9",
     "drizzle-kit": "0.31.11",
     "eslint": "9.39.5",

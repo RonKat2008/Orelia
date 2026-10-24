@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+// Ownership/CSRF are covered in tests/auth; these tests exercise the route body.
+const guard = vi.hoisted(() => ({ guardCase: vi.fn(async (...args: [Request, string]): Promise<Response | null> => (void args, null)) }));
+vi.mock('@/lib/auth/ownership', () => ({ guardCase: guard.guardCase }));
 import { GET, POST } from '@/app/api/cases/[id]/documents/route';
 import { getServices } from '@/app/api/cases/_lib/services';
 import { patientNoteSchema } from '@/lib/contracts/case-docs';
@@ -9,6 +12,11 @@ beforeEach(() => { vi.stubEnv('DATABASE_URL', ''); vi.stubEnv('WAYFINDER_OFFLINE
 afterEach(() => { vi.unstubAllEnvs(); delete state.__wayfinderServices; delete state.__wayfinderDocuments; });
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const request = (body: unknown) => new Request('http://localhost/api/cases/id/documents', { method: 'POST', body: JSON.stringify(body) });
+it('routes call the ownership guard', async () => {
+  const id = randomUUID();
+  await GET(new Request('http://localhost'), ctx(id));
+  expect(guard.guardCase).toHaveBeenCalledWith(expect.any(Request), id);
+});
 it('validates patient notes with a known consent field and <=20k characters', () => {
   const valid = { title: 'Note', text: 'hello', sharedField: 'diseaseName' };
   expect(patientNoteSchema.safeParse(valid).success).toBe(true);

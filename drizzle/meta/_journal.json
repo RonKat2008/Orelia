@@ -43,6 +43,13 @@
       "when": 1792821400000,
       "tag": "0027_evidence_case_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792821401335,
+      "tag": "0028_case_owner_session",
+      "breakpoints": true
     }
   ]
 }

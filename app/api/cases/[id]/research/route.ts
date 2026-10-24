@@ -1,4 +1,7 @@
 import { after, NextResponse } from "next/server";
+import { guardCase } from "@/lib/auth/ownership";
+import { readSession } from "@/lib/auth/session";
+import { checkRateLimit, getRateLimitStore, RESEARCH_LIMITS, rateLimitedResponse } from "@/lib/rate-limit";
 import { isOffline } from "@/lib/env";
 import { inngest } from "@/lib/workflows/inngest";
 import { RESEARCH_EVENT, RESEARCH_STARTABLE, executeResearch, failResearch } from "@/lib/workflows/research-workflow";
@@ -12,15 +15,21 @@ export const maxDuration = 300;
 type Ctx = { params: Promise<{ id: string }> };
 
 /** Claim first; durable delivery when configured, in-process replay for the offline demo. */
-export async function POST(_req: Request, { params }: Ctx) {
+export async function POST(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, "Invalid case id");
+  const denied = await guardCase(req, id);
+  if (denied) return denied;
   const services = getServices();
   const found = await services.cases.get(id);
   if (!found) return jsonError(404, "Case not found");
   if (!RESEARCH_STARTABLE.some((status) => status === found.status)) {
     return jsonError(409, `Case must be confirmed before research (status: ${found.status})`);
   }
+
+  // Session is null only for demo-unowned cases; those share one bucket.
+  const limit = await checkRateLimit(getRateLimitStore(), RESEARCH_LIMITS(id, readSession(req) ?? "anonymous"), new Date());
+  if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
 
   if (!await services.cases.compareAndSetStatus(id, RESEARCH_STARTABLE, "researching")) {
     return jsonError(409, "Research is already running for this case");

@@ -1,2 +1,8 @@
+import { guardContact } from '@/lib/auth/ownership';
 import { getOutreachHandlers } from '@/lib/outreach/server';
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) { return getOutreachHandlers().approve(request, (await context.params).id); }
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const denied = await guardContact(request, id);
+  if (denied) return denied;
+  return getOutreachHandlers().approve(request, id);
+}

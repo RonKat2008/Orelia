@@ -89,7 +89,9 @@ const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 };
 
-export const cases = pgTable("cases", {
+export const cases = pgTable(
+  "cases",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
   diseaseName: text("disease_name").notNull(),
   diseaseCodes: jsonb("disease_codes").$type<{
@@ -109,7 +111,16 @@ export const cases = pgTable("cases", {
     .notNull()
     .default(sql`ARRAY[]::goal[]`),
   status: text("status").notNull().default("unconfirmed"),
+  ownerSessionId: text("owner_session_id"),
   ...timestamps,
+  },
+  (table) => [index("cases_owner_session_id_idx").on(table.ownerSessionId)],
+);
+
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").notNull().default(0),
 });
 
 export const institutions = pgTable("institutions", {
@@ -260,16 +271,24 @@ export const calls = pgTable("calls", {
   outcome: text("outcome"),
 });
 
-export const tasks = pgTable("tasks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  contactId: uuid("contact_id")
-    .notNull()
-    .references(() => contacts.id),
-  kind: taskKindEnum("kind").notNull(),
-  draftBody: text("draft_body"),
-  dueAt: timestamp("due_at", { withTimezone: true }),
-  status: taskStatusEnum("status").notNull().default("open"),
-});
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id),
+    kind: taskKindEnum("kind").notNull(),
+    draftBody: text("draft_body"),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    status: taskStatusEnum("status").notNull().default("open"),
+    title: text("title"),
+    details: jsonb("details").$type<Record<string, unknown>>(),
+    caseId: uuid("case_id").references(() => cases.id),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+  },
+  (table) => [index("tasks_case_id_idx").on(table.caseId)],
+);
 
 export const reviews = pgTable("reviews", {
   id: uuid("id").primaryKey().defaultRandom(),

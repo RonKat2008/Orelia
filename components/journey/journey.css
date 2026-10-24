@@ -47,6 +47,15 @@
   font-size: 0.8rem;
 }
 
+.journey-extra {
+  margin: 10px 0 0;
+}
+
+.journey-extra a {
+  color: var(--green);
+  font-weight: 600;
+}
+
 .journey-notes {
   margin: 12px 0 0;
   padding: 0;

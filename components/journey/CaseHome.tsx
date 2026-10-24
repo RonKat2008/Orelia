@@ -86,6 +86,9 @@ export function CaseHome({ caseId }: { caseId: string }) {
           <a className="button" href={plan.nextHref}>
             {plan.nextLabel}
           </a>
+          <Link className="secondary button" href={`/cases/${caseId}/documents`}>
+            Documents
+          </Link>
           <Link className="secondary button" href="/how-it-works">
             How it works
           </Link>

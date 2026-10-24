@@ -294,6 +294,7 @@ export function verify(results: readonly ResearchResult[], context?: VerifyConte
     }
   }
 
+  mergeSameNameOrganizations(working);
   mergeNameOnlyExperts(working);
   const output = finalize([...working.values()], dropped, conflicts);
   const resources = output.kept.map((r) => r.resource);
@@ -301,6 +302,41 @@ export function verify(results: readonly ResearchResult[], context?: VerifyConte
     if (record.resource.kind === "expert") record.shortlistEligibility = expertEligibility(record.resource, resources);
   }
   return output;
+}
+
+const hostOf = (url: string | undefined): string | null => {
+  if (!url) return null;
+  try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
+};
+
+/**
+ * One organization reported twice (two pages of one site, or once with and once without a URL) is one shortlist
+ * entry: same normalised name AND (same web host, or one side has no URL). Same name on different hosts, or
+ * different names on one host, stay separate.
+ */
+const orgHost = (r: Resource): string | null => (r.kind === "organization" ? hostOf(r.url) : null);
+
+function mergeSameNameOrganizations(working: Map<string, Working>): void {
+  const kept: Working[] = [];
+  for (const w of [...working.values()]) {
+    if (w.resource.kind !== "organization") continue;
+    const name = normalizeName(w.resource.name);
+    const host = orgHost(w.resource);
+    const target = kept.find((k) => {
+      if (k.resource.kind !== "organization" || normalizeName(k.resource.name) !== name) return false;
+      const kh = orgHost(k.resource);
+      return !kh || !host || kh === host;
+    });
+    if (!target) { kept.push(w); continue; }
+    // Prefer the record that carries a URL as the surviving one.
+    const survivor = !orgHost(target.resource) && host ? w : target;
+    const absorbed = survivor === w ? target : w;
+    survivor.resource = mergeResources(survivor.resource, absorbed.resource);
+    survivor.originalIds = [...survivor.originalIds, ...absorbed.originalIds];
+    for (const [k, e] of absorbed.evidence) survivor.evidence.set(k, e);
+    working.delete(absorbed.key);
+    if (survivor === w) kept.splice(kept.indexOf(target), 1, w);
+  }
 }
 
 /**

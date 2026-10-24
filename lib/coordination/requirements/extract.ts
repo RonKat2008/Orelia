@@ -14,8 +14,24 @@ const REMOVED_MARK = /\[removed/i;
 const DEMAND = /\b(requires?|required|requiring|needs?|needed|must|necessary|mandatory|obtain|bring|provide|send|submit)\b/i;
 const NO_REFERRAL = /\b(no|without( a)?)\s+(physician\s+)?referral\b|\breferrals?\s+(is|are)?\s*(not|never)\s+(required|needed|necessary)|self-?referr\w*\s+(is|are)?\s*(accepted|welcome|allowed)/i;
 
+/** One leading list enumerator or bullet: "126 - ", "3. ", "(b) ", "iv) ", "[12] ", "•", "*", "†". */
+const LEADING_MARK = /^\s*(?:\d{1,4}\s*[-–—.):]|\(\s*[0-9a-z]{1,4}\s*\)|[ivxlc]{1,6}[.)]|[a-z][.)]|\[\s*\d{1,3}\s*\]|[-–—*•·▪◦†‡§¶#>])(?=\s|$|[A-Za-z(])\s*/i;
+/** Trailing footnote markers after the sentence end: "[3]", superscript digits, "*", "†". */
+const TRAILING_MARK = /(?<=[.!?)"'”’\w])(?:\s*(?:\[\s*\d{1,3}\s*\]|[¹²³⁰⁴⁵⁶⁷⁸⁹]+|[*†‡§]+))+\s*$/u;
+
+/** Strip list numbering and footnote markers from an extracted snippet (numbers inside the sentence stay). */
+export function cleanSnippet(raw: string): string {
+  let s = raw.trim();
+  for (let i = 0; i < 4; i++) {
+    const next = s.replace(LEADING_MARK, '');
+    if (next === s) break;
+    s = next;
+  }
+  return s.replace(TRAILING_MARK, '').trim();
+}
+
 const sentencesOf = (text: string): string[] =>
-  neutralizeUntrusted(text).split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length > 8 && !REMOVED_MARK.test(s));
+  neutralizeUntrusted(text).split(/(?<=[.!?])\s+/).map(s => cleanSnippet(s)).filter(s => s.length > 8 && !REMOVED_MARK.test(s));
 
 interface Rule { kind: RequirementKind; label: (s: string) => string; test: (s: string) => boolean }
 

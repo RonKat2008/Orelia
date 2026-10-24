@@ -110,7 +110,7 @@ function classifySection(heading: string | null, body: string, docType: DocType)
 
 // ---- provider / institution ----------------------------------------------------------------------------------
 const NAME = "[A-Z][A-Za-z'’-]+";
-const PROVIDER_LABEL_RE = /^\W*(?:provider|physician|author|clinician|attending|referring (?:physician|provider)|ordering (?:physician|provider)|pathologist|radiologist|geneticist|consulting geneticist|rheumatologist|oncologist|surgeon|signed by|electronically signed(?: by)?|seen by)\W*[:|]\s*(.+)$/im;
+const PROVIDER_LABEL_RE = /^\W*(?:provider|physician|author|clinician|attending|ordering (?:physician|provider)|pathologist|radiologist|geneticist|consulting geneticist|rheumatologist|oncologist|surgeon|signed by|electronically signed(?: by)?|seen by)\W*[:|]\s*(.+)$/im;
 const DR_RE = new RegExp(`\\bDr\\.?\\s+(${NAME}(?:\\s+${NAME}){0,2})`);
 const CREDENTIAL_RE = new RegExp(`\\b(${NAME}(?:\\s+[A-Z]\\.)?(?:\\s+${NAME}){1,2}),\\s*(?:MD|M\\.D\\.|DO|PhD|NP|PA-C|MBBS)\\b`);
 const INSTITUTION_LABEL_RE = /^\W*(?:institution|facility|hospital|clinic|laboratory|lab|practice|center|centre|site)\W*[:|]\s*(.+)$/im;
@@ -120,7 +120,26 @@ function cleanValue(v: string): string {
   return clip(stripMarks(v.replace(/\|.*$/, '')), MAX_FIELD);
 }
 
-function findProvider(text: string): string | null {
+/**
+ * Lines that name someone OTHER than the person who performed / authored the record: the referring physician,
+ * "referred by", cc / copy-to recipients. They never set an event's provider.
+ */
+const REFERRAL_ROLE_LINE_RE = /^\W*(?:referring (?:physician|provider|doctor|clinician)|referred by|referral from|cc|copy to|copies to)\b/i;
+
+export function isReferralRoleLine(line: string): boolean {
+  return REFERRAL_ROLE_LINE_RE.test(line);
+}
+
+/** True when every occurrence of `name` in the record sits on a referral / cc line. */
+export function onlyOnReferralLines(text: string, name: string): boolean {
+  const needle = name.trim();
+  if (!needle) return false;
+  const lines = text.split(/\r?\n/).filter(l => l.includes(needle));
+  return lines.length > 0 && lines.every(isReferralRoleLine);
+}
+
+function findProvider(raw: string): string | null {
+  const text = raw.split(/\r?\n/).filter(l => !isReferralRoleLine(l)).join('\n');
   const labelled = PROVIDER_LABEL_RE.exec(text);
   if (labelled?.[1]) { const v = cleanValue(labelled[1]); if (v) return v; }
   const dr = DR_RE.exec(text); const cred = CREDENTIAL_RE.exec(text);

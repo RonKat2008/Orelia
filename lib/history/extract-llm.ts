@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { chat } from '@/lib/ai/chat';
 import { SYSTEM_UNTRUSTED_RULE, UNTRUSTED_CLOSE, UNTRUSTED_OPEN } from '@/lib/agents/research/untrusted';
+import { onlyOnReferralLines } from './extract-rules';
 import { eventKindSchema, historyEventSchema, partialDateSchema, type HistoryDocument, type HistoryEvent } from './contract';
 
 export type ChatFn = typeof chat;
@@ -18,7 +19,7 @@ const llmOutputSchema = z.object({ events: z.array(llmEventSchema).max(80) });
 
 const SYSTEM = [
   'You organise a patient\'s own medical record into a timeline. You never interpret, diagnose, advise or resolve disagreements.',
-  'Return ONLY JSON: {"events":[{"date":"YYYY|YYYY-MM|YYYY-MM-DD|null","kind":"diagnosis|genetic_test|specialist_visit|imaging|lab|procedure|medication|hospitalization|note","title":"short","provider":"name or null","institution":"name or null","findings":["verbatim line copied from the record"],"span":{"start":0,"end":0}}]}.',
+  'Return ONLY JSON: {"events":[{"date":"YYYY|YYYY-MM|YYYY-MM-DD|null","kind":"diagnosis|genetic_test|specialist_visit|imaging|lab|procedure|medication|hospitalization|note","title":"short","provider":"person who performed or wrote this record (never the referring physician), or null","institution":"organization (hospital, clinic, laboratory) or null","findings":["verbatim line copied from the record"],"span":{"start":0,"end":0}}]}.',
   'Every finding MUST be copied character for character from the record. Do not paraphrase. span is optional character offsets of the record section.',
   SYSTEM_UNTRUSTED_RULE,
 ].join('\n');
@@ -66,11 +67,13 @@ export function groundLlmOutput(doc: HistoryDocument, raw: string): HistoryEvent
       const v = value?.trim().slice(0, 200);
       return v && locate(doc.text, v) ? v : null;
     };
+    // The provider is the person who performed / authored the record, never the referring physician or a cc.
+    const providerOf = (name: string | null) => (name && !onlyOnReferralLines(doc.text, name) ? name : null);
     const title = groundedText(e.title) ?? grounded[0].f.slice(0, 200);
     const date = e.date && partialDateSchema.safeParse(e.date).success ? e.date : null;
     const candidate = historyEventSchema.safeParse({
       id: `${doc.id}:${events.length}`, date, kind: e.kind, title,
-      provider: groundedText(e.provider), institution: groundedText(e.institution),
+      provider: providerOf(groundedText(e.provider)), institution: groundedText(e.institution),
       findings: grounded.map(g => g.f).slice(0, 20), sourceDocId: doc.id, span,
     });
     if (candidate.success) events.push(candidate.data);

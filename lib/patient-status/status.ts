@@ -189,9 +189,9 @@ function choosing(ctx: Ctx, found: number | null, partial: boolean): Omit<Patien
 }
 
 const TASK_WORDS: Record<string, { headline: (name: string) => string; label: string }> = {
-  records: { headline: (n) => `${n} replied and needs your records. Tap to send them.`, label: "Send my records" },
+  records: { headline: (n) => `${n} asked for your records. We can write the reply for you.`, label: "Write the reply" },
   referral: { headline: (n) => `${n} replied and needs a referral from your doctor. Tap to see what they asked.`, label: "See what they asked" },
-  slides: { headline: (n) => `${n} replied and asked for your slides. Tap to see what they asked.`, label: "See what they asked" },
+  slides: { headline: (n) => `${n} asked for your slides. We can write the reply for you.`, label: "Write the reply" },
   call: { headline: (n) => `${n} replied and asked you to call them. Tap to see the details.`, label: "See the details" },
   redirect: { headline: (n) => `${n} pointed us to a different contact. Tap to check it.`, label: "Check the new contact" },
   declined: { headline: (n) => `${n} said they can't help right now. Tap to close this and try someone else.`, label: "Close this" },

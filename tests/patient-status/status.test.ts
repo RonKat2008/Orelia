@@ -224,7 +224,7 @@ describe("patientStatus: reaching out", () => {
       tasks: [{ id: "t1", contactId: "c1", kind: "records", title: "Send records", status: "open", dueAt: null }],
       plan: { status: "approved" },
     }));
-    expect(result.headline).toBe("Stanford Health Care replied and needs your records. Tap to send them.");
+    expect(result.headline).toBe("Stanford Health Care asked for your records. We can write the reply for you.");
     expect(result.nextAction).toMatchObject({ kind: "answer_task", taskId: "t1", taskKind: "records" });
   });
 

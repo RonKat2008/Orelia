@@ -33,7 +33,7 @@ export function SubHead({ children }: { children: ReactNode }) {
   return <h3 className="m-0 mb-4 max-w-none font-sans text-micro font-semibold uppercase text-ink-3">{children}</h3>;
 }
 
-/** Renders "*word*" segments as the signature Fraunces italic. */
+/** Renders "*word*" segments as the serif italic emphasis. */
 export function Emph({ text }: { text: string }) {
   const parts = text.split(/(\*[^*]+\*)/g).filter(Boolean);
   return (

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/ui/cn";
 
-/** The Wayfinder wordmark: Fraunces with a waypoint mark (a path reaching a point). */
+/** The Wayfinder wordmark: the serif (Newsreader) with a waypoint mark (a path reaching a point). */
 export function Wordmark({ className, href = "/" }: { className?: string; href?: string }) {
   return (
     <Link

@@ -14,7 +14,7 @@ export function EditorialPage({ children }: { children: ReactNode }) {
   );
 }
 
-/** Opening band: eyebrow, big Fraunces headline, lede. */
+/** Opening band: eyebrow, big serif headline, lede. */
 export function EditorialHero({
   eyebrow,
   title,
@@ -50,7 +50,7 @@ export function EditorialHero({
   );
 }
 
-/** A long-form section: numbered marker, Fraunces h2, readable prose column. */
+/** A long-form section: numbered marker, serif h2, readable prose column. */
 export function EditorialSection({
   id,
   number,

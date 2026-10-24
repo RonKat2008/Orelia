@@ -19,7 +19,7 @@ import { JOURNEY } from "./_components/tokens-data";
 
 export const metadata: Metadata = {
   title: "Design system | Wayfinder",
-  description: "Warm Paper: Wayfinder's tokens, type, motion and UI primitives in both themes.",
+  description: "Clear Day: Wayfinder's tokens, type, motion and UI primitives in both themes.",
 };
 
 const CONTENTS = [
@@ -41,7 +41,7 @@ function Specimen({ theme }: { theme: "light" | "dark" }) {
   const id = `pair-${theme}`;
   return (
     <div data-theme={theme} className="grain rounded-lg border border-line bg-paper p-5 text-ink sm:p-8">
-      <p className="m-0 mb-5 font-mono text-mono text-ink-3">{theme === "light" ? "Warm Paper" : "Night Paper"}</p>
+      <p className="m-0 mb-5 font-mono text-mono text-ink-3">{theme === "light" ? "Clear Day" : "Night"}</p>
       <Card variant="raised" padding="md">
         <div className="flex flex-wrap gap-2">
           <Badge tone="gold">Best match</Badge>
@@ -87,7 +87,7 @@ export default function DesignSystemPage() {
               <Emph text="A calm place to *find* your way." />
             </h1>
             <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-              Warm Paper is editorial, calm and human: the feeling of a trusted friend who has done the research and
+              Clear Day is crisp, calm and human: the feeling of a trusted friend who has done the research and
               written it down clearly. Every token and primitive below is live, in both themes.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -136,7 +136,7 @@ export default function DesignSystemPage() {
           id="pair"
           index="12 / Both themes"
           title={<Emph text="Same system, *two* lights." />}
-          intro="The same primitives with the theme forced on a wrapper via data-theme. Night Paper is a warm near-black, never blue-black; teal lightens to keep contrast."
+          intro="The same primitives with the theme forced on a wrapper via data-theme. Night is a deep blue-grey (#0b111b); teal and the accent hues lighten to keep every text token at 6.5:1 or better."
         >
           <div className="grid gap-6 lg:grid-cols-2">
             <Specimen theme="light" />

@@ -149,7 +149,7 @@ export interface StatProps extends ComponentProps<"div"> {
   adornment?: ReactNode;
 }
 
-/** Stat: one number that matters, set in Fraunces with a quiet label. */
+/** Stat: one number that matters, set in the serif with a quiet label. */
 export function Stat({ label, value, hint, adornment, className, ...props }: StatProps) {
   return (
     <div data-slot="stat" className={cn("grid gap-1", className)} {...props}>
@@ -180,9 +180,9 @@ export function StatGroup({ className, ...props }: ComponentProps<"dl">) {
 
 const AVATAR_TONES = [
   "bg-sage-soft text-ink ring-sage/50",
-  "bg-gold-soft text-ink ring-gold/60",
+  "bg-indigo-soft text-ink ring-indigo/30",
   "bg-teal-soft text-teal-ink ring-teal/20 dark:text-teal",
-  "bg-terracotta-soft text-ink ring-terracotta/40",
+  "bg-rose-soft text-ink ring-rose/30",
 ];
 
 export interface AvatarInitialsProps extends ComponentProps<"span"> {

@@ -7,7 +7,7 @@ function Palette({ theme }: { theme: "light" | "dark" }) {
     <div data-theme={theme} className="grain rounded-lg border border-line bg-paper p-5 text-ink shadow-sm sm:p-7">
       <p className="m-0 mb-6 flex items-baseline justify-between gap-4">
         <span className="font-display text-h3 font-normal display-soft">
-          {theme === "light" ? "Warm Paper" : "Night Paper"}
+          {theme === "light" ? "Clear Day" : "Night"}
         </span>
         <span className="font-mono text-mono text-ink-3">data-theme=&quot;{theme}&quot;</span>
       </p>
@@ -44,8 +44,8 @@ export function ColorSection() {
     <Section
       id="color"
       index="01 / Colour"
-      title={<Emph text="Warm paper, deep ink, *one* teal." />}
-      intro="Colour is semantic. Teal means action. Sage and gold add calm emphasis. Terracotta is a rare accent and never carries text. Status colours always travel with an icon or a word."
+      title={<Emph text="Clear paper, deep ink, *one* teal." />}
+      intro="Colour is semantic. Teal means action. Sage (mint) and gold (sun) add calm emphasis; terracotta (coral) is a rare accent. None of the three carries text. Indigo, violet and rose are semantic hues: contact channels (ch-*) and source types (src-*). Status colours always travel with an icon or a word."
     >
       <div className="grid gap-6 xl:grid-cols-2">
         <Palette theme="light" />
@@ -60,8 +60,8 @@ export function TypeSection() {
     <Section
       id="type"
       index="02 / Type"
-      title={<Emph text="Fraunces to *speak*, Atkinson to read." />}
-      intro="Fraunces (variable, optical size) sets display and headings, light at large sizes. Atkinson Hyperlegible Next carries everything people read or operate. One italic word per headline is the signature move."
+      title={<Emph text="Newsreader to *speak*, Atkinson to read." />}
+      intro="Newsreader (variable serif, optical size) sets display and headings, light at large sizes. Atkinson Hyperlegible Next, designed for low-vision readers, carries everything people read or operate. Use italic emphasis and tracked caps eyebrows sparingly."
     >
       <ol className="m-0 grid list-none gap-0 p-0">
         {TYPE_SCALE.map((row) => (
@@ -98,7 +98,7 @@ export function ShapeSection() {
       id="space"
       index="03 / Space, shape, depth"
       title={<Emph text="Rhythm, not *uniform* padding." />}
-      intro="A 4px base with deliberate jumps; named steps for page rhythm (gutter, stack, section). Radii are soft but not uniform. Shadows are warm, layered and low-opacity ink."
+      intro="A 4px base with deliberate jumps; named steps for page rhythm (gutter, stack, section). Radii are soft but not uniform. Shadows are layered, low-opacity blue-grey ink."
     >
       <div className="grid gap-12 lg:grid-cols-2">
         <div>

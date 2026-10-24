@@ -1,4 +1,4 @@
-export { SiteHeader, MARKETING_NAV, type NavItem, type SiteHeaderProps } from "./SiteHeader";
+export { SiteHeader, MARKETING_NAV, CASE_NAV, type NavItem, type SiteHeaderProps } from "./SiteHeader";
 export { SiteFooter } from "./SiteFooter";
 export { AppShell, type AppShellProps } from "./AppShell";
 export { Providers } from "./Providers";

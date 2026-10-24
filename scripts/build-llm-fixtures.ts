@@ -20,6 +20,8 @@ interface Case {
 }
 
 const AS_OF_YEAR = 2026;
+/** Matches the identity agent's live author limit (lib/agents/research/identity.ts). */
+const AUTHOR_LIMIT = 15;
 const CASES: Case[] = [
   { slug: "epithelioid-sarcoma", diseaseName: "Epithelioid sarcoma", homeState: "AZ", travelLimitMiles: 600 },
   { slug: "vascular-eds", diseaseName: "Vascular Ehlers-Danlos syndrome", homeState: "OH", travelLimitMiles: 300 },
@@ -205,7 +207,7 @@ function assertReturned(urls: Set<string>, url: string, where: string): void {
 }
 
 async function literature(c: Case, ports: SourcePorts): Promise<ResearchOutput> {
-  const authors = await ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: 6 });
+  const authors = await ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: AUTHOR_LIMIT });
   const records: Resource[] = [];
   const evidence: Evidence[] = [];
   for (const a of authors) {
@@ -256,7 +258,7 @@ const normalize = (s: string): string => s.toLowerCase().replace(/[^a-z]/g, "");
 const first = (s: string): string => normalize(s.trim().split(/\s+/)[0] ?? "");
 
 async function identity(c: Case, ports: SourcePorts): Promise<ResearchOutput> {
-  const authors = await ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: 6 });
+  const authors = await ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: AUTHOR_LIMIT });
   const records: Resource[] = [];
   const evidence: Evidence[] = [];
   for (const a of authors) {

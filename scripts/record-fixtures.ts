@@ -1,6 +1,8 @@
 // Records raw API responses (no reshaping) for offline tests.
 // Run: node --experimental-strip-types scripts/record-fixtures.ts
-import { mkdirSync, writeFileSync } from 'node:fs';
+// Strict mode (large disease-specific PubMed set + NPPES for its top authors, saved as NEW files):
+//   npx tsx scripts/record-fixtures.ts --strict [--only <slug>]
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const OUT_DIR = join(process.cwd(), 'fixtures', 'api');
@@ -10,12 +12,26 @@ const EXA_API_KEY = process.env.EXA_API_KEY ?? '';
 const NCBI_SLEEP_MS = 400;
 const POLITE_SLEEP_MS = 250;
 const NPPES_PER_DISEASE = 8;
+const STRICT = process.argv.includes('--strict');
+const ONLY = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : undefined;
+const STRICT_RETMAX = 300;
+const STRICT_EFETCH_BATCH = 100;
+const STRICT_NPPES_AUTHORS = 25;
+const STRICT_MIN_PAPERS = 2;
+// NCBI allows 10 req/s with a key, 3/s without.
+const STRICT_NCBI_SLEEP_MS = NCBI_API_KEY ? 110 : 350;
 
-const DISEASES = [
+const DISEASES: Array<{ slug: string; term: string; extraTiab?: string[]; ambiguous: { last: string; first: string } }> = [
   { slug: 'epithelioid-sarcoma', term: 'epithelioid sarcoma', ambiguous: { last: 'Smith', first: 'Michael' } },
   { slug: 'vascular-eds', term: 'vascular Ehlers-Danlos syndrome', ambiguous: { last: 'Johnson', first: 'David' } },
-  { slug: 'igg4-related-disease', term: 'IgG4-related disease', ambiguous: { last: 'Williams', first: 'James' } },
+  { slug: 'igg4-related-disease', term: 'IgG4-related disease', extraTiab: ['IgG4-related'], ambiguous: { last: 'Williams', first: 'James' } },
 ];
+
+/** Strict PubMed query: disease in title/abstract or MeSH (plus synonyms), human studies only. */
+export function strictPubmedTerm(d: { term: string; extraTiab?: string[] }): string {
+  const clauses = [`"${d.term}"[tiab]`, `"${d.term}"[MeSH Terms]`, ...(d.extraTiab ?? []).map((t) => `"${t}"[tiab]`)];
+  return `(${clauses.join(' OR ')}) AND humans[MeSH Terms]`;
+}
 
 const US_STATES: Record<string, string> = {
   Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO',
@@ -216,7 +232,93 @@ async function recordDisease(d: (typeof DISEASES)[number]): Promise<void> {
   }
 }
 
+// ---- Strict mode -----------------------------------------------------------------------------------------------
+
+interface StrictAuthor { first: string; last: string; state: string | null; isUs: boolean; pmids: Set<string> }
+
+/**
+ * Distinct-PMID author aggregation (same name key the fixture ports use). Papers count whether or not that
+ * particular paper carries an affiliation; an author qualifies for NPPES if any paper shows a US affiliation.
+ */
+function aggregateStrictAuthors(xmls: string[]): StrictAuthor[] {
+  const byKey = new Map<string, StrictAuthor>();
+  for (const xml of xmls) {
+    for (const article of xml.split(/<(?=PubmedArticle>)/).slice(1)) {
+      const pmid = article.match(/<PMID[^>]*>(\d+)<\/PMID>/)?.[1];
+      if (!pmid) continue;
+      const list = article.match(/<AuthorList(?![^>]*editors)[^>]*>[\s\S]*?<\/AuthorList>/)?.[0] ?? '';
+      const us = new Map(parseUsAuthors(list).map((a) => [`${a.first} ${a.last}`.toLowerCase(), a]));
+      for (const block of list.match(/<Author\b[\s\S]*?<\/Author>/g) ?? []) {
+        const last = block.match(/<LastName>([^<]+)<\/LastName>/)?.[1];
+        const fore = block.match(/<ForeName>([^<]+)<\/ForeName>/)?.[1];
+        if (!last || !fore) continue;
+        const first = decode(fore).split(/\s+/)[0].replace(/[^\p{L}-]/gu, '');
+        if (first.length < 2) continue;
+        const lastName = decode(last).trim();
+        const key = `${first} ${lastName}`.toLowerCase();
+        const cur = byKey.get(key) ?? { first, last: lastName, state: null, isUs: false, pmids: new Set<string>() };
+        cur.pmids.add(pmid);
+        const hit = us.get(key);
+        if (hit) { cur.isUs = true; cur.state = cur.state ?? hit.state; }
+        byKey.set(key, cur);
+      }
+    }
+  }
+  return [...byKey.values()]
+    .filter((a) => a.isUs)
+    .sort((a, b) => b.pmids.size - a.pmids.size || a.last.localeCompare(b.last));
+}
+
+// File names must match lib/agents/research/fixture-ports.ts (no diacritic folding there).
+const portSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const asciiName = (s: string) => s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+
+async function recordStrictDisease(d: (typeof DISEASES)[number]): Promise<void> {
+  console.log(`\n== strict ${d.slug} ==`);
+  const base = (src: string) => `${src}/${d.slug}`;
+  await sleep(STRICT_NCBI_SLEEP_MS);
+  const es = await record(
+    `${base('pubmed')}/esearch-strict.json`, 'GET',
+    ncbiUrl('esearch.fcgi', {
+      db: 'pubmed', term: strictPubmedTerm(d), retmax: String(STRICT_RETMAX), retmode: 'json', sort: 'relevance',
+    }),
+  );
+  let ids: string[] = [];
+  try { ids = JSON.parse(es.text)?.esearchresult?.idlist ?? []; } catch { /* status recorded */ }
+  const xmls: string[] = [];
+  for (let i = 0; i * STRICT_EFETCH_BATCH < ids.length; i++) {
+    await sleep(STRICT_NCBI_SLEEP_MS);
+    const batch = ids.slice(i * STRICT_EFETCH_BATCH, (i + 1) * STRICT_EFETCH_BATCH);
+    const ef = await record(
+      `${base('pubmed')}/efetch-strict-${i + 1}.xml`, 'GET',
+      ncbiUrl('efetch.fcgi', { db: 'pubmed', id: batch.join(','), retmode: 'xml' }),
+    );
+    xmls.push(ef.text);
+  }
+  const candidates = aggregateStrictAuthors(xmls).filter((a) => a.pmids.size >= STRICT_MIN_PAPERS);
+  console.log(`  ${ids.length} strict papers; ${candidates.length} US authors with >=${STRICT_MIN_PAPERS} papers`);
+  for (const a of candidates.slice(0, STRICT_NPPES_AUTHORS)) {
+    await sleep(POLITE_SLEEP_MS);
+    await record(
+      `${base('nppes')}/strict-${portSlug(a.last)}-${portSlug(a.first)}.json`, 'GET',
+      nppesUrl({ first: asciiName(a.first), last: asciiName(a.last), state: a.state }),
+    );
+  }
+}
+
+async function mainStrict(): Promise<void> {
+  console.log(`STRICT mode; NCBI_API_KEY ${NCBI_API_KEY ? 'set' : 'not set'}`);
+  const manifestPath = join(OUT_DIR, 'MANIFEST.json');
+  const existing: ManifestEntry[] = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : [];
+  for (const d of DISEASES) if (!ONLY || d.slug === ONLY) await recordStrictDisease(d);
+  const fresh = new Set(manifest.map((m) => m.file));
+  save('MANIFEST.json', JSON.stringify([...existing.filter((m) => !fresh.has(m.file)), ...manifest], null, 2) + '\n');
+  console.log(`\nAdded ${manifest.length} manifest entries; ${errors.length} non-2xx`);
+  for (const e of errors) console.log(`  ERR ${e}`);
+}
+
 async function main(): Promise<void> {
+  if (STRICT) return mainStrict();
   mkdirSync(OUT_DIR, { recursive: true });
   console.log(`NCBI_API_KEY ${NCBI_API_KEY ? 'set' : 'not set'}; EXA_API_KEY ${EXA_API_KEY ? 'set' : 'not set'}`);
   for (const d of DISEASES) await recordDisease(d);

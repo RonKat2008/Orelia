@@ -2,6 +2,15 @@
   "records": [
     {
       "kind": "expert",
+      "id": "expert:sherene-shalhub",
+      "name": "Sherene Shalhub",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Sherene&last_name=Shalhub&state=OR&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
       "id": "npi:1063591154",
       "name": "Peter Byers",
       "npi": "1063591154",
@@ -9,6 +18,39 @@
       "specialty": "Medical Genetics, Clinical Molecular Genetics",
       "evidenceRefs": [
         "https://npiregistry.cms.hhs.gov/provider-view/1063591154"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1366460628",
+      "name": "Dianna Milewicz",
+      "npi": "1366460628",
+      "credentials": "M.D.",
+      "specialty": "Internal Medicine",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1366460628"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1184677296",
+      "name": "Shaine Morris",
+      "npi": "1184677296",
+      "credentials": "MD MPH",
+      "specialty": "Pediatrics, Pediatric Cardiology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1184677296"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1114954906",
+      "name": "Harry Dietz",
+      "npi": "1114954906",
+      "credentials": "M.D.",
+      "specialty": "Medical Genetics, Clinical Genetics (M.D.)",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1114954906"
       ]
     },
     {
@@ -22,47 +64,123 @@
     },
     {
       "kind": "expert",
-      "id": "expert:dru-leistritz",
-      "name": "Dru Leistritz",
+      "id": "expert:reed-pyeritz",
+      "name": "Reed Pyeritz",
       "npi": null,
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dru&last_name=Leistritz&state=WA&limit=10"
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Reed&last_name=Pyeritz&state=PA&limit=10"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:kenneth-rice",
-      "name": "Kenneth Rice",
-      "npi": null,
+      "id": "npi:1609832716",
+      "name": "James Black",
+      "npi": "1609832716",
+      "credentials": "M.D.",
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kenneth&last_name=Rice&state=WA&limit=10"
+        "https://npiregistry.cms.hhs.gov/provider-view/1609832716"
       ]
     },
     {
       "kind": "expert",
-      "id": "npi:1619930385",
-      "name": "Matthew Eagleton",
-      "npi": "1619930385",
+      "id": "npi:1740254515",
+      "name": "Gustavo Oderich",
+      "npi": "1740254515",
       "credentials": "MD",
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/provider-view/1619930385"
+        "https://npiregistry.cms.hhs.gov/provider-view/1740254515"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:mingdong-liu",
-      "name": "Mingdong Liu",
+      "id": "npi:1477584142",
+      "name": "Kathryn Holmes",
+      "npi": "1477584142",
+      "credentials": "M.D.",
+      "specialty": "Pediatrics",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1477584142"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1477597805",
+      "name": "Alan Braverman",
+      "npi": "1477597805",
+      "credentials": "MD",
+      "specialty": "Internal Medicine, Cardiovascular Disease",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1477597805"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1881635738",
+      "name": "Bart Loeys",
+      "npi": "1881635738",
+      "credentials": "M.D.",
+      "specialty": "Radiology, Diagnostic Radiology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1881635738"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:caitlin-bowen",
+      "name": "Caitlin Bowen",
       "npi": null,
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mingdong&last_name=Liu&state=WA&limit=10"
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Caitlin&last_name=Bowen&state=MD&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1205034519",
+      "name": "Melissa Russo",
+      "npi": "1205034519",
+      "credentials": "M.D.",
+      "specialty": "Obstetrics & Gynecology, Maternal & Fetal Medicine",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1205034519"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1144260282",
+      "name": "Nazli McDonnell",
+      "npi": "1144260282",
+      "credentials": "M.D., Ph.D.",
+      "specialty": "Internal Medicine",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1144260282"
       ]
     }
   ],
   "evidence": [
     {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Sherene Shalhub (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Sherene&last_name=Shalhub&state=OR&limit=10"
+    },
+    {
       "claimType": "identity_verified",
       "claim": "NPI 1063591154 is registered to PETER BYERS (Medical Genetics, Clinical Molecular Genetics) in SEATTLE, WA; it was the only exact name match NPPES returned.",
       "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1063591154"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1366460628 is registered to DIANNA MILEWICZ (Internal Medicine) in HOUSTON, TX; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1366460628"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1184677296 is registered to SHAINE MORRIS (Pediatrics, Pediatric Cardiology) in HOUSTON, TX; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1184677296"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1114954906 is registered to HARRY DIETZ (Medical Genetics, Clinical Genetics (M.D.)) in BALTIMORE, MD; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1114954906"
     },
     {
       "claimType": "identity_unverified",
@@ -71,23 +189,48 @@
     },
     {
       "claimType": "identity_unverified",
-      "claim": "NPPES returned 0 exact name matches for Dru Leistritz (0 providers returned); identity was not confirmed.",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dru&last_name=Leistritz&state=WA&limit=10"
-    },
-    {
-      "claimType": "identity_unverified",
-      "claim": "NPPES returned 0 exact name matches for Kenneth Rice (0 providers returned); identity was not confirmed.",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kenneth&last_name=Rice&state=WA&limit=10"
+      "claim": "NPPES returned 0 exact name matches for Reed Pyeritz (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Reed&last_name=Pyeritz&state=PA&limit=10"
     },
     {
       "claimType": "identity_verified",
-      "claim": "NPI 1619930385 is registered to MATTHEW EAGLETON in CLEVELAND, OH; it was the only exact name match NPPES returned.",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1619930385"
+      "claim": "NPI 1609832716 is registered to JAMES BLACK in BALTIMORE, MD; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1609832716"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1740254515 is registered to GUSTAVO ODERICH in HOUSTON, TX; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1740254515"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1477584142 is registered to KATHRYN HOLMES (Pediatrics) in PORTLAND, OR; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1477584142"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1477597805 is registered to ALAN BRAVERMAN (Internal Medicine, Cardiovascular Disease) in SAINT LOUIS, MO; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1477597805"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1881635738 is registered to BART LOEYS (Radiology, Diagnostic Radiology) in BALTIMORE, MD; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1881635738"
     },
     {
       "claimType": "identity_unverified",
-      "claim": "NPPES returned 0 exact name matches for Mingdong Liu (0 providers returned); identity was not confirmed.",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mingdong&last_name=Liu&state=WA&limit=10"
+      "claim": "NPPES returned 0 exact name matches for Caitlin Bowen (1 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Caitlin&last_name=Bowen&state=MD&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1205034519 is registered to MELISSA RUSSO (Obstetrics & Gynecology, Maternal & Fetal Medicine) in PROVIDENCE, RI; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1205034519"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1144260282 is registered to NAZLI MCDONNELL (Internal Medicine) in MINNEAPOLIS, MN; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1144260282"
     }
   ]
 }

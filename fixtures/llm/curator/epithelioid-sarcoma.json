@@ -1,0 +1,242 @@
+{
+  "picks": [
+    {
+      "candidateId": "d129b6fb-671d-5866-a143-2ab725ecd891",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Appears as an author on 4 retrieved PubMed papers on epithelioid sarcoma, 1 in the last 5 years.",
+          "evidenceIds": [
+            "1a2aef33-b2e7-5e71-a4e5-244d2226541c",
+            "a628bad6-cd0e-5193-a042-bcb6594839f5"
+          ]
+        },
+        {
+          "text": "Registered in NPPES as a pathologist in Los Angeles, CA; no direct contact path was found.",
+          "evidenceIds": [
+            "584948e5-108a-5203-afbc-f5c2706c0496"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "ac7e7b2a-7834-5c7b-a14b-fe080aaf1db3",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "Appears on 2 retrieved epithelioid sarcoma papers (1 recent), but is in Miami, FL, far from Arizona.",
+          "evidenceIds": [
+            "6f0625a1-f13c-5974-a842-d2928645f7c7",
+            "b7a319ca-b777-5359-a696-716d8ec60bc3"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "7c0d8d46-32b2-5732-a4fb-c5ace9364203",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "Appears on 2 retrieved epithelioid sarcoma papers, none in the last 5 years; based in Columbus, OH.",
+          "evidenceIds": [
+            "2b2c25f9-4ffb-5a28-af5a-2c43cbb1bc6a",
+            "fcc59818-f260-57be-a8af-6fa9426beb49"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "74c19219-9ef7-5147-af51-ce263ca6c0ce",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "A Duke Cancer Institute page lists a dedicated sarcoma center and describes an NCI Comprehensive Cancer Center designation.",
+          "evidenceIds": [
+            "56e668f9-34f0-5031-a1fa-3374f2db6aff"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "121650f6-f6ad-50d8-a3cf-be2da24b67ab",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "NCI-listed Comprehensive Cancer Center in Tucson, AZ, in the home state and the easiest to reach; no sarcoma-specific program page was found.",
+          "evidenceIds": [
+            "1052fe45-43e5-50d6-a508-471908d0875d"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "86459e66-cb59-5292-a240-39374d27cbfc",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "NCI-listed Comprehensive Cancer Center in Phoenix, AZ, within the home state; no disease-specific program page was found.",
+          "evidenceIds": [
+            "f8d4a54f-5598-5e97-ab4a-3cd5abe25bc8"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "01d467b7-2988-5a31-ad4c-81485af655ca",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "NCI-listed Comprehensive Cancer Center in Albuquerque, NM, a neighboring state; no disease-specific program page was found.",
+          "evidenceIds": [
+            "96360f4a-f6a4-526c-afb9-5a71f44a7e04"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "f612047a-8038-5144-af07-13052ff00ef4",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "NCI-listed Comprehensive Cancer Center in Salt Lake City, UT, a nearby state; no disease-specific program page was found.",
+          "evidenceIds": [
+            "abbf7270-75da-505c-a6a5-84545f9847b1"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "e9e173aa-59fb-5c1a-a90f-0ad57e50c1ad",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "A Tampa General Hospital Cancer Institute page describes a Sarcoma Center of Excellence that offers telehealth appointments, which may reduce travel.",
+          "evidenceIds": [
+            "e082ddf0-c949-575c-a9af-cbe5e4685957"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "162d6ef7-0a20-5745-a788-b839becab1a4",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Hosts an application for a travel grant for people who need to travel to a distant sarcoma center.",
+          "evidenceIds": [
+            "164b1d4e-efb1-576d-a495-838f066f7d10"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "74bfe7c0-c333-5ec3-a590-8855648434f4",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Describes reimbursement for transportation and lodging tied to clinical trial participation, relevant if a trial site is out of state.",
+          "evidenceIds": [
+            "a2360574-5c1b-58d4-afa3-6bd56152f43d"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "5adff9bb-5d2d-5335-a531-226213ebedc4",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Describes a fund that provides financial assistance for obtaining a second opinion from a sarcoma expert.",
+          "evidenceIds": [
+            "a815984f-6267-54b6-aa09-bb69e496f4d2"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "169fe99f-83e7-5d72-a2be-14674d45bc53",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Financial Assistance page lists organizations offering grants, copay help, travel and lodging support.",
+          "evidenceIds": [
+            "f7a74ff4-b8cd-5c26-a2b1-175a2fe82357"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "af99599f-4709-5ace-a63c-e681e72f9719",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Page lists sarcoma funds, including one covering out-of-pocket expenses for patients in clinical trials.",
+          "evidenceIds": [
+            "4652b0bb-9b94-5223-a1f5-ea5f917cc10e"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "2abd43b0-0a80-5de8-a498-a166eefdc092",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "Global network of national sarcoma advocacy groups; informational, with no concrete program found.",
+          "evidenceIds": [
+            "46ae8609-756d-55af-a8d2-d61b7318b4fa"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "c14085ed-34fe-5762-a971-9268bdaf6816",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "Directory of sarcoma patient advocacy and support organizations; informational only.",
+          "evidenceIds": [
+            "5adb06c3-4345-5787-aa77-a692f6347842"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "94f77951-1d8d-563c-a682-4ef4666ffaad",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "ClinicalTrials.gov lists it as recruiting with a U.S. site in Phoenix, Arizona, inside the home state, and the ranking notes epithelioid sarcoma among its registered conditions.",
+          "evidenceIds": [
+            "cd0fa12f-a198-5c9b-ac58-ad4ef2720fae"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "b5f3ae0c-dfe3-58b3-ab5e-0dd9679c5205",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Listed as recruiting and matched on epithelioid sarcoma as a keyword, but the listed sites are in New Jersey and New York, far from Arizona.",
+          "evidenceIds": [
+            "b38023e3-a0a1-58d0-a185-32f92b88ff39"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "d6ccef3d-7f7d-5add-a7cc-705734278ebf",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "Recruiting, but the sponsor is a children's research hospital and the listed sites are far from Arizona, so adult eligibility is not shown in the listing.",
+          "evidenceIds": [
+            "e67e86d6-9cec-5e69-a2f9-64f2c4813e0d"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": "Closest to home, the University of Arizona Cancer Center in Tucson is an NCI Comprehensive Cancer Center in your state, and a recruiting study with a Phoenix site is listed on ClinicalTrials.gov. Duke Sarcoma Center has a dedicated sarcoma program page, but it is out of state, so the Beat the Odds travel grant and the Sarcoma Foundation of America trial travel reimbursement are worth looking at. The program pages found do not show intake contacts, so the next step is to call each program's main line and ask about new-patient intake and records requirements. Final eligibility for any study is decided by the study team."
+}

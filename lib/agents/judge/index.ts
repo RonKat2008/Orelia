@@ -15,8 +15,8 @@ import { addUsage, emptyUsage, type Usage } from "@/lib/ai/usage";
 import { isOffline } from "@/lib/env";
 import { saveFixture } from "../replay";
 import { runAgent, type MessagesClient } from "../runtime";
-import { guardJudgements, kindIndex } from "./guardrails";
-import { scopeFlags } from "./scope";
+import { guardJudgements, kindIndex, TIER_ORDER } from "./guardrails";
+import { candidateFacts, scopeFlags, type CandidateFacts } from "./scope";
 
 export const JUDGE_AGENT_NAME = "judge";
 export const SUGGESTED_MAX = 5;
@@ -52,7 +52,13 @@ function needsView(needs: CareNeeds | undefined) {
   };
 }
 
-export function buildJudgeInput(c: CaseInput, ranked: readonly RankedEntry[], needs: CareNeeds | undefined, flags: ReadonlyMap<string, ScopeFlag[]>) {
+export function buildJudgeInput(
+  c: CaseInput,
+  ranked: readonly RankedEntry[],
+  needs: CareNeeds | undefined,
+  flags: ReadonlyMap<string, ScopeFlag[]>,
+  facts: ReadonlyMap<string, CandidateFacts> = new Map(ranked.map((e) => [e.record.resource.id, candidateFacts(e, c, flags.get(e.record.resource.id) ?? [])])),
+) {
   return {
     case: {
       diagnosis: c.diseaseName,
@@ -72,6 +78,7 @@ export function buildJudgeInput(c: CaseInput, ranked: readonly RankedEntry[], ne
         score: e.score,
         breakdown: e.breakdown.map((b) => ({ factor: b.factor, points: b.points, text: b.text })),
         flags: (flags.get(e.record.resource.id) ?? []).map((f) => ({ code: f.code, hard: f.hard, text: f.text })),
+        facts: facts.get(e.record.resource.id) ?? candidateFacts(e, c, flags.get(e.record.resource.id) ?? []),
         evidence: e.record.evidence.map((ev) => ({ id: ev.id, claimType: ev.claimType, claim: ev.claim.slice(0, CLAIM_CHARS), sourceKind: ev.sourceKind })),
       })),
   };
@@ -89,10 +96,12 @@ export function toCuration(result: JudgeResult, ranked: readonly RankedEntry[]):
       reasons: j && j.evidenceIds.length ? [{ text: j.reason.slice(0, 400), evidenceIds: j.evidenceIds }] : [],
     };
   });
-  // Pre-selected outreach: best-tier keeps with a contact route (curation stores key suggestions on best tiers).
+  // Suggested picks = keeps, by tier then score (capped). The shortlist only pre-selects reachable ones, so those
+  // that have a contact route come first; an unreachable keep can still be picked by hand.
+  const reach = (id: string) => (isReachable(byId.get(id)?.record.evidence ?? []) ? 0 : 1);
   const suggested = result.judgements
-    .filter((j) => j.verdict === "keep" && j.tier === "best" && isReachable(byId.get(j.candidateId)?.record.evidence ?? []))
-    .sort((a, b) => a.order - b.order)
+    .filter((j) => j.verdict === "keep")
+    .sort((a, b) => reach(a.candidateId) - reach(b.candidateId) || TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || b.score - a.score || a.rank - b.rank || (a.candidateId < b.candidateId ? -1 : 1))
     .slice(0, SUGGESTED_MAX)
     .map((j) => j.candidateId);
   return {
@@ -113,8 +122,9 @@ export function judgeFromRaw(
   meta: { model: string; elapsedMs: number; now: Date; failure?: string },
 ): JudgeResult {
   const flags = new Map(ranked.map((e) => [e.record.resource.id, scopeFlags(e, c)]));
+  const facts = new Map(ranked.map((e) => [e.record.resource.id, candidateFacts(e, c, flags.get(e.record.resource.id) ?? [])]));
   const source = raw ? "model" : "fallback";
-  const { judgements, rejected } = guardJudgements(raw, { entries: ranked, needs, flags, source });
+  const { judgements, rejected } = guardJudgements(raw, { entries: ranked, needs, flags, facts, source });
   const summary = raw?.summary && !flagMedicalAdvice(raw.summary).flagged ? raw.summary : "";
   const count = (v: string) => judgements.filter((j) => j.verdict === v).length;
   return {

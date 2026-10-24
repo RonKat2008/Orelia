@@ -162,6 +162,13 @@
       "when": 1792823100100,
       "tag": "0047_history_source_document",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792900000000,
+      "tag": "0048_needs_cache",
+      "breakpoints": true
     }
   ]
 }

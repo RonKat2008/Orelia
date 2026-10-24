@@ -70,6 +70,8 @@ export const judgementSchema = z.object({
   /** What code changed and why (e.g. "keep without evidence -> drop"). */
   overrides: z.array(z.string()),
   source: z.enum(["model", "fallback"]),
+  /** Promoted to keep by the deterministic keep floor (score), not by the judge. */
+  promoted: z.boolean().optional(),
 });
 export type Judgement = z.infer<typeof judgementSchema>;
 

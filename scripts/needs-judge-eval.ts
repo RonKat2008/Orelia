@@ -8,8 +8,12 @@
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isReachable } from "@/lib/outreach/reachability";
+import type { RankedEntry } from "@/lib/agents/persist";
 
-const SLUGS = ["vascular-eds", "epithelioid-sarcoma", "igg4-related-disease"] as const;
+const ALL_SLUGS = ["vascular-eds", "epithelioid-sarcoma", "igg4-related-disease"] as const;
+const only = process.argv.indexOf("--only");
+const SLUGS = only >= 0 ? ALL_SLUGS.filter((s) => s === process.argv[only + 1]) : ALL_SLUGS;
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(name);
@@ -90,11 +94,16 @@ async function evaluate(dir: string) {
       rows.push(`| ${j.kind} | ${j.name.slice(0, 48)} | ${j.score} | ${before} | ${j.verdict} / ${j.tier} | ${diff ? "**changed**" : ""} | ${j.reason.replace(/\|/g, "/").slice(0, 160)} |`);
     }
     const sugBefore = curator.suggested.length;
+    const evidenceOf = (id: string) => (ranked as RankedEntry[]).find((e) => e.record.resource.id === id)?.record.evidence ?? [];
+    // What the patient view pre-selects: the shortlist route keeps only reachable suggestions.
+    const effective = (ids: readonly string[]) => ids.filter((id) => isReachable(evidenceOf(id))).length;
+    const keepsNoEvidence = result.judgements.filter((j) => j.verdict === "keep" && j.evidenceIds.length === 0).length;
+    const promoted = result.judgements.filter((j) => j.promoted).length;
     lines.push(
       `### ${slug} (${caseRecord.diseaseName})`,
       "",
       `Needs: ${needs ? `${needs.specialties.length} specialties, ${needs.centerCapabilities.length} capabilities, ${needs.redFlags.length} red flags, ${needs.trialEligibility.length} trial checks, ${needs.supportNeeds.length} support, ${needs.questions.length} questions, ${needs.sources.length} sources, ${needs.dropped.length} dropped by code` : "none"}.`,
-      `Judge: keep ${result.counts.keep}, maybe ${result.counts.maybe}, drop ${result.counts.drop}; ${changed}/${result.judgements.length} tiers changed vs curator; suggested ${sugBefore} -> ${curation.suggested.length}; rejected ${result.rejected.length}.`,
+      `Judge: keep ${result.counts.keep}, maybe ${result.counts.maybe}, drop ${result.counts.drop}; ${changed}/${result.judgements.length} tiers changed vs curator; suggested ${sugBefore} -> ${curation.suggested.length} (pre-selected in patient view: ${effective(curator.suggested)} -> ${effective(curation.suggested)}); promoted by floor ${promoted}; keeps without evidence ${keepsNoEvidence}; rejected ${result.rejected.length}.`,
       "",
       "| kind | candidate | score | curator tier | judge verdict / tier | | judge reason |",
       "|---|---|---|---|---|---|---|",

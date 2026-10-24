@@ -150,7 +150,7 @@ export async function runNeedsAnalyst(caseId: string, c: CaseInput, deps: NeedsD
       await finish({ status: "failed", error: `No sourced needs survived validation (${base.dropped.length} dropped)` });
       return undefined;
     }
-    await needsStore.saveBase(caseId, base).catch((e) => console.error(`[needs] cache save failed: ${e instanceof Error ? e.message : String(e)}`));
+    await needsStore.saveBase(base).catch((e) => console.error(`[needs] cache save failed: ${e instanceof Error ? e.message : String(e)}`));
     const needs = personalizeNeeds(base, caseId, c, { fromCache: false, elapsedMs: Date.now() - started, documents: await documents() });
     await needsStore.saveNeeds(needs).catch(() => undefined);
     await finish({ status: "done", counts: { needs: kept, sources: base.sources.length, dropped: base.dropped.length }, outputSummary: summarize(base, false, needs.elapsedMs) });

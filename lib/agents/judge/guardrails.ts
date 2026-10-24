@@ -5,14 +5,26 @@
  *  3. hard scope rules (adult, U.S.) force a drop; soft flags (travel, licensure, recruiting) cap the tier and are
  *     always shown in the reason;
  *  4. every drop has a reason; reasons/plain text pass the no-medical-advice filter or are replaced by code text;
- *  5. results are stable: sorted by verdict band, tier, deterministic score, id; keeps capped per kind.
+ *  5. results are stable: sorted by verdict band, tier, deterministic score, id; keeps capped per kind;
+ *  6. numbers: any mileage in a reason or plain sentence must equal a code-computed travel fact, and any other number
+ *     must appear in that candidate's input; segments stating other numbers are removed;
+ *  7. keep floor: with fewer than KEEP_FLOOR keeps, the top-scored maybes that have evidence, no flags and no unmet
+ *     core need are promoted to keep and labelled "Good fit by score; judge unsure".
  */
 import type { CareNeeds, CurationTier, JudgeConfidence, Judgement, JudgeVerdict, RawJudgeOutput, Resource, ScopeFlag } from "@/lib/contracts";
+import { isReachable } from "@/lib/outreach/reachability";
 import { flagMedicalAdvice } from "@/lib/safety/no-medical-advice";
 import { resourceName, type RankedEntry } from "../persist";
+import type { CandidateFacts } from "./scope";
 
 export const KEEP_PER_KIND = 6;
 export const BEST_PER_KIND = 2;
+/** Below this many keeps, eligible maybes are promoted by score (the patient view needs a few smart defaults). */
+export const KEEP_FLOOR = 3;
+/** Core needs: the condition-specific specialties and red flags. An unmet one blocks promotion by score. */
+const CORE_NEED = /^(?:spec|flag)-\d+$/;
+export const PROMOTED_LABEL = "Good fit by score; judge unsure";
+export const UNREVIEWED_PROMOTED_LABEL = "Good fit by score; not reviewed by the judge";
 const KIND_ORDER: Resource["kind"][] = ["expert", "institution", "trial", "organization"];
 const VERDICT_BAND: Record<JudgeVerdict, number> = { keep: 0, maybe: 1, drop: 2 };
 const TIER_BAND: Record<CurationTier, number> = { best: 0, good: 1, backup: 2, exclude: 3 };
@@ -22,6 +34,8 @@ export interface GuardInput {
   entries: readonly RankedEntry[];
   needs?: CareNeeds;
   flags: ReadonlyMap<string, ScopeFlag[]>;
+  /** Code-computed facts given to the judge; mileage in its text must match these. */
+  facts?: ReadonlyMap<string, CandidateFacts>;
   source: "model" | "fallback";
 }
 
@@ -71,6 +85,38 @@ export function stripNeedIds(text: string): string {
   return text.replace(NEED_ID_TOKEN, "").replace(/\s+·/g, " ·").replace(/\s{2,}/g, " ").trim();
 }
 
+const NUMBER = /(?<![\w.])[~≈]?(\d[\d,]*(?:\.\d+)?)(?:\s?-?\s?(mi|miles?|mile)\b)?/gi;
+const toNumber = (raw: string) => Number(raw.replace(/,/g, ""));
+
+function numbersIn(text: string): number[] {
+  return [...text.matchAll(NUMBER)].map((m) => toNumber(m[1]!)).filter(Number.isFinite);
+}
+
+/** Numbers the judge may state for this candidate: miles from code facts; anything else only if it is in its input. */
+export function allowedNumbers(e: RankedEntry, flags: readonly ScopeFlag[], facts: CandidateFacts | undefined): { miles: Set<number>; other: Set<number> } {
+  const t = facts?.travel;
+  const miles = new Set<number>([t?.nearestMiles, t?.beyondLimitMiles, t?.travelLimitMiles].filter((n): n is number => typeof n === "number"));
+  for (const f of flags) for (const n of numbersIn(f.text)) miles.add(n);
+  const texts = [resourceName(e.record.resource), ...e.record.evidence.map((ev) => ev.claim), ...e.breakdown.map((b) => b.text), ...flags.map((f) => f.text), JSON.stringify(facts ?? {})];
+  const other = new Set<number>(texts.flatMap(numbersIn));
+  for (const n of miles) other.add(n);
+  return { miles, other };
+}
+
+/** Remove " · " segments that state a number not supplied in the input. Returns the kept text and what was removed. */
+export function stripUnsupportedNumbers(text: string, allowed: { miles: Set<number>; other: Set<number> }): { text: string; removed: string[] } {
+  const removed: string[] = [];
+  const kept = text.split(/\s+·\s+/).filter((segment) => {
+    const bad = [...segment.matchAll(NUMBER)].filter((m) => {
+      const n = toNumber(m[1]!);
+      return m[2] ? !allowed.miles.has(n) : !allowed.other.has(n);
+    });
+    if (bad.length) removed.push(...bad.map((m) => m[0].trim()));
+    return bad.length === 0;
+  });
+  return { text: kept.join(" · ").trim(), removed };
+}
+
 interface Draft {
   e: RankedEntry;
   verdict: JudgeVerdict;
@@ -83,6 +129,7 @@ interface Draft {
   confidence: JudgeConfidence;
   overrides: string[];
   source: "model" | "fallback";
+  promoted?: boolean;
 }
 
 /** Candidate the model did not judge (or fallback): shown on its score as a "maybe", never a keep. */
@@ -102,9 +149,22 @@ function unreviewed(e: RankedEntry, source: "model" | "fallback"): Draft {
   };
 }
 
-function applyRules(d: Draft, flags: readonly ScopeFlag[]): Draft {
+function applyRules(d: Draft, flags: readonly ScopeFlag[], facts: CandidateFacts | undefined): Draft {
   const out: Draft = { ...d, overrides: [...d.overrides] };
   const name = resourceName(out.e.record.resource);
+  if (out.source === "model") {
+    const allowed = allowedNumbers(out.e, flags, facts);
+    const reason = stripUnsupportedNumbers(out.reason, allowed);
+    if (reason.removed.length) {
+      out.overrides.push(`removed unsupported number(s) from the reason: ${reason.removed.join(", ")}`);
+      out.reason = reason.text || codeReason(out.e, out.verdict);
+    }
+    const plain = stripUnsupportedNumbers(out.plain, allowed);
+    if (plain.removed.length) {
+      out.overrides.push(`plain sentence stated unsupported number(s) (${plain.removed.join(", ")}); replaced`);
+      out.plain = plainFor(out.verdict, name);
+    }
+  }
   if (out.verdict !== "drop" && out.evidenceIds.length === 0) {
     out.overrides.push(`${out.verdict} without valid evidence -> drop`);
     out.verdict = "drop";
@@ -181,7 +241,7 @@ export function guardJudgements(raw: RawJudgeOutput | undefined, input: GuardInp
 
   const ruled = input.entries.map((e) => {
     const id = e.record.resource.id;
-    return applyRules(drafts.get(id) ?? unreviewed(e, input.source), input.flags.get(id) ?? []);
+    return applyRules(drafts.get(id) ?? unreviewed(e, input.source), input.flags.get(id) ?? [], input.facts?.get(id));
   });
 
   // Stable order: verdict band, tier, deterministic score (desc), rank, id.
@@ -217,6 +277,7 @@ export function guardJudgements(raw: RawJudgeOutput | undefined, input: GuardInp
       }
     }
   }
+  applyKeepFloor(ruled, input.flags);
   ruled.sort(
     (a, b) =>
       VERDICT_BAND[a.verdict] - VERDICT_BAND[b.verdict] ||
@@ -249,8 +310,29 @@ export function guardJudgements(raw: RawJudgeOutput | undefined, input: GuardInp
     order: i + 1,
     overrides: d.overrides,
     source: d.source,
+    ...(d.promoted ? { promoted: true } : {}),
   }));
   return { judgements, rejected };
+}
+
+/**
+ * Deterministic keep floor. Eligible: a maybe with evidence, no scope flag at all, and no unmet core need (specialty or
+ * red flag). Reachable ones first, then by score. Promoted picks are labelled honestly in the reason.
+ */
+function applyKeepFloor(ruled: Draft[], flags: ReadonlyMap<string, ScopeFlag[]>): void {
+  const keeps = ruled.filter((d) => d.verdict === "keep").length;
+  if (keeps >= KEEP_FLOOR) return;
+  const reach = (d: Draft) => (isReachable(d.e.record.evidence) ? 1 : 0);
+  const eligible = ruled
+    .filter((d) => d.verdict === "maybe" && d.evidenceIds.length > 0 && (flags.get(d.e.record.resource.id) ?? []).length === 0 && !d.needsMissed.some((id) => CORE_NEED.test(id)))
+    .sort((a, b) => reach(b) - reach(a) || b.e.score - a.e.score || a.e.rank - b.e.rank || (a.e.record.resource.id < b.e.record.resource.id ? -1 : 1));
+  for (const d of eligible.slice(0, KEEP_FLOOR - keeps)) {
+    d.verdict = "keep";
+    d.promoted = true;
+    d.tier = capTier(d.tier, "good");
+    d.reason = `${d.source === "model" ? PROMOTED_LABEL : UNREVIEWED_PROMOTED_LABEL} · ${d.reason}`.slice(0, 600);
+    d.overrides.push(`keep floor (${KEEP_FLOOR}): maybe -> keep by score`);
+  }
 }
 
 function refsOf(r: Resource): { nctId?: string; npi?: string } {

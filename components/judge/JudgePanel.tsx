@@ -95,6 +95,7 @@ function Row({ item, labels }: { item: Judgement; labels: Map<string, string> })
         <h4 className="m-0 min-w-0 break-words text-body font-semibold text-ink">{item.name}</h4>
         <Badge tone="outline">{KIND_LABEL[item.kind]}</Badge>
         <Badge tone={TONE[item.verdict]}>{verdictLabel(item.verdict)}</Badge>
+        {item.promoted ? <Badge tone="outline">Kept by score</Badge> : null}
       </div>
       <p className="m-0 flex flex-wrap gap-x-3 gap-y-1 text-micro text-ink-3">
         <span>Tier: {item.tier}</span>

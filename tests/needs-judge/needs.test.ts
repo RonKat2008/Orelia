@@ -206,3 +206,36 @@ describe("settleNeeds / pickUpLateNeeds", () => {
     expect(await pickUpLateNeeds("c1", async () => null, 20, 5)).toBeUndefined();
   });
 });
+
+describe("needs cache table: disease-level, outlives any case, TTL", () => {
+  const base = (over: Record<string, unknown> = {}) => ({
+    cacheKey: needsCacheKey("Vascular Ehlers-Danlos syndrome"), diseaseName: "Vascular Ehlers-Danlos syndrome", generatedAt: "2026-10-01T00:00:00.000Z",
+    mode: "live", sources: [], searchTerms: { centers: [], experts: [], trials: [], advocacy: [], aid: [] }, dropped: [],
+    specialties: [], centerCapabilities: [], redFlags: [], trialEligibility: [], supportNeeds: [], questions: [], ...over,
+  }) as never;
+
+  it("the needs_cache table has no case column and no foreign key to cases", async () => {
+    const { needsCache } = await import("@/db/schema");
+    const { getTableConfig } = await import("drizzle-orm/pg-core");
+    const cfg = getTableConfig(needsCache);
+    expect(cfg.columns.map((c) => c.name).sort()).toEqual(["cache_key", "data", "disease_name", "expires_at", "generated_at", "subtype", "updated_at"]);
+    expect(cfg.foreignKeys).toHaveLength(0);
+    expect(readFileSync("drizzle/0048_needs_cache.sql", "utf8")).not.toMatch(/case_id|REFERENCES/);
+  });
+
+  it("rejects any case or personal field in a cache entry", async () => {
+    const store = new MemoryNeedsStore();
+    await expect(store.saveBase(base({ caseId: "case-a" }))).rejects.toThrow();
+    await expect(store.saveBase(base({ personal: { homeState: "OH" } }))).rejects.toThrow();
+  });
+
+  it("expires after the TTL and never lets an older profile replace a fresher one", async () => {
+    let now = Date.parse("2026-10-02T00:00:00.000Z");
+    const store = new MemoryNeedsStore(() => now);
+    await store.saveBase(base());
+    await store.saveBase(base({ generatedAt: "2026-09-20T00:00:00.000Z", mode: "offline" }));
+    expect((await store.findBase(needsCacheKey("vascular ehlers danlos"), new Date(0)))?.mode).toBe("live");
+    now = Date.parse("2026-10-01T00:00:00.000Z") + NEEDS_CACHE_TTL_MS + 1;
+    expect(await store.findBase(needsCacheKey("Vascular Ehlers-Danlos syndrome"), new Date(0))).toBeNull();
+  });
+});

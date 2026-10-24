@@ -2,52 +2,46 @@
   "judgements": [
     {
       "candidateId": "0d4ff11c-9144-5f32-aaea-80ffb6353d0e",
-      "verdict": "maybe",
+      "verdict": "keep",
       "tier": "good",
-      "reason": "NPI-verified medical genetics · 15 vEDS papers incl. 2017 vEDS management review · Seattle, far beyond 300-mile limit",
-      "plain": "This genetics doctor has written about your condition but works far away in Seattle.",
+      "reason": "Medical genetics NPI verified · authored vEDS diagnosis and management review · beyond travel limit, WA license",
+      "plain": "A genetics doctor in Washington who has written many papers on vEDS.",
       "evidenceIds": [
         "3ff4dd7a-ac86-5739-a53a-f7b12957e2a2",
         "109b6875-714a-57fc-ab11-e8392257ba58",
         "5fd448dd-4807-53d0-a591-1c81343368f9",
-        "58ce4feb-1c30-5910-a16a-f75921a99035"
+        "cf61067d-3498-59fe-ad97-a1d1c8d74360"
       ],
       "needsMet": [
         "spec-1"
       ],
-      "needsMissed": [
-        "spec-4",
-        "cap-2"
-      ],
-      "confidence": "medium"
+      "needsMissed": [],
+      "confidence": "high"
     },
     {
       "candidateId": "1f30dadf-504c-5a2e-af64-a43025e5efcc",
-      "verdict": "maybe",
-      "tier": "backup",
-      "reason": "NPI-verified clinical genetics · 10 vEDS papers incl. 2025 arterial events study · Houston, beyond 300-mile limit",
-      "plain": "This genetics doctor studies blood vessel problems in your condition but works far away.",
+      "verdict": "keep",
+      "tier": "good",
+      "reason": "Medical genetics NPI verified · vEDS arterial events paper · beyond travel limit, TX license",
+      "plain": "A genetics doctor in Texas who studies vEDS and blood vessel problems.",
       "evidenceIds": [
         "37c861c7-8fa3-573a-aa83-59f30f74e66f",
         "c7a60e24-2903-5335-a96c-0ce8876a5c66",
         "d8ec40da-3697-5190-a66f-1b65ce9e451d",
-        "d19132be-98af-5739-aa07-92bc492abc57"
+        "712d01c2-0279-5e1b-af60-8ec267196eec"
       ],
       "needsMet": [
         "spec-1"
       ],
-      "needsMissed": [
-        "spec-4",
-        "cap-2"
-      ],
-      "confidence": "medium"
+      "needsMissed": [],
+      "confidence": "high"
     },
     {
       "candidateId": "1e691e1c-6516-5146-a48c-832243ca4264",
-      "verdict": "maybe",
+      "verdict": "keep",
       "tier": "good",
-      "reason": "NPI-verified medical geneticist · authored vEDS papers incl. 2020 JCI study · Baltimore, about 32 mi past travel limit",
-      "plain": "This genetics doctor has written about your condition but is a bit past your travel limit.",
+      "reason": "Medical genetics (NPI verified) · vEDS-focused papers on PubMed · About 32 mi beyond travel limit, MD license",
+      "plain": "A genetics doctor who has written about vEDS, a little past your travel limit.",
       "evidenceIds": [
         "56b91861-8f2c-5ab8-a29e-23e8bef5bab6",
         "a8ee66a2-1c51-588b-a2c5-13fcb3a4ea98",
@@ -59,18 +53,15 @@
       "needsMet": [
         "spec-1"
       ],
-      "needsMissed": [
-        "spec-4",
-        "cap-2"
-      ],
-      "confidence": "medium"
+      "needsMissed": [],
+      "confidence": "high"
     },
     {
       "candidateId": "be8ce3df-b535-5f04-abbf-137a012b82c9",
-      "verdict": "maybe",
+      "verdict": "keep",
       "tier": "good",
-      "reason": "Lists a cardiovascular connective tissue disorder clinic · vEDS not named · no passport or intake details found",
-      "plain": "This clinic sees people with connective tissue problems that affect the heart and blood vessels.",
+      "reason": "Named cardiovascular connective tissue disorder clinic · vEDS not named on page · Emergency care plan not shown",
+      "plain": "A clinic for blood vessel and connective tissue conditions, including your disease group.",
       "evidenceIds": [
         "d811a6eb-ce95-5f1b-a6a7-214cdaeb0583"
       ],
@@ -78,18 +69,16 @@
         "cap-1"
       ],
       "needsMissed": [
-        "cap-2",
-        "cap-3",
-        "spec-4"
+        "cap-2"
       ],
-      "confidence": "low"
+      "confidence": "medium"
     },
     {
       "candidateId": "b3652210-c7a5-5e14-a591-a0b7ce6a2b04",
-      "verdict": "maybe",
+      "verdict": "keep",
       "tier": "good",
-      "reason": "Lists vEDS as condition · recruiting with central phone contact · only site in California, ~1,675 mi past travel limit",
-      "plain": "This study is for people with vEDS, but its only U.S. site is in California.",
+      "reason": "Lists vEDS as its condition · ClinicalTrials.gov shows recruiting at a California U.S. site · central contact phone listed",
+      "plain": "This vEDS study is taking people in California, far from Ohio.",
       "evidenceIds": [
         "0e16badb-6753-556e-acca-c5d90c3bfeaf",
         "1c8e19a6-49b8-5034-aed0-2ffdf537564e"
@@ -97,18 +86,15 @@
       "needsMet": [
         "elig-3"
       ],
-      "needsMissed": [
-        "elig-1",
-        "elig-2"
-      ],
-      "confidence": "medium"
+      "needsMissed": [],
+      "confidence": "high"
     },
     {
       "candidateId": "94befde1-14a2-5ace-a86f-7f3dcf7f2edc",
-      "verdict": "maybe",
+      "verdict": "keep",
       "tier": "good",
-      "reason": "Lists vEDS as condition · recruiting with central phone contacts · only site in Houston, ~803 mi past travel limit",
-      "plain": "This study is for people with vEDS, but its only site is in Houston, Texas.",
+      "reason": "Lists vEDS as its condition · ClinicalTrials.gov shows recruiting at a Houston, Texas site · central contact phones listed",
+      "plain": "This vEDS study is taking people in Houston, Texas, far from Ohio.",
       "evidenceIds": [
         "f6b4c029-27c7-5e90-a89b-11c06a869617",
         "d38dc66e-7186-568d-adbf-71b87f4d68f4",
@@ -117,79 +103,66 @@
       "needsMet": [
         "elig-3"
       ],
-      "needsMissed": [
-        "elig-1",
-        "elig-2"
-      ],
-      "confidence": "medium"
+      "needsMissed": [],
+      "confidence": "high"
     },
     {
       "candidateId": "9b50e05a-dc29-54a7-a82a-e654695b8c81",
       "verdict": "keep",
       "tier": "best",
-      "reason": "Non-profit focused on vascular EDS · fits support goal · no helpline or contact path found",
-      "plain": "This group works only on your condition and may connect you with others.",
+      "reason": "vEDS-specific non-profit · advocacy fits support goal · no concrete program or contact path shown",
+      "plain": "This group works only on vascular EDS and may help you find support.",
       "evidenceIds": [
         "7afb83ff-1196-5ce2-a5d9-8d77577ae08e"
       ],
       "needsMet": [
         "support-1"
       ],
-      "needsMissed": [
-        "support-2",
-        "support-3"
-      ],
+      "needsMissed": [],
       "confidence": "medium"
     },
     {
       "candidateId": "52512354-6d28-57a8-acb6-80545c05ba39",
       "verdict": "keep",
       "tier": "best",
-      "reason": "Offers resources and support for the vEDS community · fits support goal · no contact path found",
-      "plain": "This group shares help and support for people with your condition.",
+      "reason": "Serves vEDS community · offers resources and support · fits support goal",
+      "plain": "This group shares resources and support for people with vascular EDS.",
       "evidenceIds": [
         "8ad25e0e-8d85-5507-ad69-95ec2a2d4a96"
       ],
       "needsMet": [
         "support-1"
       ],
-      "needsMissed": [
-        "support-2",
-        "support-4"
-      ],
+      "needsMissed": [],
       "confidence": "medium"
     },
     {
       "candidateId": "5a9c0775-9b30-569d-a767-96f49dcedb42",
-      "verdict": "maybe",
-      "tier": "best",
-      "reason": "Advocacy for genetically defined EDS types · vEDS not named specifically · no helpline or contact path found",
-      "plain": "This group speaks up for people with types of EDS found by gene tests.",
+      "verdict": "keep",
+      "tier": "good",
+      "reason": "Serves genetically defined EDS (disease family) · advocacy and education match support goal · no concrete program shown",
+      "plain": "This group speaks up for and teaches people with genetic types of EDS.",
       "evidenceIds": [
         "c60af599-cfa6-536a-a734-6f92cfcf25a7"
       ],
       "needsMet": [
         "support-1"
       ],
-      "needsMissed": [
-        "support-2"
-      ],
-      "confidence": "low"
+      "needsMissed": [],
+      "confidence": "medium"
     },
     {
       "candidateId": "dc192541-954f-5a20-a603-7988ed4eb289",
       "verdict": "maybe",
-      "tier": "good",
-      "reason": "US page on disability benefits, aid and grants · travel aid for vEDS not confirmed · no contact path found",
-      "plain": "This group has a page about money help and disability benefits.",
+      "tier": "backup",
+      "reason": "EDS-wide U.S. page on disability benefits, aid and grants · travel or lodging help not shown",
+      "plain": "This page lists money help and disability benefits for people with EDS.",
       "evidenceIds": [
         "43044115-653b-5101-ace2-ed6cd12dc422"
       ],
-      "needsMet": [
-        "support-3"
-      ],
+      "needsMet": [],
       "needsMissed": [
-        "support-4"
+        "support-3"
       ],
       "confidence": "low"
     },
@@ -197,50 +170,44 @@
       "candidateId": "164a4d74-93fe-53b9-ac46-b75d50db84e6",
       "verdict": "keep",
       "tier": "best",
-      "reason": "vEDS patient-family-clinician collaborative · fits support goal · no helpline or contact path found",
-      "plain": "This group brings together people with vEDS, their families and researchers.",
+      "reason": "vEDS-specific group · Collaborative joins patients, families, researchers, clinicians (support-1) · no contact path found",
+      "plain": "A group for people with vEDS that links patients, families and researchers.",
       "evidenceIds": [
         "7808983d-7238-57e6-a7ee-fda245986b11"
       ],
       "needsMet": [
         "support-1"
       ],
-      "needsMissed": [
-        "support-2"
-      ],
+      "needsMissed": [],
       "confidence": "medium"
     },
     {
       "candidateId": "11ebbea6-479e-50b4-abef-f3dcc6bc5540",
-      "verdict": "maybe",
+      "verdict": "keep",
       "tier": "good",
-      "reason": "EDS charity with travel grants section · vEDS not named · no contact path found",
-      "plain": "This charity may help people with EDS pay for travel to see doctors.",
+      "reason": "Serves EDS family, not vEDS only · page lists Travel Grants & Assistance (support-3) · no contact path found",
+      "plain": "A charity for people with EDS that may help with travel costs for care.",
       "evidenceIds": [
         "b8c15547-8ca4-58ae-ab8b-19c3b06a39ba"
       ],
       "needsMet": [
         "support-3"
       ],
-      "needsMissed": [
-        "support-1"
-      ],
+      "needsMissed": [],
       "confidence": "medium"
     },
     {
       "candidateId": "ef06d8d0-0007-5279-a7cf-67ca4736fdca",
       "verdict": "maybe",
       "tier": "backup",
-      "reason": "General aid for medication and care costs · vEDS not named · no travel aid or contact path found",
-      "plain": "This group may help pay for some medicine and care costs.",
+      "reason": "General rare-disease aid; vEDS not named · Helps afford medications and care · No travel or lodging aid shown",
+      "plain": "This group may help pay for some care, but it is not just for vEDS.",
       "evidenceIds": [
         "9b3d738d-bebc-507f-a476-825cf6bc1ea9"
       ],
       "needsMet": [],
       "needsMissed": [
-        "support-3",
-        "support-4",
-        "support-1"
+        "support-3"
       ],
       "confidence": "low"
     }

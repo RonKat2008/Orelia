@@ -1,13 +1,14 @@
 /**
- * CareNeeds persistence, using the generic coordination_records table (no new migration):
- *  - kind "care_needs_base", key = cacheKey: the disease-level needs (no personal fields), reused across cases for
- *    NEEDS_CACHE_TTL_MS. A deleted case takes its rows with it (ON DELETE CASCADE).
- *  - kind "care_needs", key "current": the personalized needs shown for this case.
+ * CareNeeds persistence:
+ *  - table needs_cache, key = cacheKey: the disease-level needs, reused across cases until expires_at
+ *    (NEEDS_CACHE_TTL_MS). Not tied to any case: no case id and no personal fields (strict schema), so it outlives
+ *    the case that generated it.
+ *  - coordination_records kind "care_needs", key "current": the personalized needs shown for this case.
  *  - kind "judge", key "current": the final judge result for this case.
  */
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { coordinationRecords } from "@/db/schema";
+import { coordinationRecords, needsCache } from "@/db/schema";
 import {
   careNeedsBaseSchema,
   careNeedsSchema,
@@ -18,7 +19,6 @@ import {
 } from "@/lib/contracts";
 
 export const NEEDS_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-export const KIND_BASE = "care_needs_base";
 export const KIND_NEEDS = "care_needs";
 export const KIND_JUDGE = "judge";
 const CURRENT = "current";
@@ -48,26 +48,34 @@ export function needsCacheKey(diseaseName: string, subtype?: string): string {
 export interface NeedsStore {
   /** Freshest disease-level needs for this key generated after `since`, from any case. */
   findBase(cacheKey: string, since: Date): Promise<CareNeedsBase | null>;
-  saveBase(caseId: string, base: CareNeedsBase): Promise<void>;
+  /** Disease-level only: rejects any extra (case or personal) field. */
+  saveBase(base: CareNeedsBase): Promise<void>;
   saveNeeds(needs: CareNeeds): Promise<void>;
   loadNeeds(caseId: string): Promise<CareNeeds | null>;
   saveJudge(result: JudgeResult): Promise<void>;
   loadJudge(caseId: string): Promise<JudgeResult | null>;
 }
 
+/** The cache row may hold the disease-level profile and nothing else. */
+const cacheEntrySchema = careNeedsBaseSchema.strict();
+
 export class MemoryNeedsStore implements NeedsStore {
-  private readonly bases: { caseId: string; base: CareNeedsBase }[] = [];
+  private readonly bases = new Map<string, { base: CareNeedsBase; expiresAt: number }>();
   private readonly needs = new Map<string, CareNeeds>();
   private readonly judges = new Map<string, JudgeResult>();
 
+  constructor(private readonly clock: () => number = Date.now) {}
+
   async findBase(cacheKey: string, since: Date): Promise<CareNeedsBase | null> {
-    const hit = this.bases
-      .filter((b) => b.base.cacheKey === cacheKey && new Date(b.base.generatedAt) > since)
-      .sort((a, b) => b.base.generatedAt.localeCompare(a.base.generatedAt))[0];
-    return hit ? structuredClone(hit.base) : null;
+    const hit = this.bases.get(cacheKey);
+    if (!hit || hit.expiresAt <= this.clock() || new Date(hit.base.generatedAt) <= since) return null;
+    return structuredClone(hit.base);
   }
-  async saveBase(caseId: string, base: CareNeedsBase): Promise<void> {
-    this.bases.push({ caseId, base: careNeedsBaseSchema.parse(structuredClone(base)) });
+  async saveBase(base: CareNeedsBase): Promise<void> {
+    const parsed = cacheEntrySchema.parse(structuredClone(base));
+    const prev = this.bases.get(parsed.cacheKey);
+    if (prev && prev.base.generatedAt > parsed.generatedAt) return;
+    this.bases.set(parsed.cacheKey, { base: parsed, expiresAt: new Date(parsed.generatedAt).getTime() + NEEDS_CACHE_TTL_MS });
   }
   async saveNeeds(n: CareNeeds): Promise<void> {
     this.needs.set(n.caseId, careNeedsSchema.parse(structuredClone(n)));
@@ -111,17 +119,30 @@ export class PostgresNeedsStore implements NeedsStore {
   }
 
   async findBase(cacheKey: string, since: Date): Promise<CareNeedsBase | null> {
-    const rows = await this.db
-      .select({ data: coordinationRecords.data })
-      .from(coordinationRecords)
-      .where(and(eq(coordinationRecords.kind, KIND_BASE), eq(coordinationRecords.key, cacheKey), gt(coordinationRecords.updatedAt, since)))
-      .orderBy(desc(coordinationRecords.updatedAt))
+    const [row] = await this.db
+      .select({ data: needsCache.data })
+      .from(needsCache)
+      .where(and(eq(needsCache.cacheKey, cacheKey), gt(needsCache.expiresAt, new Date()), gt(needsCache.generatedAt, since)))
       .limit(1);
-    const parsed = careNeedsBaseSchema.safeParse(rows[0]?.data);
-    return parsed.success && new Date(parsed.data.generatedAt) > since ? parsed.data : null;
+    const parsed = careNeedsBaseSchema.safeParse(row?.data);
+    return parsed.success ? parsed.data : null;
   }
-  async saveBase(caseId: string, base: CareNeedsBase): Promise<void> {
-    await this.upsert(caseId, KIND_BASE, base.cacheKey, careNeedsBaseSchema.parse(base) as unknown as Record<string, unknown>);
+  async saveBase(base: CareNeedsBase): Promise<void> {
+    const parsed = cacheEntrySchema.parse(base);
+    const generatedAt = new Date(parsed.generatedAt);
+    const values = {
+      diseaseName: parsed.diseaseName,
+      subtype: parsed.subtype ?? null,
+      data: parsed as unknown as Record<string, unknown>,
+      generatedAt,
+      expiresAt: new Date(generatedAt.getTime() + NEEDS_CACHE_TTL_MS),
+      updatedAt: new Date(),
+    };
+    await this.db
+      .insert(needsCache)
+      .values({ cacheKey: parsed.cacheKey, ...values })
+      // Never replace a fresher profile with an older one.
+      .onConflictDoUpdate({ target: needsCache.cacheKey, set: values, setWhere: sql`${needsCache.generatedAt} <= ${generatedAt}` });
   }
   async saveNeeds(n: CareNeeds): Promise<void> {
     await this.upsert(n.caseId, KIND_NEEDS, CURRENT, careNeedsSchema.parse(n) as unknown as Record<string, unknown>);

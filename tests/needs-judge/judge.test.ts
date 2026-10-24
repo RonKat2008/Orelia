@@ -73,11 +73,13 @@ describe("final judge guardrails", () => {
     expect(find(r, "b").reason).toBe("Treats this condition · Seattle, past the 300-mile limit");
   });
 
-  it("every drop has a reason; unknown and duplicate candidates are rejected; unjudged candidates become a scored maybe", () => {
+  it("every drop has a reason; unknown and duplicate candidates are rejected; unjudged candidates are shown on their score, labelled unreviewed", () => {
     const r = judge({ judgements: [j("a", { verdict: "drop", reason: "Wrong condition" }), j("a"), j("zzz")], summary: "" });
     expect(r.rejected.map((x) => x.why)).toEqual(expect.arrayContaining(["duplicate judgement", "unknown candidateId (not in the judge's input)"]));
     for (const x of r.judgements.filter((x) => x.verdict === "drop")) expect(x.reason.length).toBeGreaterThan(0);
-    expect(find(r, "c")).toMatchObject({ verdict: "maybe", source: "fallback" });
+    // Only keeps-floor promotion can make an unreviewed candidate a keep, and it says so.
+    expect(find(r, "c")).toMatchObject({ verdict: "keep", source: "fallback", promoted: true });
+    expect(find(r, "c").reason).toMatch(/^Good fit by score; not reviewed by the judge/);
   });
 
   it("replaces medical-advice wording with code text and strips need ids from patient text", () => {
@@ -93,7 +95,9 @@ describe("final judge guardrails", () => {
     const two = judge({ judgements: [...js].reverse(), summary: "" });
     expect(two.judgements).toEqual(one.judgements);
     expect(one.judgements.map((x) => x.order)).toEqual([1, 2, 3, 4]);
-    expect(one.judgements.map((x) => x.verdict)).toEqual(["keep", "keep", "maybe", "drop"]);
+    // c is promoted by the keep floor (2 judge keeps < 3).
+    expect(one.judgements.map((x) => x.verdict)).toEqual(["keep", "keep", "keep", "drop"]);
+    expect(find(one, "c").promoted).toBe(true);
   });
 
   it("keeps the deterministic score and rank next to every verdict", () => {
@@ -101,22 +105,26 @@ describe("final judge guardrails", () => {
     expect(find(r, "a")).toMatchObject({ score: 60, rank: 1 });
   });
 
-  it("toCuration maps drops to exclude and suggests only best keeps with a contact route", () => {
+  it("toCuration maps drops to exclude and suggests keeps", () => {
     const r = judge({ judgements: [j("a"), j("c", { verdict: "drop", reason: "Off target" })], summary: "" });
     const c = toCuration(r, ENTRIES);
     expect(c.tiers.find((t) => t.candidateId === "c")?.tier).toBe("exclude");
     expect(c.tiers.find((t) => t.candidateId === "a")?.reasons[0]?.evidenceIds).toEqual(["ev-a"]);
-    expect(c.suggested).toEqual([]); // no contact_point evidence in these entries
+    // b (unjudged) is beyond the travel limit, so the keep floor cannot promote it.
+    expect(c.suggested).toEqual(["a"]);
   });
 
-  it("falls back to scored maybes (never keeps) when the model fails", async () => {
+  it("falls back to scored picks when the model fails: judge keeps never appear, floor promotions are labelled", async () => {
     const client: MessagesClient = { messages: { create: async () => { throw new Error("model down"); } } };
     const prev = process.env.ANTHROPIC_API_KEY;
     process.env.ANTHROPIC_API_KEY = "test";
     try {
       const { result, curation } = await runJudge("case", CASE, ENTRIES, undefined, { store: new MemoryRunStore(), offlineKey: "none", client, now: () => NOW });
       expect(result.source).toBe("fallback");
-      expect(result.judgements.every((x) => x.verdict !== "keep")).toBe(true);
+      for (const x of result.judgements.filter((x) => x.verdict === "keep")) {
+        expect(x).toMatchObject({ promoted: true, source: "fallback" });
+        expect(x.reason).toMatch(/not reviewed by the judge/);
+      }
       expect(find(result, "t1").verdict).toBe("drop");
       expect(curation.source).toBe("fallback");
     } finally {
@@ -196,5 +204,69 @@ describe("parallel chunked judging", () => {
       if (prev === undefined) delete process.env.ANTHROPIC_API_KEY;
       else process.env.ANTHROPIC_API_KEY = prev;
     }
+  });
+});
+
+describe("judge calibration: keep floor, suggested picks, given facts", () => {
+  const NEEDS = { specialties: [{ id: "spec-1" }], centerCapabilities: [{ id: "cap-1" }], redFlags: [{ id: "flag-1" }], trialEligibility: [], supportNeeds: [] } as never;
+  const judgeN = (raw: RawJudgeOutput, entries = ENTRIES) => judgeFromRaw("case", CASE, entries, NEEDS, raw, { model: "m", elapsedMs: 1, now: NOW });
+
+  it("promotes the top-scored unflagged maybes with evidence to reach the keep floor, labelled honestly", () => {
+    const r = judgeN({ judgements: ["a", "b", "c", "t1"].map((id) => j(id, { verdict: "maybe", tier: "good" })), summary: "" });
+    expect(find(r, "a")).toMatchObject({ verdict: "keep", promoted: true });
+    expect(find(r, "a").reason).toMatch(/^Good fit by score; judge unsure · /);
+    expect(find(r, "c")).toMatchObject({ verdict: "keep", promoted: true });
+    // Flagged (beyond travel) and hard-dropped candidates are never promoted.
+    expect(find(r, "b")).toMatchObject({ verdict: "maybe" });
+    expect(find(r, "b").promoted).toBeUndefined();
+    expect(find(r, "t1").verdict).toBe("drop");
+  });
+
+  it("does not promote a maybe with an unmet core need, and does nothing when there are already enough keeps", () => {
+    const r = judgeN({ judgements: [j("a", { verdict: "maybe" }), j("c", { verdict: "maybe", needsMissed: ["spec-1"] })], summary: "" });
+    expect(find(r, "a").verdict).toBe("keep");
+    expect(find(r, "c").verdict).toBe("maybe");
+    const many = [inst("a", "OH", 60, 1), inst("c", "PA", 50, 2), inst("d", "OH", 45, 3), inst("e", "OH", 40, 4)];
+    const full = judgeN({ judgements: [j("a"), j("c"), j("d"), j("e", { verdict: "maybe" })], summary: "" }, many);
+    expect(find(full, "e")).toMatchObject({ verdict: "maybe" });
+  });
+
+  it("suggested picks are the keeps, by tier then score, capped at 5 (promoted ones included)", () => {
+    const many = ["a", "c", "d", "e", "f", "g", "h"].map((id, i) => inst(id, "OH", 90 - i * 5, i + 1));
+    const raw = { judgements: many.map((e, i) => j(e.record.resource.id, { tier: i === 3 ? "best" : "good" })), summary: "" };
+    const r = judgeN(raw, many);
+    const cur = toCuration(r, many);
+    expect(cur.suggested).toEqual(["e", "a", "c", "d", "f"]);
+    const floor = judgeN({ judgements: many.map((e) => j(e.record.resource.id, { verdict: "maybe" })), summary: "" }, many);
+    expect(toCuration(floor, many).suggested).toEqual(["a", "c", "d"]);
+  });
+
+  it("gives the judge code-computed travel facts that match the flag text", async () => {
+    const { buildJudgeInput } = await import("@/lib/agents/judge");
+    const { scopeFlags } = await import("@/lib/agents/judge/scope");
+    const flags = new Map(ENTRIES.map((e) => [e.record.resource.id, scopeFlags(e, CASE)]));
+    const input = buildJudgeInput(CASE, ENTRIES, undefined, flags);
+    const b = input.candidates.find((x) => x.candidateId === "b")!;
+    expect(b.facts.travel).toMatchObject({ homeState: "OH", nearestState: "CA", travelLimitMiles: 300, withinTravelLimit: false });
+    const beyond = (b.facts.travel as { beyondLimitMiles: number }).beyondLimitMiles;
+    expect(flags.get("b")![0]!.text).toContain(`About ${beyond.toLocaleString("en-US")} mi beyond`);
+    expect(input.candidates.find((x) => x.candidateId === "a")!.facts.travel).toMatchObject({ withinTravelLimit: true });
+  });
+
+  it("strips invented mileage and unsupported numbers; keeps numbers that are in the candidate's input", () => {
+    const expert = inst("x", "OH", 70, 1);
+    const withPapers: RankedEntry = { ...expert, record: { ...expert.record, evidence: [ev("ev-x", "Authored 15 papers on vascular EDS")] } };
+    const r = judgeFromRaw("case", CASE, [withPapers, inst("b", "CA", 55, 2)], NEEDS, {
+      judgements: [
+        j("x", { reason: "15 vEDS papers · about 1,629 mi from you · 9 trials", plain: "This doctor is 1,629 miles away." }),
+        j("b", { reason: "Dedicated clinic · about 1,629 mi past travel limit" }),
+      ],
+      summary: "",
+    }, { model: "m", elapsedMs: 1, now: NOW });
+    expect(find(r, "x").reason).toBe("15 vEDS papers");
+    expect(find(r, "x").plain).not.toMatch(/1,629/);
+    expect(find(r, "x").overrides.join()).toMatch(/unsupported number/);
+    expect(find(r, "b").reason).not.toMatch(/1,629/);
+    expect(find(r, "b").reason).toMatch(/mi beyond your 300-mile travel limit/);
   });
 });

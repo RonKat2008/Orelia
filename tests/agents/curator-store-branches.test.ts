@@ -44,13 +44,13 @@ describe('MemoryCurationStore', () => {
     expect(await new MemoryCurationStore().load(CASE)).toBeNull();
   });
 
-  it('keeps only best-tier, known suggestions and copies reasons', async () => {
+  it("keeps the judge's own suggestions in order (any non-excluded tier), drops unknown ones, and copies reasons", async () => {
     const store = new MemoryCurationStore();
-    const ranked = [entry(exp('x1'), 1), entry(exp('x2'), 2)];
-    const c = curation([tier('x1', 'expert'), tier('x2', 'expert', 'good')], { suggested: ['x1', 'x2', 'ghost'] });
+    const ranked = [entry(exp('x1'), 1), entry(exp('x2'), 2), entry(exp('x3'), 3)];
+    const c = curation([tier('x1', 'expert'), tier('x2', 'expert', 'good'), tier('x3', 'expert', 'exclude')], { suggested: ['x2', 'x1', 'x3', 'ghost'] });
     await store.save(CASE, ranked, c);
     const loaded = await store.load(CASE);
-    expect(loaded?.suggested).toEqual(['expert:x1']);
+    expect(loaded?.suggested).toEqual(['expert:x2', 'expert:x1']);
     expect(loaded?.byTarget.get('expert:x1')?.tierReasons).toEqual([{ text: 'because', evidenceIds: ['e1'] }]);
     loaded?.byTarget.get('expert:x1')?.tierReasons[0].evidenceIds.push('mutated');
     expect(c.tiers[0].reasons[0].evidenceIds).toEqual(['e1']);
@@ -95,19 +95,20 @@ describe('DbCurationStore.save', () => {
     expect(fake.callsFor('execute')).toHaveLength(1);
   });
 
-  it('updates the existing curator run summary when one exists', async () => {
+  it('never writes a curator agent_runs row', async () => {
     const { fake, store } = make();
-    fake.queue('select:agent_runs', [{ id: 'run-1' }]);
     await store.save(CASE, [], curation([]));
-    expect(fake.callsFor('update:agent_runs')).toHaveLength(1);
     expect(fake.callsFor('insert:agent_runs')).toHaveLength(0);
+    expect(fake.callsFor('update:agent_runs')).toHaveLength(0);
   });
 
-  it('inserts a done curator run when none exists', async () => {
+  it('stores the summary and the suggested picks under their real ids in coordination_records', async () => {
     const { fake, store } = make();
-    await store.save(CASE, [], curation([]));
-    const values = fake.callsFor('insert:agent_runs')[0].methods.find((m) => m.name === 'values')?.args[0];
-    expect(values).toMatchObject({ caseId: CASE, agent: 'curator', status: 'done', outputSummary: 'A summary.' });
+    fake.queue('execute', [{ id: 'real-x1' }]);
+    const ranked = [entry(exp('x1', { npi: '1234567890' }), 1), entry(org('o1'), 2), entry(org('o2'), 3)];
+    await store.save(CASE, ranked, curation([tier('x1', 'expert', 'good'), tier('o1', 'organization'), tier('o2', 'organization', 'exclude')], { suggested: ['o1', 'x1', 'o2'] }));
+    const values = fake.callsFor('insert:coordination_records')[0].methods.find((m) => m.name === 'values')?.args[0];
+    expect(values).toMatchObject({ caseId: CASE, kind: 'curation', key: 'current', data: { summary: 'A summary.', suggested: ['organization:o1', 'expert:real-x1'] } });
   });
 });
 
@@ -142,6 +143,17 @@ describe('DbCurationStore.load', () => {
     expect(loaded?.suggested).toEqual(['expert:x2', 'expert:x1', 'institution:i0', 'institution:i1', 'institution:i2']);
     expect(loaded?.byTarget.get(curationKey('organization', 'o1'))?.tierReasons).toEqual([]);
     expect(loaded?.byTarget.get('trial:t1')?.tier).toBe('good');
+  });
+
+  it('prefers the stored curation record: its summary and suggestions in order, minus excluded or unknown ones', async () => {
+    const { fake, store } = make();
+    fake.queue('execute', [
+      { target_kind: 'expert', target_id: 'x1', rank: 1, tier: 'good', tier_reasons: [] },
+      { target_kind: 'organization', target_id: 'o1', rank: 2, tier: 'exclude', tier_reasons: [] },
+    ]);
+    fake.queue('select:coordination_records', [{ data: { summary: 'Judge summary', suggested: ['expert:x1', 'organization:o1', 'expert:ghost'] } }]);
+    const loaded = await store.load(CASE);
+    expect(loaded).toMatchObject({ summary: 'Judge summary', suggested: ['expert:x1'] });
   });
 
   it('reports a null summary when there is no curator run row', async () => {

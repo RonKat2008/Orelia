@@ -474,6 +474,18 @@ export const coordinationRecords = pgTable("coordination_records", {
   uniqueIndex("coordination_records_token_hash_idx").on(table.tokenHash),
 ]);
 
+// Needs analyst cache: disease-level CareNeeds keyed by normalized disease (+ subtype). Deliberately NOT tied to a
+// case (no case_id, no personal fields), so it outlives any single case; expires_at enforces the TTL.
+export const needsCache = pgTable("needs_cache", {
+  cacheKey: text("cache_key").primaryKey(),
+  diseaseName: text("disease_name").notNull(),
+  subtype: text("subtype"),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("needs_cache_expires_idx").on(table.expiresAt)]);
+
 // rd-research lane: one current Condition Brief per case (full ConditionBrief in `brief`, validated on read/write).
 export const conditionBriefs = pgTable("condition_briefs", {
   caseId: uuid("case_id").primaryKey().references(() => cases.id, { onDelete: "cascade" }),

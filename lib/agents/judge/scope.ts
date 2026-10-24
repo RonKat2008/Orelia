@@ -13,15 +13,73 @@ export const DEFAULT_TRAVEL_MILES = 500;
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
-function travelFlag(home: string | undefined, states: readonly (string | undefined)[], limit: number | undefined): ScopeFlag | undefined {
-  if (!home) return undefined;
-  const miles = states.map((s) => stateDistanceMiles(home, toStateCode(s))).filter((m): m is number => m !== undefined);
-  if (miles.length === 0) return undefined;
-  const nearest = Math.min(...miles);
-  const max = limit ?? DEFAULT_TRAVEL_MILES;
-  if (nearest <= max) return undefined;
-  return { code: "beyond_travel", hard: false, text: `About ${fmt(nearest - max)} mi beyond your ${fmt(max)}-mile travel limit` };
+/** Code-computed travel facts (state-centroid distance). The judge receives these as given and may not restate others. */
+export interface TravelFacts {
+  homeState: string;
+  nearestState?: string;
+  nearestMiles?: number;
+  travelLimitMiles: number;
+  withinTravelLimit?: boolean;
+  beyondLimitMiles?: number;
 }
+
+export function travelFacts(home: string | undefined, states: readonly (string | undefined)[], limit: number | undefined): TravelFacts | undefined {
+  const homeCode = toStateCode(home);
+  if (!home || !homeCode) return undefined;
+  const max = limit ?? DEFAULT_TRAVEL_MILES;
+  const measured = states
+    .map((s) => toStateCode(s))
+    .flatMap((code) => {
+      const miles = code ? stateDistanceMiles(home, code) : undefined;
+      return code && miles !== undefined ? [{ code, miles: Math.round(miles) }] : [];
+    })
+    .sort((a, b) => a.miles - b.miles);
+  const nearest = measured[0];
+  if (!nearest) return { homeState: homeCode, travelLimitMiles: max };
+  return {
+    homeState: homeCode,
+    nearestState: nearest.code,
+    nearestMiles: nearest.miles,
+    travelLimitMiles: max,
+    withinTravelLimit: nearest.miles <= max,
+    ...(nearest.miles > max ? { beyondLimitMiles: nearest.miles - max } : {}),
+  };
+}
+
+function travelFlag(home: string | undefined, states: readonly (string | undefined)[], limit: number | undefined): ScopeFlag | undefined {
+  const f = travelFacts(home, states, limit);
+  if (!f?.beyondLimitMiles) return undefined;
+  return { code: "beyond_travel", hard: false, text: `About ${fmt(f.beyondLimitMiles)} mi beyond your ${fmt(f.travelLimitMiles)}-mile travel limit` };
+}
+
+/** States a candidate is located or recruiting in (the ones travel is measured to). */
+function locationStates(entry: RankedEntry): (string | undefined)[] {
+  const r = entry.record.resource;
+  if (r.kind === "trial") return [...(r.registry?.recruitingSiteStates ?? [])];
+  if (r.kind === "institution") return [r.state];
+  if (r.kind === "expert") return [toStateCode(r.profile?.state)];
+  return [];
+}
+
+/**
+ * Given facts for the judge: distance and travel-limit delta, licensure, adult and U.S. scope. All computed in code;
+ * the judge may cite these numbers and no other mileage.
+ */
+export function candidateFacts(entry: RankedEntry, c: Pick<CaseInput, "homeState" | "travelLimitMiles">, flags: readonly ScopeFlag[] = scopeFlags(entry, c)) {
+  const r = entry.record.resource;
+  const has = (code: ScopeFlag["code"]) => flags.some((f) => f.code === code);
+  const travel = r.kind === "organization" ? undefined : travelFacts(c.homeState, locationStates(entry), c.travelLimitMiles);
+  const expertState = r.kind === "expert" ? toStateCode(r.profile?.state) : undefined;
+  return {
+    ...(travel ? { travel } : {}),
+    adultScope: has("pediatric_only") ? "children only" : "adults or unstated",
+    usScope: has("non_us") ? "outside the U.S." : r.kind === "organization" ? "not location-bound" : "U.S.",
+    ...(expertState ? { licensedState: expertState, sameStateAsPatient: !has("out_of_state_license") } : {}),
+    ...(r.kind === "trial" && r.registry ? { recruitingInUS: !has("not_recruiting") && !has("non_us") } : {}),
+  };
+}
+
+export type CandidateFacts = ReturnType<typeof candidateFacts>;
 
 export function scopeFlags(entry: RankedEntry, c: Pick<CaseInput, "homeState" | "travelLimitMiles">): ScopeFlag[] {
   const r = entry.record.resource;

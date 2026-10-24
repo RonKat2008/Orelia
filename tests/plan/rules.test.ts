@@ -114,6 +114,8 @@ describe('specialist rules (expert / institution)', () => {
     const r = only(resource('institution', 'i1', [form, refP]));
     expect(r.rule).toBe('specialist_form_then_call_verify');
     expect(shape(r)).toEqual(['voice:verify:none', 'web_form:apply:none', 'voice:follow_up:business_days:3']);
+    expect(r.steps[2].reason).toContain('checks that the application arrived');
+    expect(only(resource('institution', 'i1', [refE, refP])).steps[2].reason).toContain('checks that the email arrived');
     expect(only(resource('institution', 'i1', [form])).rule).toBe('specialist_form_only');
   });
 });

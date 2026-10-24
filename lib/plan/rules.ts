@@ -110,8 +110,8 @@ const reasons = {
     `An email to the ${label(cp)} gives them your details in writing and lets them reply when they can. You review it before anything is sent.`,
   callIntro: (cp: PlanContactPoint) =>
     `A phone number for the ${label(cp)} is the only verified way to reach them, so a short introductory call comes first.`,
-  callFollowUp: (cp: PlanContactPoint, n: number) =>
-    `If there is no reply after ${days(n)}, a short call to the ${label(cp)} checks that the email arrived and asks what they need.`,
+  callFollowUp: (cp: PlanContactPoint, n: number, sent: 'email' | 'application' = 'email') =>
+    `If there is no reply after ${days(n)}, a short call to the ${label(cp)} checks that the ${sent} arrived and asks what they need.`,
   formApply: (cp: PlanContactPoint) =>
     `They take requests through their ${label(cp)}, so filling it in is the most direct way to be considered.`,
   emailConfirm: (cp: PlanContactPoint, n: number) =>
@@ -144,7 +144,7 @@ function directPlan(prefix: string, c: Chosen, n: number): { rule: string; draft
   if (!c.voice) return { rule: `${prefix}_${first.kind}_only`, drafts: [first.draft] };
   return { rule: `${prefix}_${first.kind}_then_call`, drafts: [
     first.draft,
-    { cp: c.voice, purpose: 'follow_up', waitFor: `business_days:${n}`, reason: reasons.callFollowUp(c.voice, n) },
+    { cp: c.voice, purpose: 'follow_up', waitFor: `business_days:${n}`, reason: reasons.callFollowUp(c.voice, n, first.kind === 'form' ? 'application' : 'email') },
   ] };
 }
 

@@ -44,9 +44,11 @@ export function Hero() {
               <span aria-hidden className="h-px w-8 bg-terracotta" />
               For adults with a rare disease
             </p>
+            {/* Width in em, not ch: ch follows the active font, so the line breaks would change
+                when the serif swaps in over its fallback (a layout shift). 6.8em = the serif's 12ch. */}
             <h1
               id="hero-heading"
-              className="m-0 mt-5 max-w-[12ch] font-display text-display font-light text-balance text-ink display-soft"
+              className="m-0 mt-5 max-w-[6.8em] font-display text-display font-light text-balance text-ink display-soft"
             >
               Find the experts. Get <em className="emph">seen</em>.
             </h1>

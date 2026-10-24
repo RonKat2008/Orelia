@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { SafetyBanner } from "@/components/SafetyBanner";
 import { PageTransition } from "@/components/motion/PageTransition";
 import { Providers } from "@/components/shell/Providers";
-import { THEME_BOOT_SCRIPT } from "@/components/shell/theme-script";
+import { SERIF_BOOT_SCRIPT, SERIF_NOSCRIPT_CSS, THEME_BOOT_SCRIPT } from "@/components/shell/theme-script";
 import { fontVariables } from "@/lib/ui/fonts";
 // theme.css loads Tailwind, the Warm Paper tokens and (layered) the legacy
 // tokens.css + globals.css, so it is the only global stylesheet import.
@@ -27,6 +27,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         {/* Static, first-party string (no user input): applies the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {/* Static, first-party strings: load the display serif after first paint (theme-script.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: SERIF_BOOT_SCRIPT }} />
+        <noscript>
+          <style dangerouslySetInnerHTML={{ __html: SERIF_NOSCRIPT_CSS }} />
+        </noscript>
       </head>
       <body className="bg-paper font-sans text-ink antialiased">
         <Providers>

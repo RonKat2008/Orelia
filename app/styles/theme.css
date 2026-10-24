@@ -18,6 +18,16 @@
 
 @layer theme, base, legacy, components, utilities;
 
+/*
+ * Deferred display serif (components/shell/theme-script.ts, SERIF_BOOT_SCRIPT): until
+ * <html> has .wf-serif, display text uses Newsreader's metric-matched fallback, so the
+ * serif is never requested before first paint. Unlayered and more specific than the
+ * next/font variable class, so it wins.
+ */
+html:not(.wf-serif) {
+  --font-serif: "Newsreader Fallback", "Iowan Old Style", Georgia, serif;
+}
+
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";

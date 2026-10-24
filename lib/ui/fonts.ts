@@ -11,8 +11,11 @@ import { Atkinson_Hyperlegible_Next, Newsreader } from "next/font/google";
  * Newsreader loads in two calls that declare faces of the same "Newsreader" family:
  * the upright variable font (every weight) and a single static italic at 400, the only
  * italic the design uses (the `emph` word in headlines, the case label in the swarm).
- * The variable italic was 64 KB; the static 400 cut is 24 KB, and the hero needs it
- * for its first paint.
+ * The variable italic was 64 KB; the static 400 cut is 24 KB.
+ *
+ * Only Atkinson (the hero's LCP element is body text) is preloaded. Both Newsreader faces
+ * (82 KB) load after first paint: SERIF_BOOT_SCRIPT (components/shell/theme-script.ts)
+ * fetches them on `load` and then lets display text switch from the size-adjusted fallback.
  *
  * The serif is exposed as `--font-serif`; app/styles/theme.css aliases the old
  * `--font-fraunces` name to it so existing utilities keep working.
@@ -23,6 +26,8 @@ const display = Newsreader({
   variable: "--font-serif",
   display: "swap",
   style: "normal",
+  // Not preloaded: the serif loads after first paint (SERIF_BOOT_SCRIPT, theme-script.ts).
+  preload: false,
 });
 
 const displayItalic = Newsreader({
@@ -31,6 +36,7 @@ const displayItalic = Newsreader({
   display: "swap",
   style: "italic",
   weight: "400",
+  preload: false,
 });
 
 const text = Atkinson_Hyperlegible_Next({

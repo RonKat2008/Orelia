@@ -37,6 +37,9 @@ export interface TaskDraft {
   sourceId?: string;
 }
 
+/** Shown instead of a classifier rationale that tripped the medical-advice screen; never includes the flagged text. */
+export const NEUTRAL_RATIONALE = 'The reply could not be summarized automatically; please read it and choose the next step.';
+
 export class MedicalAdviceInDraft extends Error {
   constructor(readonly matches: string[]) {
     super(`Generated draft flagged for medical advice: ${matches.join('; ')}`);

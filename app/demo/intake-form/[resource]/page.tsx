@@ -35,7 +35,7 @@ function Field({ id, label, type = 'text', autoComplete }: FieldProps) {
   return (
     <div style={demoPageStyles.field}>
       <label htmlFor={id} style={demoPageStyles.label}>{label}</label>
-      <input id={id} name={id} type={type} autoComplete={autoComplete} style={demoPageStyles.input} />
+      <input id={id} name={id} type={type} autoComplete={autoComplete} required={label.endsWith('*')} style={demoPageStyles.input} />
     </div>
   );
 }
@@ -44,7 +44,7 @@ function TextArea({ id, label }: { id: string; label: string }) {
   return (
     <div style={demoPageStyles.field}>
       <label htmlFor={id} style={demoPageStyles.label}>{label}</label>
-      <textarea id={id} name={id} rows={4} style={{ ...demoPageStyles.input, resize: 'vertical' }} />
+      <textarea id={id} name={id} rows={4} required={label.endsWith('*')} style={{ ...demoPageStyles.input, resize: 'vertical' }} />
     </div>
   );
 }

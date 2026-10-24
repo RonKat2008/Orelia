@@ -5,7 +5,7 @@
  */
 import { getPlanStore } from '../plan/store';
 import { getWebFormChannel } from '../plan/channels';
-import { executePlan, isExecutable, type PlanExecDeps, type StepOutcome } from '../plan/execute';
+import { executePlan, isExecutable, isOrphanFollowUp, type PlanExecDeps, type StepOutcome } from '../plan/execute';
 import type { ContactPlan, PlanStore } from '../plan/contract';
 import { PLAN_APPROVED, type FunctionDefinition } from './engine';
 import type { ConnectionDeps } from './connection-workflow';
@@ -27,7 +27,7 @@ export function createPlanExecutionWorkflow(deps: PlanExecDeps, store: () => Pla
         return isExecutable(latest) ? latest : null;
       });
       if (!plan) return { outcome: 'not_approved' };
-      const outcomes: StepOutcome[] = await executePlan(step, plan, deps);
+      const outcomes: StepOutcome[] = await executePlan(step, plan, { ...deps, reload: id => store().latest(id) });
       return { outcome: 'executed', steps: outcomes.length };
     },
   };
@@ -57,12 +57,12 @@ export function createDefaultPlanExecDeps(conn: ConnectionDeps, opts: DefaultPla
     async hasReply(contactId) {
       return STOP_STATES.has((await conn.loadContext(contactId)).state);
     },
-    async dispatchGated({ contactId, step }) {
+    async dispatchGated({ contactId, step, resource }) {
       const ctx = await conn.loadContext(contactId);
       if (ctx.state === 'sent' && (step.purpose === 'intro' || step.purpose === 'apply')) {
         return { status: 'already_sent', detail: 'the approved first message was already sent via the outbox' };
       }
-      if (step.purpose === 'follow_up') return { status: 'awaiting_approval', detail: 'covered by the walk-away follow-up plan' };
+      if (step.purpose === 'follow_up' && !isOrphanFollowUp(resource, step)) return { status: 'awaiting_approval', detail: 'covered by the walk-away follow-up plan' };
       try {
         await createDraft(contactId);
         return { status: 'awaiting_approval', detail: 'outbox draft written; it waits for the patient to approve it' };

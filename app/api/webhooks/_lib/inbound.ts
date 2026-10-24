@@ -44,6 +44,12 @@ export function memoryIngestLedger(): IngestLedger {
   };
 }
 
+/**
+ * Result of storing an inbound message. The object form carries the stored messages.id (also for a duplicate, the
+ * existing row's id); the bare status string is accepted for stores that have no row id (no messageId is then sent on).
+ */
+export type StoreInboundResult = 'stored' | 'duplicate' | { status: 'stored' | 'duplicate'; id: string };
+
 export interface InboundDeps {
   secret: string | undefined;
   lookupThread(providerThreadId: string): Promise<Owner | undefined>;
@@ -51,7 +57,7 @@ export interface InboundDeps {
   storeInboundMessage(m: {
     contactId: string; providerThreadId: string; providerMessageId: string; from?: string; subject?: string;
     body: string; receivedAt: Date; classification?: string;
-  }): Promise<'stored' | 'duplicate'>;
+  }): Promise<StoreInboundResult>;
   storeCallEvent(e: { contactId: string; providerCallId: string; eventType: string; status?: string; transcript?: string; endedAt?: Date }): Promise<void>;
   sendEvents: SendEvents;
   ingestLedger: IngestLedger;
@@ -141,13 +147,17 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
     const tooLarge = bodyOmitted(raw);
     const receivedAt = new Date(parsed.receivedAt);
     // 'duplicate' only means the row exists; whether it was ingested is the ledger's call.
-    await deps.storeInboundMessage({
+    const stored = await deps.storeInboundMessage({
       contactId: owner.contactId, providerThreadId: parsed.threadId, providerMessageId: parsed.messageId,
       ...(parsed.from !== undefined ? { from: parsed.from } : {}),
       ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
       body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, receivedAt,
-      ...(tooLarge ? { classification: 'body_too_large' } : {}),
+      ...(tooLarge ? { classification: 'body_too_large' } : parsed.automated ? { classification: 'automated' } : {}),
     });
+    // Bounces, out-of-office and other auto-replies are kept on the record but are not the contact answering:
+    // no ingest (no task) and no contact/reply event, so the contact stays 'sent' and follow-ups continue.
+    if (parsed.automated) return json(200, { ignored: true, automated: true });
+    const storedMessageId = typeof stored === 'object' ? stored.id : undefined;
     const o = owner;
     const { threadId, messageId } = parsed;
     return await ingestOnce(deps, { kind: 'email', providerMessageId: messageId }, async () => {
@@ -155,6 +165,7 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
         channel: 'email', contactId: o.contactId, caseId: o.caseId,
         body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: messageId, providerThreadId: threadId,
         receivedAt: receivedAt.toISOString(),
+        ...(storedMessageId !== undefined ? { messageId: storedMessageId } : {}),
         ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
         ...(parsed.from !== undefined ? { from: parsed.from } : {}),
       });

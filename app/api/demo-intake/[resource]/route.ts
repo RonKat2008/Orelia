@@ -7,6 +7,13 @@ import { parseDemoFormSegment } from '@/lib/outreach/demo-destinations-shared';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/** Fields marked * on the demo form page. */
+const REQUIRED_FIELDS = ['first_name', 'last_name', 'date_of_birth', 'email', 'phone', 'diagnosis', 'reason_for_visit'] as const;
+const KNOWN_FIELDS = new Set<string>([
+  ...REQUIRED_FIELDS, 'city', 'state', 'zip_code', 'insurance_provider', 'insurance_plan', 'referring_physician',
+  'preferred_contact_method', 'additional_information', 'confirm_accurate',
+]);
+
 const ACCEPTING = new Set(['approved', 'submitting', 'submitted']);
 
 const page = (status: number, message: string) =>
@@ -32,13 +39,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ resource: stri
   let fieldsReceived: string[] = [];
   try {
     const form = await req.formData();
-    fieldsReceived = [...new Set([...form.keys()])].filter(k => {
+    fieldsReceived = [...new Set([...form.keys()])].filter(k => KNOWN_FIELDS.has(k)).filter(k => {
       const vals = form.getAll(k);
       return vals.some(v => (typeof v === 'string' ? v.trim() !== '' : v.size > 0));
     });
   } catch {
     // An unreadable body is treated as an empty submission; values are never logged either way.
   }
+
+  const missing = REQUIRED_FIELDS.filter(k => !fieldsReceived.includes(k));
+  if (missing.length > 0) return page(422, 'Please fill in all required fields (marked *) and submit again.');
 
   const sourceId = `demo_form:${applicationId}`;
   if (row.contactId) {

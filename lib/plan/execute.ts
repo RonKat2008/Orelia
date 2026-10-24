@@ -52,6 +52,11 @@ export interface PlanExecDeps {
   /** Optional: verify steps write an awaiting-approval verification request (idempotent); nothing is dialed. */
   createVerification?(input: { caseId: string; resourceKey: string }): Promise<{ id: string }>;
   record(outcome: StepOutcome): Promise<void>;
+  /**
+   * Optional: the plan as stored right now. Checked before every step so a run stops when the patient edited, rebuilt
+   * or un-approved the plan while it was waiting (a newer approval starts its own run).
+   */
+  reload?(caseId: string): Promise<ContactPlan | null>;
 }
 
 export function isExecutable(plan: ContactPlan | null | undefined): plan is ContactPlan {
@@ -67,6 +72,17 @@ export function executableSteps(plan: ContactPlan | null | undefined): { resourc
   }));
 }
 
+/**
+ * A follow-up is covered by the walk-away plan only when its first message is still going out. If the patient turned
+ * the earlier intro/apply step(s) off and none is left on, the follow-up is the resource's first contact and is treated
+ * like one (otherwise the resource would silently never be contacted).
+ */
+export function isOrphanFollowUp(resource: ResourcePlan, s: PlanStep): boolean {
+  if (s.purpose !== 'follow_up') return false;
+  const earlier = (resource.steps ?? []).filter(x => x.order < s.order && (x.purpose === 'intro' || x.purpose === 'apply'));
+  return earlier.length > 0 && earlier.every(x => !x.enabled);
+}
+
 const BUSINESS_WAIT = /^business_days:(\d+)$/;
 
 function matchContact(contactId: string): string {
@@ -75,12 +91,12 @@ function matchContact(contactId: string): string {
 
 export async function executePlan(step: WorkflowStep, plan: ContactPlan, deps: PlanExecDeps): Promise<StepOutcome[]> {
   const groups = executableSteps(plan);
-  const perResource = await Promise.all(groups.map(g => executeResource(step, plan.caseId, g.resource, g.steps, deps)));
+  const perResource = await Promise.all(groups.map(g => executeResource(step, plan.caseId, plan.version, g.resource, g.steps, deps)));
   return perResource.flat();
 }
 
 async function executeResource(
-  step: WorkflowStep, caseId: string, resource: ResourcePlan, steps: PlanStep[], deps: PlanExecDeps,
+  step: WorkflowStep, caseId: string, version: number, resource: ResourcePlan, steps: PlanStep[], deps: PlanExecDeps,
 ): Promise<StepOutcome[]> {
   const out: StepOutcome[] = [];
   const key = resource.resourceKey;
@@ -98,7 +114,7 @@ async function executeResource(
       break;
     }
     const wait = BUSINESS_WAIT.exec(s.waitFor);
-    if (wait && resource.contactId) {
+    if (wait && resource.contactId && !isOrphanFollowUp(resource, s)) {
       const days = Number(wait[1]);
       const deadline = await step.run(`deadline:${key}:${s.id}`, () => {
         const now = deps.clock.now();
@@ -113,10 +129,24 @@ async function executeResource(
         break;
       }
     }
+    if (deps.reload && !await stillCurrent(step, deps, caseId, version, key, s)) {
+      await note(s, 'skipped_disabled', 'the plan changed while this run was waiting; remaining steps stopped');
+      break;
+    }
     const outcome = await step.run(`exec:${key}:${s.id}`, () => runStep(caseId, resource, s, deps));
     await note(s, outcome.status, outcome.detail);
   }
   return out;
+}
+
+/** True while the stored plan is still the approved version this run started from and the step is still switched on. */
+async function stillCurrent(step: WorkflowStep, deps: PlanExecDeps, caseId: string, version: number, key: string, s: PlanStep): Promise<boolean> {
+  const current = await step.run(`recheck:${key}:${s.id}`, async () => {
+    const latest = await deps.reload!(caseId);
+    return isExecutable(latest) && latest.version === version
+      && !!latest.resources.find(r => r.resourceKey === key)?.steps.find(x => x.id === s.id && x.enabled);
+  });
+  return current;
 }
 
 async function replied(step: WorkflowStep, key: string, s: PlanStep, contactId: string, deps: PlanExecDeps): Promise<boolean> {

@@ -11,7 +11,7 @@ import { emitPlanApproved } from '@/lib/plan/approved-event';
 import { materializePlan } from '@/lib/plan/materialize-wiring';
 import { validatePlanAgainstInputs } from '@/lib/plan/validate';
 import { planEvidenceMeta } from '@/lib/plan/evidence-meta';
-import type { ContactPlan, PlanResourceInput } from '@/lib/plan/contract';
+import type { ContactPlan, PlanResourceInput, PlanStep } from '@/lib/plan/contract';
 
 /** Evidence display metadata (source host / kind); best effort, never fails the request. */
 async function metaFor(caseId: string, plan: ContactPlan, inputs?: readonly PlanResourceInput[]) {
@@ -51,7 +51,8 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!id) return jsonError(400, 'Invalid case id');
   const denied = await guardCase(req, id);
   if (denied) return denied;
-  const llm = await wantsLlm(req);
+  const opts = await readPostOptions(req);
+  const llm = opts.llm && gatewayConfig() !== undefined;
   try {
     const limit = await checkRateLimit(getRateLimitStore(), PLAN_BUILD_LIMITS(id, readSession(req) ?? 'anonymous', clientIp(req)), new Date());
     if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
@@ -59,13 +60,17 @@ export async function POST(req: Request, { params }: Ctx) {
     if (inputs.length === 0) return jsonError(422, 'Select at least one resource before building a contact plan');
     const store = getPlanStore();
     const existing = await store.latest(id);
+    // An approved plan has live drafts and a running workflow; rebuilding would silently revoke it.
+    if (existing?.status === 'approved' && !opts.rebuild) return jsonError(409, 'This plan is already approved. Rebuild only if you want to replace it');
     let built = await buildContactPlan(id, inputs, { now: new Date(), llm });
     // A refined plan that fails the evidence check falls back to the deterministic plan; if that fails too, refuse.
     if (llm && validatePlanAgainstInputs(built, inputs).length) built = await buildContactPlan(id, inputs, { now: new Date(), llm: false });
     const problems = validatePlanAgainstInputs(built, inputs);
     if (problems.length) return jsonError(422, 'The contact plan could not be verified against your resources', problems.join('; '));
-    const plan = existing ? { ...built, version: existing.version + 1, createdAt: existing.createdAt } : built;
-    const saved = await store.save(plan, existing?.version);
+    const carried = existing ? carryOverToggles(built, existing) : built;
+    const plan = existing ? { ...carried, version: existing.version + 1, createdAt: existing.createdAt } : carried;
+    // Version 0 means "no plan yet": a concurrent first build loses with 409 instead of silently replacing the winner.
+    const saved = await store.save(plan, existing?.version ?? 0);
     if (!saved) return jsonError(409, 'The contact plan changed; reload and try again');
     return NextResponse.json({ plan: saved, evidence: await metaFor(id, saved, inputs) }, { status: 201 });
   } catch (err) {
@@ -104,15 +109,24 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
 }
 
-/** LLM refinement is on when the AI gateway is configured, unless the body says {"llm": false}. */
-async function wantsLlm(req: Request): Promise<boolean> {
-  let optOut = false;
+/** POST body: {"llm": false} opts out of LLM refinement; {"rebuild": true} allows replacing an approved plan. */
+async function readPostOptions(req: Request): Promise<{ llm: boolean; rebuild: boolean }> {
   try {
-    const raw: unknown = await req.json();
-    optOut = typeof raw === 'object' && raw !== null && (raw as { llm?: unknown }).llm === false;
+    const raw = await req.json() as { llm?: unknown; rebuild?: unknown } | null;
+    return { llm: raw?.llm !== false, rebuild: raw?.rebuild === true };
   } catch {
-    optOut = false; // empty/non-JSON body is fine
+    return { llm: true, rebuild: false }; // empty/non-JSON body is fine
   }
-  return !optOut && gatewayConfig() !== undefined;
 }
 
+const stepKey = (resourceKey: string, s: PlanStep) => `${resourceKey}|${s.channel}|${s.targetRef}`;
+
+/** A rebuilt plan keeps the patient's switched-off steps (same resource + channel + target) switched off. */
+function carryOverToggles(built: ContactPlan, existing: ContactPlan): ContactPlan {
+  const off = new Set(existing.resources.flatMap(r => r.steps.filter(s => !s.enabled).map(s => stepKey(r.resourceKey, s))));
+  if (off.size === 0) return built;
+  return {
+    ...built,
+    resources: built.resources.map(r => ({ ...r, steps: r.steps.map(s => (off.has(stepKey(r.resourceKey, s)) ? { ...s, enabled: false } : s)) })),
+  };
+}

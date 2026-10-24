@@ -23,7 +23,7 @@ const env = () => process.env as Record<string, string | undefined>;
 
 function req(token?: string) {
   const t = token ?? demoFormToken(env(), { caseId: CASE, applicationId: APP, resource: SEG });
-  const body = new URLSearchParams({ first_name: 'Pat', last_name: '' });
+  const body = new URLSearchParams({ first_name: 'Pat', last_name: 'Doe', date_of_birth: '1990-01-01', email: 'p@example.org', phone: '555-0100', diagnosis: 'Sarcoma', reason_for_visit: 'First visit' });
   return new Request(`http://localhost/api/demo-intake/${SEG}?case=${CASE}&app=${APP}&t=${t}`, { method: 'POST', body });
 }
 const call = (r: Request) => POST(r, { params: Promise.resolve({ resource: SEG }) });
@@ -55,7 +55,7 @@ describe('demo intake route', () => {
     expect(res.status).toBe(303);
     expect(res.headers.get('location')).toBe(`/demo/intake-form/${SEG}/submitted?ref=abcdef12`);
     expect(inserted).toHaveLength(1);
-    expect(inserted[0]).toMatchObject({ kind: 'application', status: 'done', sourceId: `demo_form:${APP}`, details: { fieldsReceived: ['first_name'] } });
+    expect(inserted[0]).toMatchObject({ kind: 'application', status: 'done', sourceId: `demo_form:${APP}`, details: { fieldsReceived: ['first_name', 'last_name', 'date_of_birth', 'email', 'phone', 'diagnosis', 'reason_for_visit'] } });
     selects = [row('submitted'), [{ id: 't1' }]];
     expect((await call(req())).status).toBe(303);
     expect(inserted).toHaveLength(1);

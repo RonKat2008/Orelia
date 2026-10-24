@@ -142,20 +142,26 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
     async storeInboundMessage(m) {
       const [existing] = await db().select({ id: s.messages.id }).from(s.messages)
         .where(eq(s.messages.providerMessageId, m.providerMessageId)).limit(1);
-      if (existing) return 'duplicate';
+      if (existing) return { status: 'duplicate', id: existing.id };
+      let id: string;
       try {
-        await db().insert(s.messages).values({
+        const [row] = await db().insert(s.messages).values({
           contactId: m.contactId, direction: 'inbound', channel: 'email',
           providerThreadId: m.providerThreadId, providerMessageId: m.providerMessageId,
           ...(m.subject !== undefined ? { subject: m.subject } : {}), body: m.body,
           sharedFields: [], receivedAt: m.receivedAt, ...(m.classification !== undefined ? { classification: m.classification } : {}),
-        });
+        }).returning({ id: s.messages.id });
+        id = row!.id;
       } catch (err) {
-        if (isUniqueViolation(err)) return 'duplicate';
-        throw err;
+        if (!isUniqueViolation(err)) throw err;
+        // Lost a race with a concurrent delivery: the other request's row is the stored message.
+        const [raced] = await db().select({ id: s.messages.id }).from(s.messages)
+          .where(eq(s.messages.providerMessageId, m.providerMessageId)).limit(1);
+        if (!raced) throw err;
+        return { status: 'duplicate', id: raced.id };
       }
       await db().update(s.contacts).set({ lastActivityAt: m.receivedAt }).where(eq(s.contacts.id, m.contactId));
-      return 'stored';
+      return { status: 'stored', id };
     },
     async storeCallEvent(e) {
       await db().update(s.calls).set({

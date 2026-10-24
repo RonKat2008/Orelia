@@ -12,6 +12,9 @@ export class PageChangedError extends ChannelError {
   }
 }
 
+/** Wording of pages that refused a submission (site validation, invalid link, form closed). */
+const REJECTION_TEXT = /please fill in|required field|not (?:valid|accepting)|invalid|try again|error/i;
+
 export interface WebFormChannelOptions {
   provider: BrowserProvider;
   guard: ChannelGuardOptions;
@@ -57,7 +60,8 @@ export class WebFormChannel implements Channel {
         if (!file) throw new ChannelError(name, `Upload document not available: ${up.docId}`);
         await session.upload({ fieldKey: up.fieldKey, name: file.name, mimeType: file.mimeType, content: file.content });
       }
-      await session.submit();
+      const result = await session.submit();
+      this.checkSubmitted(result, url);
       return { provider: name, channel: 'web_form', status: 'submitted' };
     } finally {
       await session.close().catch(() => undefined);
@@ -76,6 +80,19 @@ export class WebFormChannel implements Channel {
       const screenshot = await s.screenshot();
       return { snapshot: await s.readFields(), screenshot };
     });
+  }
+
+  /**
+   * A submit that left no sign of acceptance was not accepted: the click landed back on the form with no
+   * confirmation text, or the page says it was rejected (HTML5 validation, the demo form's 403/409/422 pages).
+   */
+  private checkSubmitted(result: { finalUrl: string; confirmationText?: string } | undefined, formUrl: string): void {
+    const text = result?.confirmationText ?? '';
+    const sameForm = (a: string, b: string) => {
+      try { const x = new URL(a), y = new URL(b); return x.origin === y.origin && x.pathname === y.pathname; } catch { return a === b; }
+    };
+    const rejected = REJECTION_TEXT.test(text) || (!text && !!result?.finalUrl && sameForm(result.finalUrl, formUrl));
+    if (rejected) throw new ChannelError(this.provider.name, 'submit_not_confirmed', undefined, false);
   }
 
   /** A redirect may land on another host: the page actually loaded must pass the same URL rules as the request. */

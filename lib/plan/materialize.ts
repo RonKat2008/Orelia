@@ -11,7 +11,7 @@
  *   - steps behind a business-day wait: left to the plan/approved workflow.
  * "Ready now" = enabled steps, in order, up to the first business-day wait.
  */
-import { isExecutable } from './execute';
+import { isExecutable, isOrphanFollowUp } from './execute';
 import { MAX_PLAN_RESOURCES, type ContactPlan, type PlanStep, type ResourcePlan } from './contract';
 import type { WebFormChannel } from './channels';
 
@@ -42,7 +42,8 @@ export interface MaterializeDeps {
 
 export function readySteps(resource: ResourcePlan): PlanStep[] {
   const ordered = [...resource.steps].filter(s => s.enabled).sort((a, b) => a.order - b.order);
-  const wait = ordered.findIndex(s => s.waitFor.startsWith('business_days:'));
+  // An orphaned follow-up is the first contact, so its business-day wait (for a reply to a message never sent) is moot.
+  const wait = ordered.findIndex(s => s.waitFor.startsWith('business_days:') && !isOrphanFollowUp(resource, s));
   return wait === -1 ? ordered : ordered.slice(0, wait);
 }
 
@@ -63,7 +64,7 @@ async function materializeResource(caseId: string, resource: ResourcePlan, deps:
   const out: MaterializedStep[] = [];
   for (const s of ordered) {
     const base = { resourceKey: resource.resourceKey, stepId: s.id, channel: s.channel };
-    if (s.purpose === 'follow_up') { out.push({ ...base, status: 'follow_up_plan' }); continue; }
+    if (s.purpose === 'follow_up' && !isOrphanFollowUp(resource, s)) { out.push({ ...base, status: 'follow_up_plan' }); continue; }
     if (!ready.has(s.id)) { out.push({ ...base, status: 'scheduled' }); continue; }
     if (s.purpose === 'verify') {
       if (s.channel !== 'voice' || !deps.createVerification) { out.push({ ...base, status: 'not_available', detail: 'verification_unavailable' }); continue; }

@@ -20,7 +20,8 @@ export class MemoryPlanStore implements PlanStore {
     const valid = parsePlan(plan);
     if (!valid) return null;
     const current = this.plans.get(valid.caseId);
-    if (expectedVersion !== undefined && current?.version !== expectedVersion) return null;
+    // expectedVersion 0 means insert-if-absent.
+    if (expectedVersion !== undefined && (current?.version ?? 0) !== expectedVersion) return null;
     this.plans.set(valid.caseId, structuredClone(valid));
     return valid;
   }
@@ -45,6 +46,13 @@ export class PostgresPlanStore implements PlanStore {
       updatedAt: new Date(valid.updatedAt),
       approvedAt: valid.approvedAt ? new Date(valid.approvedAt) : null,
     };
+    if (expectedVersion === 0) {
+      const rows = await this.db.insert(contactPlans)
+        .values({ caseId: valid.caseId, createdAt: new Date(valid.createdAt), ...values })
+        .onConflictDoNothing()
+        .returning({ caseId: contactPlans.caseId });
+      return rows.length === 1 ? valid : null;
+    }
     if (expectedVersion !== undefined) {
       const rows = await this.db.update(contactPlans).set(values)
         .where(and(eq(contactPlans.caseId, valid.caseId), eq(contactPlans.version, expectedVersion)))

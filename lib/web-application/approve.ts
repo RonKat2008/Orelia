@@ -68,6 +68,8 @@ export async function approveApplication(id: string, input: ApproveApplicationIn
   if (!consent?.approvedAt) return fail(422, 'consent_required');
   const caseRecord = await deps.outreach.getCase(draft.caseId);
   if (!caseRecord) return fail(404, 'case_not_found');
+  // A required field the form still needs can't be left blank: the site would reject it or record a hollow application.
+  if (draft.missing.some(m => m.required)) return fail(422, 'required_fields_missing');
   const sharedDocIds = [...(input.sharedDocIds ?? usedDocIds(draft))];
 
   // The form URL is not the contact's email/phone address, so the gate sees the application as its own draft

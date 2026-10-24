@@ -192,13 +192,16 @@ export function selectPlanInputs(inputs: readonly PlanResourceInput[]): PlanReso
 
 export function buildDeterministicPlan(caseId: string, inputs: readonly PlanResourceInput[], opts: { now: Date }): ContactPlan {
   const resources = selectPlanInputs(inputs).map(planResource);
+  const distinct = new Set(inputs.map(resourceKeyOf)).size;
+  const leftOut = distinct - resources.length;
+  const note = leftOut > 0 ? ` Only the first ${MAX_PLAN_RESOURCES} are included; ${leftOut} left out.` : '';
   const at = opts.now.toISOString();
   return {
     caseId,
     version: 1,
     status: 'draft',
     source: 'rules',
-    summary: summarizePlan(resources),
+    summary: `${summarizePlan(resources)}${note}`,
     resources,
     createdAt: at,
     updatedAt: at,

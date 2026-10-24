@@ -31,14 +31,20 @@ function asReasons(err: unknown): string[] | null {
   return null;
 }
 
+/**
+ * Sends an approved follow-up now. The workflow returns { skipped } when it will not send (contact no longer
+ * waiting, nothing due, approval missing): that is a 409, never a silent success, so the route cannot claim it queued.
+ */
 async function followUpApproved(deps: ConnectionDeps, event: WorkflowEvent): Promise<void> {
+  let out: unknown;
   try {
-    await createFollowUpSendWorkflow(deps).handler({ event, step: inlineStep() });
+    out = await createFollowUpSendWorkflow(deps).handler({ event, step: inlineStep() });
   } catch (err) {
     const reasons = asReasons(err);
     if (!reasons) throw err;
     throw new OutreachError(reasons[0] === 'already_approved' ? 409 : 422, reasons);
   }
+  if (out && typeof out === 'object' && 'skipped' in out) throw new OutreachError(409, ['follow_up_not_sendable']);
 }
 
 async function replyReceived(deps: ConnectionDeps, event: WorkflowEvent): Promise<void> {
@@ -85,8 +91,10 @@ async function defaultDeps(env: Env): Promise<ConnectionDeps> {
  */
 export function workflowSendEvents(env: Env = process.env, getDeps?: () => ConnectionDeps): SendEvents {
   if (schedulingConnected(env)) return inngestSendEvents();
-  return async (events) => {
+  const send: SendEvents = async (events) => {
     const deps = getDeps ? getDeps() : await defaultDeps(env);
     await inlineSendEvents(() => deps)(events);
   };
+  send.durable = false;
+  return send;
 }

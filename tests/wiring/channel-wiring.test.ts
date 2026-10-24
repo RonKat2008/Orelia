@@ -52,6 +52,12 @@ class MemoryStore implements OutreachStore, FollowUpDraftReader {
   }
   async markFirstSent(contactId: string, sentAt: string) { this.people = this.people.map(c => c.id === contactId && !c.firstSentAt ? { ...c, firstSentAt: sentAt } : c); }
   async getMessage(messageId: string) { return this.followUps.get(messageId); }
+  async approveFollowUp(draftId: string, contactId: string, at: string) {
+    const m = this.followUps.get(draftId);
+    if (!m || m.contactId !== contactId || m.approvedAt || m.sentAt) return false;
+    m.approvedAt = at; return true;
+  }
+  async withdrawFollowUpApproval(draftId: string) { const m = this.followUps.get(draftId); if (m && !m.sentAt) m.approvedAt = null; }
   async reserve2(): Promise<void> {}
   releaseCalls = 0;
 }
@@ -61,10 +67,10 @@ function followUpStore(store: MemoryStore): FollowUpStore {
     getMessage: m => store.getMessage(m),
     async reserve(messageId, contactId, at) {
       const m = store.followUps.get(messageId);
-      if (!m || m.contactId !== contactId || m.approvedAt || m.sentAt) return false;
-      m.approvedAt = at; return true;
+      if (!m || m.contactId !== contactId || !m.approvedAt || m.sentAt) return false;
+      m.sentAt = at; return true; // send claim; approved_at is the patient's approval
     },
-    async release(messageId) { store.followUps.get(messageId)!.approvedAt = null; store.released.push(messageId); },
+    async release(messageId) { store.followUps.get(messageId)!.sentAt = null; store.released.push(messageId); },
     async delivered(messageId, _contactId, _ref, sentAt) {
       store.followUps.get(messageId)!.sentAt = sentAt;
     },
@@ -154,8 +160,8 @@ describe('WiredOutreachService.approve', () => {
     expect(result).toMatchObject({ workflow: 'pending', draftId: draft.id });
     expect(ctx.mailer.sent).toHaveLength(1);
   });
-  it('follow-up approve sends nothing and emits follow-up-approved', async () => {
-    const ctx = setup(); const contact = addContact(ctx.store, { state: 'sent', firstSentAt: FIRST_SENT });
+  it('follow-up approve records approved_at and, with a durable engine, emits follow-up-approved and reports queued', async () => {
+    const ctx = setup(); ctx.ev.send.durable = true; const contact = addContact(ctx.store, { state: 'sent', firstSentAt: FIRST_SENT });
     const messageId = id();
     ctx.store.followUps.set(messageId, { messageId, contactId: contact.id, caseId: ctx.store.caseId, classification: 'follow_up_1', approvedAt: null, sentAt: null, direction: 'outbound', channel: 'email', body: 'x' });
     const result = await ctx.service.approve(contact.id, messageId);
@@ -163,7 +169,7 @@ describe('WiredOutreachService.approve', () => {
     expect(ctx.mailer.sent).toHaveLength(0);
     expect(ctx.ev.events).toHaveLength(1);
     expect(ctx.ev.events[0].id).toBe(`follow-up-approved-${messageId}`);
-    ctx.store.followUps.get(messageId)!.approvedAt = '2026-10-29T00:00:00Z';
+    expect(ctx.store.followUps.get(messageId)!.approvedAt).toBe(ctx.now.toISOString());
     await expect(ctx.service.approve(contact.id, messageId)).rejects.toBeInstanceOf(OutreachError);
     expect(ctx.ev.events).toHaveLength(1);
   });
@@ -175,7 +181,7 @@ describe('createFollowUpSender', () => {
     const contact = addContact(ctx.store, { state: 'sent', firstSentAt: FIRST_SENT, followUpsSent: 0, ...contactOver });
     const messageId = id();
     ctx.store.followUps.set(messageId, {
-      messageId, contactId: contact.id, caseId: ctx.store.caseId, classification, approvedAt: null, sentAt: null,
+      messageId, contactId: contact.id, caseId: ctx.store.caseId, classification, approvedAt: new Date(new Date(FIRST_SENT).getTime() + 60_000).toISOString(), sentAt: null,
       direction: 'outbound', channel: 'email', subject: 'Following up', body: withDisclosure('Following up on my earlier note.'),
     });
     const send = createFollowUpSender({ env: ctx.env, store: ctx.store, channels: [ctx.mailer, ctx.caller], clock: () => now, db: followUpStore(ctx.store) });
@@ -196,11 +202,12 @@ describe('createFollowUpSender', () => {
     await expect(c.send(c.input)).rejects.toBeInstanceOf(DuplicateSendError);
     expect(c.mailer.sent).toHaveLength(1);
   });
-  it('refuses and releases the reservation when cadence is not met', async () => {
+  it('refuses and releases the send claim when cadence is not met, keeping the approval', async () => {
     const c = senderCtx({}, new Date('2026-10-27T12:00:00Z'));
     await expect(c.send(c.input)).rejects.toMatchObject({ reasons: ['follow_up_cadence'] });
     expect(c.mailer.sent).toHaveLength(0);
-    expect(c.store.followUps.get(c.messageId)!.approvedAt).toBeNull();
+    expect(c.store.followUps.get(c.messageId)!.sentAt).toBeNull();
+    expect(c.store.followUps.get(c.messageId)!.approvedAt).toBeTruthy();
     expect(c.store.released).toEqual([c.messageId]);
   });
   it('refuses a follow-up that does not belong to the contact or is out of order', async () => {
@@ -215,12 +222,18 @@ describe('createFollowUpSender', () => {
     await expect(c.send(c.input)).rejects.toMatchObject({ reasons: expect.arrayContaining(['not_allowlisted']) });
     expect(c.mailer.sent).toHaveLength(0);
   });
-  it('leaves approved_at set when the channel throws (no auto-retry)', async () => {
+  it('never sends a follow-up without a persisted approval', async () => {
+    const c = senderCtx();
+    c.store.followUps.get(c.messageId)!.approvedAt = null;
+    await expect(c.send(c.input)).rejects.toMatchObject({ name: 'FollowUpRefusedError', reasons: ['not_approved'] });
+    expect(c.mailer.sent).toHaveLength(0);
+  });
+  it('leaves the send claim set when the channel throws (no auto-retry)', async () => {
     const c = senderCtx();
     const boom = { kind: 'email' as const, send: async () => { throw new Error('ambiguous'); } };
     const send = createFollowUpSender({ env: c.env, store: c.store, channels: [boom], clock: () => DAY3_PLUS, db: followUpStore(c.store) });
     await expect(send(c.input)).rejects.toThrow('ambiguous');
-    expect(c.store.followUps.get(c.messageId)!.approvedAt).toBeTruthy();
+    expect(c.store.followUps.get(c.messageId)!.sentAt).toBeTruthy();
     await expect(send(c.input)).rejects.toBeInstanceOf(DuplicateSendError);
   });
   describe('simulated time', () => {

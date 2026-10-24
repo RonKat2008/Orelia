@@ -26,3 +26,9 @@ export function properName(text: string): string {
   if (text !== text.toLowerCase()) return text;
   return text.replace(/(^|[\s\-'(])(\p{L})/gu, (_m, lead: string, ch: string) => lead + ch.toUpperCase());
 }
+
+/** "Follow-up 1 of 2" for a follow_up_N draft, null for a first message. */
+export function followUpLabel(classification: string | null | undefined): string | null {
+  const match = /^follow_up_(\d+)$/.exec(classification ?? "");
+  return match ? `Follow-up ${match[1]} of 2` : null;
+}

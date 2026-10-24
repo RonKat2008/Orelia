@@ -9,7 +9,13 @@ export interface WorkflowEvent {
   data: Record<string, unknown>;
   id?: string;
 }
-export type SendEvents = (events: WorkflowEvent | WorkflowEvent[]) => Promise<void>;
+export type SendEvents = ((events: WorkflowEvent | WorkflowEvent[]) => Promise<void>) & {
+  /**
+   * True when events are handed to a durable engine (Inngest) that acts on them later. Otherwise (inline, tests)
+   * an event's effect has already happened, or failed, by the time the call returns.
+   */
+  durable?: boolean;
+};
 
 export function contactApprovedEvent(d: {
   contactId: string;
@@ -42,7 +48,7 @@ export function followUpApprovedEvent(d: {
 
 /** Real sender backed by the Inngest client (lazy import keeps tests offline). */
 export function inngestSendEvents(): SendEvents {
-  return async (events) => {
+  const send: SendEvents = async (events) => {
     // Fail closed: without Inngest nothing is queued, so no follow-up or send can happen.
     const devServer = (process.env.INNGEST_DEV ?? '') !== '' && process.env.INNGEST_DEV !== '0';
     if (!devServer && !(process.env.INNGEST_EVENT_KEY ?? '').trim()) {
@@ -51,6 +57,8 @@ export function inngestSendEvents(): SendEvents {
     const { inngest } = await import('./inngest');
     await inngest.send(events as Parameters<typeof inngest.send>[0]);
   };
+  send.durable = true;
+  return send;
 }
 
 export const noopSendEvents: SendEvents = async () => {};

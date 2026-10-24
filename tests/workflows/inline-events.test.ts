@@ -92,7 +92,9 @@ describe('inlineSendEvents', () => {
 
   it('never sends a follow-up the database does not show as approved', async () => {
     const { d, sent } = deps({ state: 'sent', firstSentAt: FIRST, followUpsDue: 1 }, { loadMessageApproval: async () => null });
-    await inlineSendEvents(() => d)(followUpApprovedEvent({ contactId: 'c', caseId: 'k', messageId: 'm', approvedAt: NOW.toISOString() }));
+    // Not a silent success: the approve route must not report a skipped follow-up as queued.
+    await expect(inlineSendEvents(() => d)(followUpApprovedEvent({ contactId: 'c', caseId: 'k', messageId: 'm', approvedAt: NOW.toISOString() })))
+      .rejects.toMatchObject({ status: 409, reasons: ['follow_up_not_sendable'] });
     expect(sent).toEqual([]);
   });
 

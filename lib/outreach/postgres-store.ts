@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, like, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import * as s from '../../db/schema';
 import { OutreachError, type SelectOptions, type Candidate, type Consent, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
@@ -109,6 +109,13 @@ export class PostgresOutreachStore implements OutreachStore {
       eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'), isNotNull(s.messages.sentAt),
     )).orderBy(desc(s.messages.sentAt)).limit(1);
     return row ? { ...row, channel: contact.channel, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: row.approvedAt?.toISOString() ?? null, sentAt: row.sentAt?.toISOString() ?? null } : undefined;
+  }
+  async pendingFollowUp(contact: Contact): Promise<Draft | undefined> {
+    const [row] = await this.db.select().from(s.messages).where(and(
+      eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'), eq(s.messages.channel, contact.channel),
+      isNull(s.messages.approvedAt), isNull(s.messages.sentAt), like(s.messages.classification, 'follow_up_%'),
+    )).orderBy(asc(s.messages.classification)).limit(1);
+    return row ? { ...row, channel: contact.channel, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: null, sentAt: null } : undefined;
   }
   async updateDraftBody(draftId: string, contactId: string, body: string): Promise<boolean> {
     const rows = await this.db.update(s.messages).set({ body }).where(and(

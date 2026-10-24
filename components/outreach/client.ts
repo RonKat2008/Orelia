@@ -15,6 +15,8 @@ export type ApiContact = {
   displayName?: string;
   /** Present once the connection workflow schedules a follow-up. */
   nextFollowUpAt?: string | null;
+  /** A follow-up is drafted and waiting for the patient's approval in the outbox. */
+  followUpAwaitingApproval?: boolean;
 };
 
 export type UnavailableContact = {
@@ -44,6 +46,8 @@ export type ApiDraft = {
   /** Ids of case documents the draft drew from. Titles come from the documents API. */
   contextDocIds?: string[];
   sentAt?: string | null;
+  /** follow_up_1 / follow_up_2 for a follow-up; absent or null for the first message. */
+  classification?: string | null;
 };
 
 export const REFUSAL_LABELS: Record<string, string> = {
@@ -61,6 +65,9 @@ export const REFUSAL_LABELS: Record<string, string> = {
   channel_unavailable: "No send channel is available.",
   already_approved: "This draft was already approved.",
   already_contacted: "This contact was already written to, so no new first message was drafted.",
+  follow_up_not_sendable: "This follow-up can't go out now (they may have replied, or it was already sent). Nothing was sent.",
+  follow_up_not_sent: "The follow-up was not sent, so it is not marked approved.",
+  follow_up_out_of_order: "The earlier follow-up has to go out first.",
   already_approved_or_consent_changed: "Approval was already reserved, or consent changed.",
   invalid_request: "The request was rejected as invalid.",
   outreach_unavailable: "Outreach could not be saved. Nothing was sent.",

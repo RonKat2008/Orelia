@@ -33,6 +33,7 @@ export function contactsFromActivity(value: unknown): ApiContact[] | null {
       state: typeof row.state === "string" ? row.state : "drafted",
       displayName: typeof row.displayName === "string" ? row.displayName : undefined,
       nextFollowUpAt: typeof row.nextFollowUpAt === "string" ? row.nextFollowUpAt : null,
+      followUpAwaitingApproval: row.followUpAwaitingApproval === true,
     });
   }
   return contacts;

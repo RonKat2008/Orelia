@@ -4,7 +4,7 @@ export type Kind = 'expert' | 'institution' | 'trial' | 'organization';
 export interface Candidate { id: string; caseId: string; targetId: string; targetKind: Kind; purpose?: 'advocacy' | 'financial_aid' | 'travel_aid'; evidence: { claim: string; claimType: string; sourceUrl: string }[] }
 export interface Contact extends SafetyContact { id: string; caseId: string; targetId: string; targetKind: Kind; channel: 'email' | 'voice'; address: string; purpose?: Candidate['purpose'] }
 export interface Consent { contactId: string; sharedFields: string[]; approvedAt: string }
-export interface Draft extends Omit<SafetyDraft, 'channel'> { channel: 'email' | 'voice'; contextDocIds?: string[]; id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null }
+export interface Draft extends Omit<SafetyDraft, 'channel'> { channel: 'email' | 'voice'; contextDocIds?: string[]; id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null; /** follow_up_1 / follow_up_2 for follow-up messages; null/absent for the first message. */ classification?: string | null }
 export interface ProviderRef { messageId?: string; threadId?: string; callId?: string }
 export interface Channel { kind: 'email' | 'voice'; send(draft: GatedDraft): Promise<ProviderRef> }
 export interface SelectOptions { sharedAddresses?: readonly string[] }
@@ -30,6 +30,11 @@ export interface OutreachStore {
   pendingDraft?(contact: Contact, sharedFields: readonly string[]): Promise<Draft | undefined>;
   /** Optional: the most recent first message already sent to this contact. draft() returns it once the contact left 'drafted'. */
   sentDraft?(contact: Contact): Promise<Draft | undefined>;
+  /**
+   * Optional: a follow-up (follow_up_*) drafted by the workflow/cron sweep that is neither approved nor sent. While the
+   * contact is waiting ('sent'), draft() returns it so the outbox offers it for approval instead of the sent message.
+   */
+  pendingFollowUp?(contact: Contact): Promise<Draft | undefined>;
   /**
    * Optional: replace the body of a draft that is still neither approved nor sent (compare-and-set). Used to attach a
    * patient-reviewed packet before approval. False when the draft was already approved/sent or does not belong to the contact.

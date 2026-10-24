@@ -72,6 +72,8 @@ class Store implements OutreachStore, FollowUpDraftReader {
   async delivered(d: Draft, _ref: ProviderRef, sentAt: string) { this.drafts.get(d.id)!.sentAt = sentAt; this.people = this.people.map(c => (c.id === d.contactId ? { ...c, state: 'sent' } : c)); }
   async get() { return undefined; }
   async markFirstSent() {}
+  async approveFollowUp() { return false; }
+  async withdrawFollowUpApproval() {}
 }
 
 function setup(env: Record<string, string>) {

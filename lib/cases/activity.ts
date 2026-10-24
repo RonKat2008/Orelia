@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, like } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db/client";
 import {
@@ -27,6 +27,8 @@ export const contactViewSchema = z.object({
   lastActivityAt: z.string().nullable(),
   consented: z.boolean(),
   approved: z.boolean(),
+  /** A follow-up (follow_up_*) is drafted and waiting for the patient's approval in the outbox. */
+  followUpAwaitingApproval: z.boolean().optional(),
 });
 
 export const contactsResponseSchema = z.object({
@@ -157,8 +159,13 @@ export class PostgresCaseActivity implements CaseActivity {
       .select({ contactId: messages.contactId })
       .from(messages)
       .where(and(inArray(messages.contactId, ids), eq(messages.direction, "outbound"), isNotNull(messages.approvedAt)));
+    const pendingFollowUpRows = await this.db
+      .select({ contactId: messages.contactId })
+      .from(messages)
+      .where(and(inArray(messages.contactId, ids), eq(messages.direction, "outbound"), like(messages.classification, "follow_up_%"), isNull(messages.approvedAt), isNull(messages.sentAt)));
     const consented = new Set(consentRows.filter((row) => row.approvedAt).map((row) => row.contactId));
     const approved = new Set(approvedRows.map((row) => row.contactId));
+    const awaiting = new Set(pendingFollowUpRows.map((row) => row.contactId));
     return rows.map((row) => contactViewSchema.parse({
       id: row.id,
       targetKind: row.targetKind,
@@ -170,6 +177,8 @@ export class PostgresCaseActivity implements CaseActivity {
       lastActivityAt: iso(row.lastActivityAt),
       consented: consented.has(row.id),
       approved: approved.has(row.id),
+      // Only while waiting for a reply: after a reply or a stall the drafted follow-up is moot.
+      followUpAwaitingApproval: row.state === "sent" && awaiting.has(row.id),
     }));
   }
 

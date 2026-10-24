@@ -15,7 +15,7 @@ import {
 } from '../../lib/outreach/channel-wiring';
 import { OutreachService } from '../../lib/outreach/service';
 import { recordingSendEvents } from '../../lib/workflows/events';
-import type { Channel, Consent, Contact, OutreachStore } from '../../lib/outreach/types';
+import { OutreachError, type Channel, type Consent, type Contact, type OutreachStore } from '../../lib/outreach/types';
 import { withDisclosure } from '../../lib/safety/disclosure';
 
 const ADDR = 'intake@example.com';
@@ -103,6 +103,13 @@ describe('PostgresFollowUpStore', () => {
     expect(fakeDb.opsOf('execute')).toHaveLength(2 + 4);
     expect(fakeDb.opsOf('batch')).toHaveLength(2);
   });
+  it('approveFollowUp is true only for exactly one newly approved row; withdraw issues one statement', async () => {
+    fakeDb.enqueue(execRows([{ id: 'm1' }]), execRows([]), execRows([]));
+    expect(await store.approveFollowUp('m1', 'c1', FIRST_SENT)).toBe(true);
+    expect(await store.approveFollowUp('m1', 'c1', FIRST_SENT)).toBe(false);
+    await store.withdrawFollowUpApproval('m1', 'c1');
+    expect(fakeDb.opsOf('execute')).toHaveLength(3);
+  });
   it('reserve is true only for exactly one claimed row', async () => {
     fakeDb.enqueue(execRows([{ id: 'm1' }]), execRows([]));
     expect(await store.reserve('m1', 'c1', FIRST_SENT)).toBe(true);
@@ -115,7 +122,7 @@ describe('createFollowUpSender refusals and edge cases', () => {
     id: 'c1', caseId: CASE_ID, targetId: 't1', targetKind: 'expert', channel: 'email', address: ADDR, state: 'sent', followUpsSent: 0, firstSentAt: FIRST_SENT,
   } as never;
   const message = (over: Partial<FollowUpMessage> = {}): FollowUpMessage => ({
-    messageId: 'm1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: null, sentAt: null, direction: 'outbound',
+    messageId: 'm1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: '2026-10-29T12:30:00.000Z', sentAt: null, direction: 'outbound',
     channel: 'email', subject: 'Following up', body: withDisclosure('Following up on my earlier note.'), ...over,
   });
   const consent: Consent = { contactId: 'c1', sharedFields: ['diseaseName'], approvedAt: '2026-10-23T11:00:00Z' };
@@ -155,9 +162,14 @@ describe('createFollowUpSender refusals and edge cases', () => {
     expect(c.calls.reserve).toBe(0);
   });
 
-  it.each([['approved', { approvedAt: FIRST_SENT }], ['sent', { sentAt: FIRST_SENT }]])('throws DuplicateSendError on the fast path when already %s', async (_n, over) => {
-    const c = build({ message: message(over) });
+  it('throws DuplicateSendError on the fast path when already sent', async () => {
+    const c = build({ message: message({ sentAt: FIRST_SENT }) });
     await expect(c.send(c.input)).rejects.toBeInstanceOf(DuplicateSendError);
+    expect(c.calls.reserve).toBe(0);
+  });
+  it.each([['missing', null], ['invalid', 'not-a-date']])('refuses without claiming when the persisted approval is %s', async (_n, approvedAt) => {
+    const c = build({ message: message({ approvedAt }) });
+    await expect(c.send(c.input)).rejects.toEqual(refusal('not_approved'));
     expect(c.calls.reserve).toBe(0);
   });
 
@@ -275,12 +287,12 @@ describe('createFollowUpSender refusals and edge cases', () => {
 
 describe('WiredOutreachService edge cases', () => {
   const store = { contact: async () => ({ id: 'c1', caseId: CASE_ID }) } as unknown as OutreachStore;
-  const reader = (followUp: unknown) => ({ get: async () => followUp, markFirstSent: vi.fn(async () => {}) }) as never;
+  const reader = (followUp: unknown, approve = true) => ({ get: async () => followUp, markFirstSent: vi.fn(async () => {}), approveFollowUp: async () => approve, withdrawFollowUpApproval: vi.fn(async () => {}) }) as never;
 
   it('returns a queued result from the base service untouched, without stamping or emitting', async () => {
     const ev = recordingSendEvents();
     const markFirstSent = vi.fn(async () => {});
-    const svc = new WiredOutreachService(store, [], ev.send, undefined, undefined, { get: async () => undefined, markFirstSent });
+    const svc = new WiredOutreachService(store, [], ev.send, undefined, undefined, { get: async () => undefined, markFirstSent, approveFollowUp: async () => false, withdrawFollowUpApproval: async () => {} });
     vi.spyOn(OutreachService.prototype, 'approve').mockResolvedValueOnce({ draftId: 'd1', approvedAt: FIRST_SENT, queued: true });
     expect(await svc.approve('c1', 'd1')).toEqual({ draftId: 'd1', approvedAt: FIRST_SENT, queued: true });
     expect(markFirstSent).not.toHaveBeenCalled();
@@ -288,16 +300,30 @@ describe('WiredOutreachService edge cases', () => {
   });
   it('uses the system clock for follow-up approvals and rejects a sent follow-up as already approved', async () => {
     const ev = recordingSendEvents();
+    ev.send.durable = true; // only a durable engine may report a follow-up as queued
     const svc = new WiredOutreachService(store, [], ev.send, undefined, undefined, reader({ messageId: 'd1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: null, sentAt: null }));
     const out = await svc.approve('c1', 'd1');
     expect(out).toMatchObject({ draftId: 'd1', queued: true });
     expect(Math.abs(new Date(out.approvedAt).getTime() - Date.now())).toBeLessThan(60_000);
-    const sent = new WiredOutreachService(store, [], ev.send, undefined, undefined, reader({ messageId: 'd1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: null, sentAt: FIRST_SENT }));
+    const sent = new WiredOutreachService(store, [], ev.send, undefined, undefined, reader({ messageId: 'd1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: null, sentAt: FIRST_SENT }, false));
     await expect(sent.approve('c1', 'd1')).rejects.toMatchObject({ status: 409 });
+  });
+  it('inline: a follow-up still unsent after the event is withdrawn and reported, never queued', async () => {
+    const ev = recordingSendEvents();
+    const r = reader({ messageId: 'd1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: null, sentAt: null }) as unknown as { withdrawFollowUpApproval: ReturnType<typeof vi.fn> };
+    const svc = new WiredOutreachService(store, [], ev.send, undefined, undefined, r as never);
+    await expect(svc.approve('c1', 'd1')).rejects.toMatchObject({ status: 409, reasons: ['follow_up_not_sent'] });
+    expect(r.withdrawFollowUpApproval).toHaveBeenCalledWith('d1', 'c1');
+  });
+  it('withdraws the follow-up approval when emitting the event fails', async () => {
+    const r = reader({ messageId: 'd1', contactId: 'c1', caseId: CASE_ID, classification: 'follow_up_1', approvedAt: null, sentAt: null }) as unknown as { withdrawFollowUpApproval: ReturnType<typeof vi.fn> };
+    const svc = new WiredOutreachService(store, [], async () => { throw new OutreachError(422, ['not_allowlisted']); }, undefined, undefined, r as never);
+    await expect(svc.approve('c1', 'd1')).rejects.toMatchObject({ status: 422 });
+    expect(r.withdrawFollowUpApproval).toHaveBeenCalledWith('d1', 'c1');
   });
   it('logs only the error name, or unknown for non-Error failures, when the hand-off fails after a send', async () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const svc = new WiredOutreachService(store, [], async () => { throw 'secret-detail'; }, undefined, undefined, { get: async () => undefined, markFirstSent: async () => {} });
+    const svc = new WiredOutreachService(store, [], async () => { throw 'secret-detail'; }, undefined, undefined, { get: async () => undefined, markFirstSent: async () => {}, approveFollowUp: async () => false, withdrawFollowUpApproval: async () => {} });
     vi.spyOn(OutreachService.prototype, 'approve').mockResolvedValueOnce({ draftId: 'd1', approvedAt: FIRST_SENT, sentAt: FIRST_SENT, provider: 'mock' } as never);
     expect(await svc.approve('c1', 'd1')).toMatchObject({ workflow: 'pending' });
     expect(logged.mock.calls[0][1]).toBe('unknown');

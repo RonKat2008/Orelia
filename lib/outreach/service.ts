@@ -73,6 +73,11 @@ export class OutreachService {
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
     if (contact.state !== 'drafted') {
+      // Waiting for a reply and the sweep drafted a follow-up: that is what needs the patient's approval now.
+      if (contact.state === 'sent') {
+        const followUp = await this.store.pendingFollowUp?.(contact);
+        if (followUp) return followUp;
+      }
       // Already written to: show the message that went out; never mint a second first-message draft.
       const sent = await this.store.sentDraft?.(contact);
       if (sent) return sent;

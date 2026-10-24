@@ -107,12 +107,22 @@ export interface FollowUpDraftReader {
   get(draftId: string, contactId: string): Promise<FollowUpDraft | undefined>;
   /** Set contacts.first_sent_at once (only where still NULL): the cadence anchor. */
   markFirstSent(contactId: string, sentAt: string): Promise<void>;
+  /**
+   * Records the patient's approval of a follow-up: approved_at NULL -> at, only while unsent (compare-and-set).
+   * False when it was already approved or sent, or is not a follow-up of this contact.
+   */
+  approveFollowUp(draftId: string, contactId: string, at: string): Promise<boolean>;
+  /** Undo approveFollowUp when nothing was sent (gate refusal, not sendable). Never touches a sent row. */
+  withdrawFollowUpApproval(draftId: string, contactId: string): Promise<void>;
 }
 export interface FollowUpStore {
   getMessage(messageId: string): Promise<FollowUpMessage | undefined>;
-  /** Atomic dedupe: true only for the single caller that flips approved_at NULL -> at (and sent_at is NULL). */
+  /**
+   * Atomic send claim: true only for the single caller that flips sent_at NULL -> at on an APPROVED row
+   * (approved_at is the human authorization and is never written here).
+   */
   reserve(messageId: string, contactId: string, at: string): Promise<boolean>;
-  /** Undo a reservation after a gate refusal (nothing was sent). */
+  /** Undo a send claim after a gate refusal (nothing was sent): sent_at back to NULL. approved_at is kept. */
   release(messageId: string, contactId: string): Promise<void>;
   delivered(messageId: string, contactId: string, ref: ProviderRef, sentAt: string): Promise<void>;
 }
@@ -141,15 +151,26 @@ export class PostgresFollowUpStore implements FollowUpDraftReader, FollowUpStore
   async markFirstSent(contactId: string, sentAt: string) {
     await this.db.execute(sql`UPDATE contacts SET first_sent_at = ${sentAt}::timestamptz WHERE id = ${contactId}::uuid AND first_sent_at IS NULL`);
   }
-  async reserve(messageId: string, contactId: string, at: string) {
+  async approveFollowUp(draftId: string, contactId: string, at: string) {
     const rows = await this.rows(sql`
       UPDATE messages SET approved_at = ${at}::timestamptz
-      WHERE id = ${messageId}::uuid AND contact_id = ${contactId}::uuid AND approved_at IS NULL AND sent_at IS NULL
+      WHERE id = ${draftId}::uuid AND contact_id = ${contactId}::uuid AND direction = 'outbound'
+        AND classification LIKE 'follow_up_%' AND approved_at IS NULL AND sent_at IS NULL
+      RETURNING id`);
+    return rows.length === 1;
+  }
+  async withdrawFollowUpApproval(draftId: string, contactId: string) {
+    await this.db.execute(sql`UPDATE messages SET approved_at = NULL WHERE id = ${draftId}::uuid AND contact_id = ${contactId}::uuid AND classification LIKE 'follow_up_%' AND sent_at IS NULL`);
+  }
+  async reserve(messageId: string, contactId: string, at: string) {
+    const rows = await this.rows(sql`
+      UPDATE messages SET sent_at = ${at}::timestamptz
+      WHERE id = ${messageId}::uuid AND contact_id = ${contactId}::uuid AND approved_at IS NOT NULL AND sent_at IS NULL
       RETURNING id`);
     return rows.length === 1;
   }
   async release(messageId: string, contactId: string) {
-    await this.db.execute(sql`UPDATE messages SET approved_at = NULL WHERE id = ${messageId}::uuid AND contact_id = ${contactId}::uuid AND sent_at IS NULL`);
+    await this.db.execute(sql`UPDATE messages SET sent_at = NULL WHERE id = ${messageId}::uuid AND contact_id = ${contactId}::uuid AND provider_message_id IS NULL`);
   }
   async delivered(messageId: string, contactId: string, ref: ProviderRef, sentAt: string) {
     await this.db.batch([
@@ -166,7 +187,10 @@ export class PostgresFollowUpStore implements FollowUpDraftReader, FollowUpStore
 // ---------------------------------------------------------------------------
 
 type BaseApproveResult = Awaited<ReturnType<OutreachService['approve']>>;
-/** `workflow: 'pending'` = sent, but stamping/emitting the workflow event failed. Follow-ups return { queued: true } (see approve()). */
+/**
+ * `workflow: 'pending'` = sent, but stamping/emitting the workflow event failed. A follow-up returns sentAt once it
+ * went out, and { queued: true } only when a durable engine (Inngest) accepted it for sending (see approve()).
+ */
 export type WiredApproveResult = BaseApproveResult & { workflow?: 'pending' };
 
 /**
@@ -177,9 +201,11 @@ export type WiredApproveResult = BaseApproveResult & { workflow?: 'pending' };
  *   If the email already went out but stamping or emitting fails, we MUST NOT report a send failure (the user
  *   would retry and the 409 would hide the truth). We log and return the result with `workflow: 'pending'` so
  *   an operator/retry job can re-emit the (idempotent, id contact-approved-<draftId>) event.
- * - Follow-ups: no send here. Codex's reserve only supports the first message, so we only record the human
- *   approval by emitting follow-up/approved; the workflow then sends via createFollowUpSender (which re-runs
- *   the gate).
+ * - Follow-ups: the human approval is recorded on the row (approved_at, compare-and-set), then follow-up/approved
+ *   is emitted; the follow-up workflow re-reads approved_at and sends via createFollowUpSender (which re-runs the
+ *   gate). Inline (no Inngest) that happens inside this request, so the result says whether it was sent; if it was
+ *   refused or is not sendable, the approval is withdrawn and the error is returned. Only a durable engine yields
+ *   { queued: true }.
  */
 export class WiredOutreachService extends OutreachService {
   constructor(
@@ -195,13 +221,7 @@ export class WiredOutreachService extends OutreachService {
 
   override async approve(id: string, draftId: string): Promise<WiredApproveResult> {
     const followUp = await this.followUps.get(draftId, id);
-    if (followUp && isFollowUpClassification(followUp.classification)) {
-      if (followUp.approvedAt || followUp.sentAt) throw new OutreachError(409, ['already_approved']);
-      const approvedAt = this.clock().toISOString();
-      await this.sendEvents(followUpApprovedEvent({ contactId: id, caseId: followUp.caseId, messageId: draftId, approvedAt }));
-      // A queued approval has no sent timestamp or provider receipt.
-      return { draftId, approvedAt, queued: true };
-    }
+    if (followUp && isFollowUpClassification(followUp.classification)) return this.approveFollowUp(id, draftId, followUp.caseId);
     const result = await super.approve(id, draftId);
     if ('queued' in result) return result;
     const contact = await this.requireContact(id);
@@ -218,6 +238,25 @@ export class WiredOutreachService extends OutreachService {
       await completeSimulatedCall(this.simulatedCallIngest, { contactId: id, caseId: contact.caseId, callId: result.provider.callId, at: result.sentAt });
     }
     return result;
+  }
+
+  private async approveFollowUp(id: string, draftId: string, caseId: string): Promise<WiredApproveResult> {
+    const approvedAt = this.clock().toISOString();
+    if (!await this.followUps.approveFollowUp(draftId, id, approvedAt)) throw new OutreachError(409, ['already_approved']);
+    try {
+      await this.sendEvents(followUpApprovedEvent({ contactId: id, caseId, messageId: draftId, approvedAt }));
+    } catch (error) {
+      // Nothing was sent (a send that went out sets sent_at, which withdraw never touches).
+      await this.followUps.withdrawFollowUpApproval(draftId, id);
+      throw error;
+    }
+    const after = await this.followUps.get(draftId, id);
+    if (after?.sentAt) return { draftId, approvedAt, sentAt: after.sentAt, provider: {} };
+    // Accepted by a durable engine: it will send (or refuse) later. A queued approval has no sent timestamp.
+    if (this.sendEvents.durable) return { draftId, approvedAt, queued: true };
+    // Inline and still unsent: nothing will happen later, so do not leave it approved or say it was queued.
+    await this.followUps.withdrawFollowUpApproval(draftId, id);
+    throw new OutreachError(409, ['follow_up_not_sent']);
   }
 }
 
@@ -270,7 +309,10 @@ export function createFollowUpSender(opts: FollowUpSenderOptions = {}) {
     if (!message || message.direction !== 'outbound' || message.contactId !== input.contactId || !isFollowUpClassification(message.classification)) {
       throw new FollowUpRefusedError(['not_a_follow_up_for_contact']);
     }
-    if (message.approvedAt || message.sentAt) throw new DuplicateSendError(input.messageId); // fast path; reserve() below is the atomic guard
+    if (message.sentAt) throw new DuplicateSendError(input.messageId); // fast path; reserve() below is the atomic guard
+    // approved_at is the patient's approval (the approve route or a walk-away pre-approval). Never send without it.
+    const persistedApproval = message.approvedAt ? new Date(message.approvedAt) : null;
+    if (!persistedApproval || Number.isNaN(persistedApproval.getTime())) throw new FollowUpRefusedError(['not_approved']);
     const contact = await store.contact(input.contactId);
     if (!contact || contact.caseId !== input.caseId || message.caseId !== input.caseId) throw new FollowUpRefusedError(['contact_not_found']);
     if (message.channel !== contact.channel) throw new FollowUpRefusedError(['channel_mismatch']);
@@ -292,10 +334,10 @@ export function createFollowUpSender(opts: FollowUpSenderOptions = {}) {
     const realNow = clock();
     const mode = env.NODE_ENV === 'production' ? 'prod' : 'dev';
     const now = target.lastSentAt ? gateNow(realNow, new Date(target.lastSentAt), parseTimeScale(env.WAYFINDER_SIM_TIME_SCALE), mode) : realNow;
-    const approvedAt = realNow.toISOString();
+    const approvedAt = persistedApproval.toISOString();
 
-    // Atomic dedupe by message id: exactly one caller proceeds; a retry or concurrent run throws.
-    if (!await db.reserve(input.messageId, input.contactId, approvedAt)) throw new DuplicateSendError(input.messageId);
+    // Atomic send claim by message id (sent_at): exactly one caller proceeds; a retry or concurrent run throws.
+    if (!await db.reserve(input.messageId, input.contactId, realNow.toISOString())) throw new DuplicateSendError(input.messageId);
     const gate = checkOutbound({
       draft: { channel: contact.channel, address: contact.address, body: message.body, ...(message.subject ? { subject: message.subject } : {}), contactId: contact.id, caseId: input.caseId, approvedAt, isFollowUp: true },
       consent, caseRecord, contacts: withAnchor, allowlist: outboundAllowlist(env), now: now.toISOString(), mode,
@@ -305,7 +347,7 @@ export function createFollowUpSender(opts: FollowUpSenderOptions = {}) {
       await db.release(input.messageId, input.contactId); // nothing was sent
       throw new FollowUpRefusedError([...gate.reasons]);
     }
-    // If send throws we leave approved_at set: an ambiguous send must not auto-retry (same policy as Codex's reserve).
+    // If send throws we leave the sent_at claim set: an ambiguous send must not auto-retry (same policy as Codex's reserve).
     const ref = await channel.send(gate.payload);
     await db.delivered(input.messageId, input.contactId, ref, realNow.toISOString());
     return { providerRef: ref.messageId ?? ref.callId ?? input.messageId };

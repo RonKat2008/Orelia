@@ -60,7 +60,10 @@ function asState(value: string): ContactState {
 
 export const SCHEDULING_PAUSED_NOTE = "Automatic follow-ups are paused until scheduling is connected.";
 
-function followUpNote(contact: ApiContact, state: ContactState, schedulingPaused: boolean): string {
+export const FOLLOW_UP_AWAITING_NOTE = "A follow-up is written and waiting for your approval in the outbox. Nothing has been sent.";
+
+export function followUpNote(contact: ApiContact, state: ContactState, schedulingPaused: boolean): string {
+  if (state === "sent" && contact.followUpAwaitingApproval) return FOLLOW_UP_AWAITING_NOTE;
   if (schedulingPaused && (state === "sent" || state === "replied")) {
     return `${SCHEDULING_PAUSED_NOTE} Nothing will go out on its own; you can still write and approve a follow-up yourself.`;
   }
@@ -286,7 +289,17 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
                   <p className="m-0 mt-4 max-w-prose text-body text-ink">{STATE_NOTES[state]}</p>
                   <p className="m-0 mt-2 flex items-start gap-2 text-small text-ink-2">
                     <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
-                    {followUpNote(contact, state, schedulingPaused)}
+                    <span>
+                      {followUpNote(contact, state, schedulingPaused)}
+                      {state === "sent" && contact.followUpAwaitingApproval ? (
+                        <>
+                          {" "}
+                          <Link href={`/cases/${caseId}/outbox`} className="font-semibold text-teal underline underline-offset-4 focus-ring">
+                            Review it
+                          </Link>
+                        </>
+                      ) : null}
+                    </span>
                   </p>
 
                   {planLine ? (

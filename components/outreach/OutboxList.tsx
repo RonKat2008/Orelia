@@ -36,7 +36,7 @@ import {
   type ApiDraft,
 } from "./client";
 import { loadCaseContacts } from "./case-activity";
-import { formatWhen, titleCase } from "./format";
+import { followUpLabel, formatWhen, titleCase } from "./format";
 import { LetterSheet, MessageBody } from "./LetterSheet";
 import { ApplicationCard } from "./ApplicationCard";
 import { loadApplications, type ApiApplication } from "./applications";
@@ -133,7 +133,8 @@ export function OutboxList({ caseId }: { caseId: string }) {
     patch(row.contact.id, { approvedAt: result.approvedAt, sentAt: result.sentAt, error: null });
     setConfirming(null);
     const demoNote = demoDestinationLabel(row.contact.address, demo);
-    toast.success(row.contact.channel === "email" ? "Email approved" : "Call approved", {
+    const isFollowUp = followUpLabel(row.draft.classification) !== null;
+    toast.success(isFollowUp ? (result.sentAt ? "Follow-up sent" : "Follow-up approved") : row.contact.channel === "email" ? "Email approved" : "Call approved", {
       description: demoNote
         ? `${demoNote}. The safety check ran as usual; follow it in the tracker.`
         : "The server confirmed your approval. You can follow it in the tracker.",
@@ -203,6 +204,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
           const name = titleCase(contactLabel(row.contact));
           const isEmail = (draft?.channel ?? row.contact.channel) === "email";
           const approved = Boolean(row.approvedAt);
+          const followUp = followUpLabel(draft?.classification);
           const docIds = draft?.contextDocIds ?? [];
           const blocked = !draft || !disclosed || approved || row.held;
           const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? row.contact.channel });
@@ -218,7 +220,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                 <div className="mb-6 flex flex-wrap items-center gap-4">
                   <AvatarInitials name={name.replace(/[()]/g, "")} size="lg" />
                   <div className="grid min-w-0 flex-1 gap-1">
-                    <CardEyebrow>{isEmail ? "Email draft" : "Call script"}</CardEyebrow>
+                    <CardEyebrow>{followUp ? `${followUp}, ${isEmail ? "email" : "call"}` : isEmail ? "Email draft" : "Call script"}</CardEyebrow>
                     <CardTitle id={`draft-${row.contact.id}`} className="break-words">
                       {name}
                     </CardTitle>
@@ -261,7 +263,11 @@ export function OutboxList({ caseId }: { caseId: string }) {
                       channel={draft.channel}
                       recipient={draft.address}
                       subject={draft.channel === "email" ? draft.subject : null}
-                      label={approved ? (isEmail ? "Email, approved" : "Call script, approved") : isEmail ? "Email, not yet sent" : "Call script, not yet used"}
+                      label={
+                        followUp
+                          ? `${followUp}, ${approved ? (row.sentAt ? "sent" : "approved") : "not yet sent"}`
+                          : approved ? (isEmail ? "Email, approved" : "Call script, approved") : isEmail ? "Email, not yet sent" : "Call script, not yet used"
+                      }
                       className={row.held ? "opacity-70" : undefined}
                     >
                       <MessageBody text={text} sharedValues={values} />

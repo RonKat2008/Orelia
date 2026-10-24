@@ -143,6 +143,17 @@ describe('drafts', () => {
       expect((await store.pendingDraft(c, []))?.subject).toBe('Hi');
     });
   });
+  describe('pendingFollowUp', () => {
+    const c = contact('intake@example.org', { id: 'c1', state: 'sent' });
+    it('is undefined when no unapproved follow-up exists', async () => {
+      fakeDb.enqueue([]);
+      expect(await store.pendingFollowUp(c)).toBeUndefined();
+    });
+    it('maps the follow-up row with its classification, unapproved and unsent', async () => {
+      fakeDb.enqueue([{ id: 'f1', contactId: 'c1', sharedFields: ['a'], subject: 'Re: Patient intake inquiry', body: 'x', classification: 'follow_up_1', approvedAt: null, sentAt: null }]);
+      expect(await store.pendingFollowUp(c)).toMatchObject({ id: 'f1', classification: 'follow_up_1', address: 'intake@example.org', approvedAt: null, sentAt: null, caseId: CASE_ID });
+    });
+  });
   describe('sentDraft', () => {
     const c = contact('intake@example.org', { id: 'c1', state: 'sent' });
     it('is undefined when nothing was sent', async () => {

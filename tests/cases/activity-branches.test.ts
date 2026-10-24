@@ -58,6 +58,17 @@ describe('PostgresCaseActivity.contacts', () => {
     expect(out.map((x) => [x.consented, x.approved])).toEqual([[true, false], [false, true], [false, false]]);
   });
 
+  it('flags a drafted, unapproved follow-up as awaiting approval only while the contact is waiting (sent)', async () => {
+    const { fake, activity } = setup();
+    const [a, b, c] = [contactRow({ state: 'sent' }), contactRow({ state: 'stalled' }), contactRow({ state: 'sent' })];
+    fake.queue('select:contacts', [a, b, c]);
+    fake.queue('select:consents', []);
+    fake.queue('select:messages', [{ contactId: a.id }, { contactId: b.id }, { contactId: c.id }]);
+    fake.queue('select:messages', [{ contactId: a.id }, { contactId: b.id }]);
+    const out = await activity.contacts(CASE);
+    expect(out.map((x) => x.followUpAwaitingApproval)).toEqual([true, false, false]);
+  });
+
   it('serialises follow-up and activity timestamps as ISO strings or null', async () => {
     const { fake, activity } = setup();
     fake.queue('select:contacts', [contactRow({ nextFollowUpAt: D1, lastActivityAt: D2 })]);
@@ -108,8 +119,9 @@ describe('PostgresCaseActivity.threads', () => {
     const { fake, activity } = setup();
     const a = contactRow(); const b = contactRow();
     fake.queue('select:contacts', [a, b]);
-    // contacts() issues its own consent/messages selects first, then threads() reads messages and calls.
+    // contacts() issues its own consent/messages selects first (approved, pending follow-ups), then threads() reads messages and calls.
     fake.queue('select:messages',
+      [],
       [],
       [
         { id: id(), contactId: a.id, direction: 'inbound', channel: 'email', subject: 'Re', body: 'Hi', sharedFields: [], sentAt: null, receivedAt: D2, classification: 'reply' },

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { executableSteps, executePlan, isExecutable, type PlanExecDeps, type StepOutcome } from '@/lib/plan/execute';
 import { UnavailableWebFormChannel, type WebFormChannel } from '@/lib/plan/channels';
 import { MAX_PLAN_RESOURCES, type ContactPlan, type ResourcePlan } from '@/lib/plan/contract';
-import { createPlanExecutionWorkflow } from '@/lib/workflows/plan-workflow';
+import { createDefaultPlanExecDeps, createPlanExecutionWorkflow } from '@/lib/workflows/plan-workflow';
 import { CONTACT_REPLY, type WorkflowStep } from '@/lib/workflows/engine';
 import { MemoryPlanStore } from '@/lib/plan/store';
 import { makePlan, step } from './plan-fixture';
@@ -186,5 +186,28 @@ describe('plan execution workflow', () => {
     const { deps } = makeDeps();
     const wf = createPlanExecutionWorkflow(deps, () => store);
     expect(await wf.handler({ event: { name: 'plan/approved', data: { caseId: 'case-1' } }, step: new FakeStep() })).toEqual({ outcome: 'executed', steps: 2 });
+  });
+});
+
+describe('createDefaultPlanExecDeps.dispatchGated', () => {
+  const conn = (state: string) => ({ clock: { now: () => new Date(), scale: 1 }, loadContext: async () => ({ state }) }) as never;
+  const res = { resourceKey: 'expert:a' } as never;
+
+  it('writes an unapproved outbox draft for a scheduled step and never sends', async () => {
+    const createDraft = vi.fn(async () => ({ id: 'draft-1' }));
+    const deps = createDefaultPlanExecDeps(conn('drafted'), { createDraft });
+    const out = await deps.dispatchGated({ caseId: 'c', contactId: 'k', resource: res, step: step('s2', 2, { purpose: 'confirm' }) });
+    expect(out.status).toBe('awaiting_approval');
+    expect(createDraft).toHaveBeenCalledWith('k');
+  });
+
+  it('first message already sent -> already_sent; follow-ups are left to the walk-away plan; refusals are blocked', async () => {
+    const createDraft = vi.fn(async () => { throw Object.assign(new Error('x'), { reasons: ['consent_required'] }); });
+    const sent = createDefaultPlanExecDeps(conn('sent'), { createDraft });
+    expect((await sent.dispatchGated({ caseId: 'c', contactId: 'k', resource: res, step: step('s1', 1) })).status).toBe('already_sent');
+    expect((await sent.dispatchGated({ caseId: 'c', contactId: 'k', resource: res, step: step('s2', 2, { purpose: 'follow_up' }) })))
+      .toMatchObject({ status: 'awaiting_approval', detail: expect.stringMatching(/follow-up plan/) });
+    const refused = createDefaultPlanExecDeps(conn('drafted'), { createDraft });
+    expect(await refused.dispatchGated({ caseId: 'c', contactId: 'k', resource: res, step: step('s1', 1) })).toEqual({ status: 'blocked', detail: 'consent_required' });
   });
 });

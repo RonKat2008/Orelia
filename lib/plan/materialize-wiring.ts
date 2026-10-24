@@ -5,21 +5,25 @@ import type { ContactPlan } from './contract';
 
 export type PlanMaterializer = (plan: ContactPlan) => Promise<MaterializedStep[]>;
 
+const service = async () => {
+  const [{ PostgresOutreachStore }, { OutreachService }] = await Promise.all([import('../outreach/postgres-store'), import('../outreach/service')]);
+  return new OutreachService(new PostgresOutreachStore(), []);
+};
+
+/** OutreachService.draft: consented fields only, AI disclosure, call script for voice. Reuses a pending draft. */
+export async function defaultCreateDraft(contactId: string): Promise<{ id: string }> {
+  const draft = await (await service()).draft(contactId);
+  return { id: draft.id };
+}
+
 function defaultDeps(): MaterializeDeps {
-  const service = async () => {
-    const [{ PostgresOutreachStore }, { OutreachService }] = await Promise.all([import('../outreach/postgres-store'), import('../outreach/service')]);
-    return new OutreachService(new PostgresOutreachStore(), []);
-  };
   return {
     async contact(id) {
       if (!process.env.DATABASE_URL) return undefined; // memory/demo mode has no contact rows
       const c = await (await service()).store.contact(id);
       return c ? { id: c.id, channel: c.channel } : undefined;
     },
-    async createDraft(contactId) {
-      const draft = await (await service()).draft(contactId);
-      return { id: draft.id };
-    },
+    createDraft: defaultCreateDraft,
     webForm: getWebFormChannel(),
   };
 }

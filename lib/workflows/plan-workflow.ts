@@ -9,6 +9,7 @@ import { executePlan, isExecutable, type PlanExecDeps, type StepOutcome } from '
 import type { ContactPlan, PlanStore } from '../plan/contract';
 import { PLAN_APPROVED, type FunctionDefinition } from './engine';
 import type { ConnectionDeps } from './connection-workflow';
+import { defaultCreateDraft } from '../plan/materialize-wiring';
 
 /** Contact states in which the contact has engaged or declined: remaining plan steps stop. */
 const STOP_STATES = new Set(['replied', 'task_open', 'records_sent', 'appointment_booked', 'connected', 'declined']);
@@ -32,8 +33,22 @@ export function createPlanExecutionWorkflow(deps: PlanExecDeps, store: () => Pla
   };
 }
 
-/** Safe defaults: nothing is sent. Email/voice report awaiting_approval (or already_sent when the outbox sent it). */
-export function createDefaultPlanExecDeps(conn: ConnectionDeps): PlanExecDeps {
+export interface DefaultPlanExecOptions {
+  /** The existing outreach draft path (idempotent: a pending draft is reused). Never sends. */
+  createDraft?: (contactId: string) => Promise<{ id: string }>;
+}
+
+const reasonCode = (error: unknown): string => {
+  const reasons = (error as { reasons?: unknown })?.reasons;
+  return Array.isArray(reasons) && typeof reasons[0] === 'string' ? reasons[0] : 'draft_failed';
+};
+
+/**
+ * Safe defaults: nothing is sent. A due email/voice step writes (or reuses) an UNAPPROVED outbox draft and reports
+ * awaiting_approval; the patient's approval in the outbox is what sends it, through checkOutbound.
+ */
+export function createDefaultPlanExecDeps(conn: ConnectionDeps, opts: DefaultPlanExecOptions = {}): PlanExecDeps {
+  const createDraft = opts.createDraft ?? defaultCreateDraft;
   return {
     clock: conn.clock,
     ...(conn.tz ? { tz: conn.tz } : {}),
@@ -46,7 +61,13 @@ export function createDefaultPlanExecDeps(conn: ConnectionDeps): PlanExecDeps {
       if (ctx.state === 'sent' && (step.purpose === 'intro' || step.purpose === 'apply')) {
         return { status: 'already_sent', detail: 'the approved first message was already sent via the outbox' };
       }
-      return { status: 'awaiting_approval', detail: 'requires an approved outbox message' };
+      if (step.purpose === 'follow_up') return { status: 'awaiting_approval', detail: 'covered by the walk-away follow-up plan' };
+      try {
+        await createDraft(contactId);
+        return { status: 'awaiting_approval', detail: 'outbox draft written; it waits for the patient to approve it' };
+      } catch (error) {
+        return { status: 'blocked', detail: reasonCode(error) };
+      }
     },
     async record(o) {
       console.info(`[plan-exec] ${o.resourceKey}/${o.stepId} ${o.channel} -> ${o.status}`);

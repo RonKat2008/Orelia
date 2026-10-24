@@ -4,7 +4,10 @@ import { cn } from "@/lib/ui/cn";
 import { splitDisclosure } from "./letter";
 import { highlightSharedValues } from "./highlight";
 
-/** The sheet of paper: used for the consent preview and for outbox drafts. */
+/**
+ * The letter in a well (docs/DESIGN-v2.md 4.4): quoted message text for the consent preview, outbox drafts and the
+ * patient message card. No border, no shadow and no accent line, so it can sit inside a pane without nesting boxes.
+ */
 export function LetterSheet({
   channel,
   recipient,
@@ -22,28 +25,19 @@ export function LetterSheet({
 }) {
   const Icon = channel === "email" ? Mail : PhoneCall;
   return (
-    <figure
-      aria-label={label}
-      className={cn(
-        "relative m-0 overflow-hidden rounded-md border border-line bg-card shadow-md",
-        "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-terracotta before:content-['']",
-        className,
-      )}
-    >
-      <figcaption className="grid gap-1 border-b border-line bg-paper-2/60 px-5 py-4 sm:px-7">
-        <span className="flex items-center gap-2 text-micro font-semibold uppercase text-ink-3">
-          <Icon aria-hidden className={cn("size-4", channel === "email" ? "text-ch-email" : "text-ch-call")} />
+    <figure aria-label={label} data-slot="letter" className={cn("m-0 min-w-0 rounded-md bg-paper-2", className)}>
+      <figcaption className="grid gap-1 border-b border-line px-5 py-4 sm:px-6">
+        <span className="flex items-center gap-2 text-small font-semibold text-ink-2">
+          <Icon aria-hidden className={cn("size-4 shrink-0", channel === "email" ? "text-ch-email" : "text-ch-call")} />
           {label}
         </span>
         <span className="min-w-0 [overflow-wrap:anywhere] text-small text-ink-2">
           {channel === "email" ? "To: " : "Calling: "}
           <span className="font-semibold text-ink">{recipient}</span>
         </span>
-        {subject ? (
-          <span className="break-words font-display text-h4 font-normal text-ink display-soft">{subject}</span>
-        ) : null}
+        {subject ? <span className="break-words text-body font-semibold text-ink">{subject}</span> : null}
       </figcaption>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 px-5 py-6 text-body leading-relaxed text-ink sm:px-7">{children}</div>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 px-5 py-5 text-body leading-relaxed text-ink sm:px-6">{children}</div>
     </figure>
   );
 }
@@ -51,10 +45,10 @@ export function LetterSheet({
 /** The sentence that says an AI helped, set apart so it is never missed. */
 export function DisclosureLine({ children }: { children: ReactNode }) {
   return (
-    <p className="m-0 flex gap-3 rounded-md border border-sage bg-sage-soft px-4 py-3 text-body text-ink">
-      <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-ok" />
+    <p data-slot="ai-disclosure" className="m-0 flex gap-3 border-l-2 border-ok py-1 pl-3 text-body text-ink">
+      <ShieldCheck aria-hidden className="mt-1 size-4 shrink-0 text-ok" />
       <span className="min-w-0 break-words">
-        <span className="mb-0.5 block text-micro font-semibold uppercase text-ink-2">AI disclosure</span>
+        <span className="block text-small font-semibold text-ink-2">AI disclosure</span>
         {children}
       </span>
     </p>

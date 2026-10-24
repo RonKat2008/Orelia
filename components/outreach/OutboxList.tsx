@@ -1,16 +1,12 @@
 "use client";
 
 import { DemoCoordinatorBadge, demoDestinationLabel, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { CircleCheck, FileText, Pause, Pencil, Play, Send, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleDashed, FileText, Mail, PhoneCall, TriangleAlert } from "lucide-react";
 import {
-  AvatarInitials,
   Badge,
   Button,
-  Card,
-  CardEyebrow,
-  CardTitle,
   Dialog,
   DialogClose,
   DialogContent,
@@ -18,14 +14,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  EmptyState,
+  JudgeOnly,
+  List,
+  ListRow,
+  LoadingState,
   Skeleton,
+  TwoPane,
   toast,
 } from "@/components/ui";
 import { hasDisclosure } from "@/lib/safety/disclosure";
 import type { CaseInput } from "@/lib/contracts";
-import { EmptyState } from "@/components/threads/states";
 import { SHAREABLE_FIELDS, fieldValue, type ShareableFieldKey } from "./fields";
 import {
+  REFUSAL_LABELS,
   approveContactDraft,
   contactLabel,
   createContactDraft,
@@ -38,11 +40,13 @@ import {
 import { loadCaseContacts } from "./case-activity";
 import { followUpLabel, formatWhen, titleCase } from "./format";
 import { LetterSheet, MessageBody } from "./LetterSheet";
-import { ApplicationCard } from "./ApplicationCard";
+import { ApplicationCard, STATUS_COPY, hostOf } from "./ApplicationCard";
 import { loadApplications, type ApiApplication } from "./applications";
 import { getPlan } from "@/components/plan/client";
 import { applicationStepContext, draftStepContext, stepContextText } from "@/components/plan/model";
 import type { ContactPlan } from "@/lib/plan/contract";
+import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
+import { cn } from "@/lib/ui/cn";
 
 type Row = {
   contact: ApiContact;
@@ -70,6 +74,8 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [plan, setPlan] = useState<ContactPlan | null>(null);
   const [applications, setApplications] = useState<ApiApplication[]>([]);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -143,21 +149,23 @@ export function OutboxList({ caseId }: { caseId: string }) {
 
   if (phase === "loading") {
     return (
-      <div role="status" aria-live="polite" aria-busy="true" className="grid gap-6">
-        <span className="sr-only">Loading drafts</span>
+      <LoadingState label="Loading drafts">
         <Skeleton className="h-64 w-full rounded-lg" />
-        <Skeleton className="h-64 w-full rounded-lg" />
-      </div>
+      </LoadingState>
     );
   }
 
   if (phase === "empty") {
     return (
       <EmptyState
+        titleAs="h3"
         title="No drafts yet"
-        detail="Drafts are written after you choose who to contact and what they may see. Start with consent."
-        actionHref={`/cases/${caseId}/consent`}
-        actionLabel="Open consent"
+        description="Drafts are written after you choose who to contact and what they may see."
+        action={
+          <Button asChild>
+            <Link href={`/cases/${caseId}/consent`}>Choose what to share</Link>
+          </Button>
+        }
       />
     );
   }
@@ -165,235 +173,385 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const waiting =
     rows.filter((row) => row.draft && !row.approvedAt && !row.held).length +
     applications.filter((app) => app.status === "draft").length;
+  const blockedCount = rows.filter((row) => !row.draft).length;
   const replaceApplication = (next: ApiApplication) =>
     setApplications((current) => current.map((app) => (app.id === next.id ? next : app)));
 
+  const keys = [
+    ...applications.map((app) => `app:${app.id}`),
+    ...rows.map((row) => `draft:${row.contact.id}`),
+  ];
+  const firstWaiting =
+    applications.find((app) => app.status === "draft")?.id ?? rows.find((row) => row.draft && !row.approvedAt)?.contact.id;
+  const fallbackKey = firstWaiting
+    ? applications.some((app) => app.id === firstWaiting)
+      ? `app:${firstWaiting}`
+      : `draft:${firstWaiting}`
+    : keys[0];
+  const activeKey = selectedKey && keys.includes(selectedKey) ? selectedKey : fallbackKey;
+  const select = (key: string) => {
+    setSelectedKey(key);
+    setDetailOpen(true);
+  };
+
+  const selectedApp = activeKey?.startsWith("app:") ? applications.find((app) => `app:${app.id}` === activeKey) : undefined;
+  const selectedRow = activeKey?.startsWith("draft:") ? rows.find((row) => `draft:${row.contact.id}` === activeKey) : undefined;
+
+  const statusLine = pending
+    ? `Writing drafts: ${pending.done} of ${pending.total} ready.`
+    : waiting > 0
+      ? `${waiting} ${waiting === 1 ? "draft is" : "drafts are"} waiting for you. Nothing has been sent.`
+      : blockedCount > 0
+        ? `${blockedCount} ${blockedCount === 1 ? "draft needs" : "drafts need"} one more answer first.`
+        : "Nothing is waiting for your approval.";
+
+  let detail: ReactNode = null;
+  let detailTitle: string | undefined;
+  if (selectedApp) {
+    const ctx = applicationStepContext(plan, selectedApp);
+    detailTitle = "Review application";
+    detail = (
+      <ApplicationCard
+        key={selectedApp.id}
+        caseId={caseId}
+        application={selectedApp}
+        stepContext={ctx ? stepContextText(ctx) : null}
+        onChange={replaceApplication}
+      />
+    );
+  } else if (selectedRow) {
+    detailTitle = titleCase(contactLabel(selectedRow.contact));
+    detail = (
+      <DraftDetail
+        key={selectedRow.contact.id}
+        caseId={caseId}
+        row={selectedRow}
+        caseRecord={caseRecord}
+        docTitles={docTitles}
+        plan={plan}
+        onHold={() => patch(selectedRow.contact.id, { held: !selectedRow.held })}
+        onApprove={() => setConfirming(selectedRow.contact.id)}
+      />
+    );
+  }
+
+  const confirmRow = rows.find((row) => row.contact.id === confirming && row.draft);
+  const confirmDraft = confirmRow?.draft ?? null;
+  const confirmKeys = (confirmDraft?.sharedFields ?? []) as ShareableFieldKey[];
+  const confirmEmail = (confirmDraft?.channel ?? confirmRow?.contact.channel) === "email";
+
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       <p role="status" aria-live="polite" className="m-0 text-body text-ink-2">
-        {pending
-          ? `Writing drafts: ${pending.done} of ${pending.total} ready.`
-          : waiting > 0
-            ? `${waiting} ${waiting === 1 ? "draft is" : "drafts are"} waiting for you. Nothing has been sent.`
-            : "Nothing is waiting for your approval."}
+        {statusLine}
       </p>
-      {applications.length > 0 ? (
-        <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-10 p-0" aria-label="Online applications">
-          {applications.map((app) => {
-            const ctx = applicationStepContext(plan, app);
-            return (
-              <li key={app.id}>
-                <ApplicationCard
-                  caseId={caseId}
-                  application={app}
-                  stepContext={ctx ? stepContextText(ctx) : null}
-                  onChange={replaceApplication}
+      <TwoPane
+        listLabel="Drafts"
+        detailLabel="Selected draft"
+        list={
+          keys.length === 0 ? (
+            <p className="m-0 text-small text-ink-2">Drafts show here as they are written.</p>
+          ) : (
+            <List>
+              {applications.map((app) => (
+                <ListRow
+                  key={app.id}
+                  data-channel="web_form"
+                  title={isDemoFormUrl(app.url) ? "Wayfinder demo intake form" : hostOf(app.url)}
+                  meta="Online form · review application"
+                  leading={<FileText aria-hidden className="text-ch-apply" />}
+                  badges={[
+                    <Badge key="s" tone={STATUS_COPY[app.status].tone}>
+                      {app.status === "submitted" ? <CircleCheck aria-hidden /> : null}
+                      {STATUS_COPY[app.status].label}
+                    </Badge>,
+                    <DemoCoordinatorBadge key="d" address={app.url} />,
+                  ]}
+                  onSelect={() => select(`app:${app.id}`)}
+                  selected={activeKey === `app:${app.id}`}
                 />
+              ))}
+              {rows.map((row) => (
+                <DraftRow
+                  key={row.contact.id}
+                  row={row}
+                  selected={activeKey === `draft:${row.contact.id}`}
+                  onSelect={() => select(`draft:${row.contact.id}`)}
+                />
+              ))}
+            </List>
+          )
+        }
+        detail={detail}
+        emptyDetail={
+          <EmptyState titleAs="h3" title="Drafts will show here" description="We are writing them now." className="border-0 bg-transparent px-0 py-0" />
+        }
+        detailOpen={detailOpen}
+        onDetailOpenChange={setDetailOpen}
+        detailTitle={detailTitle}
+      />
+
+      {confirmRow && confirmDraft ? (
+        <Dialog open onOpenChange={(open) => !open && setConfirming(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{confirmEmail ? "Send this email?" : "Approve this call?"}</DialogTitle>
+              <DialogDescription>
+                {confirmEmail ? `To ${confirmDraft.address}` : `A call to ${confirmDraft.address}`}, as written.{" "}
+                <DemoCoordinatorBadge address={confirmDraft.address} />
+              </DialogDescription>
+            </DialogHeader>
+            <ul className="m-0 grid list-none gap-2 p-0 text-body text-ink-2">
+              <li>
+                Shares only:{" "}
+                <span className="font-semibold text-ink">
+                  {confirmKeys.length === 0 ? "no case details" : sharedLabels(confirmKeys).join(", ")}
+                </span>
+                .
               </li>
-            );
-          })}
-        </ul>
+              <li>{confirmEmail ? "It says an AI helped prepare it." : "The call opens by saying an AI assistant is calling for you."}</li>
+              <li>It goes through the safety check first, and may still be refused.</li>
+            </ul>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="ghost" disabled={approvingId === confirmRow.contact.id}>
+                  Go back
+                </Button>
+              </DialogClose>
+              <Button loading={approvingId === confirmRow.contact.id} loadingText="Approving" onClick={() => void approve(confirmRow)}>
+                {confirmEmail ? "Send this email" : "Approve this call"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
-      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-10 p-0">
-        {rows.map((row) => {
-          const draft = row.draft;
-          const text = draft?.body ?? "";
-          const keys = (draft?.sharedFields ?? []) as ShareableFieldKey[];
-          const values = caseRecord ? keys.map((key) => fieldValue(caseRecord, key)) : [];
-          const disclosed = text.length > 0 && hasDisclosure(text);
-          const name = titleCase(contactLabel(row.contact));
-          const isEmail = (draft?.channel ?? row.contact.channel) === "email";
-          const approved = Boolean(row.approvedAt);
-          const followUp = followUpLabel(draft?.classification);
-          const docIds = draft?.contextDocIds ?? [];
-          const blocked = !draft || !disclosed || approved || row.held;
-          const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? row.contact.channel });
-          return (
-            <li key={row.contact.id}>
-              <Card
-                variant="raised"
-                padding="lg"
-                data-channel={draft?.channel ?? row.contact.channel}
-                data-approved={approved ? "true" : "false"}
-                aria-labelledby={`draft-${row.contact.id}`}
-              >
-                <div className="mb-6 flex flex-wrap items-center gap-4">
-                  <AvatarInitials name={name.replace(/[()]/g, "")} size="lg" />
-                  <div className="grid min-w-0 flex-1 gap-1">
-                    <CardEyebrow>{followUp ? `${followUp}, ${isEmail ? "email" : "call"}` : isEmail ? "Email draft" : "Call script"}</CardEyebrow>
-                    <CardTitle id={`draft-${row.contact.id}`} className="break-words">
-                      {name}
-                    </CardTitle>
-                    {draft ? (
-                      <span>
-                        <DemoCoordinatorBadge address={draft.address} />
-                      </span>
-                    ) : null}
-                  </div>
-                  <span className="basis-full sm:basis-auto">
-                    {approved ? (
-                      <Badge tone="ok" size="md">
-                        <CircleCheck aria-hidden /> Approved
-                      </Badge>
-                    ) : row.held ? (
-                      <Badge tone="neutral" size="md">
-                        <Pause aria-hidden /> On hold
-                      </Badge>
-                    ) : draft ? (
-                      <Badge tone="gold" size="md" dot>
-                        Waiting for you
-                      </Badge>
-                    ) : (
-                      <Badge tone="danger" size="md">
-                        No draft
-                      </Badge>
-                    )}
-                  </span>
-                </div>
-
-                {stepCtx ? (
-                  <p className="m-0 -mt-2 mb-6 text-small font-semibold text-teal" data-plan-step>
-                    {stepContextText(stepCtx)}
-                  </p>
-                ) : null}
-
-                {draft ? (
-                  <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
-                    <LetterSheet
-                      channel={draft.channel}
-                      recipient={draft.address}
-                      subject={draft.channel === "email" ? draft.subject : null}
-                      label={
-                        followUp
-                          ? `${followUp}, ${approved ? (row.sentAt ? "sent" : "approved") : "not yet sent"}`
-                          : approved ? (isEmail ? "Email, approved" : "Call script, approved") : isEmail ? "Email, not yet sent" : "Call script, not yet used"
-                      }
-                      className={row.held ? "opacity-70" : undefined}
-                    >
-                      <MessageBody text={text} sharedValues={values} />
-                    </LetterSheet>
-
-                    {!disclosed ? (
-                      <p role="alert" className="m-0 flex gap-3 rounded-md border border-warn/40 bg-warn-soft p-4 text-body text-warn-ink">
-                        <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0" />
-                        This draft is missing the sentence saying an AI helped. It cannot be approved until it is there.
-                      </p>
-                    ) : null}
-
-                    <dl className="m-0 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
-                      <div className="grid gap-2">
-                        <dt className="text-micro font-semibold uppercase text-ink-3">Details shared</dt>
-                        <dd className="m-0 flex min-w-0 flex-wrap gap-2">
-                          {keys.length === 0 ? (
-                            <span className="text-small text-ink-2">No case details. Just the request.</span>
-                          ) : (
-                            sharedLabels(keys).map((label) => (
-                              <Badge key={label} tone="sage" size="md">
-                                {label}
-                              </Badge>
-                            ))
-                          )}
-                        </dd>
-                      </div>
-                      <div className="grid gap-2">
-                        <dt className="text-micro font-semibold uppercase text-ink-3">Documents used</dt>
-                        <dd className="m-0 flex min-w-0 flex-wrap gap-2">
-                          {docIds.length === 0 ? (
-                            <span className="text-small text-ink-2">None. Written from your ticked details only.</span>
-                          ) : (
-                            docIds.map((id) => (
-                              <Badge key={id} tone="outline" size="md" className="min-w-0 max-w-full">
-                                <FileText aria-hidden />
-                                <span className="truncate">{docTitles[id] ?? "Case document"}</span>
-                              </Badge>
-                            ))
-                          )}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                ) : (
-                  <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">
-                    <p className="m-0 font-semibold">This draft could not be written.</p>
-                    <ul className="m-0 mt-2 grid gap-1 pl-5">
-                      {(row.error ?? ["No draft."]).map((reason) => (
-                        <li key={reason}>{reason}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {row.error && draft ? (
-                  <div role="alert" className="mt-6 rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">
-                    <p className="m-0 font-semibold">The safety check refused this draft. Nothing was approved or sent.</p>
-                    <ul className="m-0 mt-2 grid gap-1 pl-5">
-                      {row.error.map((reason) => (
-                        <li key={reason}>{reason}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {approved ? (
-                  <p role="status" className="m-0 mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-ok">
-                    <CircleCheck aria-hidden className="size-5" />
-                    Approved {formatWhen(row.approvedAt)}.
-                    <Link href={`/cases/${caseId}/tracker`} className="font-semibold text-teal underline underline-offset-4 focus-ring">
-                      Follow it in the tracker
-                    </Link>
-                  </p>
-                ) : draft ? (
-                  <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-line pt-6">
-                    <Button disabled={blocked} onClick={() => setConfirming(row.contact.id)}>
-                      <Send aria-hidden /> Approve &amp; send
-                    </Button>
-                    <Button asChild variant="secondary">
-                      <Link href={`/cases/${caseId}/consent`}>
-                        <Pencil aria-hidden /> Change what it shares
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" onClick={() => patch(row.contact.id, { held: !row.held })}>
-                      {row.held ? <Play aria-hidden /> : <Pause aria-hidden />}
-                      {row.held ? "Resume" : "Hold"}
-                    </Button>
-                  </div>
-                ) : null}
-              </Card>
-
-              {draft ? (
-                <Dialog open={confirming === row.contact.id} onOpenChange={(open) => !open && setConfirming(null)}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{isEmail ? "Send this email?" : "Approve this call?"}</DialogTitle>
-                      <DialogDescription>
-                        {isEmail ? `To ${draft.address}` : `A call to ${draft.address}`}, as written above.{" "}
-                        <DemoCoordinatorBadge address={draft.address} />
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ul className="m-0 grid list-none gap-2 p-0 text-body text-ink-2">
-                      <li>
-                        Shares only: <span className="font-semibold text-ink">{keys.length === 0 ? "no case details" : sharedLabels(keys).join(", ")}</span>.
-                      </li>
-                      <li>{isEmail ? "It says an AI helped prepare it." : "The call opens by saying an AI assistant is calling for you."}</li>
-                      <li>It goes through the safety check first, and may still be refused.</li>
-                    </ul>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button variant="ghost" disabled={approvingId === row.contact.id}>
-                          Go back
-                        </Button>
-                      </DialogClose>
-                      <Button loading={approvingId === row.contact.id} loadingText="Approving" onClick={() => void approve(row)}>
-                        Approve &amp; send
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
     </div>
+  );
+}
+
+const CONSENT_REQUIRED = REFUSAL_LABELS.consent_required;
+
+/** A draft that could not be written because no consent is saved yet: a missing answer, not an error. */
+function needsConsent(row: Row): boolean {
+  return !row.draft && (row.error ?? []).some((reason) => reason === CONSENT_REQUIRED);
+}
+
+function rowStatus(row: Row): { label: string; tone: "ok" | "neutral" | "teal" | "danger" | "outline"; icon: ReactNode } {
+  if (row.approvedAt) return { label: "Approved", tone: "ok", icon: <CircleCheck aria-hidden /> };
+  if (row.held) return { label: "On hold", tone: "neutral", icon: null };
+  if (row.draft && row.error) return { label: "Refused", tone: "danger", icon: <TriangleAlert aria-hidden /> };
+  if (row.draft) return { label: "Waiting for you", tone: "teal", icon: null };
+  return { label: needsConsent(row) ? "Needs an answer" : "No new draft", tone: "outline", icon: <CircleDashed aria-hidden /> };
+}
+
+function DraftRow({ row, selected, onSelect }: { row: Row; selected: boolean; onSelect: () => void }) {
+  const channel = row.draft?.channel ?? row.contact.channel;
+  const isEmail = channel === "email";
+  const followUp = followUpLabel(row.draft?.classification);
+  const status = rowStatus(row);
+  const Icon = isEmail ? Mail : PhoneCall;
+  return (
+    <ListRow
+      data-channel={channel}
+      data-approved={row.approvedAt ? "true" : "false"}
+      title={titleCase(contactLabel(row.contact))}
+      meta={
+        <>
+          <span className="[overflow-wrap:anywhere]">
+            {[followUp, isEmail ? "Email" : "Call", row.draft?.address ?? row.contact.address].filter(Boolean).join(" · ")}
+          </span>
+          {!row.draft && needsConsent(row) ? (
+            <JudgeOnly>
+              <span className="block">Draft blocked: no consented fields</span>
+            </JudgeOnly>
+          ) : null}
+        </>
+      }
+      leading={<Icon aria-hidden className={isEmail ? "text-ch-email" : "text-ch-call"} />}
+      badges={[
+        <Badge key="s" tone={status.tone}>
+          {status.icon}
+          {status.label}
+        </Badge>,
+        <DemoCoordinatorBadge key="d" address={row.draft?.address ?? row.contact.address} />,
+      ]}
+      onSelect={onSelect}
+      selected={selected}
+    />
+  );
+}
+
+interface DraftDetailProps {
+  caseId: string;
+  row: Row;
+  caseRecord: CaseInput | null;
+  docTitles: Record<string, string>;
+  plan: ContactPlan | null;
+  onHold: () => void;
+  onApprove: () => void;
+}
+
+/** The selected draft: letter in a well, the gate checks as a quiet checklist, and the one approve button. */
+function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onApprove }: DraftDetailProps) {
+  const draft = row.draft;
+  const name = titleCase(contactLabel(row.contact));
+  const text = draft?.body ?? "";
+  const keys = (draft?.sharedFields ?? []) as ShareableFieldKey[];
+  const values = caseRecord ? keys.map((key) => fieldValue(caseRecord, key)) : [];
+  const disclosed = text.length > 0 && hasDisclosure(text);
+  const isEmail = (draft?.channel ?? row.contact.channel) === "email";
+  const approved = Boolean(row.approvedAt);
+  const followUp = followUpLabel(draft?.classification);
+  const docIds = draft?.contextDocIds ?? [];
+  const blocked = !draft || !disclosed || approved || row.held;
+  const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? row.contact.channel });
+  const demoLabel = demoDestinationLabel(draft?.address ?? row.contact.address, useDemoDestinations());
+
+  const header = (
+    <div className="grid gap-1">
+      <h3 id={`draft-${row.contact.id}`} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
+        {name}
+      </h3>
+      <p className="m-0 text-small text-ink-2">
+        {followUp ? `${followUp}, ${isEmail ? "email" : "call"}` : isEmail ? "Email draft" : "Call script"}
+        {stepCtx ? <span data-plan-step> · {stepContextText(stepCtx)}</span> : null}
+      </p>
+    </div>
+  );
+
+  if (!draft) {
+    const consent = needsConsent(row);
+    return (
+      <div className="grid min-w-0 gap-6" aria-labelledby={`draft-${row.contact.id}`} role="group">
+        {header}
+        {consent ? (
+          <EmptyState
+            titleAs="h4"
+            title="We need one more answer first"
+            description={`Tell us what ${name} may see, then we'll write the ${isEmail ? "email" : "call script"}.`}
+            action={
+              <Button asChild>
+                <Link href={`/cases/${caseId}/consent`}>Choose what to share</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            titleAs="h4"
+            title="No new draft for this contact"
+            description={(row.error ?? ["No draft."]).join(" ")}
+          />
+        )}
+        {consent ? (
+          <JudgeOnly>
+            <p className="m-0 text-small text-ink-2">Draft blocked: no consented fields. {(row.error ?? []).join(" ")}</p>
+          </JudgeOnly>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6"
+      data-channel={draft.channel}
+      data-approved={approved ? "true" : "false"}
+      aria-labelledby={`draft-${row.contact.id}`}
+      role="group"
+    >
+      {header}
+      <LetterSheet
+        channel={draft.channel}
+        recipient={draft.address}
+        subject={draft.channel === "email" ? draft.subject : null}
+        label={
+          followUp
+            ? `${followUp}, ${approved ? (row.sentAt ? "sent" : "approved") : "not yet sent"}`
+            : approved ? (isEmail ? "Email, approved" : "Call script, approved") : isEmail ? "Email, not yet sent" : "Call script, not yet used"
+        }
+        className={row.held ? "opacity-70" : undefined}
+      >
+        <MessageBody text={text} sharedValues={values} />
+      </LetterSheet>
+
+      <section aria-label="Safety checks" className="grid gap-2">
+        <h4 className="m-0 text-body font-semibold text-ink">Before it goes</h4>
+        <ul className="m-0 grid list-none gap-2 p-0 text-small text-ink-2">
+          <JudgeOnly
+            fallback={
+              <CheckItem ok>
+                Shares only: {keys.length === 0 ? "no case details, just the request" : sharedLabels(keys).join(", ")}.
+              </CheckItem>
+            }
+          >
+            <CheckItem ok>
+              {demoLabel ? "Test inbox: delivery goes to our own test destination." : "Allowlist checked again when you approve."}
+            </CheckItem>
+            <CheckItem ok>
+              Ticked fields only: {keys.length === 0 ? "no case details, just the request" : sharedLabels(keys).join(", ")}.
+            </CheckItem>
+          </JudgeOnly>
+          <CheckItem ok={disclosed}>
+            {disclosed ? "Says an AI helped write it." : "Missing the line saying an AI helped. It cannot be approved yet."}
+          </CheckItem>
+          <CheckItem ok>
+            Documents used:{" "}
+            {docIds.length === 0 ? "none, written from your ticked details only" : docIds.map((id) => docTitles[id] ?? "Case document").join(", ")}.
+          </CheckItem>
+        </ul>
+      </section>
+
+      {row.error ? (
+        <div role="alert" className="flex gap-3 rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">
+          <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
+          <div className="grid min-w-0 gap-1">
+            <p className="m-0 font-semibold">The safety check refused this draft. Nothing was approved or sent.</p>
+            <ul className="m-0 grid gap-1 pl-5">
+              {row.error.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+
+      {approved ? (
+        <p role="status" className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-ok">
+          <CircleCheck aria-hidden className="size-5" />
+          Approved {formatWhen(row.approvedAt)}.
+          <Link href={`/cases/${caseId}/tracker`} className="font-semibold text-teal underline underline-offset-4 focus-ring">
+            Follow it in the tracker
+          </Link>
+        </p>
+      ) : (
+        <div className="grid gap-3 border-t border-line pt-6">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Button disabled={blocked} onClick={onApprove}>
+              {isEmail ? "Approve this email" : "Approve this call"}
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href={`/cases/${caseId}/consent`}>Change what it shares</Link>
+            </Button>
+            <Button variant="link" onClick={onHold}>
+              {row.held ? "Resume this draft" : "Hold this draft"}
+            </Button>
+          </div>
+          <p className="m-0 text-small text-ink-2">Nothing is sent without your OK.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CheckItem({ ok, children }: { ok: boolean; children: ReactNode }) {
+  const Icon = ok ? CircleCheck : TriangleAlert;
+  return (
+    <li className="flex items-start gap-2">
+      <Icon aria-hidden className={cn("mt-0.5 size-4 shrink-0", ok ? "text-ok" : "text-warn-ink")} />
+      <span className="min-w-0 break-words">
+        <span className="sr-only">{ok ? "Passed: " : "Not passed: "}</span>
+        {children}
+      </span>
+    </li>
   );
 }

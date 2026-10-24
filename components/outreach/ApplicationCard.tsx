@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CircleCheck, ClipboardList, Send, TriangleAlert } from "lucide-react";
+import { CircleCheck, FileText, TriangleAlert } from "lucide-react";
 import {
   Badge,
   Button,
-  Card,
-  CardEyebrow,
-  CardTitle,
   Dialog,
   DialogClose,
   DialogContent,
@@ -22,7 +19,7 @@ import { formatWhen } from "./format";
 import { DemoCoordinatorBadge } from "./DemoCoordinators";
 import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 
-function hostOf(url: string): string {
+export function hostOf(url: string): string {
   try {
     return new URL(url).host;
   } catch {
@@ -30,12 +27,13 @@ function hostOf(url: string): string {
   }
 }
 
-const STATUS_COPY: Record<ApiApplication["status"], { label: string; tone: "gold" | "ok" | "neutral" | "danger" }> = {
-  draft: { label: "Waiting for you", tone: "gold" },
+/** Status word + tone for the outbox row and the detail pane (colour never alone: the word carries it). */
+export const STATUS_COPY: Record<ApiApplication["status"], { label: string; tone: "teal" | "ok" | "neutral" | "warn" | "danger" }> = {
+  draft: { label: "Waiting for you", tone: "teal" },
   approved: { label: "Approved", tone: "ok" },
   submitting: { label: "Submitting", tone: "neutral" },
   submitted: { label: "Submitted", tone: "ok" },
-  stale: { label: "Form changed", tone: "danger" },
+  stale: { label: "Form changed", tone: "warn" },
   refused: { label: "Refused", tone: "danger" },
   failed: { label: "Not submitted", tone: "danger" },
 };
@@ -48,7 +46,10 @@ interface ApplicationCardProps {
   onChange: (next: ApiApplication) => void;
 }
 
-/** "Review application": the filled (never submitted) form, every value with its source, then approve & submit. */
+/**
+ * "Review application" detail (outbox judge pane): the filled (never submitted) form, every value with its source,
+ * then approve and submit. Renders as pane content, not a card; the outbox row carries the status badge.
+ */
 export function ApplicationCard({ caseId, application, stepContext, onChange }: ApplicationCardProps) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,36 +79,30 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
   }
 
   return (
-    <Card variant="raised" padding="lg" data-channel="web_form" aria-labelledby={titleId}>
-      <div className="mb-6 flex flex-wrap items-center gap-4">
-        <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-pill bg-sage-soft text-teal">
-          <ClipboardList className="size-6" />
-        </span>
-        <div className="grid min-w-0 flex-1 gap-1">
-          <CardEyebrow>Online application</CardEyebrow>
-          <CardTitle id={titleId} className="break-words">
+    <div data-channel="web_form" aria-labelledby={titleId} role="group" className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
+      <div className="grid gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 id={titleId} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
             Review application
-          </CardTitle>
-          <p className="m-0 flex flex-wrap items-center gap-2 break-words text-small text-ink-2">
-            {demoForm ? "Wayfinder demo intake form" : host}
-            <DemoCoordinatorBadge address={application.url} />
-          </p>
-        </div>
-        <span className="basis-full sm:basis-auto">
-          <Badge tone={status.tone} size="md" dot={application.status === "draft"}>
+          </h3>
+          <Badge tone={status.tone}>
             {application.status === "submitted" ? <CircleCheck aria-hidden /> : null}
             {status.label}
           </Badge>
-        </span>
+        </div>
+        <p className="m-0 flex flex-wrap items-center gap-2 break-words text-small text-ink-2">
+          <FileText aria-hidden className="size-4 shrink-0 text-ch-apply" />
+          Online form · {demoForm ? "Wayfinder demo intake form" : host}
+          <DemoCoordinatorBadge address={application.url} />
+        </p>
+        {stepContext ? <p className="m-0 text-small text-ink-2">{stepContext}</p> : null}
       </div>
 
-      {stepContext ? <p className="m-0 mb-6 text-small font-semibold text-teal">{stepContext}</p> : null}
-
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
-        <div className="min-w-0 self-start overflow-x-auto rounded-md border border-line">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
+        <div className="min-w-0 self-start overflow-x-auto rounded-md bg-paper-2">
           <table className="w-full border-collapse text-left text-small">
             <caption className="sr-only">What will be typed into the form, and where each value came from</caption>
-            <thead className="bg-paper-2 text-micro uppercase text-ink-3">
+            <thead className="text-ink-2">
               <tr>
                 <th scope="col" className="px-3 py-2 font-semibold">Field</th>
                 <th scope="col" className="px-3 py-2 font-semibold">Value</th>
@@ -136,13 +131,13 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
               width={640}
               height={800}
             />
-            <figcaption className="text-micro text-ink-3">Filled in a private browser. Not submitted.</figcaption>
+            <figcaption className="text-small text-ink-2">Filled in a private browser. Not submitted.</figcaption>
           </figure>
         ) : null}
       </div>
 
       {application.missing.length > 0 ? (
-        <div className="mt-6 grid gap-2 rounded-md border border-line bg-paper-2 p-4">
+        <div className="grid gap-2">
           <p className="m-0 font-semibold text-ink">Left blank for you</p>
           <ul className="m-0 grid gap-1 pl-5 text-small text-ink-2">
             {application.missing.map((m) => (
@@ -161,9 +156,9 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
       ) : null}
 
       {errors ? (
-        <div role="alert" className="mt-6 flex gap-3 rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">
-          <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0" />
-          <ul className="m-0 grid gap-1 pl-0 list-none">
+        <div role="alert" className="flex gap-3 rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">
+          <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
+          <ul className="m-0 grid list-none gap-1 pl-0">
             {errors.map((reason) => (
               <li key={reason}>{reason}</li>
             ))}
@@ -172,15 +167,13 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
       ) : null}
 
       {application.status === "submitted" ? (
-        <p role="status" className="m-0 mt-6 flex items-center gap-2 text-body text-ok">
+        <p role="status" className="m-0 flex items-center gap-2 text-body text-ok">
           <CircleCheck aria-hidden className="size-5" /> Submitted {formatWhen(application.submittedAt)}.
         </p>
       ) : canApprove ? (
-        <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-line pt-6">
-          <Button onClick={() => setConfirming(true)}>
-            <Send aria-hidden /> Approve &amp; submit
-          </Button>
-          <p className="m-0 text-small text-ink-2">It goes through the safety check first, and may still be refused.</p>
+        <div className="flex flex-wrap items-center gap-3 border-t border-line pt-6">
+          <Button onClick={() => setConfirming(true)}>Approve and submit this form</Button>
+          <p className="m-0 text-small text-ink-2">Nothing is sent without your OK. The safety check runs first.</p>
         </div>
       ) : null}
 
@@ -200,11 +193,11 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
               <Button variant="ghost" disabled={busy}>Go back</Button>
             </DialogClose>
             <Button loading={busy} loadingText="Submitting" onClick={() => void approve()}>
-              Approve &amp; submit
+              Submit this form
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }

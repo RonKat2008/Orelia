@@ -1,21 +1,16 @@
+import { CasePage } from "@/components/outreach/CasePage";
 import { OutboxList } from "@/components/outreach/OutboxList";
-import { OutreachNav } from "@/components/outreach/OutreachNav";
 
 export default async function OutboxPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <OutreachNav
-      caseId={id}
-      current="outbox"
-      eyebrow="Waiting for your approval"
-      title={
-        <>
-          Nothing goes out until you <em className="emph">say so</em>
-        </>
-      }
-      lede="Each draft is written only from the details you ticked, and says plainly that an AI helped prepare it. Read it, then approve, change what it shares, or hold it."
+    // LANE C SWITCH POINT: patient={<PatientOutbox caseId={id} />}
+    <CasePage
+      eyebrow="Outbox"
+      title="Messages to check"
+      lede="Each draft uses only the details you ticked. Read it, then approve it or hold it."
     >
       <OutboxList caseId={id} />
-    </OutreachNav>
+    </CasePage>
   );
 }

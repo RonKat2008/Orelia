@@ -46,7 +46,7 @@ vi.mock('next/server', async importOriginal => ({ ...await importOriginal<typeof
 
 import { MemoryOwnerStore } from '../../lib/auth/ownership';
 import { signSession } from '../../lib/auth/session';
-import { RESEARCH_LIMITS, resetMemoryRateLimitStore } from '../../lib/rate-limit';
+import { checkRateLimit, CONDITION_BRIEF_LIMITS, getRateLimitStore, RESEARCH_LIMITS, resetMemoryRateLimitStore } from '../../lib/rate-limit';
 import { MemoryHistoryStore } from '../../lib/history/store';
 import { MemoryShareStore } from '../../lib/history/share';
 
@@ -204,7 +204,7 @@ for (const { route, method, handler } of inventory) {
 // rather than silently escaping admission-control coverage.
 const limitedRoutes = routeFiles().filter(file => /checkRateLimit|rateLimitedResponse|withModelRateLimit/.test(readFileSync(file, 'utf8'))).map(routePath);
 it('has a route-level saturation probe for every directly rate-limited route', () => {
-  expect(limitedRoutes.sort()).toEqual(['/api/cases/[id]/research', '/api/review/[token]']);
+  expect(limitedRoutes.sort()).toEqual(['/api/cases/[id]/condition-brief', '/api/cases/[id]/research', '/api/review/[token]']);
 });
 it('research accepts the configured case quota, then returns 429 with Retry-After', async () => {
   const entry = inventory.find(item => item.route === '/api/cases/[id]/research' && item.method === 'POST')!;
@@ -212,6 +212,18 @@ it('research accepts the configured case quota, then returns 429 with Retry-Afte
     expect((await entry.handler(requestFor(entry.route, entry.method, cookie('owner')), contextFor(entry.route))).status).toBe(202);
   }
   const response = await entry.handler(requestFor(entry.route, entry.method, cookie('owner')), contextFor(entry.route));
+  expect(response.status).toBe(429);
+  expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
+  await cleanBody(response);
+});
+
+it('condition-brief rebuild returns 429 with Retry-After once the case quota is spent', async () => {
+  const entry = inventory.find(item => item.route === '/api/cases/[id]/condition-brief' && item.method === 'POST')!;
+  const rule = CONDITION_BRIEF_LIMITS(CASE_ID, 'owner')[0];
+  for (let count = 0; count < rule.max; count++) expect((await checkRateLimit(getRateLimitStore(), [rule], new Date())).ok).toBe(true);
+  const base = requestFor(entry.route, entry.method, cookie('owner'));
+  const request = new Request(base.url, { method: 'POST', headers: base.headers, body: JSON.stringify({ refresh: true }) });
+  const response = await entry.handler(request, contextFor(entry.route));
   expect(response.status).toBe(429);
   expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
   await cleanBody(response);

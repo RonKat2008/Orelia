@@ -1,0 +1,365 @@
+{
+  "statements": [
+    {
+      "id": "s1",
+      "section": "rarity",
+      "text": "Vascular Ehlers-Danlos syndrome (vEDS) occurs in approximately 1 in 50,000 to 1 in 200,000 individuals.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494",
+        "pubmed:28306228"
+      ]
+    },
+    {
+      "id": "s3",
+      "section": "mechanism",
+      "text": "vEDS is caused by pathogenic variants in the COL3A1 gene, which encodes type III procollagen, a major protein in vessel walls and hollow organs.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:28306228",
+        "pubmed:36977837"
+      ]
+    },
+    {
+      "id": "s4",
+      "section": "mechanism",
+      "text": "Defective type III collagen results in marked fragility of arteries and hollow organs, predisposing affected individuals to spontaneous aneurysms, dissections, and rupture.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:42633375"
+      ]
+    },
+    {
+      "id": "s5",
+      "section": "genetics",
+      "text": "vEDS is inherited in an autosomal-dominant pattern.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:42633375"
+      ]
+    },
+    {
+      "id": "s6",
+      "section": "natural_history",
+      "text": "vEDS is characterized by arterial, intestinal, and uterine fragility; thin, translucent skin; easy bruising; characteristic facial appearance (thin vermilion of the lips, micrognathia, narrow nose, prominent eyes); and an aged appearance to the extremities, particularly the hands.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s7",
+      "section": "natural_history",
+      "text": "Vascular dissection or rupture, gastrointestinal perforation, or organ rupture are the presenting signs in most adults with vEDS.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s8",
+      "section": "natural_history",
+      "text": "Arterial rupture may be preceded by aneurysm, arteriovenous fistulae, or dissection but also may occur spontaneously.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s9",
+      "section": "natural_history",
+      "text": "Approximately 60% of individuals with vEDS diagnosed before age 18 years are identified because of a positive family history.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s10",
+      "section": "natural_history",
+      "text": "Neonates with vEDS may present with clubfoot, hip dislocation, limb deficiency, and/or amniotic bands.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s11",
+      "section": "natural_history",
+      "text": "Approximately half of children tested for vEDS in the absence of a positive family history present with a major complication at an average age of 11 years.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s12",
+      "section": "natural_history",
+      "text": "Four minor diagnostic features – distal joint hypermobility, easy bruising, thin skin, and clubfeet – are most often present in children with vEDS ascertained without a major complication.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "genereviews:NBK1494"
+      ]
+    },
+    {
+      "id": "s13",
+      "section": "natural_history",
+      "text": "In a systematic review of 231 patients with vEDS, aneurysms were present in 40%, often multiple; arterial rupture without an underlying aneurysm occurred in 33%; and carotidocavernous fistula was seen in 18%.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:23751452"
+      ]
+    },
+    {
+      "id": "s14",
+      "section": "natural_history",
+      "text": "The median age of death in vEDS patients was 31 years in a systematic review of treatment outcomes.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23751452"
+      ]
+    },
+    {
+      "id": "s15",
+      "section": "natural_history",
+      "text": "vEDS is associated with spontaneous pneumothorax as a potential complication.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:41905781"
+      ]
+    },
+    {
+      "id": "s16",
+      "section": "natural_history",
+      "text": "Many patients with vEDS experience chronic pain and fatigue, sleep disturbances, and mental health challenges.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT05994664"
+      ]
+    },
+    {
+      "id": "s17",
+      "section": "studies",
+      "text": "A randomized, controlled trial showed that celiprolol, a beta1 antagonist with beta2 partial antagonist properties, was associated with a 3-fold decrease in major vascular events related to vEDS.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32127191"
+      ]
+    },
+    {
+      "id": "s18",
+      "section": "studies",
+      "text": "In a retrospective cohort study, vEDS patients on a long-term angiotensin II receptor blocker and/or beta-blocker had fewer vascular events than those not on cardiac medication who received the same lifestyle advice.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:36977837"
+      ]
+    },
+    {
+      "id": "s19",
+      "section": "studies",
+      "text": "After open surgery for vascular complications in vEDS, mortality was 30%; after endovascular procedures, it was 24%; and overall mortality across treatment modalities was 39%.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23751452"
+      ]
+    },
+    {
+      "id": "s20",
+      "section": "studies",
+      "text": "In a cohort of connective tissue disease patients undergoing aortic intervention at a high-volume center, vascular Ehlers-Danlos syndrome represented 5% of diagnoses; endovascular repair was increasingly used in carefully selected high-risk scenarios.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42822608"
+      ]
+    },
+    {
+      "id": "s21",
+      "section": "research",
+      "text": "Research is underway to investigate metabolic phenotyping in vEDS, including adipose tissue function, insulin resistance, and diabetes risk.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT07516496"
+      ]
+    },
+    {
+      "id": "s22",
+      "section": "research",
+      "text": "Studies are exploring whether heart coherence training can help manage stress, anxiety, and blood pressure in vEDS patients.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT05994664"
+      ]
+    },
+    {
+      "id": "s23",
+      "section": "research",
+      "text": "Research is investigating local anesthetic resistance in EDS patients, including vEDS, to determine the frequency and mechanisms of resistance.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT05603741"
+      ]
+    },
+    {
+      "id": "s24",
+      "section": "research",
+      "text": "Artificial intelligence-based facial recognition tools are being developed to improve screening for vascular Ehlers-Danlos syndrome and distinguish it from other types of EDS.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "reporter:5K08HL173697-02"
+      ]
+    },
+    {
+      "id": "s25",
+      "section": "research",
+      "text": "Research is investigating ultrastructural skin analysis as a potential surrogate marker for arterial integrity and tissue vulnerability in vEDS.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42502438"
+      ]
+    },
+    {
+      "id": "s26",
+      "section": "research",
+      "text": "Studies are exploring nanoparticle-based delivery systems and elastin-stabilizing compounds to prevent aortic aneurysm expansion and rupture in connective tissue disorders including vEDS.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "reporter:5R01HL133662-08"
+      ]
+    },
+    {
+      "id": "s27",
+      "section": "research",
+      "text": "Research is investigating platelet function abnormalities in EDS patients to understand the mechanistic relationship between impaired platelet function and bleeding risk.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "reporter:5R01HL174419-02"
+      ]
+    },
+    {
+      "id": "s28",
+      "section": "registries",
+      "text": "RaDiCo-SED-VASC is a national cohort registry in France dedicated to vascular Ehlers-Danlos syndrome, currently recruiting patients.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "web:363a8c6e"
+      ]
+    },
+    {
+      "id": "s29",
+      "section": "registries",
+      "text": "VASCERN has developed six European rare vascular disease registries since 2019, including registries relevant to vascular diseases, which share common data elements and allow pooling of patient data across Europe.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "web:54ea97a9"
+      ]
+    },
+    {
+      "id": "s30",
+      "section": "registries",
+      "text": "Annabelle's Challenge maintains a database of over 600 genetically confirmed vEDS patients and is committed to patient-centred research following the principle of 'Nothing About Us Without Us'.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "web:c811a1f0"
+      ]
+    },
+    {
+      "id": "s31",
+      "section": "registries",
+      "text": "The Registry of Ehlers-Danlos Syndrome (RED) is a retrospective and prospective registry in Italy designed for care and research purposes, collecting personal, clinical, genetic, genealogical, and surgical data.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "ctgov:NCT04133272"
+      ]
+    },
+    {
+      "id": "s32",
+      "section": "registries",
+      "text": "A national network for cardiovascular genomics is being developed in Brazil to create a registry of patients with hereditary cardiovascular diseases, combining clinical and genomic data.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT06546137"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "What is the estimated frequency of vascular Ehlers-Danlos syndrome in the general population?",
+      "statementIds": [
+        "s1"
+      ]
+    },
+    {
+      "id": "q2",
+      "text": "What gene mutation causes vascular Ehlers-Danlos syndrome, and how does this mutation affect the body?",
+      "statementIds": [
+        "s3",
+        "s4"
+      ]
+    },
+    {
+      "id": "q3",
+      "text": "Is vascular Ehlers-Danlos syndrome inherited, and what is the inheritance pattern?",
+      "statementIds": [
+        "s5"
+      ]
+    },
+    {
+      "id": "q4",
+      "text": "What are the main physical features and complications of vascular Ehlers-Danlos syndrome?",
+      "statementIds": [
+        "s6",
+        "s7",
+        "s8"
+      ]
+    },
+    {
+      "id": "q5",
+      "text": "At what age do major complications typically occur in children with vascular Ehlers-Danlos syndrome?",
+      "statementIds": [
+        "s11"
+      ]
+    },
+    {
+      "id": "q6",
+      "text": "What are the common vascular complications seen in vascular Ehlers-Danlos syndrome patients?",
+      "statementIds": [
+        "s13"
+      ]
+    },
+    {
+      "id": "q7",
+      "text": "Are there medications that have been shown to reduce major vascular events in vascular Ehlers-Danlos syndrome?",
+      "statementIds": [
+        "s17",
+        "s18"
+      ]
+    },
+    {
+      "id": "q8",
+      "text": "What are the outcomes of surgical versus endovascular treatment for vascular complications in vascular Ehlers-Danlos syndrome?",
+      "statementIds": [
+        "s19",
+        "s20"
+      ]
+    },
+    {
+      "id": "q9",
+      "text": "Can vascular Ehlers-Danlos syndrome cause spontaneous pneumothorax?",
+      "statementIds": [
+        "s15"
+      ]
+    },
+    {
+      "id": "q10",
+      "text": "Are there patient registries available for vascular Ehlers-Danlos syndrome that support research?",
+      "statementIds": [
+        "s28",
+        "s29",
+        "s30",
+        "s31"
+      ]
+    }
+  ]
+}

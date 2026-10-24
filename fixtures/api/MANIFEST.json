@@ -691,5 +691,257 @@
     "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Eunhee&last_name=Yi&state=MN&limit=10",
     "status": 200,
     "fetched_at": "2026-10-24T05:21:27.618Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/pubmed-esearch-reviews.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%22Epithelioid+sarcoma%22%5Btiab%5D+AND+%28review%5Bpt%5D+OR+systematic+review%5Bpt%5D+OR+meta-analysis%5Bpt%5D+OR+guideline%5Bpt%5D+OR+practice+guideline%5Bpt%5D+OR+consensus+development+conference%5Bpt%5D%29&retmode=json&retmax=8&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:07.651Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/pubmed-esearch-recent.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%22Epithelioid+sarcoma%22%5Btiab%5D&retmode=json&retmax=6&sort=pub_date&datetype=pdat&mindate=2023&maxdate=2026&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:07.859Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/pubmed-efetch.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=30576238%2C37643279%2C35084598%2C32751241%2C26389361%2C31017450%2C17544961%2C38520556%2C42391872%2C42612459%2C30422506%2C42748586%2C42713918%2C42708192&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:08.419Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/ctgov-studies.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=Epithelioid+sarcoma&filter.overallStatus=RECRUITING%2CACTIVE_NOT_RECRUITING%2CNOT_YET_RECRUITING&pageSize=15&fields=NCTId%2CBriefTitle%2COverallStatus%2CPhase%2CStudyType%2CLeadSponsorName%2CBriefSummary",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:08.651Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/reporter-projects.json",
+    "method": "POST",
+    "url": "https://api.reporter.nih.gov/v2/projects/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:08.896Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/pubmed-esearch-reviews.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%22Vascular+Ehlers-Danlos+syndrome%22%5Btiab%5D+AND+%28review%5Bpt%5D+OR+systematic+review%5Bpt%5D+OR+meta-analysis%5Bpt%5D+OR+guideline%5Bpt%5D+OR+practice+guideline%5Bpt%5D+OR+consensus+development+conference%5Bpt%5D%29&retmode=json&retmax=8&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:09.281Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/pubmed-esearch-recent.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%22Vascular+Ehlers-Danlos+syndrome%22%5Btiab%5D&retmode=json&retmax=6&sort=pub_date&datetype=pdat&mindate=2023&maxdate=2026&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:09.442Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/pubmed-efetch.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=34686263%2C32127191%2C23751452%2C28306228%2C20301667%2C39018432%2C36977837%2C41905781%2C42830875%2C42830757%2C42633375%2C42880660%2C42822608%2C42502438&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:09.963Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/ctgov-studies.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=Vascular+Ehlers-Danlos+syndrome&filter.overallStatus=RECRUITING%2CACTIVE_NOT_RECRUITING%2CNOT_YET_RECRUITING&pageSize=15&fields=NCTId%2CBriefTitle%2COverallStatus%2CPhase%2CStudyType%2CLeadSponsorName%2CBriefSummary",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:10.090Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/reporter-projects.json",
+    "method": "POST",
+    "url": "https://api.reporter.nih.gov/v2/projects/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:10.126Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/pubmed-esearch-reviews.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%22IgG4-related+disease%22%5Btiab%5D+AND+%28review%5Bpt%5D+OR+systematic+review%5Bpt%5D+OR+meta-analysis%5Bpt%5D+OR+guideline%5Bpt%5D+OR+practice+guideline%5Bpt%5D+OR+consensus+development+conference%5Bpt%5D%29&retmode=json&retmax=8&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:10.586Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/pubmed-esearch-recent.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%22IgG4-related+disease%22%5Btiab%5D&retmode=json&retmax=6&sort=pub_date&datetype=pdat&mindate=2023&maxdate=2026&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:10.752Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/pubmed-efetch.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=28871762%2C28413094%2C31791079%2C22596100%2C25481618%2C23459998%2C38574746%2C32939060%2C42750685%2C42391875%2C42435259%2C42381230%2C42918560%2C42911255&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:11.412Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/ctgov-studies.json",
+    "method": "GET",
+    "url": "https://clinicaltrials.gov/api/v2/studies?query.cond=IgG4-related+disease&filter.overallStatus=RECRUITING%2CACTIVE_NOT_RECRUITING%2CNOT_YET_RECRUITING&pageSize=15&fields=NCTId%2CBriefTitle%2COverallStatus%2CPhase%2CStudyType%2CLeadSponsorName%2CBriefSummary",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:11.558Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/reporter-projects.json",
+    "method": "POST",
+    "url": "https://api.reporter.nih.gov/v2/projects/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:05:11.610Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/orphanet-name.json",
+    "method": "GET",
+    "url": "https://api.orphadata.com/rd-cross-referencing/orphacodes/names/epithelioid%20sarcoma",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:17.851Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/orphanet-epi.json",
+    "method": "GET",
+    "url": "https://api.orphadata.com/rd-epidemiology/orphacodes/293202",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:18.448Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/ref-gard.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:19.990Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/ref-nord.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:21.617Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/ref-genereviews.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:24.027Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/ref-medlineplus.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:25.723Z"
+  },
+  {
+    "file": "condition-brief/epithelioid-sarcoma/registry-exa.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:27.777Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/orphanet-name.json",
+    "method": "GET",
+    "url": "https://api.orphadata.com/rd-cross-referencing/orphacodes/names/vascular%20Ehlers-Danlos%20syndrome",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:28.810Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/orphanet-epi.json",
+    "method": "GET",
+    "url": "https://api.orphadata.com/rd-epidemiology/orphacodes/286",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:29.370Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/ref-gard.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:31.003Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/ref-nord.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:33.526Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/ref-genereviews.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:35.274Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/ref-medlineplus.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:36.833Z"
+  },
+  {
+    "file": "condition-brief/vascular-eds/registry-exa.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:38.606Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/orphanet-name.json",
+    "method": "GET",
+    "url": "https://api.orphadata.com/rd-cross-referencing/orphacodes/names/IgG4-related%20disease",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:39.635Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/orphanet-epi.json",
+    "method": "GET",
+    "url": "https://api.orphadata.com/rd-epidemiology/orphacodes/284264",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:40.202Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/ref-gard.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:42.231Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/ref-nord.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:44.163Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/ref-genereviews.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:45.950Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/ref-medlineplus.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:47.147Z"
+  },
+  {
+    "file": "condition-brief/igg4-related-disease/registry-exa.json",
+    "method": "POST",
+    "url": "https://api.exa.ai/search",
+    "status": 200,
+    "fetched_at": "2026-10-24T11:07:48.735Z"
   }
 ]

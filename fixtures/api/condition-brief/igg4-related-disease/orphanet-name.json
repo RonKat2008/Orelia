@@ -1,0 +1,97 @@
+{
+  "data": {
+    "__count": 1,
+    "__licence": {
+      "identifier": "CC-BY-4.0",
+      "link": "https://creativecommons.org/licenses/by/4.0",
+      "name": "Creative Commons Attribution 4.0 International"
+    },
+    "results": {
+      "Date": "2026-06-23 07:53:50",
+      "DisorderDisorderAssociation": null,
+      "DisorderFlag": [
+        {
+          "Label": null,
+          "Value": 1
+        }
+      ],
+      "DisorderGroup": "Group of disorders",
+      "ExternalReference": [
+        {
+          "DisorderMappingICDRefUri": null,
+          "DisorderMappingICDRefUrl": null,
+          "DisorderMappingICDRelation": null,
+          "DisorderMappingRelation": "E (Exact mapping: the two concepts are equivalent)",
+          "DisorderMappingValidationStatus": "Validated",
+          "Reference": "12521",
+          "Source": "GARD"
+        },
+        {
+          "DisorderMappingICDRefUri": 99883782,
+          "DisorderMappingICDRefUrl": "https://icd.who.int/browse/latest-release/mms/en#99883782",
+          "DisorderMappingICDRelation": "Specific code (ICD-10/ICD-11: ORPHAcode has its own code in the targeted terminology)",
+          "DisorderMappingRelation": "E (Exact mapping: the two concepts are equivalent)",
+          "DisorderMappingValidationStatus": "Validated",
+          "Reference": "4A43.0",
+          "Source": "ICD-11"
+        },
+        {
+          "DisorderMappingICDRefUri": null,
+          "DisorderMappingICDRefUrl": null,
+          "DisorderMappingICDRelation": null,
+          "DisorderMappingRelation": "E (Exact mapping: the two concepts are equivalent)",
+          "DisorderMappingValidationStatus": "Validated",
+          "Reference": "17287",
+          "Source": "MONDO"
+        },
+        {
+          "DisorderMappingICDRefUri": null,
+          "DisorderMappingICDRefUrl": null,
+          "DisorderMappingICDRelation": null,
+          "DisorderMappingRelation": "E (Exact mapping: the two concepts are equivalent)",
+          "DisorderMappingValidationStatus": "Validated",
+          "Reference": "D000077733",
+          "Source": "MeSH"
+        },
+        {
+          "DisorderMappingICDRefUri": null,
+          "DisorderMappingICDRefUrl": null,
+          "DisorderMappingICDRelation": null,
+          "DisorderMappingRelation": "E (Exact mapping: the two concepts are equivalent)",
+          "DisorderMappingValidationStatus": "Validated",
+          "Reference": "10071569",
+          "Source": "MedDRA"
+        },
+        {
+          "DisorderMappingICDRefUri": null,
+          "DisorderMappingICDRefUrl": null,
+          "DisorderMappingICDRelation": null,
+          "DisorderMappingRelation": "E (Exact mapping: the two concepts are equivalent)",
+          "DisorderMappingValidationStatus": "Validated",
+          "Reference": "C3203653",
+          "Source": "UMLS"
+        }
+      ],
+      "ORPHAcode": 284264,
+      "OrphanetURL": "http://www.orpha.net/consor/cgi-bin/OC_Exp.php?lng=en&Expert=284264",
+      "Preferred term": "IgG4-related disease",
+      "SummaryInformation": null,
+      "Synonym": [
+        "IgG4-related sclerosing disease",
+        "Immunoglobulin G4-related sclerosing disease"
+      ],
+      "Typology": "Clinical group"
+    }
+  },
+  "datasetCategory": {
+    "lang": "en",
+    "name": "Rare diseases and cross-referencing"
+  },
+  "parameters": {
+    "path": {
+      "name": "IgG4-related disease"
+    },
+    "query": {}
+  },
+  "uri": "https://api.orphadata.com/rd-cross-referencing/orphacodes/names/IgG4-related disease"
+}

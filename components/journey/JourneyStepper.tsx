@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Route, ScrollText } from "lucide-react";
+import { BookOpenText, FileText, Route, ScrollText } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/feedback";
 import { Stepper, type StepperStep } from "@/components/ui/display";
@@ -81,6 +81,13 @@ export function JourneyStepper({ plan }: { plan: JourneyPlan }) {
       >
         <ScrollText aria-hidden className="size-4" />
         Medical history
+      </Link>
+      <Link
+        href={plan.researchHref}
+        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+      >
+        <BookOpenText aria-hidden className="size-4" />
+        Condition research
       </Link>
       {plan.notes.length > 0 ? (
         <ul className="m-0 grid list-none gap-1.5 p-0 text-small text-ink-2">

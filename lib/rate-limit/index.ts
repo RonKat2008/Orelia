@@ -76,6 +76,11 @@ export const RESEARCH_LIMITS = (caseId: string, sessionId: string): RateRule[] =
   { key: `research:case:${caseId}`, max: 3, windowMs: HOUR_MS },
   { key: `research:session:${sessionId}`, max: 10, windowMs: HOUR_MS },
 ];
+/** Each condition brief rebuild fans out to several public APIs and one model call. */
+export const CONDITION_BRIEF_LIMITS = (caseId: string, sessionId: string): RateRule[] => [
+  { key: `condition-brief:case:${caseId}`, max: 6, windowMs: HOUR_MS },
+  { key: `condition-brief:session:${sessionId}`, max: 20, windowMs: HOUR_MS },
+];
 export const MODEL_CALL_LIMITS = (scope: "inbox" | "curator", caseId: string): RateRule[] => [
   { key: `model:${scope}:case:${caseId}`, max: 60, windowMs: HOUR_MS },
 ];

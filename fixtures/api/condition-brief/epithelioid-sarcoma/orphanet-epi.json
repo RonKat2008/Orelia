@@ -1,0 +1,58 @@
+{
+  "data": {
+    "__count": 1,
+    "__licence": {
+      "identifier": "CC-BY-4.0",
+      "link": "https://creativecommons.org/licenses/by/4.0",
+      "name": "Creative Commons Attribution 4.0 International"
+    },
+    "results": {
+      "Date": "2026-06-23 07:57:58",
+      "DisorderGroup": "Disorder",
+      "ORPHAcode": 293202,
+      "OrphanetURL": "http://www.orpha.net/consor/cgi-bin/OC_Exp.php?lng=en&Expert=293202",
+      "Preferred term": "Epithelioid sarcoma",
+      "Prevalence": [
+        {
+          "PrevalenceClass": "<1 / 1 000 000",
+          "PrevalenceGeographic": "Europe",
+          "PrevalenceQualification": "Class only",
+          "PrevalenceType": "Annual incidence",
+          "PrevalenceValidationStatus": "Validated",
+          "Source": "RARECARE surveillance of rare cancers in Europe 2011[OTHER]",
+          "ValMoy": "0.0"
+        },
+        {
+          "PrevalenceClass": "<1 / 1 000 000",
+          "PrevalenceGeographic": "Europe",
+          "PrevalenceQualification": "Class only",
+          "PrevalenceType": "Point prevalence",
+          "PrevalenceValidationStatus": "Not yet validated",
+          "Source": "ORPHANET",
+          "ValMoy": "0.0"
+        },
+        {
+          "PrevalenceClass": "<1 / 1 000 000",
+          "PrevalenceGeographic": "United States",
+          "PrevalenceQualification": "Value and class",
+          "PrevalenceType": "Annual incidence",
+          "PrevalenceValidationStatus": "Validated",
+          "Source": "1922430[PMID]",
+          "ValMoy": "0.04"
+        }
+      ],
+      "Typology": "Disease"
+    }
+  },
+  "datasetCategory": {
+    "lang": "en",
+    "name": "Epidemiology of rare diseases"
+  },
+  "parameters": {
+    "path": {
+      "ORPHAcode": 293202
+    },
+    "query": {}
+  },
+  "uri": "https://api.orphadata.com/rd-epidemiology/orphacodes/293202"
+}

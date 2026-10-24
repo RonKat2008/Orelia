@@ -1,0 +1,394 @@
+{
+  "statements": [
+    {
+      "id": "s1",
+      "section": "rarity",
+      "text": "Orphanet lists the prevalence of IgG4-related disease as unknown.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "orphanet:ORPHA:284264"
+      ]
+    },
+    {
+      "id": "s2",
+      "section": "mechanism",
+      "text": "IgG4-related disease is an immune-mediated condition characterised by inflammation and progressive fibrosis, with a tendency to form tumefactive lesions in multiple organ sites.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:28871762",
+        "pubmed:22596100"
+      ]
+    },
+    {
+      "id": "s3",
+      "section": "mechanism",
+      "text": "The disease is characterised by dense lymphoplasmacytic infiltration, storiform fibrosis, and obliterative phlebitis on histological examination.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:22596100",
+        "pubmed:25481618"
+      ]
+    },
+    {
+      "id": "s4",
+      "section": "mechanism",
+      "text": "B cells play a central role in IgG4-related disease, as demonstrated by robust clinical responsiveness to B cell depletion therapy.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32939060"
+      ]
+    },
+    {
+      "id": "s5",
+      "section": "mechanism",
+      "text": "CD4+ T cells, including CD4+ cytotoxic T lymphocytes and a specific T follicular helper cell subset that contributes to IgG4 isotype switching, have been identified as key players in the disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:32939060"
+      ]
+    },
+    {
+      "id": "s6",
+      "section": "mechanism",
+      "text": "Multiple self-antigens have been identified that promote B cell expansion in IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:32939060"
+      ]
+    },
+    {
+      "id": "s7",
+      "section": "natural_history",
+      "text": "IgG4-related disease can affect virtually any organ in the body, with the most common clinical manifestations being pancreatitis and sialadenitis.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:28871762"
+      ]
+    },
+    {
+      "id": "s8",
+      "section": "natural_history",
+      "text": "Common features include autoimmune pancreatitis, inflammatory pseudotumors, salivary gland disease with gland enlargement, lymphadenopathy, skin manifestations, and symptoms consistent with allergies or asthma.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "gard:12521-igg4-related-disease"
+      ]
+    },
+    {
+      "id": "s9",
+      "section": "natural_history",
+      "text": "Manifestations characterised by prominent tissue fibrosis, including retroperitoneal fibrosis, fibrosing mediastinitis, Riedel thyroiditis, orbital pseudotumor, and hypertrophic pachymeningitis, can be less responsive to glucocorticoid therapy than other types.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:38574746"
+      ]
+    },
+    {
+      "id": "s10",
+      "section": "natural_history",
+      "text": "Relapses, either local or in other regions, are frequent during tapering of steroid dose.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23459998"
+      ]
+    },
+    {
+      "id": "s11",
+      "section": "natural_history",
+      "text": "Recurrence rates for IgG4-related disease are reported between 24% and 63% in various studies.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT06655831"
+      ]
+    },
+    {
+      "id": "s12",
+      "section": "natural_history",
+      "text": "Persistent local inflammatory activity may result in permanent organ damage.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23459998"
+      ]
+    },
+    {
+      "id": "s13",
+      "section": "natural_history",
+      "text": "A probable increased risk of malignancies, including solid tumors and lymphoma, requires attention in long-term care of affected patients.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23459998"
+      ]
+    },
+    {
+      "id": "s14",
+      "section": "natural_history",
+      "text": "Laryngeal IgG4-related disease presents with hoarseness, dyspnea, or stridor, with supraglottic and subglottic involvement predominating and multilevel airway disease occurring in about one third of cases.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42381230"
+      ]
+    },
+    {
+      "id": "s15",
+      "section": "natural_history",
+      "text": "Serum IgG4 levels are frequently normal despite biopsy-proven IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42381230"
+      ]
+    },
+    {
+      "id": "s16",
+      "section": "studies",
+      "text": "Diagnosis of IgG4-related disease rests on the combined presence of characteristic histopathological appearance and increased numbers of IgG4+ plasma cells.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:22596100"
+      ]
+    },
+    {
+      "id": "s17",
+      "section": "studies",
+      "text": "A quantitative histopathology-based scoring system using eight parameters, including IgG4+/CD138+ ratio, storiform fibrosis, and obliterative venulitis, demonstrated 95.74% sensitivity and 100% specificity for IgG4-related disease diagnosis.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42391875"
+      ]
+    },
+    {
+      "id": "s18",
+      "section": "studies",
+      "text": "Histopathological confirmation of laryngeal IgG4-related disease often requires deep submucosal or repeat biopsy after nondiagnostic superficial sampling.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42381230"
+      ]
+    },
+    {
+      "id": "s19",
+      "section": "studies",
+      "text": "Endoscopy and imaging of laryngeal IgG4-related disease show two main patterns: fibrostenotic circumferential narrowing resembling idiopathic subglottic stenosis and mass-like or polypoid lesions mimicking neoplasia.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:42381230"
+      ]
+    },
+    {
+      "id": "s20",
+      "section": "studies",
+      "text": "A quantitative disease activity tool called the IgG4-RD Responder Index has been developed and validated through international, multi-centre investigations.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32939060"
+      ]
+    },
+    {
+      "id": "s21",
+      "section": "studies",
+      "text": "Classification criteria for IgG4-related disease were validated through international, multi-centre investigations.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:32939060"
+      ]
+    },
+    {
+      "id": "s22",
+      "section": "research",
+      "text": "Glucocorticoids are the first-line choice of treatment for IgG4-related disease.",
+      "evidenceLevel": "established",
+      "sourceIds": [
+        "pubmed:28871762"
+      ]
+    },
+    {
+      "id": "s23",
+      "section": "research",
+      "text": "In refractory cases, rituximab treatment has been used with good success.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23459998"
+      ]
+    },
+    {
+      "id": "s24",
+      "section": "research",
+      "text": "Commonly used steroid-sparing agents are only partially effective in IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:23459998"
+      ]
+    },
+    {
+      "id": "s25",
+      "section": "research",
+      "text": "Surgical or interventional treatment may be necessary if complications arise in IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:31791079"
+      ]
+    },
+    {
+      "id": "s26",
+      "section": "research",
+      "text": "A distinction into proliferative and fibrotic phenotypes of IgG4-related disease has been proposed based on clinical presentation, pathological features, and response to immunosuppressive therapy.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "pubmed:38574746"
+      ]
+    },
+    {
+      "id": "s27",
+      "section": "research",
+      "text": "Clinical trials are evaluating B-cell-targeted therapies including CAR T-cell approaches for relapsed or refractory IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT06497361",
+        "ctgov:NCT06978738",
+        "ctgov:NCT07298590"
+      ]
+    },
+    {
+      "id": "s28",
+      "section": "research",
+      "text": "Clinical trials are investigating lenalidomide as maintenance therapy to reduce relapse risk in patients with stable IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT07719543"
+      ]
+    },
+    {
+      "id": "s29",
+      "section": "research",
+      "text": "Clinical trials are evaluating inebilizumab for prevention of flare in IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT04540497"
+      ]
+    },
+    {
+      "id": "s30",
+      "section": "research",
+      "text": "Clinical trials are comparing treatment strategies combining prednisone with iguratimod or leflunomide in IgG4-related disease patients with superficial organ involvement.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT05789030"
+      ]
+    },
+    {
+      "id": "s31",
+      "section": "research",
+      "text": "Research is investigating the role of post-translational modifications on IgG4 antibodies in IgG4-related disease pathology.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "reporter:1R01AI198973-01"
+      ]
+    },
+    {
+      "id": "s32",
+      "section": "research",
+      "text": "Studies are examining the C5a-C5aR1 axis as a potential therapeutic target in IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT06270524"
+      ]
+    },
+    {
+      "id": "s33",
+      "section": "research",
+      "text": "Research is investigating trained immunity involvement in the pathogenesis of IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT06844864"
+      ]
+    },
+    {
+      "id": "s34",
+      "section": "research",
+      "text": "Clinical trials are evaluating gamma delta T cell therapy as a treatment for IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT07061938"
+      ]
+    },
+    {
+      "id": "s35",
+      "section": "research",
+      "text": "Imaging studies are comparing [18F]-AlF-FAPI-74 PET/CT with [18F]-FDG PET/CT for assessment of inflammation in IgG4-related disease.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "ctgov:NCT07535554"
+      ]
+    },
+    {
+      "id": "s36",
+      "section": "registries",
+      "text": "A multicenter registry study in Japan is establishing clinical diagnostic criteria and treatment guidelines for IgG4-related disease using patient registry data.",
+      "evidenceLevel": "emerging",
+      "sourceIds": [
+        "web:3886fde9"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "How common is IgG4-related disease in the general population?",
+      "statementIds": [
+        "s1"
+      ]
+    },
+    {
+      "id": "q2",
+      "text": "What organs can be affected by IgG4-related disease?",
+      "statementIds": [
+        "s7",
+        "s8"
+      ]
+    },
+    {
+      "id": "q3",
+      "text": "What are the key features seen on tissue biopsy in IgG4-related disease?",
+      "statementIds": [
+        "s3",
+        "s16"
+      ]
+    },
+    {
+      "id": "q4",
+      "text": "What is the role of B cells in IgG4-related disease?",
+      "statementIds": [
+        "s4"
+      ]
+    },
+    {
+      "id": "q5",
+      "text": "How often do patients experience disease relapse after initial treatment?",
+      "statementIds": [
+        "s10",
+        "s11"
+      ]
+    },
+    {
+      "id": "q6",
+      "text": "Can normal serum IgG4 levels rule out IgG4-related disease?",
+      "statementIds": [
+        "s15"
+      ]
+    },
+    {
+      "id": "q7",
+      "text": "What is the first-line treatment for IgG4-related disease?",
+      "statementIds": [
+        "s22"
+      ]
+    },
+    {
+      "id": "q8",
+      "text": "What treatment options are available for cases that do not respond to standard therapy?",
+      "statementIds": [
+        "s23",
+        "s27"
+      ]
+    }
+  ]
+}

@@ -31,8 +31,12 @@ class MemoryStore implements OutreachStore {
     return true;
   }
   async delivered(d: Draft, ref: ProviderRef, sentAt: string) { this.drafts.get(d.id)!.sentAt = sentAt; this.people = this.people.map(c => c.id === d.contactId ? { ...c, state: 'sent' } : c); this.deliveries.push(ref); }
-  candidate(claim = 'New patient intake: intake@example.com', targetKind: Candidate['targetKind'] = 'expert') {
-    const candidate: Candidate = { id: id(), caseId: this.caseId, targetId: id(), targetKind, evidence: [{ claim, claimType: 'intake_contact', sourceUrl: 'https://example.com/intake' }] };
+  /** Addresses become tool-stamped contact points (as the research pipeline writes them), never free-text claims. */
+  candidate(addresses: string[] = ['intake@example.com'], targetKind: Candidate['targetKind'] = 'expert') {
+    const evidence = addresses.map(address => address.includes('@')
+      ? { claim: address, claimType: 'contact_point.email.new_patient_line', sourceUrl: 'https://example.com/intake', sourceKind: 'exa' }
+      : { claim: address, claimType: 'contact_point.voice.nppes_location_phone', sourceUrl: 'https://npiregistry.cms.hhs.gov/provider-view/1234567890', sourceKind: 'nppes' });
+    const candidate: Candidate = { id: id(), caseId: this.caseId, targetId: id(), targetKind, evidence: evidence as Candidate['evidence'] };
     this.choices.push(candidate); return candidate;
   }
 }
@@ -44,8 +48,8 @@ function setup() {
   return { store, email, voice, env, service, api: outreachHandlers(service) };
 }
 const req = (data: unknown) => new Request('http://localhost', { method: 'POST', body: JSON.stringify(data) });
-async function ready(ctx: ReturnType<typeof setup>, claim?: string) {
-  const c = ctx.store.candidate(claim);
+async function ready(ctx: ReturnType<typeof setup>, addresses?: string[]) {
+  const c = ctx.store.candidate(addresses);
   const selected = await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }));
   const contact = (await selected.json()).contacts[0] as Contact;
   await ctx.api.consent(req({ sharedFields: ['diseaseName'] }), contact.id);
@@ -67,18 +71,18 @@ describe('outreach API and safety boundary', () => {
     expect(ctx.email.sent).toHaveLength(1);
   });
   it('falls back to voice and starts the script with disclosure', async () => {
-    const ctx = setup(); const { contact, draft } = await ready(ctx, 'New patient intake: +1 (415) 555-0123');
+    const ctx = setup(); const { contact, draft } = await ready(ctx, ['+14155550123']);
     expect(contact.channel).toBe('voice'); expect(draft.body.startsWith(AI_DISCLOSURE_VOICE)).toBe(true);
     expect((await ctx.api.approve(req({ draftId: draft.id }), contact.id)).status).toBe(200);
     expect(ctx.voice.sent).toHaveLength(1);
   });
   it('returns none for missing evidence or personal emails', async () => {
-    const ctx = setup(); const c = ctx.store.candidate('New patient intake: dr.smith@example.com');
+    const ctx = setup(); const c = ctx.store.candidate(['dr.smith@example.com']);
     const response = await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }));
     const body = await response.json(); expect(body.contacts).toHaveLength(0); expect(body.unavailable[0].channel).toBe('none');
   });
   it('prefers email when both evidenced channels exist and selection is idempotent', async () => {
-    const ctx = setup(); const c = ctx.store.candidate('Intake: intake@example.com +14155550123');
+    const ctx = setup(); const c = ctx.store.candidate(['+14155550123', 'intake@example.com']);
     for (let i = 0; i < 2; i++) expect((await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }))).status).toBe(200);
     expect(ctx.store.people).toHaveLength(1); expect(ctx.store.people[0].channel).toBe('email');
   });

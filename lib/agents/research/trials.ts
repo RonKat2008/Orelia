@@ -6,6 +6,7 @@ import { runResearch, trackedTool } from "./shared";
 import type { TrialRegistry } from "@/lib/contracts";
 import type { CtgovPort, CtgovStudy } from "./source-ports";
 import type { ResearchAgent } from "./types";
+import { contactPoint, usPhoneToE164, type ContactPoint } from "@/lib/contact-finder/contact-points";
 import type { AgentTool } from "@/lib/agents/runtime";
 import type { ProvenanceTracker } from "./shared";
 
@@ -37,6 +38,18 @@ export function registryFacts(study: CtgovStudy, usSites: CtgovStudy["sites"]): 
   };
 }
 
+/** Registry central contacts as structured contact points (role mailboxes or US phones only). */
+export function trialContactPoints(study: CtgovStudy): ContactPoint[] {
+  const sourceUrl = ctgovUrl(study.nctId);
+  return (study.centralContacts ?? []).flatMap((c) => {
+    const phone = usPhoneToE164(c.phone);
+    return [
+      ...(c.email ? [contactPoint({ channel: "email", address: c.email, origin: "ctgov_central_contact", sourceUrl, sourceKind: "ctgov" })] : []),
+      ...(phone ? [contactPoint({ channel: "voice", address: phone, origin: "ctgov_central_contact", sourceUrl, sourceKind: "ctgov" })] : []),
+    ].filter((cp): cp is ContactPoint => cp !== null);
+  });
+}
+
 const inputSchema = z.object({
   condition: z.string().min(1).describe("Condition to search"),
   state: z.string().length(2).optional().describe("Two-letter US state to prefer"),
@@ -56,7 +69,10 @@ function trialsTool(ctgov: CtgovPort, tracker: ProvenanceTracker): AgentTool {
         .map((s) => ({ ...s, sites: s.sites.filter((site) => site.country && US.test(site.country)) }))
         .filter((s) => s.sites.length > 0)
         .slice(0, MAX_TRIALS);
-      for (const s of usStudies) tracker.rememberTrial(s.nctId, registryFacts(s, s.sites));
+      for (const s of usStudies) {
+        tracker.rememberTrial(s.nctId, registryFacts(s, s.sites));
+        tracker.rememberContactPoints(trialContactPoints(s));
+      }
       return {
         notice: UNTRUSTED_NOTICE,
         trials: usStudies.map((s) => ({

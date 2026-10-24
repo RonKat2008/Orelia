@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -164,8 +165,16 @@ export const organizations = pgTable("organizations", {
   contact: jsonb("contact").$type<Record<string, unknown>>(),
 });
 
+/**
+ * Evidence is scoped to the case whose research produced it: the same resource (e.g. one NPI) can appear in many
+ * cases, and one case must never read another case's evidence. `id` is the verifier's deterministic evidence id, so
+ * the key is (case_id, id).
+ */
 export const evidence = pgTable("evidence", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").notNull().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references(() => cases.id),
   targetKind: targetKindEnum("target_kind").notNull(),
   targetId: uuid("target_id").notNull(),
   claimType: text("claim_type").notNull(),
@@ -173,7 +182,7 @@ export const evidence = pgTable("evidence", {
   sourceUrl: text("source_url").notNull(),
   sourceKind: sourceKindEnum("source_kind").notNull(),
   fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
-});
+}, (table) => [primaryKey({ columns: [table.caseId, table.id] })]);
 
 export const caseCandidates = pgTable("case_candidates", {
   id: uuid("id").primaryKey().defaultRandom(),

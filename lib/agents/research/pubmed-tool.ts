@@ -25,6 +25,7 @@ export function pubmedAuthorsTool(pubmed: PubmedPort, tracker: ProvenanceTracker
     run: async ({ disease, limit }) => {
       const hits = await pubmed.searchAuthors({ disease, limit: limit ?? DEFAULT_AUTHOR_LIMIT });
       for (const h of hits) {
+        tracker.rememberAuthorPapers(h.name, disease, h.papers.map((p) => p.pmid));
         // Counts are stamped on the final record from this tool output, never from model prose.
         tracker.rememberAuthor(h.name, {
           paperCount: h.paperCount,

@@ -6,7 +6,7 @@ const URL_A = "https://pubmed.ncbi.nlm.nih.gov/1/";
 
 function tracker() {
   const t = new ProvenanceTracker(() => new Date("2026-01-01T00:00:00Z"));
-  t.collect("pubmed", { papers: [{ sourceUrl: URL_A }] });
+  t.collect("pubmed", { authors: [{ name: "Ada Lee", papers: [{ pmid: "1", sourceUrl: URL_A }] }, { name: "Bo Kim", papers: [{ pmid: "1", sourceUrl: URL_A }] }] });
   return t;
 }
 

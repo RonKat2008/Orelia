@@ -130,18 +130,6 @@
       ]
     },
     {
-      "candidateId": "74bfe7c0-c333-5ec3-a590-8855648434f4",
-      "tier": "best",
-      "reasons": [
-        {
-          "text": "Describes reimbursement for transportation and lodging tied to clinical trial participation, relevant if a trial site is out of state.",
-          "evidenceIds": [
-            "a2360574-5c1b-58d4-afa3-6bd56152f43d"
-          ]
-        }
-      ]
-    },
-    {
       "candidateId": "5adff9bb-5d2d-5335-a531-226213ebedc4",
       "tier": "good",
       "reasons": [

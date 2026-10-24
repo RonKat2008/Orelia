@@ -14,6 +14,8 @@ import {
   type ResearchResult,
   type SourceKind,
 } from "@/lib/contracts";
+import { contactPointEvidence, isContactPointClaimType, type ContactPoint } from "@/lib/contact-finder/contact-points";
+import { checkClaimGrounding } from "./grounding";
 import type { SourcePorts } from "./source-ports";
 import type { ResearchContext } from "./types";
 
@@ -40,6 +42,22 @@ export type ResearchOutput = z.infer<typeof researchOutputSchema>;
 
 const URL_PATTERN = /^https?:\/\//i;
 
+/** Literal delimiters used by lib/agents/research/untrusted.ts (task #31) around third-party page text. */
+const UNTRUSTED_BLOCK = /<untrusted_web_content[^>]*>[\s\S]*?(?:<\/untrusted_web_content>|$)/gi;
+
+/**
+ * Text a credential check may rely on: everything except third-party page text inside <untrusted_web_content>
+ * blocks (an unclosed block runs to the end of the string), so a malicious page cannot make a credential count as
+ * "mentioned". Structured registry fields (PubMed, NPPES, CT.gov) are never wrapped and stay in.
+ */
+export function withoutUntrustedBlocks(text: string): string {
+  return text.replace(UNTRUSTED_BLOCK, " ");
+}
+
+/** The scalar (non-object) fields of an enclosing object, e.g. an author's name and paper counts. */
+const scalarText = (value: object): string =>
+  JSON.stringify(Object.fromEntries(Object.entries(value).filter(([, v]) => v === null || typeof v !== "object")));
+
 const nameKey = (name: string): string => name.toLowerCase().replace(/[^a-z]/g, "");
 
 /** Records every URL, NCT id and unique NPI that tool handlers returned during ONE agent run. */
@@ -49,21 +67,51 @@ export class ProvenanceTracker {
   private readonly verifiedNpis = new Set<string>();
   private readonly trialFacts = new Map<string, TrialRegistry>();
   private readonly authorFacts = new Map<string, ExpertProfile>();
+  private readonly authorPapers = new Map<string, { name: string; disease: string; pmids: Set<string> }>();
+  private readonly recordTexts = new Map<string, string>();
+  private readonly contactPoints = new Map<string, ContactPoint[]>();
   private corpus = "";
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
-  /** Walk a tool payload, remembering every URL string and indexing all text for credential checks. */
+  /**
+   * Walk a tool payload, remembering every URL string and indexing all text for credential checks. Each URL also
+   * gets its record text: the full object that carried it plus the scalar fields of every enclosing object, which
+   * is what a claim citing that URL may state (see grounding.ts).
+   */
   collect(kind: SourceKind, payload: unknown): void {
     const fetchedAt = this.now().toISOString();
-    const walk = (value: unknown): void => {
+    // `stack` holds the enclosing objects, innermost last.
+    const walk = (value: unknown, stack: object[]): void => {
       if (typeof value === "string") {
-        this.corpus += `\n${value.toLowerCase()}`;
-        if (URL_PATTERN.test(value) && !this.urls.has(value)) this.urls.set(value, { kind, fetchedAt });
-      } else if (Array.isArray(value)) value.forEach(walk);
-      else if (value && typeof value === "object") Object.values(value).forEach(walk);
+        this.corpus += `\n${withoutUntrustedBlocks(value).toLowerCase()}`;
+        if (URL_PATTERN.test(value)) {
+          if (!this.urls.has(value)) this.urls.set(value, { kind, fetchedAt });
+          const holder = stack.at(-1);
+          const text = [holder ? JSON.stringify(holder) : value, ...stack.slice(0, -1).map(scalarText)].join("\n");
+          this.recordTexts.set(value, `${this.recordTexts.get(value) ?? ""}\n${text.toLowerCase()}`);
+        }
+      } else if (Array.isArray(value)) value.forEach((v) => walk(v, stack));
+      else if (value && typeof value === "object") Object.values(value).forEach((v) => walk(v, [...stack, value]));
     };
-    walk(payload);
+    walk(payload, []);
+  }
+
+  /** Remember contact points a tool handler derived from structured output (intake doors, registry contacts). */
+  rememberContactPoints(points: readonly ContactPoint[]): void {
+    for (const cp of points) {
+      const known = this.contactPoints.get(cp.sourceUrl) ?? [];
+      if (!known.some((k) => k.address === cp.address && k.origin === cp.origin)) this.contactPoints.set(cp.sourceUrl, [...known, cp]);
+    }
+  }
+
+  contactPointsFor(url: string): ContactPoint[] {
+    return this.contactPoints.get(url) ?? [];
+  }
+
+  /** Lowercased text of the tool record(s) that carried this URL; empty when no tool returned it. */
+  recordText(url: string): string {
+    return this.recordTexts.get(url) ?? "";
   }
 
   allowNctId(nctId: string): void {
@@ -82,6 +130,20 @@ export class ProvenanceTracker {
 
   rememberAuthor(name: string, profile: ExpertProfile): void {
     this.authorFacts.set(nameKey(name), profile);
+  }
+
+  /** Remember which papers a tool listed for an author, so publication claims can be rebuilt from the record. */
+  rememberAuthorPapers(name: string, disease: string, pmids: readonly string[]): void {
+    const key = nameKey(name);
+    const known = this.authorPapers.get(key);
+    this.authorPapers.set(key, { name, disease, pmids: new Set([...(known?.pmids ?? []), ...pmids]) });
+  }
+
+  /** Tool-returned authors of a PMID (with the disease the search was for). */
+  authorsOf(pmid: string): Array<{ name: string; disease: string; profile?: ExpertProfile }> {
+    return [...this.authorPapers.entries()]
+      .filter(([, a]) => a.pmids.has(pmid))
+      .map(([key, a]) => ({ name: a.name, disease: a.disease, profile: this.authorFacts.get(key) }));
   }
 
   authorProfile(name: string): ExpertProfile | undefined {
@@ -115,6 +177,11 @@ export interface FinalizeRules {
   organizationKinds?: ReadonlyArray<OrganizationKind>;
   /** If set, evidence must come from a tool of one of these source kinds (e.g. identity cites only NPPES). */
   sourceKinds?: ReadonlyArray<SourceKind>;
+  /**
+   * If set, replaces the model's claim with deterministic text built from the tool record (null drops the item).
+   * Used where the claim is fully determined by tool facts, so no model prose reaches the user at all.
+   */
+  restateClaim?: (item: ResearchOutput["evidence"][number], tracker: ProvenanceTracker) => string | null;
 }
 
 /**
@@ -126,21 +193,47 @@ export function finalizeOutput(
   raw: ResearchOutput,
   tracker: ProvenanceTracker,
   rules: FinalizeRules,
+  onDrop: (item: ResearchOutput["evidence"][number], reason: string) => void = () => {},
 ): { records: Resource[]; evidence: Evidence[] } {
   const evidenceByUrl = new Map<string, Evidence[]>();
   const evidenceById = new Map<string, Evidence>();
   const seenClaims = new Set<string>();
   for (const item of raw.evidence) {
     const source = tracker.sourceFor(item.sourceUrl);
-    if (!source) continue;
-    if (rules.sourceKinds && !rules.sourceKinds.includes(source.kind)) continue;
-    const key = `${item.sourceUrl}\u0000${item.claim}`;
+    if (!source) {
+      onDrop(item, "no tool returned this sourceUrl");
+      continue;
+    }
+    if (rules.sourceKinds && !rules.sourceKinds.includes(source.kind)) {
+      onDrop(item, `source kind ${source.kind} is not allowed for this agent`);
+      continue;
+    }
+    if (isContactPointClaimType(item.claimType)) {
+      onDrop(item, "contact points are stamped from tool output by code, never by a model");
+      continue;
+    }
+    let claim = item.claim;
+    if (rules.restateClaim) {
+      const restated = rules.restateClaim(item, tracker);
+      if (!restated) {
+        onDrop(item, "claim could not be rebuilt from the tool record");
+        continue;
+      }
+      claim = restated;
+    } else {
+      const grounding = checkClaimGrounding(item.claim, tracker.recordText(item.sourceUrl));
+      if (!grounding.ok) {
+        onDrop(item, grounding.reason);
+        continue;
+      }
+    }
+    const key = `${item.sourceUrl}\u0000${claim}`;
     if (seenClaims.has(key)) continue;
     seenClaims.add(key);
     const stamped: Evidence = {
       ...(item.id && !evidenceById.has(item.id) ? { id: item.id } : {}),
       claimType: item.claimType,
-      claim: item.claim,
+      claim,
       sourceUrl: item.sourceUrl,
       sourceKind: source.kind,
       fetchedAt: source.fetchedAt,
@@ -158,18 +251,26 @@ export function finalizeOutput(
   const records: Resource[] = [];
   const seenIds = new Set<string>();
   const referenced = new Set<Evidence>();
+  const contactEvidence = new Map<string, Evidence>();
   for (const candidate of raw.records) {
     if (!rules.allowedKinds.includes(candidate.kind) || seenIds.has(candidate.id)) continue;
     const refs = [...new Set(candidate.evidenceRefs.filter((ref) => resolve(ref).length > 0))];
     if (refs.length === 0) continue;
     const sanitized = sanitizeRecord(candidate, refs, tracker, rules);
     if (!sanitized) continue;
+    // Contact points come only from structured tool output for the URLs this record is evidenced by.
+    const urls = new Set([...refs.flatMap((ref) => resolve(ref).map((e) => e.sourceUrl)), ...(sanitized.kind === "organization" && sanitized.url ? [sanitized.url] : [])]);
+    const contacts = [...urls].flatMap((url) => {
+      const source = tracker.sourceFor(url);
+      return source ? tracker.contactPointsFor(url).flatMap((cp) => contactPointEvidence(cp, source.fetchedAt) ?? []) : [];
+    });
     seenIds.add(sanitized.id);
-    records.push(sanitized);
+    records.push({ ...sanitized, evidenceRefs: [...sanitized.evidenceRefs, ...contacts.flatMap((e) => (e.id ? [e.id] : []))] });
     for (const ref of refs) resolve(ref).forEach((e) => referenced.add(e));
+    for (const e of contacts) if (!contactEvidence.has(e.id ?? "")) contactEvidence.set(e.id ?? "", e);
   }
 
-  const evidence = [...evidenceByUrl.values()].flat().filter((e) => referenced.has(e));
+  const evidence = [...[...evidenceByUrl.values()].flat().filter((e) => referenced.has(e)), ...contactEvidence.values()];
   return { records, evidence };
 }
 

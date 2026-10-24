@@ -161,7 +161,7 @@ export function ReviewCheckpoint({ caseId, resources, agreement = [], onSubmit }
         </p>
       </header>
 
-      <div className="grid gap-5 rounded-lg border border-line bg-card p-5 shadow-xs sm:grid-cols-[minmax(0,20rem)_1fr] sm:items-end">
+      <div className="grid gap-5 rounded-lg border border-line bg-card p-5 shadow-xs">
         <Field label="Reviewer name" htmlFor="reviewer-name">
           <Input id="reviewer-name" value={reviewer} autoComplete="name" onChange={(event) => setReviewer(event.target.value)} />
         </Field>

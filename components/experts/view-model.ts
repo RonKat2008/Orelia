@@ -91,3 +91,12 @@ export function describeTrace(trace: ExpertTrace): string {
   const date = Number.isNaN(when.getTime()) ? "" : ` on ${when.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
   return `${n} ${n === 1 ? "chain" : "chains"} traced${date}.`;
 }
+
+/** Toast after a refresh: what was newly found, and that nobody was contacted. */
+export function refreshMessage(added: { affiliations: number; contactPoints: number }): string {
+  const parts = [
+    added.affiliations > 0 ? `${added.affiliations} ${added.affiliations === 1 ? "affiliation" : "affiliations"}` : null,
+    added.contactPoints > 0 ? `${added.contactPoints} ${added.contactPoints === 1 ? "phone or email contact" : "phone or email contacts"}` : null,
+  ].filter(Boolean);
+  return parts.length ? `Research refreshed: found ${parts.join(" and ")}. Nobody was contacted.` : "Research refreshed. Nobody was contacted.";
+}

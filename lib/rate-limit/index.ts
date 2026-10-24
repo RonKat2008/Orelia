@@ -81,6 +81,11 @@ export const CONDITION_BRIEF_LIMITS = (caseId: string, sessionId: string): RateR
   { key: `condition-brief:case:${caseId}`, max: 6, windowMs: HOUR_MS },
   { key: `condition-brief:session:${sessionId}`, max: 20, windowMs: HOUR_MS },
 ];
+/** Refresh research re-runs PubMed / NPPES / Exa lookups for an existing case (no models). */
+export const REFRESH_RESEARCH_LIMITS = (caseId: string, sessionId: string): RateRule[] => [
+  { key: `refresh-research:case:${caseId}`, max: 3, windowMs: HOUR_MS },
+  { key: `refresh-research:session:${sessionId}`, max: 10, windowMs: HOUR_MS },
+];
 export const MODEL_CALL_LIMITS = (scope: "inbox" | "curator", caseId: string): RateRule[] => [
   { key: `model:${scope}:case:${caseId}`, max: 60, windowMs: HOUR_MS },
 ];

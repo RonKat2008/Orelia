@@ -80,7 +80,7 @@ describe("research durability", () => {
     expect(run).toHaveBeenCalledTimes(1);
     expect(save).toHaveBeenCalledTimes(2);
     expect(await deps.store.listByCase(c.id)).toHaveLength(9);
-    expect(step.calls).toEqual(["deadline", "queue", "run-agents", "verify", "rank", "curate", "persist", "persist"]);
+    expect(step.calls).toEqual(["deadline", "queue", "run-agents", "verify", "contacts", "rank", "curate", "persist", "persist"]);
     expect((await deps.cases.get(c.id))?.status).toBe("ready");
     // Full replay performs no writes and doesn't regress ready -> researching.
     await executeResearch(c.id, deps, step);

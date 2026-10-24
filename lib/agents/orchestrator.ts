@@ -11,6 +11,7 @@ import { getCurationStore, type CurationStore } from "./curator-store";
 import { runCurator, type ValidatedCuration } from "./curator";
 import { caseSlug } from "./research/shared";
 import { verifyWithProposals, type Proposer, type VerifyOutput } from "./verifier";
+import { enrichVerified } from "./contact-enrichment";
 
 export interface OrchestratorDeps {
   store: RunStore;
@@ -181,7 +182,9 @@ async function finalizeCase(
   deps: OrchestratorDeps,
   step: ResearchStep,
 ): Promise<ResearchSummary> {
-  const verified = await step.run("verify", () => verifyWithProposals(results, deps.proposer, caseRecord));
+  const checked = await step.run("verify", () => verifyWithProposals(results, deps.proposer, caseRecord));
+  // Code-only contact enrichment: institution intake phones / role emails from their own site (bounded, never fails).
+  const verified = await step.run("contacts", () => enrichVerified(checked, deps.ports.exa, new Date()));
   const ranked = await step.run("rank", async () => {
     const ranked: RankedEntry[] = [];
     const kinds = [...new Set(verified.kept.map((k) => k.resource.kind))].sort();

@@ -63,7 +63,7 @@ describe("curate phase", () => {
     const ids: string[] = [];
     const step: ResearchStep = { run: async (id, work) => (ids.push(id), work()) };
     await run({ step, curate: async (_c, _r, ranked) => bestOf(ranked) });
-    expect(ids).toEqual(["queue", "run-agents", "verify", "rank", "curate", "persist"]);
+    expect(ids).toEqual(["queue", "run-agents", "verify", "contacts", "rank", "curate", "persist"]);
   });
 
   it("does not change ranking; saves curation; summary reports it", async () => {

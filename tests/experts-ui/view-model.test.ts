@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { connectorDelay, resolveSources, safeHref, verdictView, channelLabel } from "@/components/experts/view-model";
+import { connectorDelay, resolveSources, safeHref, verdictView, channelLabel, refreshMessage } from "@/components/experts/view-model";
 import { badgeViews, canVerifyByPhone, reasonText, resourceKeyOf, sharedFieldsFor, statusText, verifyQuestions } from "@/components/shortlist/verify-model";
 import type { ShortlistCard } from "@/components/shortlist/data";
 
@@ -65,5 +65,12 @@ describe("verification view model", () => {
     const request = { resourceKey: "expert:x1", result: { answers: [{ key: "new_adult_patients", value: "yes", quote: "Yes we do", detail: null, turnIndex: 1 }] } } as never;
     expect(badgeViews([badge], [request])).toEqual([{ id: "ev1", text: "Verified", quote: "Yes we do" }]);
     expect(badgeViews(undefined, [])).toEqual([]);
+  });
+});
+
+describe('refreshMessage', () => {
+  it('names what was found and that nobody was contacted', () => {
+    expect(refreshMessage({ affiliations: 2, contactPoints: 1 })).toBe('Research refreshed: found 2 affiliations and 1 phone or email contact. Nobody was contacted.');
+    expect(refreshMessage({ affiliations: 0, contactPoints: 0 })).toBe('Research refreshed. Nobody was contacted.');
   });
 });

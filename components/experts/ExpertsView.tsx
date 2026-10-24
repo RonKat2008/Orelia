@@ -4,10 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { BookOpenCheck, RefreshCw, Route } from "lucide-react";
 import { Button, EmptyState, toast } from "@/components/ui";
 import type { ExpertTrace } from "@/lib/experts/contract";
-import { getExperts, traceExperts } from "./client";
+import { getExperts, refreshResearch } from "./client";
 import { ExpertChainCard } from "./ExpertChainCard";
 import { ExpertsSkeleton } from "./ExpertsSkeleton";
-import { describeTrace } from "./view-model";
+import { describeTrace, refreshMessage } from "./view-model";
 
 type State =
   | { phase: "loading" }
@@ -34,11 +34,11 @@ export function ExpertsView({ caseId }: { caseId: string }) {
 
   const run = useCallback(async () => {
     setTracing(true);
-    const result = await traceExperts(caseId);
+    const result = await refreshResearch(caseId);
     setTracing(false);
     if (result.ok && result.trace) {
       setState({ phase: "ready", trace: result.trace, error: null });
-      toast.success("Trace finished. Nobody was contacted.");
+      toast.success(refreshMessage(result.added));
       return;
     }
     const message = result.ok ? "The trace returned nothing." : result.message;
@@ -56,9 +56,9 @@ export function ExpertsView({ caseId }: { caseId: string }) {
         <p className="m-0 max-w-prose text-small text-ink-2" aria-live="polite">
           {trace ? describeTrace(trace) : "No trace yet."}
         </p>
-        <Button onClick={() => void run()} loading={tracing} loadingText="Tracing authors" variant={hasTrace ? "secondary" : "primary"}>
+        <Button onClick={() => void run()} loading={tracing} loadingText="Refreshing research" variant={hasTrace ? "secondary" : "primary"}>
           <RefreshCw aria-hidden />
-          {hasTrace ? "Refresh" : "Trace authors"}
+          {hasTrace ? "Refresh research" : "Trace authors"}
         </Button>
       </div>
 

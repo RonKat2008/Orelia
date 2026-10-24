@@ -1,6 +1,8 @@
 import { getServices } from '@/app/api/cases/_lib/services';
 import { MemoryPersist, type ShortlistEvidence } from '@/lib/agents/persist';
 import { createLivePorts } from '@/lib/agents/research/live-ports';
+import { createFixturePorts } from '@/lib/agents/research/fixture-ports';
+import type { RefreshPorts } from './refresh';
 import { isOffline } from '@/lib/env';
 import { createFixtureExpertPorts } from './fixtures';
 import type { TraceExpert, TraceInput, TraceInputEvidence, TracePorts } from './trace';
@@ -10,6 +12,13 @@ export function getTracePorts(now: Date = new Date()): TracePorts {
   if (isOffline()) return { ...createFixtureExpertPorts(), now };
   const live = createLivePorts();
   return { nppes: live.nppes, exa: live.exa, now };
+}
+
+/** Refresh research ports: tracer ports plus PubMed for author affiliations. */
+export function getRefreshPorts(now: Date = new Date()): RefreshPorts {
+  if (isOffline()) return { ...createFixtureExpertPorts(), pubmed: createFixturePorts().pubmed, now };
+  const live = createLivePorts();
+  return { pubmed: live.pubmed, nppes: live.nppes, exa: live.exa, now };
 }
 
 /**

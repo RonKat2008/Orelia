@@ -71,6 +71,17 @@ export interface Persist {
   getShortlistMeta(caseId: string): Promise<ShortlistMeta[]>;
   /** Every expert (shortlisted or research-only) with evidence saved for this case. */
   getCaseExperts(caseId: string): Promise<CaseExpert[]>;
+  /**
+   * Add code-stamped evidence rows (affiliations, contact points) to resources already saved for this case, without
+   * re-running research. Existing rows (same id) are left untouched. Returns how many rows were new.
+   */
+  appendEvidence(caseId: string, additions: readonly EvidenceAddition[]): Promise<number>;
+}
+
+export interface EvidenceAddition {
+  targetKind: ResourceKind;
+  targetId: string;
+  evidence: readonly ShortlistEvidence[];
 }
 
 /** Research-only records: experts that are not among the ranked entries. */
@@ -157,6 +168,34 @@ export class MemoryPersist implements Persist {
 
   async getCaseExperts(caseId: string): Promise<CaseExpert[]> {
     return (this.expertsByCase.get(caseId) ?? []).map((e) => structuredClone(e));
+  }
+
+  async appendEvidence(caseId: string, additions: readonly EvidenceAddition[]): Promise<number> {
+    let added = 0;
+    const merge = (have: ShortlistEvidence[], rows: readonly ShortlistEvidence[]) => {
+      const ids = new Set(have.map((e) => e.id));
+      const fresh = rows.filter((r) => !ids.has(r.id));
+      return { next: [...have, ...fresh.map((r) => ({ ...r }))], fresh: fresh.length };
+    };
+    for (const a of additions) {
+      let counted = 0;
+      if (a.targetKind === "expert") {
+        this.expertsByCase.set(caseId, (this.expertsByCase.get(caseId) ?? []).map((x) => {
+          if (x.id !== a.targetId) return x;
+          const m = merge(x.evidence, a.evidence);
+          counted = Math.max(counted, m.fresh);
+          return { ...x, evidence: m.next };
+        }));
+      }
+      this.byCase.set(caseId, (this.byCase.get(caseId) ?? []).map((i) => {
+        if (i.targetKind !== a.targetKind || i.targetId !== a.targetId) return i;
+        const m = merge(i.evidence, a.evidence);
+        counted = Math.max(counted, m.fresh);
+        return { ...i, evidence: m.next };
+      }));
+      added += counted;
+    }
+    return added;
   }
 }
 
@@ -336,6 +375,23 @@ export class DbPersist implements Persist {
       nctId: c.targetKind === "trial" ? (nct.get(c.targetId) ?? null) : null,
       organizationKind: c.targetKind === "organization" ? (kinds.get(c.targetId) ?? null) : null,
     }));
+  }
+
+  async appendEvidence(caseId: string, additions: readonly EvidenceAddition[]): Promise<number> {
+    const rows = additions.flatMap((a) => a.evidence.map((e) => ({
+      id: e.id,
+      caseId,
+      targetKind: a.targetKind,
+      targetId: a.targetId,
+      claimType: e.claimType,
+      claim: e.claim,
+      sourceUrl: e.sourceUrl,
+      sourceKind: e.sourceKind as typeof evidenceTable.$inferInsert.sourceKind,
+      fetchedAt: new Date(e.fetchedAt),
+    })));
+    if (rows.length === 0) return 0;
+    const inserted = await this.db.insert(evidenceTable).values(rows).onConflictDoNothing({ target: [evidenceTable.caseId, evidenceTable.id] }).returning({ id: evidenceTable.id });
+    return inserted.length;
   }
 
   async getCaseExperts(caseId: string): Promise<CaseExpert[]> {

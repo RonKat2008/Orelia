@@ -8,8 +8,10 @@ import {
   canAdvance,
   emptyAnswers,
   mergeExtracted,
+  questionError,
   type PatientAnswers,
 } from "@/components/intake/patient/answers";
+import { INTAKE_COPY, intakeCopyStrings } from "@/components/intake/patient/copy";
 
 const base: PatientAnswers = {
   condition: "vascular Ehlers-Danlos syndrome",
@@ -192,5 +194,36 @@ describe("applyProfilePrefill", () => {
     const answers = emptyAnswers();
     applyProfilePrefill(answers, { condition: "X" });
     expect(answers.condition).toBe("");
+  });
+});
+
+describe("questionError", () => {
+  it("returns a problem-plus-fix message only for unanswered required questions", () => {
+    expect(questionError("condition", emptyAnswers())).toMatch(/Tell us your condition/);
+    expect(questionError("condition", { ...emptyAnswers(), condition: "x".repeat(201) })).toMatch(/200/);
+    expect(questionError("home", emptyAnswers())).toMatch(/city or your state/);
+    expect(questionError("travel", emptyAnswers())).toMatch(/Choose how far/);
+    expect(questionError("goals", emptyAnswers())).toMatch(/Choose at least one/);
+    expect(questionError("insurance", emptyAnswers())).toBeUndefined();
+    expect(questionError("condition", base)).toBeUndefined();
+  });
+});
+
+describe("INTAKE_COPY", () => {
+  const banned = /\b(agent|swarm|curator|verifier|allowlist|resource|score|rank|tier|pipeline)\b/i;
+
+  it("has no banned words and no sentence over 20 words", () => {
+    for (const text of intakeCopyStrings()) {
+      expect(text).not.toMatch(banned);
+      for (const sentence of text.split(/[.!?]\s+/)) {
+        expect(sentence.split(/\s+/).length).toBeLessThanOrEqual(20);
+      }
+    }
+  });
+
+  it("gives every hint at most one sentence", () => {
+    for (const q of Object.values(INTAKE_COPY.questions)) {
+      expect(q.hint.split(/[.!?]\s+/).filter(Boolean)).toHaveLength(1);
+    }
   });
 });

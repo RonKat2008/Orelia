@@ -1,6 +1,7 @@
 import type { Case, CaseInput } from "@/lib/contracts";
 import { goalSchema } from "@/lib/contracts";
 import type { Goal } from "../goals";
+import { INTAKE_COPY } from "./copy";
 
 export type TravelChoice = "local" | "regional" | "far" | "anywhere";
 
@@ -36,19 +37,9 @@ export const TRAVEL_MILES: Record<TravelChoice, number | undefined> = {
   anywhere: undefined,
 };
 
-export const TRAVEL_LABELS: Record<TravelChoice, string> = {
-  local: "Close to home",
-  regional: "A few hours away",
-  far: "Anywhere in the region",
-  anywhere: "Anywhere it takes",
-};
+export const TRAVEL_LABELS: Record<TravelChoice, string> = INTAKE_COPY.travel.labels;
 
-export const TRAVEL_HINTS: Record<TravelChoice, string> = {
-  local: "Up to about 25 miles.",
-  regional: "Up to about 100 miles.",
-  far: "Up to about 500 miles.",
-  anywhere: "No limit on distance.",
-};
+export const TRAVEL_HINTS: Record<TravelChoice, string> = INTAKE_COPY.travel.hints;
 
 /** Short phrases used when a goal is read back in a sentence. */
 export const GOAL_PHRASES: Record<Goal, string> = {
@@ -137,6 +128,26 @@ export function canAdvance(id: PatientQuestionId, answers: PatientAnswers): bool
       return answers.goals.length > 0;
     case "insurance":
       return true;
+  }
+}
+
+/** The error to show after Continue for an unanswered required question (problem plus fix), or undefined. */
+export function questionError(id: PatientQuestionId, answers: PatientAnswers): string | undefined {
+  if (canAdvance(id, answers)) return undefined;
+  const q = INTAKE_COPY.questions;
+  switch (id) {
+    case "condition":
+      return answers.condition.trim().length > MAX_CONDITION_LENGTH
+        ? q.condition.errorTooLong(MAX_CONDITION_LENGTH)
+        : q.condition.errorEmpty;
+    case "home":
+      return q.home.error;
+    case "travel":
+      return q.travel.error;
+    case "goals":
+      return q.goals.error;
+    case "insurance":
+      return undefined;
   }
 }
 

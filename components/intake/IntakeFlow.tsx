@@ -2,11 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { REPORT_TEXT_MAX, REPORT_TEXT_MIN, type Case, type CaseInput } from "@/lib/contracts";
+import {
+  REPORT_TEXT_MAX,
+  REPORT_TEXT_MIN,
+  type Case,
+  type CaseInput,
+} from "@/lib/contracts";
 import { Reveal } from "@/components/motion/Reveal";
 import { Skeleton, Stepper, toast, type StepperStep } from "@/components/ui";
 import type { DemoReport } from "./demos";
-import { confirmAndResearch, extractCase, InvalidFields, ScopeRefusal } from "./case-client";
+import {
+  confirmAndResearch,
+  extractCase,
+  InvalidFields,
+  ScopeRefusal,
+} from "./case-client";
 import { NEEDS_REVIEW, checkUpload, fallbackFor } from "./fallback";
 import { ReportStep } from "./ReportStep";
 import { ReviewStep } from "./ReviewStep";
@@ -14,9 +24,9 @@ import { mergeProfileIntoDraft } from "@/lib/accounts/prefill";
 import { ProfilePrefillCard, useIntakeProfile } from "./ProfilePrefill";
 
 const STEPS: StepperStep[] = [
-  { id: "report", label: "Share a report", description: "Paste or upload" },
-  { id: "review", label: "Confirm the details", description: "Edit anything" },
-  { id: "search", label: "Start the search", description: "Nine searches at once" },
+  { id: "report", label: "Share a report" },
+  { id: "review", label: "Confirm" },
+  { id: "search", label: "Start the search" },
 ];
 
 const FIELD_LABELS: Record<string, string> = {
@@ -33,7 +43,12 @@ const FIELD_LABELS: Record<string, string> = {
 
 type Phase = "report" | "reading" | "review" | "starting";
 
-const STEP_INDEX: Record<Phase, number> = { report: 0, reading: 0, review: 1, starting: 2 };
+const STEP_INDEX: Record<Phase, number> = {
+  report: 0,
+  reading: 0,
+  review: 1,
+  starting: 2,
+};
 
 function ReadingState() {
   return (
@@ -43,10 +58,16 @@ function ReadingState() {
       className="grid gap-6 rounded-lg border border-line bg-card p-6 shadow-md sm:p-8"
     >
       <div role="status" className="grid gap-1">
-        <h2 id="reading-heading" tabIndex={-1} className="m-0 font-display text-h3 font-normal text-ink display-soft">
+        <h1
+          id="reading-heading"
+          tabIndex={-1}
+          className="m-0 font-display text-h1 font-light text-ink display-soft outline-none"
+        >
           Reading the report
-        </h2>
-        <p className="m-0 text-body text-ink-2">Pulling out the diagnosis, location and coverage details.</p>
+        </h1>
+        <p className="m-0 text-body text-ink-2">
+          Pulling out the diagnosis, location and coverage details.
+        </p>
       </div>
       <div aria-hidden className="grid gap-4 sm:grid-cols-2">
         <Skeleton className="h-11 sm:col-span-2" />
@@ -77,7 +98,7 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   useEffect(() => {
     if (!focusKey || lastFocused.current === focusKey) return;
     lastFocused.current = focusKey;
-    const heading = stepRef.current?.querySelector<HTMLElement>("h2");
+    const heading = stepRef.current?.querySelector<HTMLElement>("h1");
     heading?.setAttribute("tabindex", "-1");
     heading?.focus({ preventScroll: false });
   }, [focusKey]);
@@ -85,7 +106,9 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   function loadSample(demo: DemoReport) {
     setReportText(demo.reportText);
     setError(null);
-    toast.success(`Loaded the ${demo.title} sample`, { description: "Synthetic report. Read it when you are ready." });
+    toast.success(`Loaded the ${demo.title} sample`, {
+      description: "Synthetic report. Read it when you are ready.",
+    });
   }
 
   async function loadFile(file: File) {
@@ -106,7 +129,11 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
 
   async function readReport() {
     const text = reportText.trim();
-    if (!text || busyRef.current) return;
+    if (busyRef.current) return;
+    if (!text) {
+      setError("Paste a report or pick a sample first.");
+      return;
+    }
     if (text.length < REPORT_TEXT_MIN) {
       setError("That is too short to read. Paste more of the report.");
       return;
@@ -121,14 +148,25 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
     setPhase("reading");
     setError(null);
     try {
-      const { record, preview: isPreview } = await extractCase(reportText, fallbackFor(reportText, demos));
-      const base = record.diseaseName === NEEDS_REVIEW ? { ...record, diseaseName: "" } : record;
+      const { record, preview: isPreview } = await extractCase(
+        reportText,
+        fallbackFor(reportText, demos),
+      );
+      const base =
+        record.diseaseName === NEEDS_REVIEW
+          ? { ...record, diseaseName: "" }
+          : record;
       const merged = mergeProfileIntoDraft(base, profile);
       setDraft(merged.draft);
-      if (merged.filled.length) toast.info("Filled in from your profile", { description: "Check each detail before the search." });
+      if (merged.filled.length)
+        toast.info("Filled in from your profile", {
+          description: "Check each detail before the search.",
+        });
       setPreview(isPreview);
       setPhase("review");
-      toast.success("Report read", { description: "Check each detail before the search starts." });
+      toast.success("Report read", {
+        description: "Check each detail before the search starts.",
+      });
     } catch (error) {
       setPhase("report");
       setError(
@@ -176,10 +214,22 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   }
 
   return (
-    <div className="grid gap-10">
-      <Stepper steps={STEPS} current={STEP_INDEX[phase]} aria-label="Intake progress" />
+    <div className="grid gap-8">
+      <Stepper
+        steps={STEPS}
+        current={STEP_INDEX[phase]}
+        aria-label="Intake progress"
+      />
       <div ref={stepRef}>
-        <Reveal revealKey={phase === "reading" ? "reading" : phase === "report" ? "report" : "review"}>
+        <Reveal
+          revealKey={
+            phase === "reading"
+              ? "reading"
+              : phase === "report"
+                ? "report"
+                : "review"
+          }
+        >
           {phase === "reading" ? (
             <ReadingState />
           ) : draft && phase !== "report" ? (
@@ -197,13 +247,20 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
               onConfirm={() => void startSearch()}
             />
           ) : (
-            <>
-            <ProfilePrefillCard profile={profile} onUse={(text) => { setReportText(text); setError(null); }} />
             <ReportStep
               demos={demos}
               reportText={reportText}
               busy={false}
               error={error}
+              prefill={
+                <ProfilePrefillCard
+                  profile={profile}
+                  onUse={(text) => {
+                    setReportText(text);
+                    setError(null);
+                  }}
+                />
+              }
               onTextChange={(text) => {
                 setReportText(text);
                 setError(null);
@@ -212,14 +269,9 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
               onFile={(file) => void loadFile(file)}
               onExtract={() => void readReport()}
             />
-            </>
           )}
         </Reveal>
       </div>
-      <p className="m-0 max-w-prose text-small text-ink-2">
-        Wayfinder helps you find and contact people. It does not give medical advice. If symptoms feel urgent, contact
-        your care team or call 911.
-      </p>
     </div>
   );
 }

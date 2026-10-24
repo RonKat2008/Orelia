@@ -1,10 +1,21 @@
 "use client";
 
-import { useRef, useState, type DragEvent } from "react";
-import { ArrowRight, FileText, Upload } from "lucide-react";
-import { Button, EmptyState, Field, Textarea } from "@/components/ui";
+import { useRef, useState, type DragEvent, type ReactNode } from "react";
+import { Upload } from "lucide-react";
+import {
+  Button,
+  Field,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
 import type { DemoReport } from "./demos";
+import { INTAKE_COPY } from "./patient/copy";
 
 type Props = {
   demos: DemoReport[];
@@ -15,51 +26,90 @@ type Props = {
   onSample: (demo: DemoReport) => void;
   onFile: (file: File) => void;
   onExtract: () => void;
+  /** "patient" uses the plain intake copy; "judge" (default) the working copy. */
+  audience?: "patient" | "judge";
+  /** Rendered under the heading, before the form (the "start from my profile" card). */
+  prefill?: ReactNode;
 };
 
-const TEXTAREA_ID = "report-text";
+type UploadCopy = {
+  [K in Exclude<keyof typeof INTAKE_COPY.upload, "readingNote" | "empty" | "unreadable" | "readFailed" | "words">]: string;
+} & { words: (count: number) => string };
 
-function SampleButtons({ demos, reportText, onSample }: Pick<Props, "demos" | "reportText" | "onSample">) {
-  if (demos.length === 0) {
-    return (
-      <EmptyState
-        title="No sample cases found"
-        description="Paste a synthetic report below, or upload a text file. Nothing is interpreted."
-      />
-    );
-  }
+const TEXTAREA_ID = "report-text";
+const SAMPLE_ID = "report-sample";
+const ERROR_ID = "report-error";
+
+const JUDGE_COPY: UploadCopy = {
+  title: "Paste a report or clinic letter",
+  lede: "We copy out only the details needed to search. You check them next.",
+  textLabel: "Report text",
+  textHint:
+    "Synthetic or de-identified text only. Remove names and record numbers before pasting.",
+  placeholder:
+    "Paste the report here, or drag a .txt or .md file onto this box.",
+  upload: "Upload a .txt or .md file",
+  nothing: "Nothing added yet",
+  words: (count) => `${count} words ready`,
+  sampleLabel: "Try a sample report",
+  samplePlaceholder: "Choose a sample",
+  sampleNote: "Samples are synthetic. No real patient is described.",
+  noSamples: "No sample reports found.",
+  read: "Read the report",
+  reading: "Reading the report",
+};
+
+function SamplePicker({
+  demos,
+  reportText,
+  onSample,
+  copy,
+}: Pick<Props, "demos" | "reportText" | "onSample"> & { copy: UploadCopy }) {
+  if (demos.length === 0)
+    return <p className="m-0 text-small text-ink-2">{copy.noSamples}</p>;
+  const active = demos.find((demo) => demo.reportText === reportText);
   return (
-    <div className="grid gap-3">
-      <p id="sample-label" className="m-0 text-micro font-semibold uppercase text-ink-3">
-        No report handy? Try a sample case
-      </p>
-      <ul aria-labelledby="sample-label" className="m-0 flex list-none flex-wrap gap-2 p-0">
-        {demos.map((demo) => {
-          const active = demo.reportText === reportText;
-          return (
-            <li key={demo.id}>
-              <Button
-                type="button"
-                variant={active ? "primary" : "secondary"}
-                size="sm"
-                aria-pressed={active}
-                onClick={() => onSample(demo)}
-              >
-                <FileText aria-hidden />
-                {demo.title}
-              </Button>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="m-0 text-small text-ink-2">Samples are synthetic. No real patient is described.</p>
+    <div className="grid max-w-sm gap-2">
+      <Label htmlFor={SAMPLE_ID}>{copy.sampleLabel}</Label>
+      <Select
+        value={active?.id ?? ""}
+        onValueChange={(id) => {
+          const demo = demos.find((item) => item.id === id);
+          if (demo) onSample(demo);
+        }}
+      >
+        <SelectTrigger id={SAMPLE_ID}>
+          <SelectValue placeholder={copy.samplePlaceholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {demos.map((demo) => (
+            <SelectItem key={demo.id} value={demo.id}>
+              {demo.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="m-0 text-small text-ink-2">{copy.sampleNote}</p>
     </div>
   );
 }
 
-export function ReportStep({ demos, reportText, busy, error, onTextChange, onSample, onFile, onExtract }: Props) {
+export function ReportStep({
+  demos,
+  reportText,
+  busy,
+  error,
+  onTextChange,
+  onSample,
+  onFile,
+  onExtract,
+  audience = "judge",
+  prefill,
+}: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const copy: UploadCopy =
+    audience === "patient" ? INTAKE_COPY.upload : JUDGE_COPY;
 
   function onDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -69,117 +119,113 @@ export function ReportStep({ demos, reportText, busy, error, onTextChange, onSam
   }
 
   return (
-    <section aria-labelledby="report-heading" className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-12">
-      <div className="grid gap-8">
-        <div className="grid gap-2">
-          <h2 id="report-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">
-            Share a <em className="emph">report</em>
-          </h2>
-          <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">
-            Paste a pathology or clinic summary, or drop in a text file. We only copy out the details needed to search.
-          </p>
-        </div>
-
-        <SampleButtons demos={demos} reportText={reportText} onSample={onSample} />
-
-        <div
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          className={cn(
-            "grid gap-4 rounded-lg border border-dashed bg-card p-4 shadow-xs transition-[border-color,background-color] duration-300 sm:p-6",
-            "motion-reduce:transition-none",
-            dragging ? "border-teal bg-teal-soft/50" : "border-line-strong",
-          )}
+    <section aria-labelledby="report-heading" className="grid max-w-3xl gap-8">
+      <div className="grid gap-2">
+        <h1
+          id="report-heading"
+          tabIndex={-1}
+          className="m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance outline-none"
         >
-          <Field
-            label="Report text"
-            htmlFor={TEXTAREA_ID}
-            hint="Synthetic or de-identified text only. Remove names and record numbers before pasting."
-          >
-            <Textarea
-              id={TEXTAREA_ID}
-              rows={12}
-              value={reportText}
-              onChange={(event) => onTextChange(event.target.value)}
-              placeholder="Paste the report here, or drag a .txt or .md file onto this box."
-              aria-describedby={`${TEXTAREA_ID}-hint`}
-              className="min-h-64 font-mono text-mono leading-relaxed"
-              disabled={busy}
-            />
-          </Field>
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              ref={fileRef}
-              id="report-file"
-              type="file"
-              accept=".txt,.md,text/plain,text/markdown"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) onFile(file);
-                event.target.value = "";
-              }}
-            />
-            <Button type="button" variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>
-              <Upload aria-hidden />
-              Upload a .txt or .md file
-            </Button>
-            <span className="text-small text-ink-2">
-              {reportText.trim() ? `${reportText.trim().split(/\s+/).length} words ready` : "Nothing added yet"}
-            </span>
-          </div>
-        </div>
+          {copy.title}
+        </h1>
+        <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">
+          {copy.lede}
+        </p>
+      </div>
 
-        {error ? (
-          <p role="alert" className="m-0 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-body text-ink">
-            {error}
-          </p>
-        ) : null}
+      {prefill}
 
-        <div className="flex flex-wrap items-center gap-4">
+      <div
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={cn(
+          "grid gap-4 rounded-lg border border-dashed bg-card p-4 sm:p-6",
+          "transition-[border-color,background-color] duration-150 motion-reduce:transition-none",
+          dragging ? "border-teal bg-teal-soft/50" : "border-line-strong",
+        )}
+      >
+        <Field
+          label={copy.textLabel}
+          htmlFor={TEXTAREA_ID}
+          hint={copy.textHint}
+        >
+          <Textarea
+            id={TEXTAREA_ID}
+            rows={12}
+            value={reportText}
+            onChange={(event) => onTextChange(event.target.value)}
+            placeholder={copy.placeholder}
+            aria-describedby={`${TEXTAREA_ID}-hint${error ? ` ${ERROR_ID}` : ""}`}
+            aria-invalid={error ? true : undefined}
+            className="min-h-64 font-sans text-body leading-relaxed"
+            disabled={busy}
+          />
+        </Field>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            ref={fileRef}
+            id="report-file"
+            type="file"
+            accept=".txt,.md,text/plain,text/markdown"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onFile(file);
+              event.target.value = "";
+            }}
+          />
           <Button
             type="button"
-            size="lg"
-            onClick={onExtract}
-            disabled={!reportText.trim()}
-            loading={busy}
-            loadingText="Reading the report"
+            variant="secondary"
+            size="sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={busy}
           >
-            Read the report
-            {busy ? null : <ArrowRight aria-hidden />}
+            <Upload aria-hidden />
+            {copy.upload}
           </Button>
-          <p className="m-0 text-small text-ink-2">You will review everything before any search starts.</p>
+          <span className="text-small text-ink-2">
+            {reportText.trim()
+              ? copy.words(reportText.trim().split(/\s+/).length)
+              : copy.nothing}
+          </span>
         </div>
       </div>
 
-      <aside aria-label="What happens next" className="grid content-start gap-4">
-        <ol className="m-0 grid list-none gap-5 p-0">
-          {[
-            ["We read it", "The details we need are pulled out, not interpreted."],
-            ["You check it", "Every field is editable. Nothing is assumed."],
-            ["Nine searches run", "Papers, trials, specialists, centers, advocacy and aid, at once."],
-          ].map(([title, body], index) => (
-            <li key={title} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
-              <span
-                aria-hidden
-                className="grid size-8 place-items-center rounded-pill border border-line-strong bg-card font-display text-h4 text-teal shadow-xs"
-              >
-                {index + 1}
-              </span>
-              <span className="grid gap-0.5">
-                <span className="font-semibold text-ink">{title}</span>
-                <span className="text-small text-ink-2">{body}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </aside>
+      <SamplePicker
+        demos={demos}
+        reportText={reportText}
+        onSample={onSample}
+        copy={copy}
+      />
+
+      {error ? (
+        <p
+          id={ERROR_ID}
+          role="alert"
+          className="m-0 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-body text-ink"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div>
+        <Button
+          type="button"
+          size="lg"
+          onClick={onExtract}
+          loading={busy}
+          loadingText={copy.reading}
+        >
+          {copy.read}
+        </Button>
+      </div>
     </section>
   );
 }

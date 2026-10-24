@@ -1,18 +1,37 @@
 "use client";
 
-import { useCallback, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
 import type { Case, CaseInput } from "@/lib/contracts";
-import { Reveal } from "@/components/motion/Reveal";
-import { Button, Checkbox, ChoiceRow, Input, Label, Progress, RadioGroup, RadioGroupItem } from "@/components/ui";
+import {
+  Button,
+  Checkbox,
+  ChoiceRow,
+  ErrorSummary,
+  Input,
+  Label,
+  Progress,
+  Question,
+  RadioGroup,
+  RadioGroupItem,
+  SummaryList,
+} from "@/components/ui";
 import type { DemoReport } from "../demos";
-import { InvalidFields, ScopeRefusal, confirmAndResearch, extractCase } from "../case-client";
+import {
+  InvalidFields,
+  ScopeRefusal,
+  confirmAndResearch,
+  extractCase,
+} from "../case-client";
 import { NEEDS_REVIEW, checkUpload, fallbackFor } from "../fallback";
-import { GOAL_LABELS, type Goal } from "../goals";
 import { ReportStep } from "../ReportStep";
 import {
-  MAX_CONDITION_LENGTH,
   PATIENT_QUESTIONS,
   TRAVEL_HINTS,
   TRAVEL_LABELS,
@@ -23,43 +42,51 @@ import {
   canAdvance,
   emptyAnswers,
   mergeExtracted,
+  questionError,
   type PatientAnswers,
   type PatientQuestionId,
   type TravelChoice,
 } from "./answers";
+import { BackButton } from "./BackButton";
+import { INTAKE_COPY } from "./copy";
+import { StepTransition } from "./StepTransition";
 import { useProfilePrefill } from "./useProfilePrefill";
 
 type Phase = "questions" | "upload" | "reading" | "confirm";
 
+const COPY = INTAKE_COPY;
 const TOTAL = PATIENT_QUESTIONS.length;
-const TRAVEL_CHOICES: readonly TravelChoice[] = ["local", "regional", "far", "anywhere"];
-const GOALS: readonly Goal[] = ["second_opinion", "treatment", "trial", "support", "aid"];
-const GOAL_CHOICE_TITLES: Record<Goal, string> = {
-  second_opinion: "A second opinion",
-  treatment: "Treatment at a specialist center",
-  trial: "A clinical trial",
-  support: "Support from people who understand",
-  aid: "Help with money or travel",
-};
-const FIELD_NAMES: Record<string, string> = {
-  diseaseName: "your condition",
-  homeCity: "your city",
-  homeState: "your state (a US state)",
-  travelLimitMiles: "how far you can travel",
-  insurer: "your insurance",
-  goals: "what you're hoping for",
-};
-const fieldName = (key: string) => FIELD_NAMES[key] ?? key;
-const START_ERROR = "We could not start your search. Nothing was sent to anyone. Please try again.";
-const FOOTER =
-  "Wayfinder helps you find and contact people. It does not give medical advice. If symptoms feel urgent, contact your care team or call 911.";
+const TRAVEL_CHOICES: readonly TravelChoice[] = [
+  "local",
+  "regional",
+  "far",
+  "anywhere",
+];
+const GOALS = [
+  "second_opinion",
+  "treatment",
+  "trial",
+  "support",
+  "aid",
+] as const;
+const START_BUTTON_ID = "start-search";
+const HEADING_CLASS =
+  "m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance outline-none";
 
-const headingClass = "m-0 font-display text-h2 font-light text-ink display-soft text-balance outline-none";
+const fieldName = (key: string) => COPY.errors.fieldNames[key] ?? key;
 
 function recordToAnswers(record: Case): PatientAnswers {
   const miles = record.travelLimitMiles;
   const travel: TravelChoice | null =
-    miles === undefined ? null : miles <= 25 ? "local" : miles <= 100 ? "regional" : miles <= 500 ? "far" : "anywhere";
+    miles === undefined
+      ? null
+      : miles <= 25
+        ? "local"
+        : miles <= 100
+          ? "regional"
+          : miles <= 500
+            ? "far"
+            : "anywhere";
   return {
     condition: record.diseaseName === NEEDS_REVIEW ? "" : record.diseaseName,
     city: record.homeCity ?? "",
@@ -73,275 +100,272 @@ function recordToAnswers(record: Case): PatientAnswers {
 function travelSummary(travel: TravelChoice | null): string {
   if (!travel) return "";
   const miles = TRAVEL_MILES[travel];
-  return miles === undefined ? "Anywhere it takes" : `Up to ${miles} miles`;
+  return miles === undefined
+    ? COPY.travel.anywhereSummary
+    : COPY.travel.milesSummary(miles);
 }
 
-function ErrorNote({ children }: { children: ReactNode }) {
-  return (
-    <p role="alert" className="m-0 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-body text-ink">
-      {children}
-    </p>
-  );
-}
-
-type QuestionProps = {
+type FieldProps = {
   answers: PatientAnswers;
   onChange: (next: PatientAnswers) => void;
-  headingRef: (el: HTMLHeadingElement | null) => void;
 };
 
-function Heading({ id, headingRef, children }: { id: string; headingRef: QuestionProps["headingRef"]; children: ReactNode }) {
-  return (
-    <h2 id={id} ref={headingRef} tabIndex={-1} className={headingClass}>
-      {children}
-    </h2>
-  );
-}
-
-function ConditionQuestion({ answers, onChange, headingRef }: QuestionProps) {
-  const tooLong = answers.condition.trim().length > MAX_CONDITION_LENGTH;
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-3">
-        <Heading id="q-condition" headingRef={headingRef}>
-          What condition are you looking for help with?
-        </Heading>
-        <p id="q-condition-hint" className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-          The name on your report is perfect, for example vascular Ehlers-Danlos syndrome.
-        </p>
-      </div>
-      <div className="grid gap-2">
-        <Input
-          autoComplete="off"
-          enterKeyHint="next"
-          aria-labelledby="q-condition"
-          aria-describedby="q-condition-hint q-condition-error"
-          aria-invalid={tooLong || undefined}
-          value={answers.condition}
-          onChange={(event) => onChange({ ...answers, condition: event.target.value })}
-          className="h-13 text-lead"
-        />
-        {tooLong ? (
-          <p id="q-condition-error" role="alert" className="m-0 text-small font-semibold text-danger">
-            Please keep this under {MAX_CONDITION_LENGTH} characters.
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function HomeQuestion({ answers, onChange, headingRef }: QuestionProps) {
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-3">
-        <Heading id="q-home" headingRef={headingRef}>
-          Where do you live?
-        </Heading>
-        <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-          We use this to find places you could realistically get to. A city or a state is enough.
-        </p>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="grid gap-2">
-          <Label htmlFor="q-city">City</Label>
-          <Input
-            id="q-city"
-            autoComplete="address-level2"
-            enterKeyHint="next"
-            value={answers.city}
-            onChange={(event) => onChange({ ...answers, city: event.target.value })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="q-state">State</Label>
-          <Input
-            id="q-state"
-            autoComplete="address-level1"
-            enterKeyHint="next"
-            value={answers.state}
-            onChange={(event) => onChange({ ...answers, state: event.target.value })}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TravelQuestion({ answers, onChange, headingRef }: QuestionProps) {
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-3">
-        <Heading id="q-travel" headingRef={headingRef}>
-          How far could you travel?
-        </Heading>
-        <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-          Pick what feels doable. You can always change this later.
-        </p>
-      </div>
-      <RadioGroup
-        aria-labelledby="q-travel"
-        value={answers.travel ?? ""}
-        onValueChange={(value) => onChange({ ...answers, travel: value as TravelChoice })}
-      >
-        {TRAVEL_CHOICES.map((choice) => (
-          <ChoiceRow key={choice} title={TRAVEL_LABELS[choice]} description={TRAVEL_HINTS[choice]}>
-            <RadioGroupItem value={choice} aria-label={TRAVEL_LABELS[choice]} />
-          </ChoiceRow>
-        ))}
-      </RadioGroup>
-    </div>
-  );
-}
-
-function GoalsQuestion({ answers, onChange, headingRef }: QuestionProps) {
-  function toggle(goal: Goal) {
-    const goals = answers.goals.includes(goal) ? answers.goals.filter((item) => item !== goal) : [...answers.goals, goal];
-    onChange({ ...answers, goals });
-  }
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-3">
-        <Heading id="q-goals" headingRef={headingRef}>
-          What are you hoping for?
-        </Heading>
-        <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">Choose all that apply.</p>
-      </div>
-      <div role="group" aria-labelledby="q-goals" className="grid gap-3">
-        {GOALS.map((goal) => (
-          <ChoiceRow key={goal} title={GOAL_CHOICE_TITLES[goal]}>
-            <Checkbox
-              checked={answers.goals.includes(goal)}
-              onCheckedChange={() => toggle(goal)}
-              aria-label={GOAL_CHOICE_TITLES[goal]}
+function QuestionFields({
+  id,
+  answers,
+  onChange,
+}: FieldProps & { id: PatientQuestionId }): ReactNode {
+  switch (id) {
+    case "home":
+      return (
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="grid gap-2">
+            <Label htmlFor="q-city">{COPY.questions.home.city}</Label>
+            <Input
+              id="q-city"
+              autoComplete="address-level2"
+              enterKeyHint="next"
+              value={answers.city}
+              onChange={(event) =>
+                onChange({ ...answers, city: event.target.value })
+              }
             />
-          </ChoiceRow>
-        ))}
-      </div>
-    </div>
-  );
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="q-state">{COPY.questions.home.state}</Label>
+            <Input
+              id="q-state"
+              autoComplete="address-level1"
+              enterKeyHint="next"
+              value={answers.state}
+              onChange={(event) =>
+                onChange({ ...answers, state: event.target.value })
+              }
+            />
+          </div>
+        </div>
+      );
+    case "travel":
+      return (
+        <RadioGroup
+          aria-label={COPY.questions.travel.question}
+          value={answers.travel ?? ""}
+          onValueChange={(value) =>
+            onChange({ ...answers, travel: value as TravelChoice })
+          }
+        >
+          {TRAVEL_CHOICES.map((choice) => (
+            <ChoiceRow
+              key={choice}
+              title={TRAVEL_LABELS[choice]}
+              description={TRAVEL_HINTS[choice]}
+            >
+              <RadioGroupItem
+                value={choice}
+                aria-label={TRAVEL_LABELS[choice]}
+              />
+            </ChoiceRow>
+          ))}
+        </RadioGroup>
+      );
+    case "goals":
+      return (
+        <div className="grid gap-3">
+          {GOALS.map((goal) => (
+            <ChoiceRow key={goal} title={COPY.goals[goal]}>
+              <Checkbox
+                checked={answers.goals.includes(goal)}
+                onCheckedChange={() =>
+                  onChange({
+                    ...answers,
+                    goals: answers.goals.includes(goal)
+                      ? answers.goals.filter((item) => item !== goal)
+                      : [...answers.goals, goal],
+                  })
+                }
+                aria-label={COPY.goals[goal]}
+              />
+            </ChoiceRow>
+          ))}
+        </div>
+      );
+    default:
+      return null;
+  }
 }
 
-function InsuranceQuestion({ answers, onChange, headingRef }: QuestionProps) {
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-3">
-        <Heading id="q-insurance" headingRef={headingRef}>
-          Who is your insurance with?
-        </Heading>
-        <p id="q-insurance-hint" className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-          This is optional. It helps us check which centers are likely to take your plan.
-        </p>
-      </div>
-      <Input
-        autoComplete="off"
-        enterKeyHint="done"
-        aria-labelledby="q-insurance"
-        aria-describedby="q-insurance-hint"
-        value={answers.insurer}
-        onChange={(event) => onChange({ ...answers, insurer: event.target.value })}
-        className="h-13 text-lead"
-      />
-    </div>
-  );
-}
-
-const QUESTION_VIEWS: Record<PatientQuestionId, (props: QuestionProps) => ReactNode> = {
-  condition: ConditionQuestion,
-  home: HomeQuestion,
-  travel: TravelQuestion,
-  goals: GoalsQuestion,
-  insurance: InsuranceQuestion,
+type QuestionScreenProps = FieldProps & {
+  id: PatientQuestionId;
+  showError: boolean;
+  back: ReactNode;
+  secondary: ReactNode;
+  onSubmit: () => void;
+  onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
 };
 
-function ReadingNote() {
+function QuestionScreen({
+  id,
+  answers,
+  onChange,
+  showError,
+  back,
+  secondary,
+  onSubmit,
+  onKeyDown,
+}: QuestionScreenProps) {
+  const error = showError ? questionError(id, answers) : undefined;
+  const copy = COPY.questions[id];
+
+  if (id === "condition" || id === "insurance") {
+    const isCondition = id === "condition";
+    const value = isCondition ? answers.condition : answers.insurer;
+    return (
+      <Question
+        question={copy.question}
+        controlId={`q-${id}`}
+        hint={copy.hint}
+        optional={!isCondition}
+        error={error}
+        back={back}
+        submitLabel={COPY.actions.continue}
+        onSubmit={onSubmit}
+        secondary={secondary}
+      >
+        {(control) => (
+          <Input
+            id={`q-${id}`}
+            autoComplete="off"
+            enterKeyHint={isCondition ? "next" : "done"}
+            value={value}
+            onChange={(event) =>
+              onChange(
+                isCondition
+                  ? { ...answers, condition: event.target.value }
+                  : { ...answers, insurer: event.target.value },
+              )
+            }
+            {...control}
+          />
+        )}
+      </Question>
+    );
+  }
+
   return (
-    <section aria-busy="true" className="grid gap-3 rounded-lg border border-line bg-card p-6 shadow-md sm:p-8">
-      <div role="status" className="grid gap-1">
-        <h2 className={headingClass}>Reading your report</h2>
-        <p className="m-0 text-lead text-ink-2">Pulling out the details. This only takes a moment.</p>
-      </div>
-    </section>
+    <div onKeyDown={onKeyDown}>
+      <Question
+        kind="fieldset"
+        question={copy.question}
+        controlId={`q-${id}`}
+        hint={copy.hint}
+        error={error}
+        back={back}
+        submitLabel={COPY.actions.continue}
+        onSubmit={onSubmit}
+        secondary={secondary}
+      >
+        <QuestionFields id={id} answers={answers} onChange={onChange} />
+      </Question>
+    </div>
   );
 }
 
-type SummaryProps = {
+type CheckProps = {
   answers: PatientAnswers;
   busy: boolean;
   error: string | null;
-  headingRef: QuestionProps["headingRef"];
+  back: ReactNode;
   onChange: (id: PatientQuestionId) => void;
   onStart: () => void;
 };
 
-function SummaryScreen({ answers, busy, error, headingRef, onChange, onStart }: SummaryProps) {
-  const rows: Array<{ id: PatientQuestionId; label: string; value: string }> = [
-    { id: "condition", label: "Condition", value: answers.condition.trim() },
-    { id: "home", label: "Where you live", value: [answers.city.trim(), answers.state.trim()].filter(Boolean).join(", ") },
-    { id: "travel", label: "How far you could travel", value: travelSummary(answers.travel) },
+function CheckScreen({
+  answers,
+  busy,
+  error,
+  back,
+  onChange,
+  onStart,
+}: CheckProps) {
+  const rows: Array<{ id: PatientQuestionId; value: string }> = [
+    { id: "condition", value: answers.condition.trim() },
+    {
+      id: "home",
+      value: [answers.city.trim(), answers.state.trim()]
+        .filter(Boolean)
+        .join(", "),
+    },
+    { id: "travel", value: travelSummary(answers.travel) },
     {
       id: "goals",
-      label: "What you are hoping for",
-      value: answers.goals.map((goal) => GOAL_LABELS[goal]).join(", "),
+      value: answers.goals.map((goal) => COPY.goals[goal]).join(", "),
     },
-    { id: "insurance", label: "Insurance", value: answers.insurer.trim() },
+    { id: "insurance", value: answers.insurer.trim() },
   ];
   return (
-    <div className="grid gap-8">
+    <div className="grid max-w-patient gap-6">
+      <div>{back}</div>
+      {error ? (
+        <ErrorSummary errors={[{ fieldId: START_BUTTON_ID, message: error }]} />
+      ) : null}
       <div className="grid gap-3">
-        <Heading id="q-confirm" headingRef={headingRef}>
-          Is this right?
-        </Heading>
-        <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-          Here is what you told us. Change anything that is not right.
+        <h1 className={HEADING_CLASS} tabIndex={-1}>
+          {COPY.check.title}
+        </h1>
+        <p className="m-0 max-w-prose text-body text-ink-2">
+          {COPY.check.hint}
         </p>
       </div>
-      <dl className="m-0 grid divide-y divide-line rounded-lg border border-line bg-card shadow-sm">
-        {rows.map((row) => (
-          <div key={row.id} className="flex items-start justify-between gap-4 p-4 sm:px-6">
-            <div className="grid min-w-0 gap-0.5">
-              <dt className="text-small text-ink-2">{row.label}</dt>
-              <dd className="m-0 text-body font-semibold text-ink [overflow-wrap:anywhere]">
-                {row.value || <span className="font-normal text-ink-3">Not given</span>}
-              </dd>
-            </div>
-            <Button
-              variant="link"
-              className="shrink-0 py-3"
-              onClick={() => onChange(row.id)}
-              disabled={busy}
-              aria-label={`Change: ${row.label}`}
-            >
-              Change
-            </Button>
-          </div>
-        ))}
-      </dl>
-      <p className="m-0 max-w-prose text-body text-ink-2">Nothing is sent to anyone until you say so.</p>
-      {error ? <ErrorNote>{error}</ErrorNote> : null}
-      <div>
-        <Button
-          size="lg"
-          onClick={onStart}
-          loading={busy}
-          loadingText="Starting your search..."
-          disabled={!answers.condition.trim()}
-        >
-          <Compass aria-hidden />
-          {error ? "Try again" : "Start looking"}
-        </Button>
+      <SummaryList
+        rows={rows.map((row) => ({
+          label: COPY.check.rows[row.id],
+          value: row.value,
+          onChange: busy ? undefined : () => onChange(row.id),
+          changeLabel: COPY.check.changeHidden[row.id],
+        }))}
+      />
+      <div className="grid gap-3">
+        <div>
+          <Button
+            id={START_BUTTON_ID}
+            size="lg"
+            onClick={onStart}
+            loading={busy}
+            loadingText={COPY.actions.startingSearch}
+          >
+            {error ? COPY.actions.tryAgain : COPY.actions.startSearch}
+          </Button>
+        </div>
+        <p className="m-0 max-w-prose text-small text-ink-2">
+          {COPY.check.reassurance}
+        </p>
       </div>
     </div>
+  );
+}
+
+function ReadingNote() {
+  return (
+    <section aria-busy="true" className="grid max-w-patient gap-3">
+      <div role="status" className="grid gap-3">
+        <h1 className={HEADING_CLASS}>{COPY.upload.reading}</h1>
+        <p className="m-0 text-body text-ink-2">{COPY.upload.readingNote}</p>
+      </div>
+    </section>
   );
 }
 
 export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   const router = useRouter();
   const profile = useProfilePrefill();
-  const [answers, setAnswers] = useState<PatientAnswers>(() => applyProfilePrefill(emptyAnswers(), profile));
+  const [answers, setAnswers] = useState<PatientAnswers>(() =>
+    applyProfilePrefill(emptyAnswers(), profile),
+  );
   const [prefilled, setPrefilled] = useState(profile !== null);
   const [phase, setPhase] = useState<Phase>("questions");
   const [step, setStep] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [fromCheck, setFromCheck] = useState(false);
   const [record, setRecord] = useState<Case | null>(null);
   const [reportText, setReportText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -354,38 +378,76 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     setAnswers((current) => applyProfilePrefill(current, profile));
   }
 
-  // Focus each new heading when it mounts, but never on the first page load.
-  const headingRef = useCallback((el: HTMLHeadingElement | null) => {
-    if (el && moved.current) el.focus();
+  // Focus each new screen's h1 when it mounts, but never on the first page load.
+  const landing = useCallback((el: HTMLDivElement | null) => {
+    if (!el || !moved.current) return;
+    const heading = el.querySelector<HTMLElement>("h1");
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.classList.add("outline-none");
+    heading.focus();
   }, []);
 
   const questionId = PATIENT_QUESTIONS[step];
-  const valid = canAdvance(questionId, answers);
 
   function go(next: () => void) {
     moved.current = true;
     setError(null);
+    setSubmitted(false);
     next();
   }
 
   function advance() {
-    if (!valid) return;
-    go(() => (step === TOTAL - 1 ? setPhase("confirm") : setStep(step + 1)));
+    if (!canAdvance(questionId, answers)) {
+      setSubmitted(true);
+      return;
+    }
+    go(() => {
+      if (fromCheck || step === TOTAL - 1) {
+        setFromCheck(false);
+        setPhase("confirm");
+      } else {
+        setStep(step + 1);
+      }
+    });
   }
 
   function back() {
-    go(() => setStep(Math.max(0, step - 1)));
+    go(() => {
+      if (fromCheck) {
+        setFromCheck(false);
+        setPhase("confirm");
+      } else {
+        setStep(Math.max(0, step - 1));
+      }
+    });
   }
 
-  function jumpTo(id: PatientQuestionId) {
+  function backFromCheck() {
     go(() => {
-      setStep(PATIENT_QUESTIONS.indexOf(id));
+      setStep(TOTAL - 1);
       setPhase("questions");
     });
   }
 
-  function onFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
-    // Radix radios and checkboxes swallow Enter; let it advance when the answer is valid.
+  function skipInsurance() {
+    go(() => {
+      setFromCheck(false);
+      setPhase("confirm");
+    });
+  }
+
+  function jumpTo(id: PatientQuestionId) {
+    if (busy) return;
+    go(() => {
+      setStep(PATIENT_QUESTIONS.indexOf(id));
+      setPhase("questions");
+      setFromCheck(true);
+    });
+  }
+
+  function onFormKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    // Radix radios and checkboxes swallow Enter; let it continue, which validates.
     const role = (event.target as HTMLElement).getAttribute("role");
     if (event.key === "Enter" && (role === "radio" || role === "checkbox")) {
       event.preventDefault();
@@ -400,37 +462,58 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       setReportText(await file.text());
       setError(null);
     } catch {
-      setError("That file could not be read. Try pasting the text instead.");
+      setError(COPY.upload.unreadable);
     }
   }
 
   async function readReport() {
-    if (!reportText.trim()) return;
+    if (!reportText.trim()) {
+      setError(COPY.upload.empty);
+      return;
+    }
     go(() => setPhase("reading"));
     try {
-      const { record: extracted } = await extractCase(reportText, fallbackFor(reportText, demos));
+      const { record: extracted } = await extractCase(
+        reportText,
+        fallbackFor(reportText, demos),
+      );
       setRecord(extracted);
       setAnswers(recordToAnswers(extracted));
+      setFromCheck(false);
       setPhase("confirm");
     } catch (failure) {
       setPhase("upload");
       setError(
         failure instanceof ScopeRefusal
           ? failure.message
-          : "We could not read that report. You can paste the text again, or answer a few questions instead.",
+          : COPY.upload.readFailed,
       );
     }
   }
 
   async function startLooking() {
+    if (!answers.condition.trim()) {
+      // The condition is the one thing the search cannot run without: ask for it on its own screen.
+      moved.current = true;
+      setStep(PATIENT_QUESTIONS.indexOf("condition"));
+      setPhase("questions");
+      setFromCheck(true);
+      setSubmitted(true);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       let extracted = record;
       if (!extracted) {
         const own = answersToCaseInput(answers);
-        const fallback: CaseInput = { ...own, diseaseName: own.diseaseName ?? answers.condition.trim(), goals: own.goals ?? [] };
-        extracted = (await extractCase(answersToReport(answers), fallback)).record;
+        const fallback: CaseInput = {
+          ...own,
+          diseaseName: own.diseaseName ?? answers.condition.trim(),
+          goals: own.goals ?? [],
+        };
+        extracted = (await extractCase(answersToReport(answers), fallback))
+          .record;
         // Keep the created case so a retry after a failed save does not create a second one.
         setRecord(extracted);
       }
@@ -442,8 +525,8 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
         failure instanceof ScopeRefusal
           ? failure.message
           : failure instanceof InvalidFields
-            ? `Please check ${failure.fields.map(fieldName).join(" and ")}. Nothing was sent to anyone.`
-            : START_ERROR,
+            ? COPY.errors.fields(failure.fields.map(fieldName).join(" and "))
+            : COPY.errors.start,
       );
       setBusy(false);
     }
@@ -455,8 +538,14 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       return {
         key: "upload",
         node: (
-          <div className="grid gap-6">
+          <div className="grid max-w-3xl gap-6">
+            <div>
+              <BackButton onClick={() => go(() => setPhase("questions"))}>
+                {COPY.actions.answerInstead}
+              </BackButton>
+            </div>
             <ReportStep
+              audience="patient"
               demos={demos}
               reportText={reportText}
               busy={false}
@@ -472,16 +561,6 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
               onFile={(file) => void loadFile(file)}
               onExtract={() => void readReport()}
             />
-            <div>
-              <Button
-                variant="link"
-                className="py-3"
-                onClick={() => go(() => setPhase("questions"))}
-              >
-                <ArrowLeft aria-hidden />
-                Answer questions instead
-              </Button>
-            </div>
           </div>
         ),
       };
@@ -490,72 +569,76 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       return {
         key: "confirm",
         node: (
-          <SummaryScreen
+          <CheckScreen
             answers={answers}
             busy={busy}
             error={error}
-            headingRef={headingRef}
+            back={
+              <BackButton onClick={backFromCheck}>
+                {COPY.actions.back}
+              </BackButton>
+            }
             onChange={jumpTo}
             onStart={() => void startLooking()}
           />
         ),
       };
     }
-    const Question = QUESTION_VIEWS[questionId];
+    const secondary = (
+      <div className="flex flex-wrap items-center gap-x-6">
+        {questionId === "insurance" ? (
+          <Button variant="link" className="py-3" onClick={skipInsurance}>
+            {COPY.actions.skip}
+          </Button>
+        ) : null}
+        <Button
+          variant="link"
+          className="py-3"
+          onClick={() => go(() => setPhase("upload"))}
+        >
+          {COPY.actions.uploadInstead}
+        </Button>
+      </div>
+    );
     return {
       key: `q-${questionId}`,
       node: (
-        <form
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            advance();
-          }}
+        <QuestionScreen
+          id={questionId}
+          answers={answers}
+          onChange={setAnswers}
+          showError={submitted}
+          back={
+            step > 0 || fromCheck ? (
+              <BackButton onClick={back}>{COPY.actions.back}</BackButton>
+            ) : null
+          }
+          secondary={secondary}
+          onSubmit={advance}
           onKeyDown={onFormKeyDown}
-          className="grid gap-8"
-        >
-          <section data-question={questionId} aria-labelledby={`q-${questionId}`}>
-            <Question answers={answers} onChange={setAnswers} headingRef={headingRef} />
-          </section>
-          <div className="flex flex-wrap items-center gap-3">
-            {step > 0 ? (
-              <Button variant="secondary" size="lg" onClick={back}>
-                <ArrowLeft aria-hidden />
-                Back
-              </Button>
-            ) : null}
-            <Button type="submit" size="lg" disabled={!valid}>
-              Next
-              <ArrowRight aria-hidden />
-            </Button>
-            {questionId === "insurance" ? (
-              <Button variant="ghost" size="lg" onClick={() => go(() => setPhase("confirm"))}>
-                Skip
-              </Button>
-            ) : null}
-          </div>
-        </form>
+        />
       ),
     };
   }
 
   const body = renderBody();
-  const showProgress = phase === "questions";
 
   return (
-    <div data-testid="patient-intake" className="mx-auto grid w-full max-w-2xl gap-8">
-      {showProgress ? (
-        <Progress value={step + 1} max={TOTAL} label="Your answers" valueText={`Question ${step + 1} of ${TOTAL}`} />
-      ) : null}
-      <Reveal revealKey={body.key}>{body.node}</Reveal>
+    <div
+      data-testid="patient-intake"
+      className="grid w-full max-w-patient gap-6"
+    >
       {phase === "questions" ? (
-        <div className="border-t border-line pt-6">
-          <Button variant="link" className="py-3" onClick={() => go(() => setPhase("upload"))}>
-            Upload a report or records instead
-          </Button>
-        </div>
+        <Progress
+          value={step + 1}
+          max={TOTAL}
+          label={COPY.progress.label}
+          valueText={COPY.progress.valueText(step + 1, TOTAL)}
+        />
       ) : null}
-      <p className="m-0 max-w-prose text-small text-ink-2">{FOOTER}</p>
+      <StepTransition stepKey={body.key}>
+        <div ref={landing}>{body.node}</div>
+      </StepTransition>
     </div>
   );
 }

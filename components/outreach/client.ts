@@ -12,6 +12,8 @@ export type ApiContact = {
   address: string;
   state: string;
   purpose?: string;
+  /** Present once the connection workflow schedules a follow-up. */
+  nextFollowUpAt?: string | null;
 };
 
 export type UnavailableContact = {
@@ -34,6 +36,9 @@ export type ApiDraft = {
   body: string;
   sharedFields: string[];
   approvedAt?: string | null;
+  /** Ids of case documents the draft drew from. Titles come from the documents API. */
+  contextDocIds?: string[];
+  sentAt?: string | null;
 };
 
 export const REFUSAL_LABELS: Record<string, string> = {
@@ -270,4 +275,24 @@ function isApiDraft(value: unknown): value is ApiDraft {
   if (!value || typeof value !== "object") return false;
   const draft = value as ApiDraft;
   return typeof draft.id === "string" && (draft.channel === "email" || draft.channel === "voice") && typeof draft.body === "string";
+}
+
+/** Best-effort titles for the case documents a draft used. Never throws; unknown ids are dropped. */
+export async function loadDocumentTitles(caseId: string, fetchImpl: typeof fetch = fetch): Promise<Record<string, string>> {
+  try {
+    const response = await fetchImpl(`/api/cases/${encodeURIComponent(caseId)}/documents`);
+    if (!response.ok) return {};
+    const data = await readJson(response);
+    const list = Array.isArray(data.documents) ? data.documents : [];
+    const titles: Record<string, string> = {};
+    for (const item of list) {
+      if (item && typeof item === "object") {
+        const doc = item as { id?: unknown; title?: unknown };
+        if (typeof doc.id === "string" && typeof doc.title === "string") titles[doc.id] = doc.title;
+      }
+    }
+    return titles;
+  } catch {
+    return {};
+  }
 }

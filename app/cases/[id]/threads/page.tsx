@@ -12,12 +12,17 @@ export default async function ThreadsPage({
   const query = await searchParams;
   const contact = typeof query.contact === "string" ? query.contact : null;
   return (
-    <OutreachNav caseId={id} current="threads">
-      <h1>Conversations</h1>
-      <p className="lede">
-        Each contact has one timeline: messages you approved, replies, and call transcripts. A task stays open until
-        the task approval API confirms it.
-      </p>
+    <OutreachNav
+      caseId={id}
+      current="threads"
+      eyebrow="Messages and calls"
+      title={
+        <>
+          The whole <em className="emph">conversation</em>
+        </>
+      }
+      lede="Messages you approved, replies, and call transcripts, in order. Anything a contact asks of you shows up right where they asked."
+    >
       <ThreadsView caseId={id} focusContactId={contact} />
     </OutreachNav>
   );

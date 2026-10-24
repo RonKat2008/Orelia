@@ -1,0 +1,16 @@
+/* Print rules for the history summary. The case shell (header, rail, banner, title block) is hidden so only the
+   summary prints. Colours are print keywords on purpose: paper output is black on white regardless of theme. */
+@media print {
+  @page { margin: 16mm; }
+
+  body:has(.hs-root) :is(header, aside, nav, footer, [data-slot="safety-banner"]):not(.hs-root *) { display: none !important; }
+  body:has(.hs-root) [data-slot="app-shell"] .page-container > div:not(:has(.hs-root)) { display: none !important; }
+  body:has(.hs-root) .page-container { max-width: none; padding: 0; }
+  body:has(.hs-root) { background: white; }
+
+  .hs-root, .hs-root * { color: black; background: transparent; box-shadow: none; border-color: black; }
+  .hs-root .hs-no-print { display: none !important; }
+  .hs-root a { text-decoration: none; }
+  .hs-event, .hs-conflict { break-inside: avoid; page-break-inside: avoid; }
+  .hs-section > h2 { break-after: avoid; page-break-after: avoid; }
+}

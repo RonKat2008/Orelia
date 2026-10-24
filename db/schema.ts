@@ -330,7 +330,7 @@ export const agentRuns = pgTable("agent_runs", {
 
 
 export const documentKindEnum = pgEnum("document_kind", [
-  "intake_report", "case_summary", "resource_page", "evidence", "inbound_message", "call_transcript", "patient_note",
+  "intake_report", "case_summary", "resource_page", "evidence", "inbound_message", "call_transcript", "patient_note", "medical_record",
 ]);
 export const caseDocuments = pgTable("case_documents", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -381,3 +381,26 @@ export const webApplications = pgTable("web_applications", {
   result: jsonb("result").$type<Record<string, unknown>>(),
   ...timestamps,
 }, (table) => [index("web_applications_case_idx").on(table.caseId)]);
+
+/** Medical history lane: patient-uploaded records (sanitized text) with their extracted timeline events. */
+export const historyDocuments = pgTable("history_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  docType: text("doc_type").notNull(),
+  text: text("text").notNull(),
+  extractedBy: text("extracted_by").notNull(),
+  events: jsonb("events").$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+  ...timestamps,
+}, table => [index("history_documents_case_idx").on(table.caseId)]);
+
+/** Revocable, expiring share links for the medical history summary. The token is HMAC-signed; only the id is stored. */
+export const historyShares = pgTable("history_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  sections: text("sections").array().notNull(),
+  label: text("label"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  ...timestamps,
+}, table => [index("history_shares_case_idx").on(table.caseId)]);

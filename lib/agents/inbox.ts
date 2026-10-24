@@ -4,6 +4,8 @@ import { ingestInbound as ingestDocument } from '../case-docs/hooks';
 import type { InboxClassifier } from '../inbox/classifier';
 import { draftTasks, type DraftContext, type TaskDraft } from '../inbox/drafts';
 import type { InboxClassification } from '../inbox/schema';
+import { groundPhones } from '../inbox/phone-ground';
+import { parseSender } from '../inbox/sender';
 import { assertWayfinderThread, type InboxEvent, type ThreadLookup } from '../inbox/thread-guard';
 
 export const MIN_CONFIDENCE = 0.5;
@@ -37,8 +39,11 @@ export async function processInbound(event: InboxEvent, deps: InboxDeps): Promis
     return results;
   } }];
   const raw = await deps.classifier.classify({ channel: event.channel, body: event.body, subject: event.subject, from: event.from, caseId: ctx.caseId, offlineKey: event.offlineKey, tools });
-  const classification: InboxClassification = raw.confidence < MIN_CONFIDENCE && raw.class !== 'unclear'
-    ? { ...raw, class: 'unclear', rationale: `Low confidence (${raw.confidence}); needs your review.` }
-    : raw;
-  return { contactId, classification, tasks: draftTasks(classification, { ...ctx, contactId, messageId: event.messageId, contextDocIds: [...contextDocIds], coordinatorQuestion: event.body }) };
+  // Whatever produced the classification (model, fixture), a phone survives only if it is in the message itself.
+  const grounded = groundPhones(raw, event.body);
+  const classification: InboxClassification = grounded.confidence < MIN_CONFIDENCE && grounded.class !== 'unclear'
+    ? { ...grounded, class: 'unclear', rationale: `Low confidence (${grounded.confidence}); needs your review.` }
+    : grounded;
+  const replyTo = event.channel === 'email' ? parseSender(event.from) : undefined;
+  return { contactId, classification, tasks: draftTasks(classification, { ...ctx, ...(replyTo ? { replyTo } : {}), contactId, messageId: event.messageId, contextDocIds: [...contextDocIds], coordinatorQuestion: event.body }) };
 }

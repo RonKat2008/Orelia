@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { approveTask, loadTaskConfirmation, refusalMessages } from "@/components/outreach/client";
+import { approveTask, loadPreparedLetter, loadTaskConfirmation, preparedLetterText, refusalMessages } from "@/components/outreach/client";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -54,5 +54,19 @@ describe("redirect confirmation client", () => {
         }),
       ),
     ).toBeNull();
+  });
+});
+
+describe("prepared letter client", () => {
+  const prepared = { task: { letter: { subject: "Referral request", body: "Hello" }, details: { delivery: "prepared", instructions: "Pass it on." } } };
+  it("loads a prepared letter and formats it for copy and download", async () => {
+    const letter = await loadPreparedLetter("t1", asFetch(vi.fn(async () => json(prepared))));
+    expect(letter).toEqual({ subject: "Referral request", body: "Hello", instructions: "Pass it on." });
+    expect(preparedLetterText(letter!)).toBe("Subject: Referral request\n\nHello\n");
+  });
+  it("is null for an ordinary task, a failed request and a thrown fetch", async () => {
+    expect(await loadPreparedLetter("t1", asFetch(vi.fn(async () => json({ task: { letter: { subject: "s", body: "b" }, details: {} } }))))).toBeNull();
+    expect(await loadPreparedLetter("t1", asFetch(vi.fn(async () => json({}, 500))))).toBeNull();
+    expect(await loadPreparedLetter("t1", asFetch(vi.fn(async () => { throw new Error("offline"); })))).toBeNull();
   });
 });

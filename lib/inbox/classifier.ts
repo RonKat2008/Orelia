@@ -5,6 +5,8 @@ import { OPUS } from '../agents/models';
 import { buildSystemPrompt } from '../agents/prompts/common';
 import { MedicalAdviceError, runAgent, type MessagesClient, type AgentTool } from '../agents/runtime';
 import type { RunStore } from '../agents/run-store';
+import { skeleton } from '../safety/confusables';
+import { isPhoneGrounded } from '../safety/phone-grounding';
 import { inboxClassificationSchema, type InboxClassification } from './schema';
 
 export interface ClassifyInput {
@@ -46,7 +48,6 @@ export function buildClassifierPrompt(input: ClassifyInput): string {
 }
 
 const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
-const digits = (text: string) => text.replace(/\D/g, '');
 
 const INJECTION_PATTERNS = [
   /ignore (all |any )?(of )?(the )?(previous|prior|above|earlier) (instructions|messages|prompts)/i,
@@ -58,7 +59,8 @@ const EXFIL = /\b(send|email|forward)\b.{0,60}\b(chart|records|everything)\b.{0,
 const COMMAND_TONE = /(do this immediately|immediately|do not tell|don't tell|without (telling|informing|notifying)|ignore)/i;
 /** True when the message text tries to instruct the assistant (prompt injection). */
 export function looksLikeInjection(body: string): boolean {
-  const text = body.normalize('NFKC');
+  // Matched against a skeleton (lookalike letters folded, zero-width characters removed); the stored body is untouched.
+  const text = skeleton(body);
   return INJECTION_PATTERNS.some(re => re.test(text)) || (EXFIL.test(text) && COMMAND_TONE.test(text));
 }
 
@@ -67,7 +69,8 @@ export function parseClassification(raw: unknown, body: string): InboxClassifica
   const parsed = inboxClassificationSchema.parse(raw);
   const text = norm(body);
   const inBody = (value?: string) => !!value && norm(value) !== '' && text.includes(norm(value));
-  const phoneInBody = (value?: string) => inBody(value) || (!!value && digits(value).length >= 7 && digits(body).includes(digits(value)));
+  // A phone must be one phone-shaped token in the message; digits are never joined across unrelated numbers.
+  const phoneInBody = (value?: string) => isPhoneGrounded(value, body);
   const keep = (value: string | undefined, ok = inBody) => (ok(value) ? value : undefined);
   const out: InboxClassification = { ...parsed };
   out.quote = keep(parsed.quote);

@@ -1,6 +1,7 @@
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { normalizeAddress } from '../safety/allowlist';
 import { OutreachError, type Contact, type Draft, type OutreachStore } from '../outreach/types';
+import { DELIVERY_PREPARED } from './drafts';
 import { inboundReplyContactPoint } from './contact-point';
 import type { InboundMessageStore } from './inbound-store';
 import type { StoredTask, TaskStore } from './task-store';
@@ -21,6 +22,8 @@ export async function approveTask(taskId: string, deps: ApproveDeps, input: Appr
   if (task.status !== 'open') throw new OutreachError(409, ['already_approved']);
   // Application tasks are approved on the application draft itself (web_application store), never through this generic path.
   if (task.kind === 'application') throw new OutreachError(422, ['use_application_approval']);
+  // A letter Wayfinder will not send (no known recipient): approving hands it to the patient to pass on.
+  if (task.details?.delivery === DELIVERY_PREPARED && task.letter) return approvePrepared(task, now, deps);
   if (['referral', 'slides', 'records', 'redirect'].includes(task.kind)) return approveLetter(task, now, deps, input);
   if (!await tasks.markApproved(taskId, now)) throw new OutreachError(409, ['already_approved']);
   const done = { ...task, status: 'done' as const, approvedAt: now };
@@ -35,6 +38,26 @@ export async function approveTask(taskId: string, deps: ApproveDeps, input: Appr
     return { task: done, call: { phone: d.phone, hours: d.hours, haveReady: d.haveReady ?? [] } };
   }
   return { task: done };
+}
+
+/** "Prepare for you to forward": marks the task done and returns the letter and instructions. Nothing is sent or drafted. */
+async function approvePrepared(task: StoredTask, now: string, deps: ApproveDeps) {
+  const { tasks } = deps;
+  if (!await tasks.markApproved(task.id, now)) throw new OutreachError(409, ['already_approved']);
+  await tasks.markDone(task.id);
+  const instructions = typeof task.details?.instructions === 'string' ? task.details.instructions : '';
+  return { task: { ...task, status: 'done' as const, approvedAt: now }, prepared: { subject: task.letter!.subject, body: task.letter!.body, instructions } };
+}
+
+/** Slides and records go back to the address that asked: the one stored on the task, which must be a reply on this contact's thread. */
+async function verifyReplyRecipient(task: StoredTask, to: string, original: Contact, deps: ApproveDeps) {
+  const replyTo = typeof task.details?.replyTo === 'string' ? normalizeAddress(task.details.replyTo) : null;
+  if (!replyTo) return; // legacy task addressed from a known party; the outbound gate still applies
+  if (replyTo !== to) throw new OutreachError(422, ['recipient_missing']);
+  if (normalizeAddress(original.address) === to) return; // same thread, same contact
+  const messageId = typeof task.details?.messageId === 'string' ? task.details.messageId : undefined;
+  const message = messageId ? await deps.inbound.get(messageId) : undefined;
+  if (!message || message.contactId !== task.contactId) throw new OutreachError(422, ['reply_unverified']);
 }
 
 async function approveLetter(task: StoredTask, now: string, deps: ApproveDeps, input: ApproveInput) {
@@ -60,6 +83,7 @@ async function approveLetter(task: StoredTask, now: string, deps: ApproveDeps, i
   }
   const original = await outreach.contact(task.contactId);
   if (!original) throw new OutreachError(404, ['contact_not_found']);
+  if (task.kind === 'slides' || task.kind === 'records') await verifyReplyRecipient(task, to, original, deps);
   const existing = await outreach.contacts(task.caseId);
   let recipient: Contact | undefined = existing.find(c => normalizeAddress(c.address) === to);
   // Pre-check the cap so a refusal never leaves the task approved.

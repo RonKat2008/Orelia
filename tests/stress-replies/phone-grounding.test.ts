@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseClassification } from '../../lib/inbox/classifier';
 
-// TODO(known gap): still failing; the source fix is out of scope for this pass. Remove .skip when fixed.
-describe.skip('phone grounding (never invent a number)', () => {
+describe('phone grounding (never invent a number)', () => {
   it('drops a phone whose digits only appear by concatenating unrelated numbers in the reply', () => {
     const body = 'We received your note on 10/24/2026 at our 94110 office. Please call us to schedule.';
     const out = parseClassification({ class: 'call_to_schedule', confidence: 0.9, rationale: 'Asked to call.', phone: '(102) 420-2694' }, body);

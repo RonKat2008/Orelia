@@ -13,15 +13,39 @@ vi.mock('../../db/client', () => ({
 }));
 
 const { loadDraftContext } = await import('../../app/api/webhooks/_lib/postgres');
-const { draftTasks } = await import('../../lib/inbox/drafts');
 
-// TODO(known gap): still failing; the source fix is out of scope for this pass. Remove .skip when fixed.
-describe.skip('production draft context for slides / records / referral replies', () => {
-  for (const cls of ['send_slides', 'send_records', 'needs_referral'] as const) {
-    it(`${cls}: the drafted letter has a recipient, so approveTask is not always 422 recipient_missing`, async () => {
-      const ctx = await loadDraftContext(OWNER.contactId);
-      const [task] = draftTasks({ class: cls, confidence: 0.9, rationale: 'Asked for materials.' }, ctx);
-      expect(task!.letter?.to).toEqual(expect.stringContaining('@'));
+const { processInbound } = await import('../../lib/agents/inbox');
+const { stubClassifier } = await import('./_shared');
+
+const run = async (cls: 'send_slides' | 'send_records' | 'needs_referral', from: string | undefined) => {
+  const event = { channel: 'email' as const, providerThreadId: 'thread-1', messageId: 'msg-1', ...(from ? { from } : {}), body: 'Please send what you have.', receivedAt: '2026-10-29T15:04:00Z' };
+  const c = { class: cls, confidence: 0.9, rationale: 'Asked for materials.' } as const;
+  const r = await processInbound(event, { classifier: stubClassifier(c), lookupThread: () => OWNER.contactId, loadContext: loadDraftContext, skipDocumentIngest: true });
+  return r.tasks[0]!;
+};
+
+describe('production draft context for slides / records / referral replies', () => {
+  for (const cls of ['send_slides', 'send_records'] as const) {
+    it(`${cls}: the letter goes back to the address that replied, so approval is not recipient_missing`, async () => {
+      const task = await run(cls, 'Pat Coordinator <Coord@Site.test>');
+      expect(task.letter?.to).toBe('Coord@Site.test');
+      expect(task.letter?.toName).toBe('Pat Coordinator');
+      expect(task.details).toMatchObject({ replyTo: 'Coord@Site.test' });
+      expect(task.details?.delivery).toBeUndefined();
+    });
+    it(`${cls}: with no usable sender it is a prepared letter, never a guessed address`, async () => {
+      for (const from of [undefined, 'not an address', 'a@b.test, c@d.test']) {
+        const task = await run(cls, from);
+        expect(task.letter?.to).toBeUndefined();
+        expect(task.details).toMatchObject({ delivery: 'prepared' });
+      }
     });
   }
+  it('needs_referral: a letter for the patient to forward, with instructions and no recipient even when the reply has a sender', async () => {
+    const task = await run('needs_referral', 'coord@site.test');
+    expect(task.kind).toBe('referral');
+    expect(task.letter?.to).toBeUndefined();
+    expect(task.details).toMatchObject({ delivery: 'prepared' });
+    expect(String(task.details?.instructions)).toMatch(/will not guess/);
+  });
 });

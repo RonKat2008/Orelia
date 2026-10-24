@@ -48,7 +48,7 @@ describe('runtime classifier (offline replay)', () => {
     it(`${fx.id} -> ${fx.expected.class}`, async () => {
       const r = await processInbound(fx.event, deps(new MemoryRunStore()));
       expect(r.classification.class).toBe(fx.expected.class);
-      expect(r.tasks[0].kind).toBe(kinds[fx.expected.class]);
+      expect(r.tasks[0].kind).toBe(fx.expected.class === 'redirect' && !fx.expected.redirect?.email ? 'call' : kinds[fx.expected.class]);
       expect(r.tasks[0].requiresApproval).toBe(true);
       expect(fx.event.offlineKey).toBe(fx.id);
     });

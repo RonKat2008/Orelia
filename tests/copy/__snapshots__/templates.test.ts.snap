@@ -34,7 +34,11 @@ Have ready: referral",
       "title": "Example Specialty Center is not able to help",
     },
     "needs_referral": {
-      "draftBody": "Hello Dr. Example,
+      "draftBody": "Wayfinder does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
+Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).
+Ask them to send the referral to Example Specialty Center. Nothing here leaves your account until you pass it on.
+
+Hello Dr. Example,
 
 I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
 
@@ -50,7 +54,7 @@ To respond, just reply to this email.
 Thank you for your help.
 
 About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
-      "title": "Request a referral to Example Specialty Center",
+      "title": "Ask Dr. Example for a referral to Example Specialty Center",
     },
     "redirect": {
       "draftBody": "Hello New Patient Office,
@@ -530,7 +534,11 @@ Have ready: referral",
       "title": "Example Specialty Center is not able to help",
     },
     "needs_referral": {
-      "draftBody": "Hello Dr. Example,
+      "draftBody": "Wayfinder does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
+Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).
+Ask them to send the referral to Example Specialty Center. Nothing here leaves your account until you pass it on.
+
+Hello Dr. Example,
 
 I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
 
@@ -546,7 +554,7 @@ To respond, just reply to this email.
 Thank you for your help.
 
 About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
-      "title": "Request a referral to Example Specialty Center",
+      "title": "Ask Dr. Example for a referral to Example Specialty Center",
     },
     "redirect": {
       "draftBody": "Hello New Patient Office,
@@ -1026,7 +1034,11 @@ Have ready: referral",
       "title": "Example Specialty Center is not able to help",
     },
     "needs_referral": {
-      "draftBody": "Hello Dr. Example,
+      "draftBody": "Wayfinder does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
+Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).
+Ask them to send the referral to Example Specialty Center. Nothing here leaves your account until you pass it on.
+
+Hello Dr. Example,
 
 I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
 
@@ -1042,7 +1054,7 @@ To respond, just reply to this email.
 Thank you for your help.
 
 About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
-      "title": "Request a referral to Example Specialty Center",
+      "title": "Ask Dr. Example for a referral to Example Specialty Center",
     },
     "redirect": {
       "draftBody": "Hello New Patient Office,

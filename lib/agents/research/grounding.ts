@@ -7,6 +7,8 @@
  *  - most content words must appear in that record, so a claim cannot assert things the record never said.
  */
 
+import { isPhoneGrounded } from "../../safety/phone-grounding";
+
 const EMAIL = /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
 const URL_TOKEN = /https?:\/\/[^\s<>"')]+/gi;
 const NCT = /\bnct\d{8}\b/gi;
@@ -35,8 +37,6 @@ export const MIN_WORD_COVERAGE = 0.6;
 
 export type GroundingResult = { ok: true } | { ok: false; reason: string };
 
-const digits = (s: string): string => s.replace(/\D/g, "");
-
 function stem(word: string): string {
   return word.replace(/'s$/, "").replace(/(?:ies|es|s|ed|ing)$/, "");
 }
@@ -44,7 +44,6 @@ function stem(word: string): string {
 /** Check a model-written claim against the lowercased text of the tool record(s) behind its sourceUrl. */
 export function checkClaimGrounding(claim: string, recordText: string): GroundingResult {
   const text = recordText.toLowerCase();
-  const textDigits = digits(text);
   let rest = claim.toLowerCase();
 
   for (const email of rest.match(EMAIL) ?? []) {
@@ -60,9 +59,7 @@ export function checkClaimGrounding(claim: string, recordText: string): Groundin
     if (!text.includes(nct)) return { ok: false, reason: `${nct.toUpperCase()} is not in the source record` };
   }
   for (const phone of rest.match(PHONE) ?? []) {
-    const d = digits(phone);
-    const local = d.length === 11 && d.startsWith("1") ? d.slice(1) : d;
-    if (!textDigits.includes(local)) return { ok: false, reason: `number ${phone.trim()} is not in the source record` };
+    if (!isPhoneGrounded(phone, recordText)) return { ok: false, reason: `number ${phone.trim()} is not in the source record` };
   }
   rest = rest.replace(PHONE, " ");
   const recordNumbers = new Set(text.match(NUMBER) ?? []);

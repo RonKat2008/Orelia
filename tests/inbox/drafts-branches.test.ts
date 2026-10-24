@@ -22,12 +22,20 @@ describe('draftTasks branches', () => {
   });
   it('redirect falls back through name, department, then a generic label', () => {
     expect(one(cls({ class: 'redirect', redirect: { name: 'Pat', email: 'p@example.com' } })).title).toBe('Contact Pat instead');
-    expect(one(cls({ class: 'redirect', redirect: { department: 'Intake' } })).title).toBe('Contact Intake instead');
+    expect(one(cls({ class: 'redirect', redirect: { department: 'Intake', email: 'i@example.com' } })).title).toBe('Contact Intake instead');
+  });
+  it('a redirect with no email never produces a letter: a grounded phone becomes a call task, otherwise a look-up task', () => {
+    const withPhone = one(cls({ class: 'redirect', redirect: { name: 'Alicia Brandt', phone: '202-555-0189' } }));
+    expect(withPhone).toMatchObject({ kind: 'call', title: 'Call Alicia Brandt at 202-555-0189', details: { phone: '202-555-0189' } });
+    expect(withPhone.letter).toBeUndefined();
+    expect(withPhone.draftBody).toContain('202-555-0189');
+    const noPhone = one(cls({ class: 'redirect', redirect: { department: 'Intake' } }));
+    expect(noPhone).toMatchObject({ kind: 'call', title: 'Look up a phone number for Intake', details: { lookupNumber: true } });
+    expect(noPhone.letter).toBeUndefined();
+    expect(noPhone.draftBody).toMatch(/look up the number/i);
+    expect(noPhone.draftBody).not.toMatch(/\d{3}[-. ]\d{4}/);
     const bare = one(cls({ class: 'redirect' }));
-    expect(bare.title).toBe('Contact the suggested contact instead');
-    expect(bare.letter!.to).toBeUndefined();
-    expect(bare.letter!.body).toContain('Hello there,');
-    expect(bare.letter!.body).toContain('your team');
+    expect(bare.title).toBe('Look up a phone number for the suggested contact');
   });
   it('declined suggests the next option, the redirect contact, or admits there is none', () => {
     expect(one(cls({ class: 'declined' }), { nextRankedOption: { id: 'n1', name: 'Other Center' } }).draftBody).toContain('Next option on your list: Other Center');

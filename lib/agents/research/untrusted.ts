@@ -5,6 +5,8 @@
  * claims). These helpers reduce the chance an injected page steers the model at all.
  */
 
+import { mapConfusables } from "../../safety/confusables";
+
 export const UNTRUSTED_OPEN = "<untrusted_web_content>";
 export const UNTRUSTED_CLOSE = "</untrusted_web_content>";
 
@@ -39,13 +41,26 @@ const INSTRUCTION_PATTERNS: RegExp[] = [
   /\b(?:AI|assistant|agent|model|LLM|Claude)\s*[,:]\s*(?:please\s+)?(?:you|ignore|do|send|email|call|add|include|output)\b[^.!?\n]*/gi,
 ];
 
+/** Replace every match of `pattern` found in the confusable-folded copy of `text` (same length), keeping the rest as written. */
+function removeInstructions(text: string, pattern: RegExp): string {
+  const folded = mapConfusables(text);
+  let out = '';
+  let last = 0;
+  for (const m of folded.matchAll(pattern)) {
+    out += text.slice(last, m.index) + REMOVED;
+    last = m.index + m[0].length;
+  }
+  return out + text.slice(last);
+}
+
 /** Remove hidden markup/characters and instruction-like sentences from one piece of untrusted text. */
 export function neutralizeUntrusted(input: string): string {
   let t = input.normalize("NFKC");
   t = t.replace(HTML_COMMENTS, " ").replace(HIDDEN_BLOCKS, " ").replace(HIDDEN_ELEMENTS, " ");
   t = t.replace(INVISIBLE, "").replace(FAKE_DELIMITERS, " ").replace(TAGS, " ");
   t = t.replace(CHAT_MARKERS, "\n");
-  for (const pattern of INSTRUCTION_PATTERNS) t = t.replace(pattern, REMOVED);
+  // Lookalike letters (Cyrillic "о" in "ignore") must not dodge the patterns; the folded copy only guides matching.
+  for (const pattern of INSTRUCTION_PATTERNS) t = removeInstructions(t, pattern);
   return t.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, " ").trim();
 }
 

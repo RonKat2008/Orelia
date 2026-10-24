@@ -13,6 +13,8 @@ export interface DraftContext {
   caseId: string;
   resourceName: string;
   resourceAddress?: string;
+  /** The address that sent the reply we are drafting for (email only); slides and records go back to it, never to a guessed address. */
+  replyTo?: Party;
   currentPhysician?: Party;
   pathologyLab?: Party;
   consent: { sharedFields: string[] };
@@ -64,6 +66,22 @@ function letter(ctx: DraftContext, to: Party | undefined, subject: string, lead:
   return { to: to?.email, toName: to?.name, subject, body: withDisclosure(body) };
 }
 
+/** Letters Wayfinder writes but never sends: the patient copies or downloads them and passes them on. */
+export const DELIVERY_PREPARED = 'prepared';
+
+const PREPARED_INSTRUCTIONS = (res: string, doctor: string) => [
+  `Wayfinder does not have ${doctor}'s email address and will not guess one, so it sends nothing for this request.`,
+  'Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).',
+  `Ask them to send the referral to ${res}. Nothing here leaves your account until you pass it on.`,
+].join('\n');
+
+/** A letter with no known recipient: kept for the patient to send themselves, never emailed by Wayfinder. */
+function markPrepared(draft: TaskDraft, res: string): void {
+  const instructions = `${res} did not reply from an email address Wayfinder can use, and Wayfinder will not guess one. Copy or download the letter and send it the way ${res} asked.`;
+  draft.draftBody = `${instructions}\n\n${draft.draftBody ?? ''}`;
+  draft.details = { ...draft.details, delivery: DELIVERY_PREPARED, instructions };
+}
+
 /** Drafts only; every task needs the patient's approval and nothing is sent from here. */
 export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft[] {
   const base = { contextDocIds: ctx.contextDocIds ?? [], contactId: ctx.contactId, caseId: ctx.caseId, status: 'open', requiresApproval: true, approvedAt: null } as const;
@@ -72,20 +90,34 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
   let draft: TaskDraft;
   switch (c.class) {
     case 'needs_referral': {
-      const l = letter(ctx, ctx.currentPhysician, `Referral request for ${res}`, `${res} has said they need a referral before they can schedule the patient. Could you please send a referral to ${res}${where}?`);
-      draft = { ...base, kind: 'referral', title: `Request a referral to ${res}`, letter: l, draftBody: l.body };
+      // The patient's own doctor is never emailed by Wayfinder: this is a letter to forward, with instructions.
+      const doctor = ctx.currentPhysician?.name ?? 'your doctor';
+      const l = letter(ctx, ctx.currentPhysician ? { name: ctx.currentPhysician.name } : undefined, `Referral request for ${res}`, `${res} has said they need a referral before they can schedule the patient. Could you please send a referral to ${res}${where}?`);
+      const instructions = PREPARED_INSTRUCTIONS(res, doctor);
+      draft = { ...base, kind: 'referral', title: `Ask ${doctor} for a referral to ${res}`, letter: l, draftBody: `${instructions}\n\n${l.body}`, details: { delivery: DELIVERY_PREPARED, instructions } };
       break;
     }
     case 'send_slides': {
       const lab = ctx.pathologyLab;
-      const l = letter(ctx, lab, `Pathology slide request for ${res}`, `${res} has asked for the patient's original pathology slides. Could you please release them to ${res}${where}?`, c.lab?.accession ? [`Accession number: ${c.lab.accession}`] : []);
-      draft = { ...base, kind: 'slides', title: `Request slides for ${res}`, letter: l, draftBody: l.body, details: { accession: c.lab?.accession, lab: c.lab?.name ?? lab?.name } };
+      const askedBy = ctx.replyTo?.email ? ctx.replyTo : undefined;
+      const lead = askedBy
+        ? `Thank you for your reply. You asked for the patient's original pathology slides. The patient has approved sharing the details below so your team can request the slides directly from the pathology lab.`
+        : `${res} has asked for the patient's original pathology slides. Could you please release them to ${res}${where}?`;
+      const extra = c.lab?.accession ? [`Accession number: ${c.lab.accession}`, ...(c.lab.name ? [`Pathology lab: ${c.lab.name}`] : [])] : (c.lab?.name ? [`Pathology lab: ${c.lab.name}`] : []);
+      const l = letter(ctx, askedBy ?? lab, `Pathology slide request for ${res}`, lead, extra);
+      draft = { ...base, kind: 'slides', title: `Request slides for ${res}`, letter: l, draftBody: l.body, details: { accession: c.lab?.accession, lab: c.lab?.name ?? lab?.name, ...(askedBy ? { replyTo: askedBy.email } : {}) } };
+      if (!askedBy && !lab?.email) markPrepared(draft, res);
       break;
     }
     case 'send_records': {
       const checklist = ['Visit and clinic notes', 'Imaging reports and discs', 'Pathology reports', 'Lab results', ...(c.haveReady ?? [])];
-      const l = letter(ctx, ctx.currentPhysician, `Records release request for ${res}`, `${res} has asked for copies of the patient's records. Could you please send the items below to ${res}${where}?`, [checklist.map(i => `- ${i}`).join('\n')]);
-      draft = { ...base, kind: 'records', title: `Send records to ${res}`, letter: l, draftBody: `Records packet checklist for ${res}:\n${checklist.map(i => `[ ] ${i}`).join('\n')}\n\n${l.body}`, details: { checklist } };
+      const askedBy = ctx.replyTo?.email ? ctx.replyTo : undefined;
+      const lead = askedBy
+        ? `Thank you for your reply. You asked for copies of the patient's records. The patient has approved sharing the details below, and will send the items below that they approve.`
+        : `${res} has asked for copies of the patient's records. Could you please send the items below to ${res}${where}?`;
+      const l = letter(ctx, askedBy ?? ctx.currentPhysician, `Records release request for ${res}`, lead, [checklist.map(i => `- ${i}`).join('\n')]);
+      draft = { ...base, kind: 'records', title: `Send records to ${res}`, letter: l, draftBody: `Records packet checklist for ${res}:\n${checklist.map(i => `[ ] ${i}`).join('\n')}\n\n${l.body}`, details: { checklist, ...(askedBy ? { replyTo: askedBy.email } : {}) } };
+      if (!askedBy && !ctx.currentPhysician?.email) markPrepared(draft, res);
       break;
     }
     case 'call_to_schedule': {
@@ -96,9 +128,21 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
     }
     case 'redirect': {
       const r = c.redirect ?? {};
+      const who = r.name ?? r.department ?? 'the suggested contact';
+      if (!r.email) {
+        // No stated email: never email a guess. A grounded phone number becomes a call task; with none, the patient looks it up.
+        const phone = r.phone ?? undefined;
+        const lines = phone
+          ? [`${res} suggested contacting ${who}${r.department && r.name ? ` (${r.department})` : ''}.`, `Call ${phone}.`]
+          : [`${res} suggested contacting ${who}, but their reply did not include a phone number or email.`, `Please look up the number on the official website or main line for ${r.department ?? who}; Wayfinder will not show a number it could not find in their reply.`];
+        if (c.hours) lines.push(`Hours: ${c.hours}`);
+        const details = { phone, hours: c.hours, haveReady: c.haveReady ?? [], redirect: r, quote: c.quote, ...(phone ? {} : { lookupNumber: true }) };
+        draft = { ...base, kind: 'call', title: phone ? `Call ${who} at ${phone}` : `Look up a phone number for ${who}`, draftBody: lines.join('\n'), details };
+        break;
+      }
       const target: Party = { name: r.name ?? r.department ?? 'there', email: r.email };
       const l = letter(ctx, target, `Introduction on behalf of a patient (via ${res})`, `${res} suggested we contact ${r.department ?? 'your team'} about the patient being seen. Could you tell us the next step, or the right person to contact?`);
-      draft = { ...base, kind: 'redirect', title: `Contact ${r.name ?? r.department ?? 'the suggested contact'} instead`, letter: l, draftBody: l.body, details: { redirect: r, quote: c.quote } };
+      draft = { ...base, kind: 'redirect', title: `Contact ${who} instead`, letter: l, draftBody: l.body, details: { redirect: r, quote: c.quote } };
       break;
     }
     case 'declined': {

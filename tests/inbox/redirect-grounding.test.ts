@@ -62,7 +62,7 @@ describe('redirect grounding', () => {
     await expectRefused(t, task.id, ['address_confirmation_mismatch'], 'other@example.com');
   });
   it('non-redirect tasks ignore confirmAddress', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     await approveTask(task.id, t.deps, { confirmAddress: 'whatever@example.com' });
     expect((await t.tasks.task(task.id))!.status).toBe('done');
   });

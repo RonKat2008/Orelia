@@ -1,3 +1,5 @@
+import { skeleton } from './confusables';
+
 export const EMERGENCY_MESSAGE = 'If you have new or worsening symptoms, contact your care team or call 911.';
 
 /** Treatment vocabulary shared by several rules. Directive phrases only count when they reach one of these. */
@@ -35,11 +37,9 @@ export const ADVICE_RULES: readonly AdviceRule[] = [
   { id: 'dismiss-symptoms', pattern: /\b(?:nothing to worry about|no need to (?:see|call|contact) (?:a|your) (?:doctor|care team|physician)|safe to ignore|don't worry about (?:the|your) symptoms?)\b/gi },
 ];
 
-/** Normalize so spacing, case, unicode compatibility forms and curly quotes cannot dodge the table. */
+/** Normalize so spacing, case, unicode compatibility forms, lookalike letters, zero-width characters and curly quotes cannot dodge the table. */
 function normalizeText(text: string): string {
-  return text
-    .normalize('NFKC')
-    .replace(/[​-‍⁠﻿­]/g, '')
+  return skeleton(text)
     .replace(/[‘’]/g, "'")
     .replace(/\s+/g, ' ');
 }

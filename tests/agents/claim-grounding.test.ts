@@ -142,3 +142,11 @@ describe("credential corpus excludes untrusted web content", () => {
     expect(withoutUntrustedBlocks("a <untrusted_web_content>b</untrusted_web_content> c")).toBe("a   c");
   });
 });
+
+describe("phone claims are grounded token by token", () => {
+  it("rejects a number whose digits only exist by joining unrelated numbers", () => {
+    const record = "The clinic phone is listed below. Office opened 2019. Zip 94110. Suite 4455 on 12th floor, open 8 to 5. Call 617-632-3000.";
+    expect(checkClaimGrounding("The clinic phone is (941) 104-4551.", record).ok).toBe(false);
+    expect(checkClaimGrounding("The clinic phone is (617) 632-3000.", record).ok).toBe(true);
+  });
+});

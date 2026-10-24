@@ -83,6 +83,7 @@ export const REFUSAL_LABELS: Record<string, string> = {
   redirect_address_not_in_reply: "We couldn't find that address in their reply, so it can't be used.",
   redirect_unverified: "We couldn't verify which reply this came from.",
   recipient_missing: "This task has no recipient address, so it can't be approved.",
+  reply_unverified: "We couldn't verify which reply this came from, so it can't be sent to that address.",
 };
 
 export function readSelectedCandidateIds(caseId: string, storage: Pick<Storage, "getItem"> = sessionStorage): string[] {
@@ -251,6 +252,32 @@ export async function approveTask(
   const data = await readJson(response);
   if (!response.ok) return { available: true, approved: false, reasons: refusalMessages(data.reasons) };
   return { available: true, approved: true };
+}
+
+export type PreparedLetter = { subject: string; body: string; instructions: string };
+
+/**
+ * A letter Wayfinder will not send (the doctor's or office's address is unknown): the patient copies or downloads it
+ * and passes it on. Null for every other task.
+ */
+export async function loadPreparedLetter(taskId: string, fetchImpl: typeof fetch = fetch): Promise<PreparedLetter | null> {
+  let response: Response;
+  try {
+    response = await fetchImpl(`/api/tasks/${taskId}`);
+  } catch {
+    return null;
+  }
+  if (!response.ok) return null;
+  const task = (await readJson(response)).task as { letter?: { subject?: unknown; body?: unknown }; details?: { delivery?: unknown; instructions?: unknown } } | undefined;
+  if (!task || task.details?.delivery !== "prepared") return null;
+  const { subject, body } = task.letter ?? {};
+  if (typeof subject !== "string" || typeof body !== "string") return null;
+  return { subject, body, instructions: typeof task.details.instructions === "string" ? task.details.instructions : "" };
+}
+
+/** Plain text for copy and download: subject line, blank line, body. */
+export function preparedLetterText(letter: Pick<PreparedLetter, "subject" | "body">): string {
+  return `Subject: ${letter.subject}\n\n${letter.body}\n`;
 }
 
 export type TaskConfirmation = { address: string; quote: string | null };

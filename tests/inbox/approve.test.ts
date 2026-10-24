@@ -5,7 +5,7 @@ import { activeContactCount } from '../../lib/safety/caps';
 import { id, setup } from './helpers';
 
 describe('approveTask', () => {
-  it.each([['needs_referral', 'dr@example.com'], ['send_slides', 'lab@example.com'], ['send_records', 'dr@example.com']] as const)('%s creates an unsent draft for the recipient', async (cls, to) => {
+  it.each([['send_slides', 'lab@example.com'], ['send_records', 'dr@example.com']] as const)('%s creates an unsent draft for the recipient', async (cls, to) => {
     const t = setup(); const task = await t.make({ class: cls });
     const res = await approveTask(task.id, t.deps) as { draft: Draft; contact: Contact; next: string[] };
     expect(res.contact.address).toBe(to);
@@ -16,9 +16,9 @@ describe('approveTask', () => {
     expect((await t.tasks.task(task.id))!.status).toBe('done');
   });
   it('reuses an existing contact for the same address', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     await approveTask(task.id, t.deps);
-    const again = await t.make({ class: 'needs_referral' });
+    const again = await t.make({ class: 'send_records' });
     await approveTask(again.id, t.deps);
     expect(t.outreach.people.filter(c => c.address === 'dr@example.com')).toHaveLength(1);
   });
@@ -49,25 +49,68 @@ describe('approveTask', () => {
     expect((await full.tasks.task(blocked.id))!.status).toBe('open');
     expect(full.outreach.drafts.size).toBe(0);
   });
-  it('redirect without a reply email is 422 recipient_missing', async () => {
+  it('a redirect with only a name is a look-up call task, not an email to a guessed address', async () => {
     const t = setup(); const task = await t.make({ class: 'redirect', redirect: { name: 'Someone' } });
-    await expect(approveTask(task.id, t.deps)).rejects.toMatchObject({ status: 422, reasons: ['recipient_missing'] });
-    expect((await t.tasks.task(task.id))!.status).toBe('open');
+    expect(task.kind).toBe('call'); expect(task.letter).toBeUndefined();
+    const res = await approveTask(task.id, t.deps) as { call: { phone?: string } };
+    expect(res.call.phone).toBeUndefined();
+    expect(t.outreach.drafts.size).toBe(0); expect(t.channel.sent).toHaveLength(0);
   });
-  it('referral without a physician address is 422', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' }, { currentPhysician: undefined });
-    await expect(approveTask(task.id, t.deps)).rejects.toMatchObject({ status: 422, reasons: ['recipient_missing'] });
+  it('records without any known recipient become a prepared letter, never an outbound', async () => {
+    const t = setup(); const task = await t.make({ class: 'send_records' }, { currentPhysician: undefined });
+    expect(task.letter?.to).toBeUndefined();
+    const res = await approveTask(task.id, t.deps) as { prepared: { subject: string; body: string; instructions: string } };
+    expect(res.prepared.body).toBe(task.letter!.body);
+    expect(res.prepared.instructions).toMatch(/will not guess/);
+    expect(t.outreach.drafts.size).toBe(0); expect(t.channel.sent).toHaveLength(0);
+    expect((await t.tasks.task(task.id))!.status).toBe('done');
+  });
+  it('a referral is a prepare-to-forward letter: no recipient, no draft, no send', async () => {
+    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const res = await approveTask(task.id, t.deps) as { prepared: { body: string; instructions: string } };
+    expect(res.prepared.body).toContain('send a referral to Example Cancer Center');
+    expect(res.prepared.instructions).toMatch(/give it to your doctor yourself/);
+    expect(t.outreach.drafts.size).toBe(0); expect(t.outreach.people).toHaveLength(1); expect(t.channel.sent).toHaveLength(0);
+    await expect(approveTask(task.id, t.deps)).rejects.toMatchObject({ status: 409 });
+  });
+  describe('slides and records go back to the address that asked', () => {
+    const asked = { replyTo: { name: 'Pat Coordinator', email: 'coord@clinic.test' } };
+    it('a different sender is a verified reply on this thread and becomes the draft recipient', async () => {
+      const t = setup({ NODE_ENV: 'test', OUTBOUND_ALLOWLIST: 'coord@clinic.test' });
+      const task = await t.make({ class: 'send_records' }, asked);
+      expect(task.letter?.to).toBe('coord@clinic.test');
+      expect(task.letter?.body).toContain('You asked for copies of the patient');
+      const res = await approveTask(task.id, t.deps) as { contact: Contact; draft: Draft };
+      expect(res.contact.address).toBe('coord@clinic.test');
+      expect(res.draft.approvedAt).toBeNull();
+      expect(t.channel.sent).toHaveLength(0);
+    });
+    it('replying from the contact\'s own address reuses that contact', async () => {
+      const t = setup(); const task = await t.make({ class: 'send_slides' }, { replyTo: { name: '', email: 'Intake@Example.com' } });
+      const res = await approveTask(task.id, t.deps) as { contact: Contact };
+      expect(res.contact.id).toBe(t.original.id);
+    });
+    it('is refused when the task has no verifiable stored reply', async () => {
+      const t = setup(); const task = await t.make({ class: 'send_records' }, { ...asked, messageId: undefined });
+      await expect(approveTask(task.id, t.deps)).rejects.toMatchObject({ status: 422, reasons: ['reply_unverified'] });
+      expect((await t.tasks.task(task.id))!.status).toBe('open');
+    });
+    it('is refused when the stored letter recipient differs from the address that asked', async () => {
+      const t = setup(); const task = await t.make({ class: 'send_records' }, asked);
+      t.tasks.rows.get(task.id)!.letter!.to = 'other@clinic.test';
+      await expect(approveTask(task.id, t.deps)).rejects.toMatchObject({ status: 422, reasons: ['recipient_missing'] });
+    });
   });
   it('404 for unknown and 409 on a second approval', async () => {
     const t = setup();
     await expect(approveTask(id(), t.deps)).rejects.toMatchObject({ status: 404 });
-    const task = await t.make({ class: 'needs_referral' });
+    const task = await t.make({ class: 'send_records' });
     await approveTask(task.id, t.deps);
     await expect(approveTask(task.id, t.deps)).rejects.toMatchObject({ status: 409 });
     expect(t.outreach.drafts.size).toBe(1);
   });
   it('the created draft only sends through OutreachService.approve after per-contact consent and checkOutbound', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     const res = await approveTask(task.id, t.deps) as { draft: Draft; contact: Contact };
     await expect(t.service.approve(res.contact.id, res.draft.id)).rejects.toMatchObject({ status: 422, reasons: ['consent_required'] });
     await t.service.consent(res.contact.id, ['diseaseName']);
@@ -75,7 +118,7 @@ describe('approveTask', () => {
     expect(t.channel.sent).toHaveLength(1); expect(t.channel.sent[0].address).toBe('dr@example.com');
   });
   it('a non-allowlisted recipient is refused by the gate', async () => {
-    const t = setup({ NODE_ENV: 'test', OUTBOUND_ALLOWLIST: 'someone@example.com' }); const task = await t.make({ class: 'needs_referral' });
+    const t = setup({ NODE_ENV: 'test', OUTBOUND_ALLOWLIST: 'someone@example.com' }); const task = await t.make({ class: 'send_records' });
     const res = await approveTask(task.id, t.deps) as { draft: Draft; contact: Contact };
     await t.service.consent(res.contact.id, ['diseaseName']);
     await expect(t.service.approve(res.contact.id, res.draft.id)).rejects.toMatchObject({ status: 422, reasons: expect.arrayContaining(['not_allowlisted']) });

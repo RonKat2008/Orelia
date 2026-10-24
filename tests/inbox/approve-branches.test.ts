@@ -47,51 +47,51 @@ describe('approveTask refusals', () => {
 
 describe('approveTask letters', () => {
   it('422s when the task has no letter at all', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.tasks.rows.get(task.id)!.letter = undefined;
     await rejects(approveTask(task.id, t.deps), 422, ['recipient_missing']);
   });
   it('422s when the letter recipient is not an email address', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.tasks.rows.get(task.id)!.letter!.to = 'not-an-address';
     await rejects(approveTask(task.id, t.deps), 422, ['recipient_missing']);
   });
   it('404s and leaves the task open when the originating contact is gone', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.outreach.people.length = 0;
     await rejects(approveTask(task.id, t.deps), 404, ['contact_not_found']);
     expect(t.tasks.rows.get(task.id)!.status).toBe('open');
   });
   it('409s when the letter task is claimed concurrently', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.tasks.markApproved = async () => false;
     await rejects(approveTask(task.id, t.deps), 409, ['already_approved']);
     expect(t.outreach.drafts.size).toBe(0);
   });
   it('reopens the task and rethrows when saving the draft fails', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.outreach.saveDraft = async () => { throw new Error('db down'); };
     await expect(approveTask(task.id, t.deps)).rejects.toThrow('db down');
     expect(t.tasks.rows.get(task.id)).toMatchObject({ status: 'open', approvedAt: null });
   });
   it('409s recipient_not_created and reopens when select returns no matching contact', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.outreach.select = async () => [];
     await rejects(approveTask(task.id, t.deps), 409, ['recipient_not_created']);
     expect(t.tasks.rows.get(task.id)!.status).toBe('open');
   });
   it('copies no shared fields when the original contact has no consent, and reports consent still needed', async () => {
-    const t = setup(); const task = await t.make({ class: 'needs_referral' });
+    const t = setup(); const task = await t.make({ class: 'send_records' });
     t.outreach.consents.clear();
     const res = await approveTask(task.id, t.deps, {}) as { draft: { sharedFields: string[] }; next: string[] };
     expect(res.draft.sharedFields).toEqual([]);
     expect(res.next).toEqual(['consent', 'approve']);
   });
   it('skips the consent step when the recipient already has consent', async () => {
-    const t = setup(); const first = await t.make({ class: 'needs_referral' });
+    const t = setup(); const first = await t.make({ class: 'send_records' });
     const a = await approveTask(first.id, t.deps) as { contact: { id: string } };
     t.outreach.consents.set(a.contact.id, { contactId: a.contact.id, sharedFields: [], approvedAt: '2026-10-23T00:00:00Z' });
-    const second = await t.make({ class: 'needs_referral' });
+    const second = await t.make({ class: 'send_records' });
     const res = await approveTask(second.id, t.deps) as { next: string[] };
     expect(res.next).toEqual(['approve']);
   });

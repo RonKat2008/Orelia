@@ -115,7 +115,7 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
     }
     expect(mail.sent[0].to).toBe('intake@example.com'); expect(caller.calls[0].to).toBe('+14155550123');
 
-    const fixture = JSON.parse(await readFile('fixtures/inbox/01-needs-referral-basic.json', 'utf8'));
+    const fixture = JSON.parse(await readFile('fixtures/inbox/05-send-records-imaging.json', 'utf8'));
     const owner = contacts.find((c: { channel: string }) => c.channel === 'email');
     const tasks = new MemoryTaskStore();
     const inboundMessages = new MemoryInboundMessageStore();

@@ -41,7 +41,9 @@ describe('draftTasks', () => {
     });
   }
   it('addresses letters correctly and includes extracted details', () => {
-    expect(draftTasks(cases.needs_referral[0], ctx)[0].letter?.to).toBe('local@example.test');
+    const referral = draftTasks(cases.needs_referral[0], ctx)[0];
+    expect(referral.letter?.to).toBeUndefined();
+    expect(referral.details).toMatchObject({ delivery: 'prepared' });
     const slides = draftTasks(cases.send_slides[0], ctx)[0];
     expect(slides.letter?.to).toBe('lab@example.test');
     expect(slides.letter?.body).toContain('S21-1234');
@@ -177,7 +179,8 @@ describe('FixtureClassifier', () => {
       const got = await fc.classify({ channel: fx.event.channel, body: `  ${fx.event.body}\n` });
       expect(got).toEqual(fx.expected);
       const [t] = draftTasks(got, ctx);
-      expect(t.kind).toBe(kinds[got.class]);
+      // A redirect that names no email (only a phone) is a call task.
+      expect(t.kind).toBe(got.class === 'redirect' && !got.redirect?.email ? 'call' : kinds[got.class]);
       expect(t.requiresApproval).toBe(true);
     }
   });

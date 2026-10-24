@@ -19,7 +19,7 @@ const checklist: RequirementsChecklist = {
 const consult = (status: ConsultStatus, id = '44444444-4444-4444-8444-444444444444'): ConsultRequest => ({
   id, caseId: CASE, resourceKey: KEY, expertName: 'Dr. Expert', doctorId: DOCTOR,
   process: { kind: 'econsult', detail: '', sourceUrl: 'https://example.org/e', expertAddress: null, addressEvidenceId: null },
-  subject: 'Request', body: 'Body', packetId: null, sharedFields: [], status, reviewTokenHash: null, reviewTokenExpiresAt: status === 'sent_to_doctor' ? day(5) : null,
+  subject: 'Request', body: 'Body', packetId: null, sharedFields: [], status, reviewTokenHash: null, reviewTokenExpiresAt: status === 'sent_to_doctor' ? day(5) : null, reviewTokenEmail: null, reviewTokenUsedAt: null,
   sentToDoctorAt: null, doctorEdited: false, doctorApprovedAt: null, doctorDeclinedAt: null, doctorNote: null, approvedBodyHash: null, approvedBy: null, doctorApprovalAudit: null, approvalMac: null, packetSnapshot: null, patientConsentAt: null,
   sentAt: null, providerMessageId: null, failureReasons: [], version: 1, createdAt: NOW, updatedAt: NOW,
 });

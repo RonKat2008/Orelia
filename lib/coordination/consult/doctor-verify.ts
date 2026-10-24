@@ -1,5 +1,6 @@
 import { normalizeAddress, parseAllowlist } from '@/lib/safety/allowlist';
 import { isFreeMailAddress } from '@/lib/safety/free-mail';
+import { emailDomainTrusted } from './doctor-domain';
 import { demoCoordinatorInboxes } from '@/lib/outreach/demo-coordinators';
 import type { NppesClient } from '@/lib/sources/nppes';
 
@@ -7,13 +8,15 @@ import type { NppesClient } from '@/lib/sources/nppes';
  * Doctor identity checks (security review #1). A doctor approval can only unlock the physician exemption from the
  * medical-advice filter when the doctor is VERIFIED:
  *  - the patient gave a 10-digit NPI, and NPPES lists that NPI as an active individual with this first + last name;
- *  - the doctor's email is not on a free-mail domain.
+ *  - the doctor's email is not on a free-mail domain;
+ *  - the email's domain (or a parent) matches a domain we hold code-stamped evidence for (doctor-domain.ts), since a
+ *    real doctor's public name + NPI alone does not show the patient-entered address is theirs.
  * Anything else (no NPI, mismatch, registry down) leaves the doctor unverified: the request can still be sent, but
  * through the standard filter. Separately, some addresses can never be a doctor at all (doctorEmailRefusal).
  */
 type Env = Record<string, string | undefined>;
 
-export type VerificationReason = 'verified' | 'npi_missing' | 'free_mail_domain' | 'name_unparseable' | 'npi_name_mismatch' | 'registry_unavailable';
+export type VerificationReason = 'verified' | 'npi_missing' | 'free_mail_domain' | 'email_domain_unverified' | 'name_unparseable' | 'npi_name_mismatch' | 'registry_unavailable';
 export interface DoctorVerification { verified: boolean; reason: VerificationReason }
 
 export interface DoctorVerifier {
@@ -50,13 +53,18 @@ export class NppesDoctorVerifier implements DoctorVerifier {
   }
 }
 
-/** Full check: free-mail first (no registry call needed), then the registry; errors never verify. */
-export async function verifyDoctor(verifier: DoctorVerifier | null, input: { name: string; npi: string | null; email: string }): Promise<DoctorVerification> {
+/** Full check: free-mail first (no registry call needed), then the registry, then the evidenced email domain; errors never verify. */
+export async function verifyDoctor(
+  verifier: DoctorVerifier | null,
+  input: { name: string; npi: string | null; email: string; trustedDomains?: readonly string[] },
+): Promise<DoctorVerification> {
   if (!input.npi) return { verified: false, reason: 'npi_missing' };
   if (isFreeMailAddress(input.email)) return { verified: false, reason: 'free_mail_domain' };
   if (!verifier) return { verified: false, reason: 'registry_unavailable' };
   try {
-    return await verifier.verify({ name: input.name, npi: input.npi });
+    const registry = await verifier.verify({ name: input.name, npi: input.npi });
+    if (!registry.verified) return registry;
+    return emailDomainTrusted(input.email, input.trustedDomains ?? []) ? registry : { verified: false, reason: 'email_domain_unverified' };
   } catch (err) {
     console.error('[consult] NPPES verification failed', err instanceof Error ? err.name : 'error');
     return { verified: false, reason: 'registry_unavailable' };

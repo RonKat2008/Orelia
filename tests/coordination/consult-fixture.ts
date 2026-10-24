@@ -52,6 +52,9 @@ export function harness(over: Partial<ConsultDeps> = {}): Harness {
     verifier: new NppesDoctorVerifier(fakeNppes),
     patientEmail: async id => (id === CASE ? PATIENT_EMAIL : null),
     rateLimits: new MemoryRateLimitStore(),
+    // Code-stamped institution page for the fake doctor's NPI, so DOCTOR_EMAIL's domain is evidenced.
+    doctorDomainEvidence: async (caseId, npi) => (caseId === CASE && npi === DOCTOR_NPI
+      ? [{ claimType: 'institution.page', claim: 'Synthetic clinic', sourceUrl: 'https://www.clinic.example.org/doctors' }] : []),
     loadInputs: async () => inputs.list,
     caseRecord: async id => (id === CASE ? RECORD : null),
     email: () => mailer,

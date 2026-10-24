@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { getServices } from '@/app/api/cases/_lib/services';
 import { getDb } from '@/db/client';
-import { cases } from '@/db/schema';
+import { cases, evidence, experts, institutions } from '@/db/schema';
 import { isOffline } from '@/lib/env';
 import { selectChannels } from '@/lib/outreach/channel-wiring';
 import { loadPlanInputs } from '@/lib/plan/inputs';
@@ -11,7 +11,7 @@ import { NppesClient } from '@/lib/sources/nppes';
 import { FetchTransport } from '@/lib/sources/transport';
 import { getCoordinationStore } from '../store';
 import { NppesDoctorVerifier } from './doctor-verify';
-import { ConsultService, type ConsultDeps, type ConsultEmailChannel } from './service';
+import { ConsultService, type ConsultDeps, type ConsultEmailChannel, type DoctorDomainEvidence } from './service';
 import { MemoryConsultTracker, PostgresConsultTracker, type ConsultTracker } from './tracker';
 
 export { ConsultError, ConsultService, stripConsult } from './service';
@@ -33,6 +33,26 @@ async function patientEmail(caseId: string): Promise<string | null> {
   return row?.email ?? null;
 }
 
+/**
+ * Code-stamped evidence for the doctor's NPI on this case: evidence rows on that expert and on their institution, plus
+ * the institution's intake page. Empty when the NPI is not one of our experts (the doctor then stays unverified).
+ */
+async function doctorDomainEvidence(caseId: string, npi: string): Promise<DoctorDomainEvidence[]> {
+  if (!process.env.DATABASE_URL) return [];
+  const db = getDb();
+  const [expert] = await db.select({ id: experts.id, institutionId: experts.institutionId }).from(experts).where(eq(experts.npi, npi)).limit(1);
+  if (!expert) return [];
+  const target = expert.institutionId
+    ? or(and(eq(evidence.targetKind, 'expert'), eq(evidence.targetId, expert.id)), and(eq(evidence.targetKind, 'institution'), eq(evidence.targetId, expert.institutionId)))
+    : and(eq(evidence.targetKind, 'expert'), eq(evidence.targetId, expert.id));
+  const rows = await db.select({ claimType: evidence.claimType, claim: evidence.claim, sourceUrl: evidence.sourceUrl })
+    .from(evidence).where(and(eq(evidence.caseId, caseId), target)).limit(500);
+  const [inst] = expert.institutionId
+    ? await db.select({ intakeUrl: institutions.intakeUrl }).from(institutions).where(eq(institutions.id, expert.institutionId)).limit(1)
+    : [];
+  return inst?.intakeUrl ? [...rows, { claimType: 'institution.intake_url', claim: 'Institution intake page', sourceUrl: inst.intakeUrl }] : rows;
+}
+
 const g = globalThis as typeof globalThis & { __wayfinderConsultDeps?: ConsultDeps; __wayfinderConsultTracker?: ConsultTracker; __wayfinderConsultEmail?: ConsultEmailChannel };
 
 function defaultDeps(): ConsultDeps {
@@ -52,6 +72,7 @@ function defaultDeps(): ConsultDeps {
     // NPPES (public registry, no key). Offline: no verifier, so every doctor stays unverified (standard filter).
     verifier: isOffline(env.WAYFINDER_OFFLINE) ? null : new NppesDoctorVerifier(new NppesClient(new FetchTransport())),
     patientEmail,
+    doctorDomainEvidence,
   };
 }
 

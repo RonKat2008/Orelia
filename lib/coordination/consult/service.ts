@@ -12,6 +12,7 @@ import {
 } from '../contract';
 import { includedSections, renderPacketText } from '../packet/render';
 import type { ExaSearcher } from '../requirements/deps';
+import { trustedDoctorDomains, type DomainEvidenceRow } from './doctor-domain';
 import { doctorEmailRefused, verifyDoctor, type DoctorVerifier } from './doctor-verify';
 import { buildConsultDraft, doctorReviewEmail, draftProblems, ensureFooter, FIELD_LABELS } from './draft';
 import { discoverConsultProcess } from './process';
@@ -38,7 +39,14 @@ export interface ConsultDeps {
   patientEmail?(caseId: string): Promise<string | null>;
   /** Fixed-window counters (rate_limits table in prod). Defaults to the process-wide store. */
   rateLimits?: RateLimitStore;
+  /**
+   * Code-stamped evidence on this case for the doctor's NPI (their expert rows and institution). A doctor is verified
+   * only when their email domain matches it; missing means no doctor is verified.
+   */
+  doctorDomainEvidence?(caseId: string, npi: string): Promise<DoctorDomainEvidence[]>;
 }
+
+export type DoctorDomainEvidence = DomainEvidenceRow;
 
 /** Audit context of the doctor's decision request: hashed, never stored raw. */
 export interface ReviewAudit { ip: string; userAgent: string }
@@ -104,7 +112,8 @@ export class ConsultService {
     }
     if ((await this.deps.store.list(caseId, 'doctor')).length >= MAX_DOCTORS_PER_CASE) throw new ConsultError(409, `You can add up to ${MAX_DOCTORS_PER_CASE} doctors`);
     const npiValue = npi?.success ? npi.data : null;
-    const check = await verifyDoctor(this.deps.verifier ?? null, { name: name.data, npi: npiValue, email });
+    const trustedDomains = npiValue ? await this.trustedDomains(caseId, npiValue) : [];
+    const check = await verifyDoctor(this.deps.verifier ?? null, { name: name.data, npi: npiValue, email, trustedDomains });
     const doctor = doctorSchema.parse({
       id: crypto.randomUUID(), caseId, name: name.data, practice: practice?.success ? practice.data : null, email,
       npi: npiValue, verified: check.verified, verificationReason: check.reason, createdAt: this.iso(),
@@ -112,6 +121,16 @@ export class ConsultService {
     const saved = await this.deps.store.save(caseId, 'doctor', doctor.id, doctor);
     if (!saved) throw new ConsultError(500, 'Unable to save the doctor');
     return saved;
+  }
+
+  private async trustedDomains(caseId: string, npi: string): Promise<string[]> {
+    if (!this.deps.doctorDomainEvidence) return [];
+    try {
+      return trustedDoctorDomains(await this.deps.doctorDomainEvidence(caseId, npi));
+    } catch (err) {
+      console.error('[consult] doctor domain evidence lookup failed', err instanceof Error ? err.name : 'error');
+      return [];
+    }
   }
 
   async removeDoctor(caseId: string, doctorId: string): Promise<void> {
@@ -156,7 +175,7 @@ export class ConsultService {
     const consult = consultRequestSchema.parse({
       id: crypto.randomUUID(), caseId, resourceKey: input.resourceKey, expertName: resource.name.slice(0, 200), doctorId: doctor.id, process,
       subject: draft.subject, body: draft.body, packetId: input.packetId ?? null, sharedFields, status: 'drafted',
-      reviewTokenHash: null, reviewTokenExpiresAt: null, sentToDoctorAt: null, doctorEdited: false, doctorApprovedAt: null, doctorDeclinedAt: null,
+      reviewTokenHash: null, reviewTokenExpiresAt: null, reviewTokenEmail: null, reviewTokenUsedAt: null, sentToDoctorAt: null, doctorEdited: false, doctorApprovedAt: null, doctorDeclinedAt: null,
       doctorNote: null, approvedBodyHash: null, approvedBy: null, doctorApprovalAudit: null, approvalMac: null, packetSnapshot, patientConsentAt: null, sentAt: null, providerMessageId: null, failureReasons: [],
       version: 1, createdAt: now, updatedAt: now,
     });
@@ -232,7 +251,8 @@ export class ConsultService {
     if (!gate.ok) throw new ConsultError(422, 'The review link cannot be sent', [...gate.reasons]);
     // Reserve first (new token replaces any earlier one), then send.
     const reserved = await this.save({
-      ...c, status: 'sent_to_doctor', reviewTokenHash: minted.tokenHash, reviewTokenExpiresAt: minted.expiresAt, sentToDoctorAt: now.toISOString(), failureReasons: [],
+      ...c, status: 'sent_to_doctor', reviewTokenHash: minted.tokenHash, reviewTokenExpiresAt: minted.expiresAt,
+      reviewTokenEmail: normalizeAddress(doctor.email), reviewTokenUsedAt: null, sentToDoctorAt: now.toISOString(), failureReasons: [],
     }, c.version);
     try {
       await this.deps.email().send(gate.payload);
@@ -303,7 +323,7 @@ export class ConsultService {
 
   private async cancel(c: ConsultRequest): Promise<ConsultRequest> {
     if (c.status === 'sent' || c.status === 'cancelled') throw new ConsultError(409, 'This request can no longer be cancelled');
-    return this.save({ ...c, status: 'cancelled', reviewTokenHash: null, reviewTokenExpiresAt: null }, c.version);
+    return this.save({ ...c, status: 'cancelled', reviewTokenHash: null, reviewTokenExpiresAt: null, reviewTokenEmail: null }, c.version);
   }
 
   // ------------------------------------------------------------------ public review (the token is the capability)
@@ -313,13 +333,18 @@ export class ConsultService {
     return verifyReviewToken(token, this.deps.now(), this.deps.env)?.tokenHash ?? null;
   }
 
-  private async byToken(token: string): Promise<ConsultRequest | null> {
+  /** `used`: also return a link that already recorded a decision (so a repeat POST gets 409, never a second decision). */
+  private async byToken(token: string, used = false): Promise<ConsultRequest | null> {
     const now = this.deps.now();
     const verified = verifyReviewToken(token, now, this.deps.env);
     if (!verified) return null;
     const c = await this.deps.store.consultByTokenHash(verified.tokenHash);
     if (!c || !sameHash(c.reviewTokenHash, verified.tokenHash)) return null;
     if (!c.reviewTokenExpiresAt || new Date(c.reviewTokenExpiresAt).getTime() <= now.getTime()) return null;
+    // Single-use, and bound to the address it was sent to: a doctor whose email no longer matches cannot use it.
+    if ((c.reviewTokenUsedAt && !used) || !c.reviewTokenEmail) return null;
+    const doctor = await this.deps.store.get(c.caseId, 'doctor', c.doctorId);
+    if (!doctor || normalizeAddress(doctor.email) !== c.reviewTokenEmail) return null;
     return c;
   }
 
@@ -353,13 +378,13 @@ export class ConsultService {
   }
 
   async reviewDecide(token: string, decision: ReviewDecisionBody, audit: ReviewAudit = { ip: 'unknown', userAgent: '' }): Promise<{ review: ReviewView; footerAdded: boolean }> {
-    const c = await this.byToken(token);
+    const c = await this.byToken(token, true);
     if (!c || c.status === 'cancelled') throw new ConsultError(404, 'Not found');
-    if (c.status !== 'sent_to_doctor') throw new ConsultError(409, 'A decision was already recorded for this request');
+    if (c.status !== 'sent_to_doctor' || c.reviewTokenUsedAt) throw new ConsultError(409, 'A decision was already recorded for this request');
     const now = this.iso();
     const note = decision.note?.trim() || null;
     if (decision.decision === 'decline') {
-      const saved = await this.save({ ...c, status: 'doctor_declined', doctorDeclinedAt: now, doctorNote: note }, c.version);
+      const saved = await this.save({ ...c, status: 'doctor_declined', doctorDeclinedAt: now, doctorNote: note, reviewTokenUsedAt: now }, c.version);
       return { review: await this.view(saved), footerAdded: false };
     }
     const doctor = await this.doctorOf(c);
@@ -374,7 +399,7 @@ export class ConsultService {
     }
     const to = c.process.expertAddress ? normalizeAddress(c.process.expertAddress) : null;
     const approved: ConsultRequest = {
-      ...c, subject, body, status: 'doctor_approved', doctorEdited: subject !== c.subject || body !== c.body,
+      ...c, subject, body, status: 'doctor_approved', reviewTokenUsedAt: now, doctorEdited: subject !== c.subject || body !== c.body,
       doctorApprovedAt: now, doctorNote: note, approvedBodyHash: consultTextHash({ to, subject, body }),
       approvedBy: { email: doctor.email, npi: doctor.npi, verified: doctor.verified }, doctorApprovalAudit: auditHash(audit),
     };

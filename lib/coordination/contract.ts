@@ -116,7 +116,7 @@ export const doctorSchema = z.object({
   npi: npiSchema.nullable().default(null),
   /** True only when NPPES lists this NPI for this name AND the email is not on a free-mail domain (security review #1). */
   verified: z.boolean().default(false),
-  /** verified | npi_missing | free_mail_domain | name_unparseable | npi_name_mismatch | registry_unavailable */
+  /** verified | npi_missing | free_mail_domain | email_domain_unverified | name_unparseable | npi_name_mismatch | registry_unavailable */
   verificationReason: z.string().max(60).nullable().default(null),
   createdAt: isoSchema,
 });
@@ -168,6 +168,10 @@ export const consultRequestSchema = z.object({
   /** sha256(hex) of the signed review token; the raw token is never stored. */
   reviewTokenHash: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
   reviewTokenExpiresAt: isoSchema.nullable(),
+  /** Normalized doctor email the current review link was sent to; the link works only while the doctor still has it. */
+  reviewTokenEmail: z.email().max(254).nullable().default(null),
+  /** Set when the doctor records a decision: the link is single-use. */
+  reviewTokenUsedAt: isoSchema.nullable().default(null),
   sentToDoctorAt: isoSchema.nullable(),
   doctorEdited: z.boolean(),
   doctorApprovedAt: isoSchema.nullable(),

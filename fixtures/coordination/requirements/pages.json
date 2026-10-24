@@ -1,0 +1,9 @@
+{
+  "_note": "Synthetic pages for offline/demo mode. Keyed by hostname. Not real institutions.",
+  "synthetic-center.example.org": [
+    {
+      "url": "https://synthetic-center.example.org/new-patients",
+      "text": "New patient information. A physician referral letter is required before we can schedule a first visit. Please send your recent imaging reports and pathology slides to our records team. Your insurance plan may require prior authorization; our staff will help verify your insurance. Complete the new patient intake form before your appointment. Referring physicians can request an e-consult with our clinicians through the provider portal."
+    }
+  ]
+}

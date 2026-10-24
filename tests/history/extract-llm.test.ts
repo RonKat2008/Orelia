@@ -34,6 +34,14 @@ describe('extractEvents', () => {
     expect(r.events[0]!.findings).toEqual(['Diagnosis: vascular EDS']);
   });
 
+  it('replaces an ungrounded title and drops ungrounded provider/institution', async () => {
+    const raw = JSON.stringify({ events: [{ date: '2020-01-01', kind: 'diagnosis', title: 'Likely misdiagnosed earlier', provider: 'Dr. Invented', institution: 'Nowhere Clinic', findings: ['Diagnosis: vascular EDS'] }] });
+    const r = await extractEvents(doc, { llm: true, chatFn: vi.fn().mockResolvedValue(raw) });
+    expect(r.events[0]!.title).toBe('Diagnosis: vascular EDS');
+    expect(r.events[0]!.provider).toBeNull();
+    expect(r.events[0]!.institution).toBeNull();
+  });
+
   it('falls back to rules when every finding is ungrounded', async () => {
     const r = await extractEvents(doc, { llm: true, chatFn: vi.fn().mockResolvedValue(good(['invented'])) });
     expect(r.extractedBy).toBe('rules');

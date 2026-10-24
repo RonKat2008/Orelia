@@ -26,10 +26,19 @@ describe('buildSummary', () => {
     expect(s.sources.map(x => x.id)).toEqual(['d1']);
     expect(s.sections.some(x => x.key === 'conflicts')).toBe(false);
   });
-  it('cites conflict source documents when conflicts are ticked', () => {
-    const s = buildSummary(timeline, ['conflicts'], now);
+  it('cites conflict source documents when conflicts and the quoted kinds are ticked', () => {
+    const s = buildSummary(timeline, ['conflicts', 'diagnosis', 'specialist_visit'], now);
     expect(s.sources.map(x => x.id)).toEqual(['d1', 'd2']);
-    expect(s.sections[0].conflicts?.[0].topic).toBe('Topic delta');
+    expect(s.sections.find(x => x.key === 'conflicts')?.conflicts?.[0].topic).toBe('Topic delta');
+  });
+  it('conflicts never quote records from unticked kinds', () => {
+    const only = buildSummary(timeline, ['conflicts'], now);
+    expect(only.sections[0].conflicts).toEqual([]);
+    expect(only.sources).toEqual([]);
+    const text = JSON.stringify(only);
+    for (const leak of ['Statement one', 'Statement two', 'Genetics letter', 'Cardiology visit']) expect(text).not.toContain(leak);
+    // One quoted kind ticked leaves a single-record "conflict", which is dropped.
+    expect(buildSummary(timeline, ['conflicts', 'diagnosis'], now).sections.find(x => x.key === 'conflicts')?.conflicts).toEqual([]);
   });
   it('does not mutate the timeline', () => {
     const before = JSON.stringify(timeline);

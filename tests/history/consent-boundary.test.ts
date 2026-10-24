@@ -5,8 +5,8 @@ import { SHARED_FIELDS } from '@/lib/outreach/draft';
 import { HISTORY_DOC_FIELD } from '@/lib/history/contract';
 
 describe('medical_record chunks and consent', () => {
-  it('consentFields keeps HISTORY_DOC_FIELD only when passed explicitly', () => {
-    expect(consentFields([HISTORY_DOC_FIELD])).toEqual([HISTORY_DOC_FIELD]);
+  it('consentFields never keeps HISTORY_DOC_FIELD (only includeMedicalRecords opts in)', () => {
+    expect(consentFields([HISTORY_DOC_FIELD])).toEqual([]);
     expect(consentFields(SHARED_FIELDS)).not.toContain(HISTORY_DOC_FIELD);
     expect((SHARED_FIELDS as readonly string[]).includes(HISTORY_DOC_FIELD)).toBe(false);
   });
@@ -17,7 +17,10 @@ describe('medical_record chunks and consent', () => {
     const outreach = await search({ caseId: 'c1', query: 'COL3A1 variant', allowedFields: SHARED_FIELDS, k: 20 }, docs);
     expect(outreach.some(r => r.kind === 'medical_record')).toBe(false);
     expect(outreach.length).toBeGreaterThan(0);
-    const history = await search({ caseId: 'c1', query: 'COL3A1 variant', allowedFields: [HISTORY_DOC_FIELD], k: 20 }, docs);
+    // Even an unvalidated caller passing the tag as a "field" gets nothing without the explicit opt-in.
+    const smuggled = await search({ caseId: 'c1', query: 'COL3A1 variant', allowedFields: [HISTORY_DOC_FIELD], k: 20 }, docs);
+    expect(smuggled.some(r => r.kind === 'medical_record')).toBe(false);
+    const history = await search({ caseId: 'c1', query: 'COL3A1 variant', allowedFields: [], includeMedicalRecords: true, k: 20 }, docs);
     expect(history.some(r => r.kind === 'medical_record')).toBe(true);
   });
   it('deleteByTitle removes only the matching record chunks', async () => {

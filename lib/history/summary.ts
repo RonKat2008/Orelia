@@ -21,7 +21,12 @@ export function buildSummary(timeline: HistoryTimeline, sections: readonly Share
   const usedDocIds = new Set<string>();
   const built: SummarySection[] = keys.map(key => {
     if (key === 'conflicts') {
-      const conflicts: Conflict[] = timeline.conflicts.map(c => ({ ...c, statements: c.statements.map(s => ({ ...s })) }));
+      // A conflict quotes records; only quote events whose own section was ticked, and only keep conflicts that
+      // still compare at least two different records after that filter.
+      const kindOf = new Map(timeline.events.map(e => [e.id, e.kind] as const));
+      const conflicts: Conflict[] = timeline.conflicts
+        .map(c => ({ ...c, statements: c.statements.filter(s => { const k = kindOf.get(s.eventId); return k !== undefined && wanted.has(k); }).map(s => ({ ...s })) }))
+        .filter(c => new Set(c.statements.map(s => s.sourceDocId)).size >= 2);
       for (const c of conflicts) for (const s of c.statements) usedDocIds.add(s.sourceDocId);
       return { key, label: sectionLabel(key), events: [], conflicts };
     }

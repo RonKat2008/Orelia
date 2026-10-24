@@ -26,7 +26,7 @@ const SYSTEM = [
 export function buildLlmMessages(doc: HistoryDocument): { role: 'system' | 'user'; content: string }[] {
   return [
     { role: 'system', content: SYSTEM },
-    { role: 'user', content: `Record title: ${doc.title}\n${UNTRUSTED_OPEN}\n${doc.text}\n${UNTRUSTED_CLOSE}` },
+    { role: 'user', content: `${UNTRUSTED_OPEN}\nRecord title: ${doc.title}\n${doc.text}\n${UNTRUSTED_CLOSE}` },
   ];
 }
 
@@ -61,10 +61,16 @@ export function groundLlmOutput(doc: HistoryDocument, raw: string): HistoryEvent
     const span = declared ?? {
       start: Math.min(...grounded.map(g => g.at!.start)), end: Math.max(...grounded.map(g => g.at!.end)),
     };
+    // Headings and names are shown to the patient and drive conflict detection, so they must be grounded too.
+    const groundedText = (value: string | null | undefined) => {
+      const v = value?.trim().slice(0, 200);
+      return v && locate(doc.text, v) ? v : null;
+    };
+    const title = groundedText(e.title) ?? grounded[0].f.slice(0, 200);
     const date = e.date && partialDateSchema.safeParse(e.date).success ? e.date : null;
     const candidate = historyEventSchema.safeParse({
-      id: `${doc.id}:${events.length}`, date, kind: e.kind, title: e.title.trim().slice(0, 200),
-      provider: e.provider?.trim().slice(0, 200) || null, institution: e.institution?.trim().slice(0, 200) || null,
+      id: `${doc.id}:${events.length}`, date, kind: e.kind, title,
+      provider: groundedText(e.provider), institution: groundedText(e.institution),
       findings: grounded.map(g => g.f).slice(0, 20), sourceDocId: doc.id, span,
     });
     if (candidate.success) events.push(candidate.data);

@@ -20,7 +20,7 @@ describe('HistorySummaryView', () => {
     expect(html).toContain('<h1');
   });
   it('titles the conflicts section and includes the neutral note', () => {
-    const html = render(['conflicts']);
+    const html = render(['conflicts', 'diagnosis', 'specialist_visit']);
     expect(html).toContain('Conflicts to discuss with your doctor');
     expect(html).toContain(CONFLICT_NOTE);
     expect(html).toContain('Statement one');

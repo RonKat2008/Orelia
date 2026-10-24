@@ -11,6 +11,8 @@ export interface CaseDocument {
 export type NewDocument = Omit<CaseDocument, 'id' | 'createdAt'>;
 export interface SearchInput {
   caseId: string; contactId?: string; /** Only docs owned by contactId; excludes case-wide (contactId null) docs. */ contactOnly?: boolean; query: string; k?: number; allowedFields: readonly string[];
+  /** Only the patient's own medical-history search sets this; outreach/agent searches never retrieve medical_record chunks. */
+  includeMedicalRecords?: boolean;
 }
 export type VectorSearch = SearchInput & { embedding: number[]; embedModel: string };
 export type Snippet = Omit<CaseDocument, 'embedding'> & { score: number };
@@ -26,9 +28,12 @@ export interface DocumentStore {
 }
 export const PUBLIC_KINDS = ['resource_page', 'evidence'] as const;
 export function consentFields(fields: readonly string[]) {
-  // HISTORY_DOC_FIELD is never part of SHARED_FIELDS (outreach consent), so only a caller that passes it explicitly
-  // (the medical-history search) can retrieve medical_record chunks.
-  return fields.filter(field => field === HISTORY_DOC_FIELD || (SHARED_FIELDS as readonly string[]).includes(field));
+  return fields.filter(field => (SHARED_FIELDS as readonly string[]).includes(field));
+}
+/** Fields a search may match: consent fields, plus the medical-history tag only when explicitly requested. */
+export function searchFields(input: Pick<SearchInput, 'allowedFields' | 'includeMedicalRecords'>): string[] {
+  const allowed = consentFields(input.allowedFields);
+  return input.includeMedicalRecords ? [...allowed, HISTORY_DOC_FIELD] : allowed;
 }
 export function resultLimit(k = 5) { return Number.isFinite(k) ? Math.max(1, Math.min(50, Math.trunc(k))) : 5; }
 export function metadata(row: CaseDocument): DocumentMetadata {
@@ -55,10 +60,10 @@ export class MemoryDocumentStore implements DocumentStore {
     return { id: row.id, kind: row.kind, title: row.title, content: same.sort((a, b) => a.chunkIndex - b.chunkIndex).map(r => r.content).join('\n') };
   }
   async search(input: VectorSearch) {
-    const allowed = consentFields(input.allowedFields);
+    const allowed = searchFields(input);
     return this.rows.filter(row => row.caseId === input.caseId && row.embedModel === input.embedModel
       && (row.contactId === input.contactId || (!input.contactOnly && row.contactId === null))
-      && row.kind !== 'intake_report'
+      && row.kind !== 'intake_report' && (input.includeMedicalRecords === true || row.kind !== 'medical_record')
       && (row.sharedField === null ? (PUBLIC_KINDS as readonly string[]).includes(row.kind) : allowed.includes(row.sharedField)))
       .map(row => {
         const { embedding, ...rest } = structuredClone(row);

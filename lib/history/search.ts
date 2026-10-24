@@ -1,6 +1,6 @@
 import { search as semanticSearch } from '@/lib/case-docs';
 import type { DocumentStore } from '@/lib/case-docs/store';
-import { HISTORY_DOC_FIELD, type HistoryEvent, type HistorySearchHit, type HistoryStore } from './contract';
+import { type HistoryEvent, type HistorySearchHit, type HistoryStore } from './contract';
 import { docIdFromVectorTitle } from './vector';
 import { getHistoryStore } from './store';
 
@@ -56,7 +56,7 @@ function keywordHits(terms: string[], docs: { id: string; title: string; text: s
 
 async function semanticHits(caseId: string, q: string, k: number, titles: Map<string, string>, docs?: DocumentStore): Promise<HistorySearchHit[]> {
   try {
-    const rows = await semanticSearch({ caseId, query: q, k, allowedFields: [HISTORY_DOC_FIELD] }, docs);
+    const rows = await semanticSearch({ caseId, query: q, k, allowedFields: [], includeMedicalRecords: true }, docs);
     return rows.flatMap(row => {
       const id = docIdFromVectorTitle(row.title);
       if (row.kind !== 'medical_record' || !id || !titles.has(id)) return [];

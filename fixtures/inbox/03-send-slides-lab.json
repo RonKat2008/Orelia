@@ -1,0 +1,21 @@
+{
+  "id": "03-send-slides-lab",
+  "description": "Requests pathology slides and names the lab to ship from.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_send_slides_lab",
+    "from": "pathology.coord@brookside-oncology.example.com",
+    "subject": "Re: Second review request",
+    "body": "Hi,\n\nBefore Dr. Okafor can review, please arrange for the original pathology slides to be sent to us. They should come from Harborview Diagnostic Laboratory, which did the original read. We cannot review from reports alone.\n\nThanks,\nTomas Reyes",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "send_slides",
+    "confidence": 0.94,
+    "rationale": "The center asks for the original pathology slides from the named lab.",
+    "quote": "please arrange for the original pathology slides to be sent to us",
+    "lab": {
+      "name": "Harborview Diagnostic Laboratory"
+    }
+  }
+}

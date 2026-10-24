@@ -1,0 +1,18 @@
+{
+  "id": "12-declined-out-of-scope",
+  "description": "Decline because the condition is outside the center's focus; no alternative.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_declined_out_of_scope",
+    "from": "coordinator@harbor-point-clinic.example.org",
+    "subject": "Re: Consult inquiry",
+    "body": "Dear sender,\n\nOur clinic does not see patients with this type of condition, so we will not be able to help. We wish you well in your search.\n\nHarbor Point Clinic",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "declined",
+    "confidence": 0.9,
+    "rationale": "The clinic states it does not see this type of condition and cannot help.",
+    "quote": "we will not be able to help"
+  }
+}

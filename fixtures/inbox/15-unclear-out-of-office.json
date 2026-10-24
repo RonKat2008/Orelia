@@ -1,0 +1,18 @@
+{
+  "id": "15-unclear-out-of-office",
+  "description": "Automatic out-of-office reply; must not be treated as a real answer.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_unclear_out_of_office",
+    "from": "d.moreau@bayshore-hospital.example.org",
+    "subject": "Automatic reply: Patient inquiry",
+    "body": "I am out of the office until November 9 with limited access to email. For urgent matters, contact the main desk at +1 202-555-0132. This is an automatic reply.",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "unclear",
+    "confidence": 0.9,
+    "rationale": "This is an automatic out-of-office reply, not a response to the request.",
+    "quote": "This is an automatic reply."
+  }
+}

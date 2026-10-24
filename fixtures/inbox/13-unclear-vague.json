@@ -1,0 +1,18 @@
+{
+  "id": "13-unclear-vague",
+  "description": "Vague reply with no concrete next step.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_unclear_vague",
+    "from": "hello@orchard-health.example.com",
+    "subject": "Re: Your message",
+    "body": "Thanks for writing. Someone will look into this and may follow up.\n\nOrchard Health",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "unclear",
+    "confidence": 0.7,
+    "rationale": "The reply makes no specific request, so no next step is clear.",
+    "quote": "Someone will look into this and may follow up."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "06-send-records-summary",
+  "description": "Asks for a records summary; short informal reply.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_send_records_summary",
+    "from": "nurse.line@northfield-rare.example.com",
+    "subject": "Re: Rare tumor consult",
+    "body": "Hi there - can you email over the last six months of visit notes and any scan reports? Once we have them our nurse will take a look.\n\nJordan",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "send_records",
+    "confidence": 0.9,
+    "rationale": "The sender asks for recent visit notes and scan reports to be emailed.",
+    "quote": "can you email over the last six months of visit notes and any scan reports"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "02-needs-referral-voice",
+  "description": "Voice call where the front desk says a referral is required first; no phone/hours given.",
+  "event": {
+    "channel": "voice",
+    "providerCallId": "call_needs_referral_voice",
+    "from": "+1 202-555-0114",
+    "body": "AI: Hello, this is an AI assistant calling on behalf of a patient to ask about scheduling a new-patient visit.\nCallee: Okay. Do they have a referral?\nAI: I do not have that information. Is a referral required?\nCallee: Yes, we need a referral from their primary doctor before we can book anything.\nAI: Thank you, I will pass that along.\nCallee: Sounds good.",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "needs_referral",
+    "confidence": 0.93,
+    "rationale": "The callee stated a referral from the primary doctor is required before booking.",
+    "quote": "we need a referral from their primary doctor before we can book anything"
+  }
+}

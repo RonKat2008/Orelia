@@ -1,0 +1,18 @@
+{
+  "id": "16-two-requests-referral-and-records",
+  "description": "Reply asks for both a referral and records. Blocking item is the referral (nothing else can proceed without it), so class is needs_referral; records are secondary.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_two_requests_referral_and_records",
+    "from": "intake@crestline-institute.example.org",
+    "subject": "Re: Request for appointment",
+    "body": "Hello,\n\nWe need two things. First, a referral from your treating physician is required before we can open a new-patient file. Second, once that is in place please send your recent imaging reports. We cannot book until the referral arrives.\n\nCrestline Intake Team",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "needs_referral",
+    "confidence": 0.8,
+    "rationale": "A referral is required before booking, and it blocks the records step, so referral comes first.",
+    "quote": "a referral from your treating physician is required before we can open a new-patient file"
+  }
+}

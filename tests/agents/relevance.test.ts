@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assessTrial, enrollsAdults, mentionStrength } from "@/lib/agents/relevance";
+import { assessTrial, enrollsAdults, mentionStrength, parseAgeYears } from "@/lib/agents/relevance";
 import { verify } from "@/lib/agents/verifier";
 import type { ResearchResult, TrialRegistry } from "@/lib/contracts";
 
@@ -47,11 +47,9 @@ describe("disease relevance filter", () => {
 });
 
 describe("adult scope filter", () => {
-  it("requires ADULT in stdAges or a minimum age of 18 years or younger", () => {
+  it("requires ADULT/OLDER_ADULT in stdAges and no maximum age under 18", () => {
     expect(enrollsAdults({ stdAges: ["ADULT"], minimumAge: undefined })).toBe(true);
-    expect(enrollsAdults({ stdAges: ["CHILD"], minimumAge: "6 Months" })).toBe(true);
-    expect(enrollsAdults({ stdAges: ["CHILD"], minimumAge: "18 Years" })).toBe(true);
-    expect(enrollsAdults({ stdAges: ["CHILD"], minimumAge: "19 Years" })).toBe(false);
+    expect(enrollsAdults({ stdAges: ["CHILD"], minimumAge: "6 Months" })).toBe(false);
     expect(enrollsAdults({ stdAges: ["CHILD"] })).toBe(false);
     expect(enrollsAdults({ stdAges: [] })).toBeUndefined();
   });

@@ -17,6 +17,7 @@ export const trialRegistrySchema = z.object({
   meshTerms: z.array(z.string()),
   stdAges: z.array(z.string()),
   minimumAge: z.string().optional(),
+  maximumAge: z.string().optional(),
   phases: z.array(z.string()),
   usSiteCount: z.number().int().nonnegative(),
   usRecruitingSiteCount: z.number().int().nonnegative(),

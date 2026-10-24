@@ -185,6 +185,7 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
           meshTerms: (s.derivedSection?.conditionBrowseModule?.meshes ?? []).map((m: { term: string }) => m.term),
           stdAges: p.eligibilityModule?.stdAges ?? [],
           minimumAge: p.eligibilityModule?.minimumAge,
+          maximumAge: p.eligibilityModule?.maximumAge,
           investigators: (p.contactsLocationsModule?.overallOfficials ?? []).flatMap((o: { name?: string }) => (o.name ? [o.name] : [])),
           hasContact: (p.contactsLocationsModule?.centralContacts ?? []).length > 0,
           centralContacts: (p.contactsLocationsModule?.centralContacts ?? []).map((c: { phone?: string; email?: string }) => ({ phone: c.phone, email: c.email })),

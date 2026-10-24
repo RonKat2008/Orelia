@@ -1,47 +1,45 @@
 /*
- * Wayfinder design tokens — "survey map" direction.
- * Light: survey paper (faintly green-grey, not cream) with deep navy ink.
- * Dark: night chart — blue-black sea with chalk ink.
- * One accent, the route teal; every other colour is semantic.
+ * Legacy Wayfinder tokens (--wf-*), kept so pre-redesign CSS keeps working.
+ * They now resolve to the Warm Paper tokens defined in app/styles/theme.css, so
+ * every legacy page follows the new palette and both themes automatically.
  *
- * Theme: follows the OS by default; [data-theme="light|dark"] on <html> forces it.
+ * New code: do not use --wf-* names. Use Tailwind classes from the Warm Paper
+ * theme (bg-paper, text-ink, border-line, ...). See docs/DESIGN.md.
  */
 
 :root {
-  color-scheme: light;
-
   /* Base */
-  --wf-paper: #eeede5;
-  --wf-paper-raised: #f8f7f2;
-  --wf-paper-sunk: #e4e3d9;
-  --wf-ink: #1d2b36;
-  --wf-ink-muted: #52606a;
-  --wf-rule: #cdcbbd;
-  --wf-contour: #d9d7ca;
+  --wf-paper: var(--paper, #faf6ef);
+  --wf-paper-raised: var(--card, #fffdf9);
+  --wf-paper-sunk: var(--paper-2, #f3ede2);
+  --wf-ink: var(--ink, #1f2a2a);
+  --wf-ink-muted: var(--ink-2, #4a5654);
+  --wf-rule: var(--line, #e6ded0);
+  --wf-contour: color-mix(in oklab, var(--line, #e6ded0) 60%, var(--paper, #faf6ef));
 
   /* Accent: the route */
-  --wf-route: #2a6670;
-  --wf-route-soft: #2a667026;
+  --wf-route: var(--teal, #1f5e5b);
+  --wf-route-soft: color-mix(in oklab, var(--teal, #1f5e5b) 15%, transparent);
 
   /* Semantic status */
-  --wf-verified: #3a7449;
-  --wf-pending: #9a6d16;
-  --wf-failed: #a04d45;
-  --wf-neutral: #868980;
-  --wf-quiet: #a9aba1;
+  --wf-verified: var(--ok, #2f6b4f);
+  --wf-pending: var(--warn-ink, #8a560b);
+  --wf-failed: var(--danger, #b4432f);
+  --wf-neutral: var(--ink-3, #5f6866);
+  --wf-quiet: var(--line-strong, #d3c8b5);
 
-  /* Score palette: tints of route + earth, ordered */
-  --wf-score-0: #2a6670;
-  --wf-score-1: #5b8f8f;
-  --wf-score-2: #9a6d16;
-  --wf-score-3: #7e7a5c;
+  /* Score palette: ordered */
+  --wf-score-0: var(--teal, #1f5e5b);
+  --wf-score-1: color-mix(in oklab, var(--teal, #1f5e5b) 60%, var(--sage, #a8c3b0));
+  --wf-score-2: var(--warn, #a86b12);
+  --wf-score-3: var(--ink-3, #5f6866);
 
-  --wf-focus: #2a6670;
-  --wf-shadow: 0 1px 0 #1d2b360f, 0 8px 24px -12px #1d2b3640;
+  --wf-focus: var(--ring, #1f5e5b);
+  --wf-shadow: var(--elev-md);
 
   /* Type */
-  --wf-font-display: var(--font-display, "Iowan Old Style", Georgia, serif);
-  --wf-font-text: var(--font-text, system-ui, sans-serif);
+  --wf-font-display: var(--font-fraunces, var(--font-display, "Iowan Old Style")), Georgia, serif;
+  --wf-font-text: var(--font-text, system-ui), system-ui, sans-serif;
   --wf-text-sm: 0.875rem;
   --wf-text-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
   --wf-text-lg: 1.25rem;
@@ -60,65 +58,15 @@
   --wf-space-12: 3rem;
   --wf-space-section: clamp(3rem, 2rem + 4vw, 6rem);
 
-  /* Shape: small radius for controls, larger for surfaces, pills for status */
+  /* Shape */
   --wf-radius-control: 6px;
-  --wf-radius-surface: 14px;
+  --wf-radius-surface: 12px;
   --wf-radius-pill: 999px;
 
-  /* Motion (CSS side; JS side lives in lib/motion/tokens.ts) */
-  --wf-duration-fast: 180ms;
-  --wf-duration-normal: 350ms;
-  --wf-ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --wf-paper: #0f1a22;
-    --wf-paper-raised: #16232d;
-    --wf-paper-sunk: #0b141a;
-    --wf-ink: #e3e1d6;
-    --wf-ink-muted: #9ba7ad;
-    --wf-rule: #2b3a45;
-    --wf-contour: #1c2a34;
-    --wf-route: #6fb6b4;
-    --wf-route-soft: #6fb6b42e;
-    --wf-verified: #82bb8e;
-    --wf-pending: #d9ad5a;
-    --wf-failed: #d2857c;
-    --wf-neutral: #727b7f;
-    --wf-quiet: #4d5a62;
-    --wf-score-0: #6fb6b4;
-    --wf-score-1: #4f8f90;
-    --wf-score-2: #d9ad5a;
-    --wf-score-3: #a8a27c;
-    --wf-focus: #6fb6b4;
-    --wf-shadow: 0 1px 0 #0000004d, 0 10px 28px -14px #000000b3;
-  }
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --wf-paper: #0f1a22;
-  --wf-paper-raised: #16232d;
-  --wf-paper-sunk: #0b141a;
-  --wf-ink: #e3e1d6;
-  --wf-ink-muted: #9ba7ad;
-  --wf-rule: #2b3a45;
-  --wf-contour: #1c2a34;
-  --wf-route: #6fb6b4;
-  --wf-route-soft: #6fb6b42e;
-  --wf-verified: #82bb8e;
-  --wf-pending: #d9ad5a;
-  --wf-failed: #d2857c;
-  --wf-neutral: #727b7f;
-  --wf-quiet: #4d5a62;
-  --wf-score-0: #6fb6b4;
-  --wf-score-1: #4f8f90;
-  --wf-score-2: #d9ad5a;
-  --wf-score-3: #a8a27c;
-  --wf-focus: #6fb6b4;
-  --wf-shadow: 0 1px 0 #0000004d, 0 10px 28px -14px #000000b3;
+  /* Motion (CSS side; JS side lives in lib/motion/tokens.ts and lib/ui/motion.ts) */
+  --wf-duration-fast: 150ms;
+  --wf-duration-normal: 300ms;
+  --wf-ease-arrive: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Status tone helper: sets --wf-tone for any element with data-tone. */

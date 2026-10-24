@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryCaseStore } from "@/lib/agents/case-store";
+import { isReachable } from "@/lib/outreach/reachability";
 import { fallbackCuration, validateCuration } from "@/lib/agents/curator";
 import { MemoryCurationStore } from "@/lib/agents/curator-store";
 import { extractCase } from "@/lib/agents/intake-extractor";
@@ -82,7 +83,9 @@ describe("curator offline fixtures", () => {
         expect(validated.summary.length).toBeGreaterThan(0);
 
         expect(summary.curation.suggested.length).toBeLessThanOrEqual(5);
-        expect(summary.curation.suggested.length).toBeGreaterThan(0);
+        // Pre-selection requires a contact route: exactly the reachable best picks, nothing doorless.
+        const reachableIds = new Set(ranked.filter((r) => isReachable(r.record.evidence)).map((r) => r.record.resource.id));
+        for (const id of summary.curation.suggested) expect(reachableIds.has(id)).toBe(true);
         const tierOf = new Map(validated.tiers.map((t) => [t.candidateId, t.tier]));
         for (const id of summary.curation.suggested) expect(tierOf.get(id)).toBe("best");
         expect(summary.curation.suggested).toEqual(validated.suggested);

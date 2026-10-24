@@ -4,6 +4,7 @@ import { getCurationStore, curationKey } from "@/lib/agents/curator-store";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
 import { guardCase } from "@/lib/auth/ownership";
+import { isReachable } from "@/lib/outreach/reachability";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,8 @@ export async function GET(req: Request, { params }: Ctx) {
     const suggested = (curation?.suggested ?? [])
       .map((k) => byKey.get(k))
       .filter((i): i is ShortlistItem => !!i && curation?.byTarget.get(curationKey(i.targetKind, i.targetId))?.tier === "best")
+      // Never pre-check a resource with no contact route (also covers curations stored before this rule).
+      .filter((i) => isReachable(i.evidence))
       .slice(0, 5)
       .map((i) => ({ targetKind: i.targetKind, targetId: i.targetId, name: i.name }));
 

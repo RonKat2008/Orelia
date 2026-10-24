@@ -16,8 +16,14 @@ import type { VerifiedRecord } from "@/lib/agents/verifier";
 
 const ADVICE = "You should take 50 mg daily";
 
-function entry(kind: Resource["kind"], n: number, rank: number, evN = 2): RankedEntry {
+function entry(kind: Resource["kind"], n: number, rank: number, evN = 2, door: "email" | "web_form" | "program_page" | "none" = "email"): RankedEntry {
   const id = `${kind}-${n}`;
+  const doorRows = {
+    email: [{ id: `${id}-door`, claimType: "contact_point.email.org_contact", claim: `intake@example.org`, sourceUrl: "https://example.org/contact", sourceKind: "exa" as const, fetchedAt: "2026-01-01T00:00:00.000Z" }],
+    web_form: [{ id: `${id}-door`, claimType: "contact_point.web_form.intake_form", claim: "https://example.org/form", sourceUrl: "https://example.org/program", sourceKind: "exa" as const, fetchedAt: "2026-01-01T00:00:00.000Z" }],
+    program_page: [{ id: `${id}-door`, claimType: "program_page", claim: "https://example.org/program", sourceUrl: "https://example.org/program", sourceKind: "exa" as const, fetchedAt: "2026-01-01T00:00:00.000Z" }],
+    none: [],
+  }[door];
   const evidence = Array.from({ length: evN }, (_, i) => ({
     id: `${id}-ev${i}`,
     claimType: "publication",
@@ -25,7 +31,7 @@ function entry(kind: Resource["kind"], n: number, rank: number, evN = 2): Ranked
     sourceUrl: "https://example.org/x",
     sourceKind: "pubmed" as const,
     fetchedAt: "2026-01-01T00:00:00.000Z",
-  }));
+  })).concat(doorRows as never[]);
   const resource: Resource =
     kind === "trial"
       ? { kind, id, nctId: `NCT0000000${n}`, title: `Trial ${n}`, evidenceRefs: [] }
@@ -125,6 +131,24 @@ describe("validateCuration", () => {
     const v = validateCuration(cur(all.map((e) => pick(e.record.resource.id, "best"))), all);
     expect(v.suggested).toHaveLength(SUGGESTED_MAX);
     expect(v.suggested).toEqual(["expert-1", "expert-2", "institution-1", "institution-2", "trial-1"]);
+  });
+});
+
+describe("suggested requires a contact route", () => {
+  it("never pre-selects a best pick with no contact route, but keeps its tier", () => {
+    const all = [entry("organization", 1, 1, 2, "program_page"), entry("organization", 2, 2, 2, "none"), entry("expert", 1, 1)];
+    const v = validateCuration(cur(all.map((e) => pick(e.record.resource.id, "best"))), all);
+    expect(v.suggested).toEqual(["expert-1"]);
+    expect(v.tiers.find((t) => t.candidateId === "organization-1")?.tier).toBe("best");
+  });
+  it("prefers reachable resources and counts an online form as reachable", () => {
+    const all = [entry("expert", 1, 1, 2, "none"), entry("expert", 2, 2, 2, "web_form"), entry("trial", 1, 1)];
+    const v = validateCuration(cur(all.map((e) => pick(e.record.resource.id, "best"))), all);
+    expect(v.suggested).toEqual(["expert-2", "trial-1"]);
+  });
+  it("suggests nothing when no best pick is reachable", () => {
+    const all = [entry("organization", 1, 1, 2, "none")];
+    expect(validateCuration(cur([pick("organization-1", "best")]), all).suggested).toEqual([]);
   });
 });
 

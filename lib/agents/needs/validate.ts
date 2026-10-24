@@ -35,6 +35,8 @@ const PREFIX = {
   trialEligibility: "elig",
   supportNeeds: "support",
   questions: "q",
+  emergencyFacts: "emer",
+  workup: "workup",
 } as const;
 type Section = keyof typeof PREFIX;
 
@@ -56,7 +58,7 @@ export function cleanSearchTerm(raw: string): string | undefined {
 function texts(section: Section, item: Record<string, unknown>): (string | undefined)[] {
   const s = (k: string) => (typeof item[k] === "string" ? (item[k] as string) : undefined);
   if (section === "specialties") return [s("specialty"), s("subspecialty"), s("why"), s("plain")];
-  if (section === "questions") return [s("text")];
+  if (section === "questions" || section === "emergencyFacts") return [s("text")];
   return [s("text"), s("plain")];
 }
 
@@ -98,7 +100,10 @@ export function validateNeeds(raw: GeneratedNeeds, collected: readonly BriefSour
     return undefined;
   });
 
-  const kept = { specialties, centerCapabilities, redFlags, trialEligibility, supportNeeds, questions };
+  const emergencyFacts = keep("emergencyFacts", raw.emergencyFacts ?? []);
+  const workup = keep("workup", raw.workup ?? []);
+
+  const kept = { specialties, centerCapabilities, redFlags, trialEligibility, supportNeeds, questions, emergencyFacts, workup };
   const sources: NeedSource[] = collected
     .filter((s) => used.has(s.id))
     .map((s) => ({ id: s.id, url: s.url, title: s.title, kind: s.kind, fetchedAt: s.fetchedAt }));

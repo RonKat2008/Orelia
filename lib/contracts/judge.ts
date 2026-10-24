@@ -72,6 +72,16 @@ export const judgementSchema = z.object({
   source: z.enum(["model", "fallback"]),
   /** Promoted to keep by the deterministic keep floor (score), not by the judge. */
   promoted: z.boolean().optional(),
+  /** Code-computed travel facts (state-centroid miles) for located candidates; never model output. */
+  travel: z
+    .object({
+      homeState: z.string(),
+      nearestState: z.string().optional(),
+      nearestMiles: z.number().int().nonnegative().optional(),
+      travelLimitMiles: z.number().int().nonnegative(),
+      withinTravelLimit: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type Judgement = z.infer<typeof judgementSchema>;
 

@@ -79,6 +79,17 @@ export const resourceQuestionSchema = z.object({
   evidenceIds,
 });
 
+/**
+ * A fact for EMERGENCY STAFF that a source states about this condition (e.g. "Arteries are fragile; sources say
+ * invasive procedures such as arteriography carry a risk of vessel injury"). Phrased as a fact, never as an instruction
+ * to the patient. Only items that cite fetched sources survive validation; the emergency card filters them again.
+ */
+export const emergencyFactSchema = z.object({
+  id,
+  text: z.string().min(1).max(300),
+  evidenceIds,
+});
+
 /** What the model returns (before deterministic validation). */
 export const generatedNeedsSchema = z.object({
   specialties: z.array(specialtyNeedSchema).max(8).default([]),
@@ -87,6 +98,13 @@ export const generatedNeedsSchema = z.object({
   trialEligibility: z.array(eligibilityFeatureSchema).max(8).default([]),
   supportNeeds: z.array(supportNeedSchema).max(8).default([]),
   questions: z.array(resourceQuestionSchema).max(16).default([]),
+  /** Emergency-relevant sourced facts for staff (shown only on the patient-approved emergency card). */
+  emergencyFacts: z.array(emergencyFactSchema).max(6).default([]),
+  /**
+   * Undiagnosed path only: what to look for in a DIAGNOSTIC WORKUP service (genetics clinic, exome/genome testing,
+   * UDN). Never a diagnosis or a guess at one.
+   */
+  workup: z.array(capabilityNeedSchema).max(8).default([]),
 });
 export type GeneratedNeeds = z.infer<typeof generatedNeedsSchema>;
 
@@ -146,4 +164,5 @@ export type RedFlag = z.infer<typeof redFlagSchema>;
 export type EligibilityFeature = z.infer<typeof eligibilityFeatureSchema>;
 export type SupportNeed = z.infer<typeof supportNeedSchema>;
 export type ResourceQuestion = z.infer<typeof resourceQuestionSchema>;
+export type EmergencyFact = z.infer<typeof emergencyFactSchema>;
 export type NeedResourceKind = z.infer<typeof needResourceKindSchema>;

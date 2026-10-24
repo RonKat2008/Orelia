@@ -1,10 +1,12 @@
+import { createCallScript, renderCallScript, resourceContext, type ContextDocument } from './call-script';
 import { minimize } from '../safety/minimize';
-import { AI_DISCLOSURE_VOICE, withDisclosure } from '../safety/disclosure';
+import { withDisclosure } from '../safety/disclosure';
 import type { CaseRecord } from '../safety/types';
 import type { Contact, Consent, Draft } from './types';
 export const SHARED_FIELDS = ['diseaseName', 'subtype', 'stageSummary', 'homeCity', 'homeState', 'insurer', 'planId', 'travelLimitMiles', 'goals'] as const;
 const labels: Record<string, string> = { diseaseName: 'Diagnosis', subtype: 'Subtype', stageSummary: 'Stage summary', homeCity: 'Home city', homeState: 'Home state', insurer: 'Insurer', planId: 'Plan ID', travelLimitMiles: 'Travel limit (miles)', goals: 'Goals' };
-export function createDraft(contact: Contact, consent: Consent, record: CaseRecord): Draft {
+export function createDraft(contact: Contact, consent: Consent, record: CaseRecord, docs: readonly ContextDocument[] = []): Draft & { contextDocIds: string[] } {
+  const context = resourceContext(contact, consent, record, docs);
   const data = minimize(record, consent.sharedFields);
   const diagnosis = typeof data.diseaseName === 'string' ? data.diseaseName : 'my condition';
   const request = contact.targetKind === 'trial'
@@ -15,6 +17,7 @@ export function createDraft(contact: Contact, consent: Consent, record: CaseReco
         : 'What support and resources are available, and how can I get started?'
       : `Do you see patients with ${diagnosis}, and what do you need to evaluate the case?`;
   const details = Object.entries(data).filter(([, value]) => value !== null && value !== undefined).map(([key, value]) => `${labels[key]}: ${Array.isArray(value) ? value.join(', ') : String(value)}`).join('\n');
-  const body = `Hello,\n\n${request}${details ? `\n\n${details}` : ''}\n\nThank you.`;
-  return { id: crypto.randomUUID(), contactId: contact.id, caseId: contact.caseId, channel: contact.channel, address: contact.address, subject: contact.channel === 'email' ? 'Patient intake inquiry' : undefined, body: contact.channel === 'voice' ? `${AI_DISCLOSURE_VOICE}\n\n${body}` : withDisclosure(body), sharedFields: [...consent.sharedFields] };
+  const resourceLines = context.length ? `\n\nPublic intake information:\n${context.map(doc => doc.text).join('\n')}` : '';
+  const body = `Hello,\n\n${request}${details ? `\n\n${details}` : ''}${resourceLines}\n\nThank you.`;
+  return { id: crypto.randomUUID(), contactId: contact.id, caseId: contact.caseId, channel: contact.channel, address: contact.address, subject: contact.channel === 'email' ? 'Patient intake inquiry' : undefined, body: contact.channel === 'voice' ? renderCallScript(createCallScript(contact, consent, record, docs)) : withDisclosure(body), contextDocIds: context.map(doc => doc.id), sharedFields: [...consent.sharedFields] };
 }

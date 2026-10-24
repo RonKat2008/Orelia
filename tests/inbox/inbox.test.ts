@@ -114,7 +114,7 @@ describe('processInbound', () => {
   it('orchestrates guard, classify and drafts', async () => {
     const classify = vi.fn(async () => cases.call_to_schedule[0]);
     const r = await processInbound(event, deps({ classify }));
-    expect(classify).toHaveBeenCalledWith({ channel: 'email', body: event.body, subject: undefined, from: undefined, caseId: 'case1', offlineKey: undefined });
+    expect(classify).toHaveBeenCalledWith({ channel: 'email', body: event.body, subject: undefined, from: undefined, caseId: 'case1', offlineKey: undefined, tools: [expect.objectContaining({ name: 'case_docs_search' })] });
     expect(r.contactId).toBe('c1');
     expect(r.tasks[0].kind).toBe('call');
   });

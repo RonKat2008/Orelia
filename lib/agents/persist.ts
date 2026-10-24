@@ -1,3 +1,5 @@
+import { ingestEvidence } from '@/lib/case-docs/hooks';
+import type { DocumentStore } from '@/lib/case-docs/store';
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
@@ -63,6 +65,7 @@ function toShortlistEvidence(e: EvidenceWithId): ShortlistEvidence {
 
 /** In-memory implementation for tests and offline demo. */
 export class MemoryPersist implements Persist {
+  constructor(private readonly documents?: DocumentStore) {}
   private readonly byCase = new Map<string, ShortlistItem[]>();
   /** Every resource seen, by canonical id (mirrors the entity tables). */
   readonly resources = new Map<string, Resource>();
@@ -82,6 +85,7 @@ export class MemoryPersist implements Persist {
         evidence: e.record.evidence.map(toShortlistEvidence),
       })),
     );
+    await ingestEvidence(caseId, entries.flatMap(e => e.record.evidence), this.documents);
   }
 
   async getShortlist(caseId: string): Promise<ShortlistItem[]> {
@@ -93,7 +97,7 @@ type Db = ReturnType<typeof getDb>;
 
 /** Drizzle/Neon implementation. neon-http has no transactions, so writes are ordered idempotent upserts. */
 export class DbPersist implements Persist {
-  constructor(private readonly db: Db = getDb()) {}
+  constructor(private readonly db: Db = getDb(), private readonly documents?: DocumentStore) {}
 
   async saveResults(caseId: string, entries: readonly RankedEntry[]): Promise<void> {
     const { db } = this;
@@ -189,6 +193,7 @@ export class DbPersist implements Persist {
         })),
       );
     }
+    await ingestEvidence(caseId, entries.flatMap(e => e.record.evidence), this.documents);
   }
 
   async getShortlist(caseId: string): Promise<ShortlistItem[]> {

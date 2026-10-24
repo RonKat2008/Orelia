@@ -21,6 +21,10 @@ export interface OrchestratorDeps {
   proposer?: Proposer;
   /** Hard per-agent ceiling so one hung agent cannot hold the run past the 3-minute target. */
   agentTimeoutMs?: number;
+  /** Durable adapters memoize these JSON-serializable phase outputs. */
+  step?: ResearchStep;
+  /** Shared durable deadline; prevents late persistence from publishing a timed-out run. */
+  deadline?: number;
 }
 
 export interface ResearchSummary {
@@ -29,6 +33,10 @@ export interface ResearchSummary {
   candidates: number;
   verified: VerifyOutput;
   ranked: RankedEntry[];
+}
+
+export interface ResearchStep {
+  run<T>(id: string, work: () => Promise<T>): Promise<T>;
 }
 
 const DEFAULT_AGENT_TIMEOUT_MS = 150_000;
@@ -100,47 +108,60 @@ async function finishRun(store: RunStore, runId: string, outcome: PromiseSettled
 }
 
 export async function runResearch(caseId: string, deps: OrchestratorDeps): Promise<ResearchSummary> {
-  const caseRecord = await deps.cases.get(caseId);
-  if (!caseRecord) throw new Error(`Case ${caseId} not found`);
-  await deps.cases.setStatus(caseId, "researching");
-
-  // 1. Queue all nine first so the UI shows every card immediately.
-  const names = agentNameSchema.options;
-  const runIds = new Map<string, string>();
-  for (const name of names) runIds.set(name, await deps.store.create(caseId, name));
-
-  const agentStore = new AdoptingStore(deps.store, runIds);
-  const ctx: ResearchContext = { ports: deps.ports, store: agentStore, caseId };
-  const timeoutMs = deps.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
-
-  // 2. Fan out. allSettled: one failing agent never sinks the rest.
-  const runStatuses: Record<string, string> = {};
-  const settled = await Promise.all(
-    names.map(async (name) => {
-      const runId = runIds.get(name)!;
-      const agent = deps.agents.find((a) => a.name === name);
-      let outcome: PromiseSettledResult<ResearchResult>;
-      if (!agent) {
-        outcome = { status: "fulfilled", value: { status: "not_implemented" } };
-      } else {
-        await deps.store.update(runId, { status: "running", startedAt: new Date() });
-        // allSettled on a single promise keeps rejection handling uniform with the fan-out contract.
-        [outcome] = await Promise.allSettled([withTimeout(agent.run(caseRecord, ctx), timeoutMs, name)]);
-      }
-      runStatuses[name] = await finishRun(deps.store, runId, outcome);
-      return outcome;
-    }),
-  );
-
-  const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
-
-  // 3. Verify (deterministic), 4. rank per resource kind, 5. persist.
+  // Inngest throws control-flow signals while planning steps. Terminal failure belongs to
+  // onFailure; catching a planning signal here would incorrectly fail a healthy case.
+  if (deps.step) return runResearchPhases(caseId, deps);
   try {
-    return await finalizeCase(caseId, caseRecord, results, runStatuses, deps);
+    return await runResearchPhases(caseId, deps);
   } catch (e) {
     await deps.cases.setStatus(caseId, "research_failed");
     throw e;
   }
+}
+
+async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promise<ResearchSummary> {
+  const step: ResearchStep = deps.step ?? { run: (_id, work) => work() };
+  // All I/O belongs inside steps: replay must not reset a ready/failed case to researching.
+  const queued = await step.run("queue", async () => {
+    const caseRecord = await deps.cases.get(caseId);
+    if (!caseRecord) throw new Error(`Case ${caseId} not found`);
+    await deps.cases.setStatus(caseId, "researching");
+    const runIds: [string, string][] = [];
+    for (const name of agentNameSchema.options) runIds.push([name, await deps.store.create(caseId, name)]);
+    return { caseRecord, runIds };
+  });
+  const { caseRecord } = queued;
+  const names = agentNameSchema.options;
+  const runIds = new Map(queued.runIds);
+
+  const fanout = await step.run("run-agents", async () => {
+    const agentStore = new AdoptingStore(deps.store, runIds);
+    const ctx: ResearchContext = { ports: deps.ports, store: agentStore, caseId };
+    const timeoutMs = deps.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
+
+    // 2. Fan out. allSettled: one failing agent never sinks the rest.
+    const runStatuses: Record<string, string> = {};
+    const settled = await Promise.all(
+      names.map(async (name) => {
+        const runId = runIds.get(name)!;
+        const agent = deps.agents.find((a) => a.name === name);
+        let outcome: PromiseSettledResult<ResearchResult>;
+        if (!agent) {
+          outcome = { status: "fulfilled", value: { status: "not_implemented" } };
+        } else {
+          await deps.store.update(runId, { status: "running", startedAt: new Date() });
+          // allSettled on a single promise keeps rejection handling uniform with the fan-out contract.
+          [outcome] = await Promise.allSettled([withTimeout(agent.run(caseRecord, ctx), timeoutMs, name)]);
+        }
+        runStatuses[name] = await finishRun(deps.store, runId, outcome);
+        return outcome;
+      }),
+    );
+
+    const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
+    return { results, runStatuses };
+  });
+  return finalizeCase(caseId, caseRecord, fanout.results, fanout.runStatuses, deps, step);
 }
 
 async function finalizeCase(
@@ -149,17 +170,25 @@ async function finalizeCase(
   results: ResearchResult[],
   runStatuses: Record<string, string>,
   deps: OrchestratorDeps,
+  step: ResearchStep,
 ): Promise<ResearchSummary> {
-  const verified = await verifyWithProposals(results, deps.proposer, caseRecord);
-  const ranked: RankedEntry[] = [];
-  const kinds = [...new Set(verified.kept.map((k) => k.resource.kind))].sort();
-  for (const kind of kinds) {
-    const group = verified.kept.filter((k) => k.resource.kind === kind && (k.resource.kind !== "expert" || expertEligibility(k.resource, verified.kept.map((r) => r.resource)).eligible));
-    const out = (deps.rank ?? defaultRank)(group.map((rec) => toCandidate(rec, verified.kept, caseRecord)));
-    for (const r of out) ranked.push({ record: r.record, score: r.score, rank: r.rank, breakdown: r.breakdown });
-  }
-  await deps.persist.saveResults(caseId, ranked);
-  await deps.cases.setStatus(caseId, "ready");
+  const verified = await step.run("verify", () => verifyWithProposals(results, deps.proposer, caseRecord));
+  const ranked = await step.run("rank", async () => {
+    const ranked: RankedEntry[] = [];
+    const kinds = [...new Set(verified.kept.map((k) => k.resource.kind))].sort();
+    for (const kind of kinds) {
+      const group = verified.kept.filter((k) => k.resource.kind === kind && (k.resource.kind !== "expert" || expertEligibility(k.resource, verified.kept.map((r) => r.resource)).eligible));
+      const out = (deps.rank ?? defaultRank)(group.map((rec) => toCandidate(rec, verified.kept, caseRecord)));
+      for (const r of out) ranked.push({ record: r.record, score: r.score, rank: r.rank, breakdown: r.breakdown });
+    }
+    return ranked;
+  });
+  await step.run("persist", async () => {
+    await deps.persist.saveResults(caseId, ranked);
+    if (deps.deadline !== undefined && Date.now() >= deps.deadline) throw new Error("Research exceeded 180s deadline");
+    await deps.cases.setStatus(caseId, "ready");
+    return { saved: ranked.length };
+  });
 
   return {
     runStatuses,

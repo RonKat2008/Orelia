@@ -8,7 +8,7 @@ export interface ProviderUsage {
   cache_creation?: { ephemeral_1h_input_tokens?: number | null } | null;
 }
 export const emptyUsage = (): Usage => ({ tokensIn: 0, tokensOut: 0, cacheRead: 0, cacheCreation: 0, costUsd: 0 });
-const tokens = (n: number | null | undefined) => Number.isFinite(n) && n! > 0 ? Math.floor(n!) : 0;
+const tokens = (n: number | null | undefined) => typeof n === "number" && Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 export function priceUsage(model: string, value: ProviderUsage): Usage {
   const usage = { tokensIn: tokens(value.input_tokens ?? value.prompt_tokens ?? value.total_tokens), tokensOut: tokens(value.output_tokens), cacheRead: tokens(value.cache_read_input_tokens), cacheCreation: tokens(value.cache_creation_input_tokens), costUsd: null as number | null };
   const p = modelPrice(model, usage.tokensIn + usage.cacheRead + usage.cacheCreation);

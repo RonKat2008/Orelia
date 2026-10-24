@@ -28,7 +28,7 @@ export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
     if (!block) continue;
     const emails = [...new Set((block.match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? []).filter(isRoleEmail).map(s => s.toLowerCase()))];
     // Evidence excerpt is the matching phrase only, avoiding incidental personal addresses/medical prose.
-    found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)![0], emails });
+    found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)?.[0] ?? "", emails });
   }
   return found;
 }

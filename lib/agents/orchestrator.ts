@@ -151,7 +151,8 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     const runStatuses: Record<string, string> = {};
     const settled = await Promise.all(
       names.map(async (name) => {
-        const runId = runIds.get(name)!;
+        const runId = runIds.get(name);
+        if (!runId) throw new Error(`Missing run ID for ${name}`);
         const agent = deps.agents.find((a) => a.name === name);
         let outcome: PromiseSettledResult<ResearchResult>;
         if (!agent) {

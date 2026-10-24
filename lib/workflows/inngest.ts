@@ -21,8 +21,9 @@ export function toInngestFunction(def: FunctionDefinition) {
       triggers: { event: def.trigger.event },
       ...(def.idempotency ? { idempotency: def.idempotency } : {}),
     },
+    // Inngest serializes step results; workflow values are JSON-safe at this adapter boundary.
     async ({ event, step }) =>
-      def.handler({ event, step: step as unknown as WorkflowStep }),
+      def.handler({ event, step: step as WorkflowStep }),
   );
 }
 

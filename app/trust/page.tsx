@@ -5,11 +5,15 @@ import { Details, PageHeader } from "@/components/ui";
 
 export const metadata = {
   title: "Trust",
-  description: "What Wayfinder will never do, and how to ask for a case to be deleted.",
+  description:
+    "What Wayfinder will never do, and how to ask for a case to be deleted.",
 };
 
 /** Anchors the footer links to. */
-const ANCHORS: Record<string, string> = { advice: "sources", approval: "consent" };
+const ANCHORS: Record<string, string> = {
+  advice: "sources",
+  approval: "consent",
+};
 
 export default function TrustPage() {
   return (
@@ -23,7 +27,10 @@ export default function TrustPage() {
           />
         </div>
 
-        <section aria-labelledby="promises-heading" className="page-container pb-section">
+        <section
+          aria-labelledby="promises-heading"
+          className="page-container pb-section"
+        >
           <h2 id="promises-heading" className="sr-only">
             Our five promises
           </h2>
@@ -34,11 +41,16 @@ export default function TrustPage() {
                 id={ANCHORS[promise.id]}
                 className="grid scroll-mt-28 grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 border-b border-line py-8 md:grid-cols-[4rem_minmax(0,1fr)]"
               >
-                <span aria-hidden className="font-display text-h3 font-light text-ink-2 display-soft">
+                <span
+                  aria-hidden
+                  className="font-display text-h3 font-light text-ink-2 display-soft"
+                >
                   {i + 1}
                 </span>
                 <div className="grid max-w-prose gap-3">
-                  <h3 className="m-0 font-display text-h3 font-light text-ink display-soft">{promise.title}</h3>
+                  <h3 className="m-0 font-display text-h3 font-light text-ink display-soft">
+                    {promise.title}
+                  </h3>
                   <p className="m-0 text-body text-ink-2">{promise.body}</p>
                   <Details summary="how this works">
                     <p className="m-0 text-body text-ink-2">{promise.more}</p>
@@ -49,15 +61,24 @@ export default function TrustPage() {
           </ol>
         </section>
 
-        <section aria-labelledby="delete-heading" className="border-t border-line">
-          <div className="page-container grid max-w-3xl gap-3 py-12">
-            <h2 id="delete-heading" className="m-0 font-display text-h3 font-light text-ink display-soft">
-              Delete a case
-            </h2>
-            <p className="m-0 text-body text-ink-2">
-              You can ask for a case to be removed. This demo does not delete stored cases yet.
-            </p>
-            <DeleteCaseStub />
+        <section
+          aria-labelledby="delete-heading"
+          className="border-t border-line"
+        >
+          <div className="page-container py-12">
+            <div className="grid max-w-3xl gap-3">
+              <h2
+                id="delete-heading"
+                className="m-0 font-display text-h3 font-light text-ink display-soft"
+              >
+                Delete a case
+              </h2>
+              <p className="m-0 text-body text-ink-2">
+                You can ask for a case to be removed. This demo does not delete
+                stored cases yet.
+              </p>
+              <DeleteCaseStub />
+            </div>
           </div>
         </section>
       </main>

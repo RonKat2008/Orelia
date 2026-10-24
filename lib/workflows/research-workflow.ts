@@ -72,6 +72,7 @@ export function createResearchWorkflow(load?: LoadDeps) {
         });
       },
     },
-    async ({ event, step }) => executeResearch(event.data.caseId as string, await loadDeps(), step as unknown as ResearchStep),
+    // Research steps return JSON-safe values compatible with Inngest serialization.
+    async ({ event, step }) => executeResearch(event.data.caseId as string, await loadDeps(), step as ResearchStep),
   );
 }

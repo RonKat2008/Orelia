@@ -8,7 +8,7 @@ export * from './store';
 export { PostgresDocumentStore } from './postgres-store';
 export { ingestCaseSummary } from './hooks';
 
-const state = globalThis as unknown as { __wayfinderDocuments?: DocumentStore };
+const state = globalThis as { __wayfinderDocuments?: DocumentStore };
 export function getDocumentStore(): DocumentStore {
   return state.__wayfinderDocuments ??= process.env.DATABASE_URL && process.env.WAYFINDER_OFFLINE !== '1'
     ? new PostgresDocumentStore() : new MemoryDocumentStore();

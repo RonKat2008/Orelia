@@ -447,7 +447,9 @@ export async function verifyWithProposals(
     const visited = new Set<string>();
     while (idMap.get(id) && !visited.has(id)) {
       visited.add(id);
-      id = idMap.get(id)!;
+      const next = idMap.get(id);
+      if (!next) break;
+      id = next;
     }
     return id;
   };

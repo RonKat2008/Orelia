@@ -36,7 +36,7 @@ type Executor = { execute(query: ReturnType<typeof sql>): Promise<unknown> };
 export class PostgresRateLimitStore implements RateLimitStore {
   constructor(private readonly dbOverride?: Executor) {}
   async hit(key: string, windowMs: number, now: Date): Promise<number> {
-    const db = this.dbOverride ?? (getDb() as unknown as Executor);
+    const db = this.dbOverride ?? getDb();
     const intervalMs = Math.max(1, Math.floor(windowMs));
     const ts = now.toISOString();
     const result = (await db.execute(sql`

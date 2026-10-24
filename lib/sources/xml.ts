@@ -12,9 +12,11 @@ export function parseXml(xml: string): XmlNode {
     if (/^<[!?]/.test(token)) continue;
     if (token.startsWith("</")) {
       if (stack.length === 1 || stack[stack.length - 1].name !== token.slice(2, -1).trim()) throw new Error("Malformed XML");
-      const node = stack.pop()!; stack[stack.length - 1].text += node.text;
+      const node = stack[stack.length - 1]; stack.pop(); stack[stack.length - 1].text += node.text;
     } else if (token.startsWith("<")) {
-      const node: XmlNode = {name: token.match(/^<([^\s/>]+)/)![1], children: [], text: ""};
+      const opening = token.match(/^<([^\s/>]+)/);
+      if (!opening) throw new Error("Malformed XML");
+      const node: XmlNode = {name: opening[1], children: [], text: ""};
       stack[stack.length - 1].children.push(node);
       if (!token.endsWith("/>")) stack.push(node);
     } else stack[stack.length - 1].text += decode(token);

@@ -109,7 +109,6 @@ export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefiniti
     idempotency: 'event.data.contactId',
     async handler({ event, step }) {
       const { contactId, caseId, messageId, approvedAt } = event.data ?? {};
-      const ifExpr = matchContact(contactId);
       if (
         !approvedAt ||
         typeof approvedAt !== 'string' ||
@@ -117,9 +116,10 @@ export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefiniti
       ) {
         throw new Error('contact/approved without valid approvedAt; refusing to proceed');
       }
-      if (!contactId || !caseId || !messageId) {
+      if (typeof contactId !== 'string' || !contactId || typeof caseId !== 'string' || !caseId || typeof messageId !== 'string' || !messageId) {
         throw new Error('contact/approved missing contactId, caseId or messageId');
       }
+      const ifExpr = matchContact(contactId);
 
       // 1. The approve route has normally already sent the initial message (state
       // 'sent'). Send only while 'drafted' (live wiring refuses that); if 'sent'
@@ -194,9 +194,10 @@ export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefiniti
         for (const effect of due.effects) {
           if (effect.type === 'DRAFT_FOLLOW_UP') {
             const followUpNumber = effect.followUpNumber as 1 | 2;
-            const pre = deps.resolvePreapproved
+            const resolvePreapproved = deps.resolvePreapproved;
+            const pre = resolvePreapproved
               ? await step.run(`resolve-preapproved-${followUpNumber}`, () =>
-                  deps.resolvePreapproved!({ contactId, caseId, followUpNumber }),
+                  resolvePreapproved({ contactId, caseId, followUpNumber }),
                 )
               : { action: 'none' as const };
             if (pre.action === 'send') {
@@ -252,7 +253,7 @@ export function createStalledRevivalWorkflow(deps: ConnectionDeps): FunctionDefi
     idempotency: 'event.data.dedupeKey',
     async handler({ event, step }) {
       const { contactId, caseId } = event.data ?? {};
-      if (!contactId || !caseId) throw new Error('contact/reply missing contactId or caseId');
+      if (typeof contactId !== 'string' || !contactId || typeof caseId !== 'string' || !caseId) throw new Error('contact/reply missing contactId or caseId');
       const revived = await step.run('revive-if-stalled', async () => {
         const ctx = await deps.loadContext(contactId);
         if (ctx.state !== 'stalled') return { revived: false, state: ctx.state as string };
@@ -279,7 +280,7 @@ export function createConnectionRestartWorkflow(deps: ConnectionDeps): FunctionD
     idempotency: 'event.data.restartKey',
     async handler({ event, step }) {
       const { contactId, caseId, messageId } = event.data ?? {};
-      if (!contactId || !caseId) throw new Error('contact/connection.restart missing contactId or caseId');
+      if (typeof contactId !== 'string' || !contactId || typeof caseId !== 'string' || !caseId) throw new Error('contact/connection.restart missing contactId or caseId');
       return createConnectionWorkflow(deps).handler({
         event: {
           name: CONTACT_APPROVED,
@@ -311,7 +312,7 @@ export function createFollowUpSendWorkflow(deps: ConnectionDeps): FunctionDefini
       ) {
         throw new Error('contact/follow-up.approved without valid approvedAt; refusing to send');
       }
-      if (!contactId || !caseId || !messageId) {
+      if (typeof contactId !== 'string' || !contactId || typeof caseId !== 'string' || !caseId || typeof messageId !== 'string' || !messageId) {
         throw new Error('contact/follow-up.approved missing contactId, caseId or messageId');
       }
 

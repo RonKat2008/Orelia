@@ -176,10 +176,11 @@ export class WiredOutreachService extends OutreachService {
       if (followUp.approvedAt || followUp.sentAt) throw new OutreachError(409, ['already_approved']);
       const approvedAt = this.clock().toISOString();
       await this.sendEvents(followUpApprovedEvent({ contactId: id, caseId: followUp.caseId, messageId: draftId, approvedAt }));
-      // Deliberately not a BaseApproveResult: nothing was sent. Cast keeps the override assignable to OutreachService.
-      return { draftId, approvedAt, queued: true } as unknown as WiredApproveResult;
+      // A queued approval has no sent timestamp or provider receipt.
+      return { draftId, approvedAt, queued: true };
     }
     const result = await super.approve(id, draftId);
+    if ('queued' in result) return result;
     const contact = await this.requireContact(id);
     try {
       await this.followUps.markFirstSent(id, result.sentAt);
@@ -257,7 +258,7 @@ export function createFollowUpSender(opts: FollowUpSenderOptions = {}) {
     });
     const target = withAnchor.find(c => c.id === input.contactId);
     // follow_up_1 is only valid as the first follow-up, follow_up_2 as the second.
-    const ordinal = Number(message.classification!.slice('follow_up_'.length));
+    const ordinal = Number(message.classification.slice('follow_up_'.length));
     if (!target || ordinal !== (target.followUpsSent ?? 0) + 1 || ordinal > FOLLOW_UP_BUSINESS_DAYS.length) throw new FollowUpRefusedError(['follow_up_out_of_order']);
 
     const realNow = clock();

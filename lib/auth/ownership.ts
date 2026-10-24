@@ -65,7 +65,7 @@ export class PostgresOwnerStore implements OwnerStore {
   }
 }
 
-const g = globalThis as unknown as { __wayfinderOwnerStore?: OwnerStore };
+const g = globalThis as { __wayfinderOwnerStore?: OwnerStore };
 
 export function getOwnerStore(): OwnerStore {
   g.__wayfinderOwnerStore ??= process.env.DATABASE_URL ? new PostgresOwnerStore() : new MemoryOwnerStore();

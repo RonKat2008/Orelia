@@ -5,8 +5,8 @@ const tokens = (name: string) => name.toLowerCase().replace(/\b(md|phd|do)\b/g, 
 /** Full given and family names, plus agreement on middle initials when both are present. Initial-only leads are uncertain. */
 export function sameInvestigator(author: string, official: string): boolean {
   const a = tokens(author), b = tokens(official);
-  return a.length >= 2 && b.length >= 2 && a[0]!.length > 1 && a[0] === b[0] && a.at(-1) === b.at(-1)
-    && (!(a.length > 2 && b.length > 2) || a[1]![0] === b[1]![0]);
+  return a.length >= 2 && b.length >= 2 && a[0].length > 1 && a[0] === b[0] && a.at(-1) === b.at(-1)
+    && (!(a.length > 2 && b.length > 2) || a[1][0] === b[1][0]);
 }
 
 /** Below-threshold or unconfirmed identities stay in research, never patient-facing candidates. */

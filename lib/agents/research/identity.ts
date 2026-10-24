@@ -19,7 +19,7 @@ const normalize = (s: string): string => s.toLowerCase().replace(/[^a-z]/g, "");
 const firstToken = (s: string): string => normalize(s.trim().split(/\s+/)[0] ?? "");
 const middleInitial = (name?: string): string => {
   const token = (name ?? "").trim().split(/\s+/)[0] ?? "";
-  return token ? token[0]!.toLowerCase() : "";
+  return token ? token[0].toLowerCase() : "";
 };
 
 /**

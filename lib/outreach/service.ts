@@ -4,7 +4,7 @@ import { checkOutbound } from '../safety/outbound-gate';
 import { parseAllowlist } from '../safety/allowlist';
 import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
-import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore } from './types';
+import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore, type ProviderRef } from './types';
 /**
  * The only addresses outreach may use are contact points stamped by code from tool output (intake-door
  * classification, NPPES location phone, CT.gov central contact), each with its source URL. Free-text claims are
@@ -51,7 +51,7 @@ export class OutreachService {
     await this.store.saveDraft(draft);
     return draft;
   }
-  async approve(id: string, draftId: string) {
+  async approve(id: string, draftId: string): Promise<ApproveResult> {
     const contact = await this.requireContact(id);
     const draft = await this.store.draft(draftId, contact);
     if (!draft || draft.contactId !== id) throw new OutreachError(404, ['draft_not_found']);
@@ -74,3 +74,6 @@ export class OutreachService {
     return { draftId, approvedAt: now, sentAt: now, provider: ref };
   }
 }
+
+export type SentApproveResult = { draftId: string; approvedAt: string; sentAt: string; provider: ProviderRef };
+export type ApproveResult = SentApproveResult | { draftId: string; approvedAt: string; queued: true; sentAt?: never; provider?: never };

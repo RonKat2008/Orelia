@@ -59,8 +59,7 @@ export type FunctionDefinition = {
   /** Inngest idempotency CEL expression, e.g. 'event.data.contactId'. */
   idempotency?: string;
   handler: (ctx: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event payloads are validated by each handler
-    event: { name: string; data: any };
+    event: { name: string; data: Record<string, unknown> };
     step: WorkflowStep;
   }) => Promise<unknown>;
 };

@@ -71,12 +71,12 @@ export function checkOutbound(input: OutboundInput): OutboundResult {
     : draft.body.includes(AI_DISCLOSURE_EMAIL);
   if (!disclosed) refuse('missing_disclosure');
   if (flagMedicalAdvice(text).flagged) refuse('medical_advice');
-  if (reasons.length) return { ok: false, reasons };
+  if (reasons.length || !address) return { ok: false, reasons };
 
   // Whitelist output keys: raw drafts cannot smuggle attachments or extra case data to adapters.
   const payload = deepFreeze({
     [gated]: true as const,
-    channel: draft.channel, address: address!, body: draft.body,
+    channel: draft.channel, address: address, body: draft.body,
     ...(draft.subject !== undefined ? { subject: draft.subject } : {}),
     ...(draft.contactId !== undefined ? { contactId: draft.contactId } : {}),
     ...(draft.caseId !== undefined ? { caseId: draft.caseId } : {}),

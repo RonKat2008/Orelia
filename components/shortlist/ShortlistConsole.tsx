@@ -214,7 +214,7 @@ export function ShortlistConsole({
         <FilterBar filters={filters} counts={counts} canFilterState={homeState !== null} onChange={onFiltersChange} />
       }
       list={list}
-      detail={detail ? <div className="min-w-0 lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2">{detail}</div> : null}
+      detail={detail ? <div className="relative min-w-0 lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2">{detail}</div> : null}
       emptyDetail={<EmptyState title="Pick a row" description="Its sources, score and contact route show here." />}
       detailOpen={open}
       onDetailOpenChange={setOpen}

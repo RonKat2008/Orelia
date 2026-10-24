@@ -125,7 +125,7 @@ export function CaseHome({ caseId }: { caseId: string }) {
         {activity.length > 0 ? (
           <List>
             {activity.map((item) => (
-              <ListRow key={item.id} title={<span className="font-normal">{item.text}</span>} />
+              <ListRow key={item.id} title={<span className="font-normal break-words [overflow-wrap:anywhere]">{item.text}</span>} />
             ))}
           </List>
         ) : (

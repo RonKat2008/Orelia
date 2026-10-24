@@ -208,7 +208,8 @@ function StepRow({
   }
   if (demoLabel) pool.push(<DemoLabelBadge key="demo" label={demoLabel} />);
   const sourceIds = step.evidenceIds;
-  const sourceSlots = Math.max(0, MAX_ROW_BADGES - pool.length);
+  // One source badge at most, and none beside a status badge: two nowrap badges overflow a 320 px row.
+  const sourceSlots = pool.length > 0 ? 0 : 1;
   sourceIds.slice(0, sourceSlots).forEach(id => {
     pool.push(
       <JudgeOnly key={id}>

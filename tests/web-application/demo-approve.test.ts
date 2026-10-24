@@ -44,3 +44,12 @@ describe('web application approval in demo mode', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 });
+
+describe('demo application review task', () => {
+  it('names the Wayfinder demo intake form instead of the deployment host', async () => {
+    const { MemoryApplicationStore } = await import('../../lib/web-application/store');
+    const store = new MemoryApplicationStore();
+    await store.createReviewTask({ id: 'a1', caseId: 'c1', contactId: 'k1', url: 'https://wayfinder.example.app/demo/intake-form/institution-x-0000abcd?case=c1&app=a1&t=t' } as never);
+    expect(store.reviewTasks[0]?.title).toBe('Review application (Wayfinder demo intake form)');
+  });
+});

@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { tasks, webApplications } from '@/db/schema';
+import { isDemoFormUrl } from '@/lib/outreach/demo-destinations-shared';
 import type { ApplicationStatus, FilledField, MissingField, WebApplicationDraft } from './types';
 
 /** Persistence for web_application drafts. approve/claim are compare-and-set so a double click cannot submit twice. */
@@ -45,7 +46,8 @@ export class MemoryApplicationStore implements ApplicationStore {
   }
 }
 
-const titleFor = (draft: WebApplicationDraft) => `Review application at ${new URL(draft.url).host}`;
+const titleFor = (draft: WebApplicationDraft) =>
+  isDemoFormUrl(draft.url) ? 'Review application (Wayfinder demo intake form)' : `Review application at ${new URL(draft.url).host}`;
 
 type Row = typeof webApplications.$inferSelect;
 function toDraft(row: Row): WebApplicationDraft {
@@ -89,8 +91,12 @@ export class PostgresApplicationStore implements ApplicationStore {
     return rows.length === 1;
   }
   async finish(id: string, status: ApplicationStatus, result: Record<string, unknown>, at: string) {
-    await this.db.update(webApplications).set({ status, result, ...(status === 'submitted' ? { submittedAt: new Date(at) } : {}) })
-      .where(eq(webApplications.id, id));
+    const [row] = await this.db.update(webApplications).set({ status, result, ...(status === 'submitted' ? { submittedAt: new Date(at) } : {}) })
+      .where(eq(webApplications.id, id)).returning({ taskId: webApplications.taskId });
+    // A submitted application no longer needs review: close its "Review application" task.
+    if (status === 'submitted' && row?.taskId) {
+      await this.db.update(tasks).set({ status: 'done' }).where(and(eq(tasks.id, row.taskId), eq(tasks.status, 'open')));
+    }
   }
   async createReviewTask(draft: WebApplicationDraft) {
     if (!draft.contactId) return null; // tasks.contact_id is NOT NULL; unlinked drafts are reviewed from the application list

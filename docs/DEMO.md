@@ -72,6 +72,38 @@ Delays are divided by `WAYFINDER_SIM_TIME_SCALE`. Each coordinator replies once 
 `DEMO_REPLY_ALLOWLIST` (or, if that is unset, `OUTBOUND_ALLOWLIST` minus the coordinators themselves). With neither
 set, the coordinators reply to nobody.
 
+## Live demo in production: demo coordinator mode
+
+Use this when the AgentMail account cannot create more inboxes (the free plan allows 3) or when a production
+deployment should run the full approve, send, scripted reply and task loop without contacting any real organization.
+
+Set these in Vercel (Production, and Preview if wanted):
+
+| Variable | Value |
+| --- | --- |
+| `OUTBOUND_ALLOWLIST` | Your own AgentMail inbox addresses, comma-separated (for example `me@agentmail.to,coordinator@agentmail.to`). |
+| `AGENTMAIL_SENDER_INBOX_ID` | The inbox Wayfinder sends from. Every case uses it instead of a new per-case inbox. |
+| `WAYFINDER_DEMO_COORDINATORS` | `1` |
+| `DEMO_COORDINATOR_INBOXES` | Optional. The inboxes that play intake coordinators. Default: allowlisted emails minus the sender. |
+
+What it does:
+
+- When a patient selects resources, every new contact is an email to one of the demo coordinator inboxes, picked
+  stably per resource. The resource's real email or phone is never used while the mode is on. Doorless resources work too.
+- A coordinator address is used only if it is also on `OUTBOUND_ALLOWLIST`. `checkOutbound` still runs on every send.
+- Consent, outbox and threads show a "Demo coordinator" badge on these contacts.
+
+Running the scripted reply (from a machine with `.env.local` that has the same variables):
+
+```bash
+WAYFINDER_DEMO_COORDINATORS=1 npx tsx scripts/seed-demo.ts --live --no-case   # borrows the coordinator inboxes, creates none
+npx tsx scripts/demo-coordinators.ts --live --once                            # replies to Wayfinder mail received since seeding
+```
+
+Borrowed inboxes are marked in the state file. `demo-reset` never deletes them, and the coordinators ignore mail
+that arrived before the seed. The reply lands in the sender inbox thread, the AgentMail webhook ingests it, and the
+InboxAgent turns it into a tracker task.
+
 ## Dry-run mode
 
 Without `AGENTMAIL_API_KEY` (or with `--dry-run`), every script uses a local mailbox file instead of AgentMail.

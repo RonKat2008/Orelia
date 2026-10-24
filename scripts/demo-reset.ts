@@ -41,6 +41,7 @@ export async function main(
     const mail = deps.mail ?? createDemoMail({ env });
     // Only ever delete inboxes recorded in the state file.
     for (const c of state.coordinators) {
+      if (c.borrowed) { log(`Kept borrowed inbox ${c.address} (demo coordinator mode never deletes it).`); continue; }
       try {
         await mail.deleteInbox(c.inboxId);
         deleted.push(c.address);

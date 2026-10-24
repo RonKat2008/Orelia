@@ -57,6 +57,7 @@ export async function runOnce(deps: RunDeps): Promise<RunResult> {
     allowlist,
     now: deps.now(),
     timeScale: parseTimeScale(deps.env),
+    ...(state.coordinators.some((c) => c.borrowed) ? { notBefore: Date.parse(state.createdAt) } : {}),
   });
 
   const mail = guardDemoMail(deps.mail, deps.env, coordinators.map((c) => c.address));

@@ -3,6 +3,7 @@ import {
   normalizeShortlist,
   orderByPreview,
   previewShortlist,
+  type ShortlistCard,
 } from "../../components/shortlist/data";
 import { sharingKind } from "../../components/case-docs/data";
 import {
@@ -97,24 +98,37 @@ describe("live shortlist route shape", () => {
     expect(payload?.suggested).toEqual(["inst-1"]);
   });
 
-  it("reads the contact door only from a scored, sourced contactability factor", () => {
-    expect(contactDoorOf(payload!.items[0])).toEqual({
-      found: true,
-      text: "Public intake line",
+  it("reads the contact door only from code-stamped contact_point evidence, never a program page", () => {
+    const base = payload!.items[0];
+    const row = (claimType: string, claim: string, sourceKind: "exa" | "nppes" = "exa") => ({
+      id: claimType,
+      claimType,
+      claim,
+      sourceUrl: "https://example.org/p",
+      sourceKind,
+      fetchedAt,
     });
-    expect(contactDoorOf(payload!.items[1]).found).toBe(false);
-    const withWebsiteOnly = {
-      ...payload!.items[0],
-      breakdown: [
-        {
-          factor: "contactability",
-          points: 6,
-          text: "Website available; no explicit contact path found.",
-          evidenceIds: ["e1"],
-        },
-      ],
-    };
-    expect(contactDoorOf(withWebsiteOnly).found).toBe(false);
+    const withEvidence = (evidence: ShortlistCard["evidence"]) => ({
+      ...base,
+      // Scoring text claiming a door must not matter.
+      breakdown: [{ factor: "contactability", points: 6, text: "Public intake line", evidenceIds: ["e1"] }],
+      evidence,
+    });
+    expect(contactDoorOf(withEvidence([row("program_page", "https://example.org/p")]))).toEqual({
+      found: false,
+      text: "",
+    });
+    expect(contactDoorOf(withEvidence([row("contact_point.email.new_patient_line", "intake@example.org")]))).toEqual({
+      found: true,
+      text: "Email found",
+    });
+    expect(contactDoorOf(withEvidence([row("contact_point.voice.nppes_location_phone", "+16176323000", "nppes")])).text).toBe(
+      "Phone found",
+    );
+    expect(contactDoorOf(withEvidence([row("contact_point.web_form.intake_form", "https://example.org/form")]))).toEqual({
+      found: true,
+      text: "Online intake form found",
+    });
   });
 
   it("filters by travel aid, and by state only when one is known", () => {

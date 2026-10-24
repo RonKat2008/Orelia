@@ -11,6 +11,8 @@ export interface DemoInbox {
   inboxId: string;
   address: string;
   displayName: string;
+  /** An existing inbox we only borrowed (demo coordinator mode). demo-reset never deletes it. */
+  borrowed?: boolean;
 }
 
 export interface DemoMessage {

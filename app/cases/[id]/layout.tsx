@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { JourneyShell } from "@/components/journey/JourneyShell";
+import { DemoCoordinatorsProvider } from "@/components/outreach/DemoCoordinators";
+import { demoCoordinatorInboxes } from "@/lib/outreach/demo-coordinators";
 
 export default async function CaseLayout({
   children,
@@ -9,5 +11,9 @@ export default async function CaseLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <JourneyShell caseId={id}>{children}</JourneyShell>;
+  return (
+    <DemoCoordinatorsProvider addresses={demoCoordinatorInboxes(process.env)}>
+      <JourneyShell caseId={id}>{children}</JourneyShell>
+    </DemoCoordinatorsProvider>
+  );
 }

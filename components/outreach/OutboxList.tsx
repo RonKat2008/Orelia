@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoCoordinatorBadge } from "@/components/outreach/DemoCoordinators";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CircleCheck, FileText, Pause, Pencil, Play, Send, TriangleAlert } from "lucide-react";
@@ -217,6 +218,11 @@ export function OutboxList({ caseId }: { caseId: string }) {
                     <CardTitle id={`draft-${row.contact.id}`} className="break-words">
                       {name}
                     </CardTitle>
+                    {draft ? (
+                      <span>
+                        <DemoCoordinatorBadge address={draft.address} />
+                      </span>
+                    ) : null}
                   </div>
                   <span className="basis-full sm:basis-auto">
                     {approved ? (
@@ -351,6 +357,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                       <DialogTitle>{isEmail ? "Send this email?" : "Approve this call?"}</DialogTitle>
                       <DialogDescription>
                         {isEmail ? `To ${draft.address}` : `A call to ${draft.address}`}, as written above.
+                        <DemoCoordinatorBadge address={draft.address} />
                       </DialogDescription>
                     </DialogHeader>
                     <ul className="m-0 grid list-none gap-2 p-0 text-body text-ink-2">

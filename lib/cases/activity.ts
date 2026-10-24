@@ -12,6 +12,7 @@ import {
   tasks,
   trials,
 } from "@/db/schema";
+import { isCallEvent, isMailEvent } from "./timeline";
 
 const kind = z.enum(["expert", "institution", "trial", "organization"]);
 const channel = z.enum(["email", "voice"]);
@@ -118,7 +119,7 @@ export class MemoryCaseActivity implements CaseActivity {
     return people.map((contact) => ({
       contactId: contact.id,
       label: contact.displayName,
-      messages: messagesFor.filter((message) => message.contactId === contact.id).map(({ contactId: _id, ...entry }) => entry),
+      messages: messagesFor.filter((message) => message.contactId === contact.id && message.at !== null).map(({ contactId: _id, ...entry }) => entry),
     }));
   }
 }
@@ -199,7 +200,7 @@ export class PostgresCaseActivity implements CaseActivity {
       contactId: person.id,
       label: person.displayName,
       messages: [
-        ...mail.filter((row) => row.contactId === person.id).map((row) => ({
+        ...mail.filter((row) => row.contactId === person.id && isMailEvent(row)).map((row) => ({
           id: row.id,
           direction: row.direction === "inbound" ? "inbound" as const : "outbound" as const,
           channel: row.channel,
@@ -209,7 +210,7 @@ export class PostgresCaseActivity implements CaseActivity {
           at: iso(row.sentAt ?? row.receivedAt),
           classification: row.classification,
         })),
-        ...voice.filter((row) => row.contactId === person.id && row.transcript).map((row) => ({
+        ...voice.filter((row) => row.contactId === person.id && isCallEvent(row)).map((row) => ({
           id: row.id,
           direction: "outbound" as const,
           channel: "voice" as const,

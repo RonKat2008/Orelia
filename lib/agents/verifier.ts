@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { CaseInput, Evidence, ResearchResult, Resource } from "@/lib/contracts";
 import { assessTrial } from "./relevance";
+import { assessAdultScope } from "./pediatric-scope";
 import { expertEligibility } from "@/lib/identity/eligibility";
 
 /**
@@ -9,6 +10,7 @@ import { expertEligibility } from "@/lib/identity/eligibility";
  *  - drops every record left with zero evidence
  *  - merges duplicates (expert by NPI, trial by nctId, org by URL host+path, institution by name)
  *  - flags conflicts for a human/UI to see
+ *  - drops children's/pediatric institutions, experts and organizations with no adult scope (./pediatric-scope)
  *  - when the case is known, drops trials that are off-target for the disease/subtype or do not enroll adults
  *    (see ./relevance), recording each drop with its reason
  * An optional proposer (an Opus pass, off by default and replayable offline) may only
@@ -252,6 +254,17 @@ export function verify(results: readonly ResearchResult[], context?: VerifyConte
         const verdict = assessTrial({ title: record.title, registry: record.registry }, context);
         if (!verdict.keep) {
           dropped.push({ type: "record", record, reason: verdict.reason ?? "not relevant" });
+          continue;
+        }
+      }
+      if (record.kind === "institution" || record.kind === "expert" || record.kind === "organization") {
+        const verdict = assessAdultScope({
+          name: record.name,
+          specialty: record.kind === "expert" ? record.specialty : undefined,
+          texts: ev.map((e) => e.claim),
+        });
+        if (!verdict.keep) {
+          dropped.push({ type: "record", record, reason: verdict.reason ?? "out of scope: not for adults" });
           continue;
         }
       }

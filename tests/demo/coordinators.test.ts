@@ -180,3 +180,12 @@ describe('runOnce (dry-run)', () => {
     expect(mail.sent()).toHaveLength(3);
   });
 });
+
+describe('planReplies notBefore (borrowed inboxes)', () => {
+  it('ignores mail received before the demo was seeded', () => {
+    const old = msg('referral', 'old', { receivedAt: new Date(T0 - 60_000).toISOString() });
+    const fresh = msg('referral', 'new', { receivedAt: new Date(T0).toISOString() });
+    const p = plan([old, fresh], { now: T0 + 3_600_000, notBefore: T0 });
+    expect(p.due.map((d) => d.messageId)).toEqual(['new']);
+  });
+});

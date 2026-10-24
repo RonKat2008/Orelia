@@ -81,6 +81,17 @@ describe('outreach API and safety boundary', () => {
     const response = await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }));
     const body = await response.json(); expect(body.contacts).toHaveLength(0); expect(body.unavailable[0].channel).toBe('none');
   });
+  it('marks a web-form-only resource as reachable by online form, not as having no route', async () => {
+    const ctx = setup(); const c = ctx.store.candidate([]);
+    c.evidence = [{ claim: 'https://example.com/intake-form', claimType: 'contact_point.web_form.intake_form', sourceUrl: 'https://example.com/program', sourceKind: 'exa' } as Candidate['evidence'][number]];
+    const body = await (await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }))).json();
+    expect(body.contacts).toHaveLength(0);
+    expect(body.unavailable[0]).toMatchObject({ channel: 'none', route: 'web_form' });
+    expect(body.unavailable[0].reason).toMatch(/online/i);
+    const none = ctx.store.candidate([]);
+    const noneBody = await (await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [none.id] }))).json();
+    expect(noneBody.unavailable[0].route).toBeUndefined();
+  });
   it('prefers email when both evidenced channels exist and selection is idempotent', async () => {
     const ctx = setup(); const c = ctx.store.candidate(['+14155550123', 'intake@example.com']);
     for (let i = 0; i < 2; i++) expect((await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }))).status).toBe(200);

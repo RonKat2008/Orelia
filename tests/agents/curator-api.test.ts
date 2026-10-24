@@ -22,8 +22,9 @@ vi.mock("@/lib/agents/curator-store", async (orig) => ({
 import { GET } from "@/app/api/cases/[id]/shortlist/route";
 
 const ID = "11111111-1111-4111-8111-111111111111";
-const item = (kind: ShortlistItem["targetKind"], id: string, rank: number): ShortlistItem => ({
-  targetKind: kind, targetId: id, name: `N-${id}`, rank, score: 50, selected: false, breakdown: [], evidence: [],
+const item = (kind: ShortlistItem["targetKind"], id: string, rank: number, doorless = false): ShortlistItem => ({
+  targetKind: kind, targetId: id, name: `N-${id}`, rank, score: 50, selected: false, breakdown: [],
+  evidence: doorless ? [] : [{ id: `${id}-door`, claimType: "contact_point.email.org_contact", claim: "intake@example.org", sourceUrl: "https://example.org/c", sourceKind: "exa", fetchedAt: "2026-01-01T00:00:00.000Z" }],
 });
 const call = async () => (await GET(new Request("http://x"), { params: Promise.resolve({ id: ID }) })).json();
 
@@ -62,5 +63,17 @@ describe("GET shortlist with curation", () => {
     expect(body.suggested).toHaveLength(5);
     expect(body.suggested[0]).toEqual({ targetKind: "expert", targetId: "e0", name: "N-e0" });
     expect(body.suggested.map((s: { targetId: string }) => s.targetId)).toEqual(["e0", "e1", "e2", "e3", "e4"]);
+  });
+
+  it("never suggests a best pick with no contact route, though it is still listed", async () => {
+    state.items = [item("expert", "e0", 1, true), item("expert", "e1", 2)];
+    const byTarget: StoredCuration["byTarget"] = new Map([
+      ["expert:e0", { tier: "best", tierReasons: [] }],
+      ["expert:e1", { tier: "best", tierReasons: [] }],
+    ]);
+    state.curation = { byTarget, summary: null, suggested: ["expert:e0", "expert:e1"] } satisfies StoredCuration;
+    const body = await call();
+    expect(body.groups.expert).toHaveLength(2);
+    expect(body.suggested.map((s: { targetId: string }) => s.targetId)).toEqual(["e1"]);
   });
 });

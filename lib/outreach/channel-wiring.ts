@@ -54,7 +54,7 @@ export function selectChannels(env: Env = process.env, deps: { now?: () => Date;
   const callKey = env.AGENTCALL_API_KEY?.trim();
   const fromNumberId = env.AGENTCALL_FROM_NUMBER_ID?.trim();
   const email = !offline && mailKey
-    ? new AgentMailChannel({ apiKey: mailKey, guard, ...(deps.now ? { now: deps.now } : {}), ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
+    ? new AgentMailChannel({ apiKey: mailKey, guard, ...(env.AGENTMAIL_SENDER_INBOX_ID?.trim() ? { senderInboxId: env.AGENTMAIL_SENDER_INBOX_ID.trim() } : {}), ...(deps.now ? { now: deps.now } : {}), ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
     : new MockMailer(guard, deps.now);
   const voice = !offline && callKey && fromNumberId
     ? new AgentCallChannel({ apiKey: callKey, fromNumberId, guard, ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })

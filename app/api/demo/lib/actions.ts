@@ -109,6 +109,7 @@ export async function triggerScriptedReplies(
     allowlist: parseReplyAllowlist(env, addresses),
     now: opts.now ?? Date.now(),
     timeScale: parseTimeScale(env),
+    ...(coordinators.some((c) => c.borrowed) ? { notBefore: Date.parse(state.createdAt) } : {}),
   });
 
   const refused: string[] = [];

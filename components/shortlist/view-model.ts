@@ -1,5 +1,6 @@
 import type { Resource } from "@/lib/contracts";
 import { computeScoreSegments, type ScoreSegment } from "@/lib/motion/score";
+import { reachabilityLabel } from "@/lib/outreach/reachability";
 import type { ShortlistCard } from "./data";
 
 export type GroupId = ShortlistCard["group"];
@@ -160,19 +161,13 @@ export interface ContactDoor {
   text: string;
 }
 
-/** Scoring text like "no explicit contact path found" means the factor scored a page, not a door. */
-const NEGATED_DOOR = /\bno\b[^.;]*\b(contact|intake)\b/i;
-
-/** A door counts as found only when contactability scored with evidence and the text does not say none was found. */
+/**
+ * A door is found only when the resource carries a code-stamped contact_point.* evidence row (email, phone, or an
+ * online intake form). Scoring text and plain program pages never count; consent uses the same function.
+ */
 export function contactDoorOf(card: ShortlistCard): ContactDoor {
-  const item = card.breakdown.find(
-    (entry) =>
-      entry.factor === "contactability" &&
-      entry.points > 0 &&
-      entry.evidenceIds.length > 0,
-  );
-  if (!item) return { found: false, text: "" };
-  return { found: !NEGATED_DOOR.test(item.text), text: item.text };
+  const text = reachabilityLabel(card.evidence);
+  return text ? { found: true, text } : { found: false, text: "" };
 }
 
 export const SEGMENT_CLASSES = [

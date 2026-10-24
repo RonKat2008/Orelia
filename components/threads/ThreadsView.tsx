@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoCoordinatorBadge } from "@/components/outreach/DemoCoordinators";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, Mail, PhoneCall, TriangleAlert } from "lucide-react";
@@ -119,6 +120,7 @@ export function ThreadsView({ caseId, focusContactId }: { caseId: string; focusC
           {contact ? (
             <p className="m-0 break-words text-small text-ink-2">
               {contact.channel === "email" ? "Email" : "Phone"} · {contact.address}
+              <DemoCoordinatorBadge address={contact.address} />
             </p>
           ) : null}
         </div>
@@ -136,8 +138,8 @@ export function ThreadsView({ caseId, focusContactId }: { caseId: string; focusC
 
         {!thread || thread.entries.length === 0 ? (
           <EmptyState
-            title="No messages in this thread yet"
-            detail="Approved emails, replies and call transcripts show up here, in order."
+            title="Nothing sent yet"
+            detail="Drafts wait in the outbox. Sent emails, replies and call transcripts show up here, in order."
             actionHref={`/cases/${caseId}/outbox`}
             actionLabel="Open the outbox"
           />

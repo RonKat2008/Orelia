@@ -21,6 +21,8 @@ export type UnavailableContact = {
   candidateId: string;
   channel: "none";
   reason: string;
+  /** Set when the only route is an online form: reachable, but not by email or phone. */
+  route?: "web_form";
   /** Resource name from the shortlist, when known. */
   name?: string;
 };

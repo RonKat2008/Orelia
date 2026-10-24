@@ -1,5 +1,6 @@
 import type { CaseInput, Curation, CurationReason, CurationTier, Resource, ScoreBreakdownItem } from "@/lib/contracts";
 import { curationSchema } from "@/lib/contracts";
+import { isReachable } from "@/lib/outreach/reachability";
 import { flagMedicalAdvice } from "@/lib/safety/no-medical-advice";
 import { modelFor } from "./models";
 import { resourceName, type RankedEntry } from "./persist";
@@ -97,8 +98,10 @@ function finish(
   source: ValidatedCuration["source"],
 ): ValidatedCuration {
   const rankOf = new Map(entries.map((e) => [e.record.resource.id, e.rank]));
+  // Deterministic: a resource with no contact route (code-stamped contact_point.* evidence) is never pre-selected.
+  const reachable = new Set(entries.filter((e) => isReachable(e.record.evidence)).map((e) => e.record.resource.id));
   const suggested = tiers
-    .filter((t) => t.tier === "best")
+    .filter((t) => t.tier === "best" && reachable.has(t.candidateId))
     .sort((a, b) => kindIndex(a.kind) - kindIndex(b.kind) || (rankOf.get(a.candidateId) ?? 0) - (rankOf.get(b.candidateId) ?? 0))
     .slice(0, SUGGESTED_MAX)
     .map((t) => t.candidateId);

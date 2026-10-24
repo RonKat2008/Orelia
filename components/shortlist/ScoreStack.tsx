@@ -4,7 +4,7 @@ import type { ShortlistCard } from "./data";
 import { SEGMENT_CLASSES, scoreSegments } from "./view-model";
 
 /**
- * Deterministic score breakdown as a small stacked bar. The legend carries the
+ * Deterministic score breakdown as a small stacked bar (judge detail pane, inside Details "Score"). The legend carries the
  * words and points, so the bar is never the only place the information lives.
  */
 export function ScoreStack({
@@ -28,18 +28,10 @@ export function ScoreStack({
     )
     .join(", ");
   return (
-    <section aria-label="How this scored" className="grid gap-2.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <h5 className="m-0 text-micro font-semibold uppercase text-ink-3">
-          How this scored
-        </h5>
-        <p className="m-0 text-small tabular-nums text-ink-2">
-          <span className="font-display text-h4 font-normal text-ink">
-            {total}
-          </span>{" "}
-          points
-        </p>
-      </div>
+    <div className="grid gap-2.5">
+      <p className="m-0 text-small tabular-nums text-ink-2">
+        <span className="font-semibold text-ink">{total}</span> points in total
+      </p>
       <div
         role="img"
         aria-label={`Score ${total}. ${summary}`}
@@ -52,7 +44,6 @@ export function ScoreStack({
               key={segment.factor}
               className={cn(
                 "h-full origin-left border-r-2 border-card last:border-r-0",
-                "animate-in fade-in-0 duration-700 ease-out-expo motion-reduce:animate-none",
                 SEGMENT_CLASSES[segment.tone % SEGMENT_CLASSES.length],
               )}
               style={{ width: `${segment.size * 100}%` }}
@@ -97,6 +88,6 @@ export function ScoreStack({
           no verified evidence, so it adds nothing.
         </p>
       ) : null}
-    </section>
+    </div>
   );
 }

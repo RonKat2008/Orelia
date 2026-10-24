@@ -12,7 +12,7 @@ export function VerifiedBadges({ caseId, badges }: { caseId: string; badges: Bad
           <Link
             href={`/cases/${caseId}/threads`}
             title={badge.quote ? `They said: “${badge.quote}”` : "See the call record"}
-            className="inline-flex min-h-8 max-w-full items-start gap-1.5 rounded-md border border-ok/30 bg-ok-soft px-2.5 py-1.5 text-micro font-semibold text-ok no-underline hover:underline focus-ring"
+            className="inline-flex min-h-8 max-w-full items-start gap-1.5 rounded-md border border-ok/30 bg-ok-soft px-2.5 py-1.5 text-small font-semibold text-ok no-underline hover:underline focus-ring"
           >
             <BadgeCheck aria-hidden className="mt-px size-3.5 shrink-0" />
             <span className="min-w-0 text-pretty">{badge.text}</span>

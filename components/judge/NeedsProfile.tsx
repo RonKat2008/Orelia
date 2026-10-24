@@ -12,11 +12,11 @@ export function SourceNumbers({ refs }: { refs: SourceRef[] }) {
           href={ref.url}
           target="_blank"
           rel="noreferrer"
-          aria-label={`${ref.title} (opens in a new tab)`}
           title={ref.title}
-          className="focus-ring inline-flex size-6 items-center justify-center rounded-pill border border-line-strong bg-card text-micro font-semibold text-teal no-underline hover:border-teal/50"
+          className="focus-ring inline-flex size-6 items-center justify-center rounded-pill border border-line-strong bg-card text-small font-semibold text-teal no-underline hover:border-teal/50"
         >
           {index + 1}
+          <span className="sr-only">: {ref.title} (opens in a new tab)</span>
         </a>
       ))}
     </span>
@@ -25,7 +25,7 @@ export function SourceNumbers({ refs }: { refs: SourceRef[] }) {
 
 function Item({ text, plain, needs, evidenceIds }: { text: string; plain: string; needs: CareNeeds; evidenceIds: string[] }) {
   return (
-    <li className="grid min-w-0 gap-1 rounded-md border border-line bg-card px-4 py-3">
+    <li className="grid min-w-0 gap-1 border-b border-line py-3">
       <p className="m-0 break-words text-body text-ink">{text}</p>
       <p className="m-0 break-words text-small text-ink-2">{plain}</p>
       <SourceNumbers refs={lookupSources(evidenceIds, needs)} />
@@ -33,31 +33,65 @@ function Item({ text, plain, needs, evidenceIds }: { text: string; plain: string
   );
 }
 
-function Block({ id, title, hint, children }: { id: string; title: string; hint?: string; children: ReactNode }) {
+type Heading = "h2" | "h3" | "h4";
+const SUB: Record<Heading, "h3" | "h4" | "h5"> = { h2: "h3", h3: "h4", h4: "h5" };
+
+function Block({
+  id,
+  title,
+  hint,
+  as: Tag,
+  children,
+}: {
+  id: string;
+  title: string;
+  hint?: string;
+  as: "h3" | "h4" | "h5";
+  children: ReactNode;
+}) {
   return (
-    <section aria-labelledby={id} className="grid gap-2">
-      <h3 id={id} className="m-0 text-micro font-semibold uppercase text-teal">
+    <section aria-labelledby={id} className="grid gap-1">
+      <Tag id={id} className="m-0 text-small font-semibold text-ink">
         {title}
-      </h3>
+      </Tag>
       {hint ? <p className="m-0 text-small text-ink-2">{hint}</p> : null}
-      <ul className="m-0 grid list-none gap-2 p-0">{children}</ul>
+      <ul className="m-0 grid list-none border-t border-line p-0">{children}</ul>
     </section>
   );
 }
 
-export function NeedsProfile({ needs }: { needs: CareNeeds }) {
+/**
+ * What the condition needs (needs analyst output). Judge view. `headingAs: null` drops the panel heading when a
+ * surrounding Details already names it; blocks then use `blockAs`.
+ */
+export function NeedsProfile({
+  needs,
+  headingAs = "h3",
+  blockAs = "h4",
+}: {
+  needs: CareNeeds;
+  /** Level of the panel heading, or null to omit it when a surrounding Details already names the panel. */
+  headingAs?: Heading | null;
+  /** Block heading level when `headingAs` is null. */
+  blockAs?: "h3" | "h4" | "h5";
+}) {
   const questions = groupQuestions(needs);
+  const B = headingAs ? SUB[headingAs] : blockAs;
+  const Q = SUB[B as Heading] ?? "h5";
+  const HeadingTag = headingAs ?? "h3";
   return (
-    <section aria-labelledby="needs-heading" className="grid min-w-0 gap-5 rounded-lg border border-line bg-paper-2 p-5 sm:p-6">
+    <section aria-labelledby={headingAs ? "needs-heading" : undefined} aria-label={headingAs ? undefined : "What the condition needs"} className="grid min-w-0 gap-5">
       <header className="grid gap-1">
-        <h2 id="needs-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">
-          What your condition needs
-        </h2>
+        {headingAs ? (
+          <HeadingTag id="needs-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft text-balance">
+            What the condition needs
+          </HeadingTag>
+        ) : null}
         <p className="m-0 text-small text-ink-2">What to look for in a service. Not medical advice.</p>
       </header>
 
       {needs.personal.notes.length > 0 ? (
-        <ul aria-label="Notes from your case" className="m-0 grid list-none gap-1 border-l-2 border-terracotta p-0 pl-4">
+        <ul aria-label="Notes from your case" className="m-0 grid list-none gap-1 border-l-2 border-teal p-0 pl-4">
           {needs.personal.notes.map((note) => (
             <li key={note.id} className="break-words text-small text-ink">
               {note.text}
@@ -67,7 +101,7 @@ export function NeedsProfile({ needs }: { needs: CareNeeds }) {
       ) : null}
 
       {needs.specialties.length > 0 ? (
-        <Block id="needs-specialists" title="Specialists to look for">
+        <Block as={B} id="needs-specialists" title="Specialists to look for">
           {needs.specialties.map((s) => (
             <Item
               key={s.id}
@@ -80,28 +114,28 @@ export function NeedsProfile({ needs }: { needs: CareNeeds }) {
         </Block>
       ) : null}
       {needs.centerCapabilities.length > 0 ? (
-        <Block id="needs-centers" title="What a center should offer">
+        <Block as={B} id="needs-centers" title="What a center should offer">
           {needs.centerCapabilities.map((c) => (
             <Item key={c.id} needs={needs} evidenceIds={c.evidenceIds} text={c.text} plain={c.plain} />
           ))}
         </Block>
       ) : null}
       {needs.redFlags.length > 0 ? (
-        <Block id="needs-red-flags" title="Red flags">
+        <Block as={B} id="needs-red-flags" title="Red flags">
           {needs.redFlags.map((r) => (
             <Item key={r.id} needs={needs} evidenceIds={r.evidenceIds} text={r.text} plain={r.plain} />
           ))}
         </Block>
       ) : null}
       {needs.trialEligibility.length > 0 ? (
-        <Block id="needs-trials" title="What trial listings ask about" hint="Things to check with the study team, never to decide on your own.">
+        <Block as={B} id="needs-trials" title="What trial listings ask about" hint="Things to check with the study team, never to decide on your own.">
           {needs.trialEligibility.map((t) => (
             <Item key={t.id} needs={needs} evidenceIds={t.evidenceIds} text={t.text} plain={t.plain} />
           ))}
         </Block>
       ) : null}
       {needs.supportNeeds.length > 0 ? (
-        <Block id="needs-support" title="Support and aid">
+        <Block as={B} id="needs-support" title="Support and aid">
           {needs.supportNeeds.map((s) => (
             <Item
               key={s.id}
@@ -115,15 +149,15 @@ export function NeedsProfile({ needs }: { needs: CareNeeds }) {
       ) : null}
       {questions.length > 0 ? (
         <section aria-labelledby="needs-questions" className="grid gap-3">
-          <h3 id="needs-questions" className="m-0 text-micro font-semibold uppercase text-teal">
+          <B id="needs-questions" className="m-0 text-small font-semibold text-ink">
             Questions to ask
-          </h3>
+          </B>
           {questions.map((group) => (
             <div key={group.kind} className="grid gap-2">
-              <h4 className="m-0 text-small font-semibold text-ink">{group.label}</h4>
-              <ul className="m-0 grid list-none gap-2 p-0">
+              <Q className="m-0 text-small font-normal text-ink-2">{group.label}</Q>
+              <ul className="m-0 grid list-none border-t border-line p-0">
                 {group.items.map((q) => (
-                  <li key={q.id} className="grid min-w-0 gap-1 rounded-md border border-line bg-card px-4 py-3">
+                  <li key={q.id} className="grid min-w-0 gap-1 border-b border-line py-3">
                     <p className="m-0 break-words text-body text-ink">{q.text}</p>
                     <SourceNumbers refs={lookupSources(q.evidenceIds, needs)} />
                   </li>
@@ -134,7 +168,7 @@ export function NeedsProfile({ needs }: { needs: CareNeeds }) {
         </section>
       ) : null}
 
-      <p className="m-0 text-micro text-ink-3">
+      <p className="m-0 text-small text-ink-2">
         {needs.sources.length} {needs.sources.length === 1 ? "source" : "sources"} &middot; built in{" "}
         {builtInSeconds(needs.elapsedMs)} s{needs.fromCache ? " · reused from a recent analysis" : ""}
       </p>

@@ -74,8 +74,8 @@ export function VerifyByPhone({ caseId, resourceKey, name, insurer, onChanged }:
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary" size="sm" aria-label={`Verify ${name} by phone`}>
-          <PhoneCall aria-hidden /> Verify by phone
+        <Button variant="link" size="sm">
+          <PhoneCall aria-hidden /> Verify by phone<span className="sr-only">: {name}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -88,7 +88,7 @@ export function VerifyByPhone({ caseId, resourceKey, name, insurer, onChanged }:
         </DialogHeader>
 
         <section aria-labelledby="verify-questions" className="grid gap-2">
-          <h3 id="verify-questions" className="m-0 text-micro font-semibold uppercase text-ink-3">
+          <h3 id="verify-questions" className="m-0 text-small font-semibold text-ink">
             The six questions
           </h3>
           <ol className="m-0 grid gap-1 pl-5 text-small text-ink">
@@ -99,7 +99,7 @@ export function VerifyByPhone({ caseId, resourceKey, name, insurer, onChanged }:
         </section>
 
         <section aria-labelledby="verify-shared" className="grid gap-3">
-          <h3 id="verify-shared" className="m-0 text-micro font-semibold uppercase text-ink-3">
+          <h3 id="verify-shared" className="m-0 text-small font-semibold text-ink">
             What is shared
           </h3>
           <ChoiceRow title="Diagnosis" description="Required, so the practice knows which condition you are asking about.">
@@ -120,7 +120,7 @@ export function VerifyByPhone({ caseId, resourceKey, name, insurer, onChanged }:
 
         {request ? (
           <section aria-labelledby="verify-script" className="grid gap-2">
-            <h3 id="verify-script" className="m-0 text-micro font-semibold uppercase text-ink-3">
+            <h3 id="verify-script" className="m-0 text-small font-semibold text-ink">
               Exactly what the caller will say
             </h3>
             <pre className="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-line bg-paper-2 p-4 font-sans text-small text-ink">

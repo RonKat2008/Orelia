@@ -2,19 +2,14 @@
 
 import Link from "next/link";
 import { ArrowRight, X } from "lucide-react";
-import {
-  AvatarInitials,
-  Button,
-  IconButton,
-  Sheet,
-  SheetClose,
-} from "@/components/ui";
+import { Button, IconButton, Sheet } from "@/components/ui";
 import type { ShortlistCard } from "./data";
+import { selectionKey } from "./data";
 import { eyebrowOf, titleOf } from "./view-model";
 
 /**
- * Sticky tray: how many are chosen, a peek at who, and the one primary action.
- * On phones the list opens as a bottom drawer (vaul); on desktop as a side panel.
+ * Judge selection tray (docs/DESIGN-v2.md 5.3): sticky bottom bar with the count, a quiet "Review choices" link and
+ * the view's one primary, "Continue to consent". Page content reserves pb-28 so focus is never hidden under it.
  */
 export function SelectionTray({
   caseId,
@@ -32,69 +27,31 @@ export function SelectionTray({
   return (
     <div
       data-slot="selection-tray"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/90 pb-[env(safe-area-inset-bottom)] shadow-lg backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
     >
-      <div className="page-container flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-2.5 sm:py-3">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="hidden -space-x-2 sm:flex" aria-hidden>
-            {chosen.slice(0, 5).map((card) => (
-              <AvatarInitials
-                key={card.resource.id}
-                name={titleOf(card.resource)}
-                size="sm"
-                className="ring-2 ring-paper"
-              />
-            ))}
-          </div>
-          <p
-            className="m-0 text-body text-ink"
-            role="status"
-            aria-live="polite"
-          >
-            <span className="font-display text-h4 tabular-nums">{count}</span>
-            <span className="text-ink-2"> of {limit} chosen</span>
-          </p>
-        </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
+      <div className="page-container flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2.5 sm:py-3">
+        <p className="m-0 text-body text-ink" role="status" aria-live="polite">
+          <span className="font-semibold tabular-nums">{count}</span>
+          <span className="text-ink-2"> of {limit} chosen</span>
+        </p>
+        <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
           <Sheet
             title="Your contact list"
-            description={`Up to ${limit}. Nothing is sent until you approve each message.`}
+            description={`Up to ${limit}. Nothing is sent without your OK.`}
             trigger={
-              <Button variant="secondary" size="sm" disabled={count === 0}>
+              <Button variant="link" size="sm" disabled={count === 0}>
                 Review choices
               </Button>
             }
-            footer={
-              count > 0 ? (
-                <SheetClose>
-                  <Button asChild>
-                    <Link href={consentHref}>
-                      Continue to consent <ArrowRight aria-hidden />
-                    </Link>
-                  </Button>
-                </SheetClose>
-              ) : null
-            }
           >
-            <ul className="m-0 grid list-none gap-3 p-0">
+            <ul className="m-0 grid list-none border-t border-line p-0">
               {chosen.map((card) => (
-                <li
-                  key={card.resource.id}
-                  className="flex items-center gap-3 rounded-md border border-line bg-paper-2/60 p-3"
-                >
-                  <AvatarInitials name={titleOf(card.resource)} size="sm" />
+                <li key={selectionKey(card)} className="flex min-h-14 items-center gap-3 border-b border-line py-2">
                   <div className="grid min-w-0 flex-1">
-                    <span className="truncate font-semibold text-ink">
-                      {titleOf(card.resource)}
-                    </span>
-                    <span className="truncate text-small text-ink-3">
-                      {eyebrowOf(card.resource)}
-                    </span>
+                    <span className="truncate font-semibold text-ink">{titleOf(card.resource)}</span>
+                    <span className="truncate text-small text-ink-2">{eyebrowOf(card.resource)}</span>
                   </div>
-                  <IconButton
-                    label={`Remove ${titleOf(card.resource)}`}
-                    onClick={() => onRemove(card.resource.id)}
-                  >
+                  <IconButton label={`Remove ${titleOf(card.resource)}`} onClick={() => onRemove(selectionKey(card))}>
                     <X aria-hidden />
                   </IconButton>
                 </li>
@@ -102,13 +59,13 @@ export function SelectionTray({
             </ul>
           </Sheet>
           {count > 0 ? (
-            <Button asChild className="min-w-0 flex-1 px-4 sm:flex-none sm:px-5">
+            <Button asChild className="px-5">
               <Link href={consentHref}>
-                Continue to consent <ArrowRight aria-hidden className="hidden sm:block" />
+                Continue to consent <ArrowRight aria-hidden />
               </Link>
             </Button>
           ) : (
-            <Button disabled className="min-w-0 flex-1 px-4 sm:flex-none sm:px-5">
+            <Button disabled className="px-5">
               Continue to consent
             </Button>
           )}

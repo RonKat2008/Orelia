@@ -1,26 +1,21 @@
-import { Skeleton } from "@/components/ui";
+import { LoadingState, Skeleton } from "@/components/ui";
 
+/** Shaped like the final page: a filter row, then list rows beside a detail pane (rows only on phones). */
 export function ShortlistSkeleton() {
   return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-live="polite"
-      className="grid gap-8"
-    >
-      <span className="sr-only">Loading the shortlist</span>
-      <Skeleton className="h-24 w-full rounded-lg" />
-      {[0, 1].map((key) => (
-        <div
-          key={key}
-          className="grid gap-4 rounded-lg border border-line bg-card p-6"
-        >
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-9 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-20 w-full" />
+    <LoadingState label="Loading the shortlist">
+      <div className="grid gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">
+        <div className="grid gap-3">
+          <Skeleton className="h-10 w-full rounded-pill" />
+          {[0, 1, 2, 3, 4].map((key) => (
+            <div key={key} className="grid gap-2 border-b border-line py-4">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+        <Skeleton className="hidden h-96 w-full rounded-lg lg:block" />
+      </div>
+    </LoadingState>
   );
 }

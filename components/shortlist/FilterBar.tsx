@@ -1,9 +1,15 @@
 "use client";
 
 import { useId } from "react";
-import { Switch, Tabs, TabsList, TabsTrigger } from "@/components/ui";
+import { SlidersHorizontal } from "lucide-react";
+import { Button, Popover, PopoverContent, PopoverTrigger, Switch } from "@/components/ui";
+import { cn } from "@/lib/ui/cn";
 import { GROUPS, type KindFilter, type ShortlistFilters } from "./view-model";
 
+/**
+ * One segmented control (All / Specialists / Trials / Advocacy / Aid) plus a "More filters" popover
+ * (docs/DESIGN-v2.md 7.6). Buttons with aria-pressed, not tabs: there are no tab panels to control.
+ */
 export function FilterBar({
   filters,
   counts,
@@ -17,60 +23,67 @@ export function FilterBar({
 }) {
   const baseId = useId();
   const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+  const extra = Number(filters.inState) + Number(filters.travel);
+  const options: { id: KindFilter; label: string; count: number }[] = [
+    { id: "all", label: "All", count: total },
+    ...GROUPS.map((group) => ({ id: group.id, label: group.short, count: counts[group.id] ?? 0 })),
+  ];
+
   return (
-    <div
-      className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line bg-card/70 p-4 shadow-xs sm:p-5"
-      role="group"
-      aria-label="Filter the shortlist"
-    >
-      <Tabs
-        className="min-w-0"
-        value={filters.kind}
-        onValueChange={(kind) =>
-          onChange({ ...filters, kind: kind as KindFilter })
-        }
-      >
-        <TabsList variant="pill" aria-label="Kind of help">
-          <TabsTrigger value="all">All ({total})</TabsTrigger>
-          {GROUPS.map((group) => (
-            <TabsTrigger
-              key={group.id}
-              value={group.id}
-              disabled={(counts[group.id] ?? 0) === 0}
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div role="group" aria-label="Kind of help" className="flex flex-wrap gap-1 rounded-pill bg-paper-2 p-1">
+        {options.map((option) => {
+          const active = filters.kind === option.id;
+          const empty = option.id !== "all" && option.count === 0;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={active}
+              disabled={empty}
+              onClick={() => onChange({ ...filters, kind: option.id })}
+              className={cn(
+                "inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-pill border-0 px-3 text-small font-semibold",
+                "transition-colors duration-150 focus-ring motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50",
+                active ? "bg-card text-teal-ink shadow-xs dark:text-teal" : "bg-transparent text-ink-2 hover:text-ink",
+              )}
             >
-              {group.short} ({counts[group.id] ?? 0})
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      <div className="flex flex-wrap gap-x-8 gap-y-3">
-        <div className="flex min-h-11 items-center gap-3">
-          <Switch
-            id={`${baseId}-state`}
-            checked={filters.inState}
-            disabled={!canFilterState}
-            onCheckedChange={(inState) => onChange({ ...filters, inState })}
-          />
-          <label htmlFor={`${baseId}-state`} className="text-body text-ink">
-            In my state
-            {!canFilterState ? (
-              <span className="block text-small text-ink-3">
-                Add your state in intake to use this.
-              </span>
-            ) : null}
-          </label>
-        </div>
-        <div className="flex min-h-11 items-center gap-3">
-          <Switch
-            id={`${baseId}-travel`}
-            checked={filters.travel}
-            onCheckedChange={(travel) => onChange({ ...filters, travel })}
-          />
-          <label htmlFor={`${baseId}-travel`} className="text-body text-ink">
-            Travel help only
-          </label>
-        </div>
+              {option.label}
+              <span className="font-normal tabular-nums text-ink-2">{option.count}</span>
+            </button>
+          );
+        })}
       </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="link" size="sm">
+            <SlidersHorizontal aria-hidden />
+            More filters{extra > 0 ? ` (${extra})` : ""}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="grid w-72 gap-4">
+          <div className="flex min-h-11 items-center gap-3">
+            <Switch
+              id={`${baseId}-state`}
+              checked={filters.inState}
+              disabled={!canFilterState}
+              onCheckedChange={(inState) => onChange({ ...filters, inState })}
+            />
+            <label htmlFor={`${baseId}-state`} className="text-body text-ink">
+              In my state
+              {!canFilterState ? (
+                <span className="block text-small text-ink-2">Add your state in intake to use this.</span>
+              ) : null}
+            </label>
+          </div>
+          <div className="flex min-h-11 items-center gap-3">
+            <Switch id={`${baseId}-travel`} checked={filters.travel} onCheckedChange={(travel) => onChange({ ...filters, travel })} />
+            <label htmlFor={`${baseId}-travel`} className="text-body text-ink">
+              Travel help only
+            </label>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

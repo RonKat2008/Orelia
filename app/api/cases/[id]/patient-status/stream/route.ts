@@ -9,8 +9,10 @@ export const maxDuration = 300;
 
 type Ctx = { params: Promise<{ id: string }> };
 
-const FAST_MS = 2000;
-const SLOW_MS = 4000;
+/** While agents work, check often; while waiting on people (replies take days), check gently. */
+const WORKING_MS = 2000;
+const YOUR_TURN_MS = 4000;
+const WAITING_MS = 15_000;
 const HEARTBEAT_MS = 15_000;
 const MAX_STREAM_MS = 280_000;
 
@@ -30,9 +32,17 @@ export async function GET(req: Request, { params }: Ctx) {
     const timeZone = timeZoneFrom(req);
 
     const encoder = new TextEncoder();
+    let closed = false;
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const write = (text: string) => controller.enqueue(encoder.encode(text));
+        const write = (text: string) => {
+          if (closed) return;
+          try {
+            controller.enqueue(encoder.encode(text));
+          } catch {
+            closed = true;
+          }
+        };
         const send = (event: string, data: unknown) => write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
         const deadline = Date.now() + MAX_STREAM_MS;
         const cache: { shortlistTotal?: number } = {};
@@ -41,9 +51,9 @@ export async function GET(req: Request, { params }: Ctx) {
         let snapshot = first;
         write("retry: 2000\n\n");
         try {
-          while (!req.signal.aborted && Date.now() < deadline) {
-            const body = await buildPatientStatusBody(snapshot, new Date(), timeZone);
-            const key = `${statusKey(body.status)}|${JSON.stringify(body.timeline)}|${body.draft?.id ?? ""}`;
+          while (!closed && !req.signal.aborted && Date.now() < deadline) {
+            const body = buildPatientStatusBody(snapshot, new Date(), timeZone);
+            const key = `${statusKey(body.status)}|${JSON.stringify(body.timeline)}`;
             if (key !== lastKey) {
               send("status", body);
               lastKey = key;
@@ -52,8 +62,9 @@ export async function GET(req: Request, { params }: Ctx) {
               write(": keep-alive\n\n");
               lastBeat = Date.now();
             }
-            await new Promise((resolve) => setTimeout(resolve, body.status.tone === "working" ? FAST_MS : SLOW_MS));
-            if (req.signal.aborted) break;
+            const tone = body.status.tone;
+            await new Promise((resolve) => setTimeout(resolve, tone === "working" ? WORKING_MS : tone === "you" ? YOUR_TURN_MS : WAITING_MS));
+            if (closed || req.signal.aborted) break;
             snapshot = await loadPatientSnapshot(id, cache);
             if (!snapshot.found) {
               send("gone", { caseId: id });
@@ -62,14 +73,19 @@ export async function GET(req: Request, { params }: Ctx) {
           }
         } catch (e) {
           console.error("[patient-status stream] Unable to load case status", e instanceof Error ? e.message : e);
-          send("error", { message: "Unable to load the case status" });
+          // Not "error": that name collides with EventSource's own connection-error event.
+          send("failure", { message: "Unable to load the case status" });
         } finally {
+          closed = true;
           try {
             controller.close();
           } catch {
             // Already closed by the client.
           }
         }
+      },
+      cancel() {
+        closed = true;
       },
     });
 

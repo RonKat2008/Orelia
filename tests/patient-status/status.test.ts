@@ -149,7 +149,7 @@ describe("patientStatus: choosing", () => {
     expect(result.step).toBe("choose");
     expect(result.tone).toBe("you");
     expect(result.headline).toBe("Found 12 people and programs who can help. Pick up to 5 to contact.");
-    expect(result.nextAction).toMatchObject({ kind: "pick_contacts", detailsHref: `/cases/${ID}/shortlist?view=judge` });
+    expect(result.nextAction).toMatchObject({ kind: "pick_contacts", detailsHref: `/cases/${ID}/shortlist` });
   });
 
   it("uses the singular for one result", () => {
@@ -188,16 +188,23 @@ describe("patientStatus: reaching out", () => {
   });
 
   it("shows the next message to approve, and never approves it itself", () => {
-    const result = status(snapshot({ contacts: [contact({ pendingDraftId: "d1" })], plan: { status: "approved" } }));
+    const result = status(snapshot({ contacts: [contact()], plan: { status: "approved" } }));
     expect(result.headline).toBe("Your message to Stanford Health Care is ready. Take a look before it's sent.");
-    expect(result.nextAction).toMatchObject({ kind: "approve_message", contactId: "c1", draftId: "d1", name: "Stanford Health Care" });
+    expect(result.nextAction).toMatchObject({ kind: "approve_message", contactId: "c1", name: "Stanford Health Care" });
+    expect(result.nextAction?.followUp).toBeUndefined();
     expect(result.tone).toBe("you");
   });
 
-  it("asks for a first-message approval even before the draft row exists", () => {
-    const result = status(snapshot({ contacts: [contact()], plan: { status: "approved" } }));
-    expect(result.nextAction?.kind).toBe("approve_message");
-    expect(result.nextAction?.draftId).toBeUndefined();
+  it("surfaces a drafted follow-up instead of promising one", () => {
+    const sent = contact({ state: "sent", approved: true, pendingFollowUp: true, nextFollowUpAt: "2026-10-27T16:00:00.000Z" });
+    const result = status(snapshot({ contacts: [sent], plan: { status: "approved" } }));
+    expect(result.headline).toBe("Stanford Health Care hasn't replied yet. Your follow-up is ready. Take a look before it's sent.");
+    expect(result.nextAction).toMatchObject({ kind: "approve_message", contactId: "c1", followUp: true });
+  });
+
+  it("uses a voice draft's wording for calls", () => {
+    const result = status(snapshot({ contacts: [contact({ channel: "voice" })], plan: { status: "approved" } }));
+    expect(result.headline).toBe("Your call script for Stanford Health Care is ready. Take a look before we call.");
   });
 
   it("asks to review a filled-in online form", () => {
@@ -212,7 +219,7 @@ describe("patientStatus: reaching out", () => {
 
   it("puts a reply that needs the patient first", () => {
     const result = status(snapshot({
-      contacts: [contact({ state: "task_open", approved: true }), contact({ id: "c2", name: "FIGHT vEDS", pendingDraftId: "d2" })],
+      contacts: [contact({ state: "task_open", approved: true }), contact({ id: "c2", name: "FIGHT vEDS" })],
       tasks: [{ id: "t1", contactId: "c1", kind: "records", title: "Send records", status: "open", dueAt: null }],
       plan: { status: "approved" },
     }));
@@ -326,7 +333,7 @@ describe("patientStatus: safety and stability", () => {
     snapshot(),
     snapshot({ contacts: [contact({ consented: false })] }),
     snapshot({ contacts: [contact()] }),
-    snapshot({ contacts: [contact({ pendingDraftId: "d" })], plan: { status: "approved" } }),
+    snapshot({ contacts: [contact()], plan: { status: "approved" } }),
     snapshot({ contacts: [contact({ state: "sent", approved: true, nextFollowUpAt: "2026-10-27T16:00:00.000Z" })], plan: { status: "approved" } }),
     snapshot({ contacts: [contact({ state: "stalled", approved: true })], plan: { status: "approved" } }),
   ];
@@ -348,10 +355,10 @@ describe("patientStatus: safety and stability", () => {
     );
   });
 
-  it("every next action links to the detailed page for that step", () => {
+  it("every next action links to the detailed page for that step, without switching the saved view", () => {
     for (const s of ALL) {
       const action = status(s).nextAction;
-      if (action) expect(action.detailsHref).toMatch(new RegExp(`^(/start|/cases/${ID}(/[a-z]+)?)\\?view=judge$`));
+      if (action) expect(action.detailsHref).toMatch(new RegExp(`^(/start\\?view=judge|/cases/${ID}/[a-z]+)$`));
     }
   });
 });

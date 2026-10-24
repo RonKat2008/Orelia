@@ -9,6 +9,16 @@ import type { CaseInput } from "@/lib/contracts";
 import { shareLabel } from "@/lib/patient-status/plain";
 import { ActionError, ActionFrame, type ActionProps } from "./ActionFrame";
 
+async function consentedIds(caseId: string): Promise<Set<string>> {
+  try {
+    const response = await fetch(`/api/cases/${encodeURIComponent(caseId)}/contacts`);
+    const body = (await response.json()) as { contacts?: { id?: unknown; consented?: unknown }[] };
+    return new Set((body.contacts ?? []).flatMap((c) => (c.consented === true && typeof c.id === "string" ? [c.id] : [])));
+  } catch {
+    return new Set();
+  }
+}
+
 /** Consent as plain toggles. The same choice is saved for every person picked; only ticked fields are ever shared. */
 export function ShareCard({ caseId, onDone, detailsHref, headline }: ActionProps & { detailsHref: string; headline: string }) {
   const [record, setRecord] = useState<CaseInput | null>(null);
@@ -19,10 +29,11 @@ export function ShareCard({ caseId, onDone, detailsHref, headline }: ActionProps
 
   useEffect(() => {
     let active = true;
-    void Promise.all([loadCase(caseId), loadCaseContacts(caseId)]).then(([found, contacts]) => {
+    void Promise.all([loadCase(caseId), loadCaseContacts(caseId), consentedIds(caseId)]).then(([found, contacts, consented]) => {
       if (!active) return;
       setRecord(found);
-      setPeople(contacts ?? []);
+      // Only people without saved choices: someone already set up keeps exactly what was ticked for them.
+      setPeople((contacts ?? []).filter((c) => !consented.has(c.id)));
     });
     return () => {
       active = false;
@@ -89,7 +100,7 @@ export function ShareCard({ caseId, onDone, detailsHref, headline }: ActionProps
           </p>
           <ActionError messages={errors} />
           <div>
-            <Button size="lg" loading={busy} loadingText="Saving" disabled={people.length === 0} onClick={() => void save()}>
+            <Button size="lg" loading={busy} loadingText="Saving" disabled={people.length === 0 || !record} onClick={() => void save()}>
               Save what we may share
             </Button>
           </div>

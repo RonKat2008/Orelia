@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   DEFAULT_VIEW,
@@ -25,9 +25,6 @@ function safeStorage(): Storage | null {
 
 function readView(): ViewMode {
   const storage = safeStorage();
-  const fromUrl = viewFromSearch(window.location.search);
-  // A shared ?view= link becomes this viewer's choice, so it survives navigation without the param.
-  if (fromUrl && storage && readStoredView(storage) !== fromUrl) writeStoredView(fromUrl, storage);
   return resolveView({ search: window.location.search, stored: storage ? readStoredView(storage) : null });
 }
 
@@ -48,8 +45,15 @@ function subscribe(onChange: () => void): () => void {
  */
 export function useViewMode(serverView: ViewMode = DEFAULT_VIEW): ViewMode {
   // Re-read on client navigation: Next does not fire popstate for <Link> pushes.
-  usePathname();
-  return useSyncExternalStore(subscribe, readView, () => serverView);
+  const pathname = usePathname();
+  const view = useSyncExternalStore(subscribe, readView, () => serverView);
+  useEffect(() => {
+    // A shared ?view= link becomes this viewer's choice, so it survives navigation without the param.
+    const fromUrl = viewFromSearch(window.location.search);
+    const storage = safeStorage();
+    if (fromUrl && storage && readStoredView(storage) !== fromUrl) writeStoredView(fromUrl, storage);
+  }, [pathname, view]);
+  return view;
 }
 
 /** Switch views: remember it, put it in the URL, and move a patient off a detailed case sub-page. */

@@ -70,7 +70,7 @@ export function statusKey(status: PatientStatus): string {
     status.detail ?? null,
     status.step,
     status.tone,
-    a ? [a.kind, a.contactId ?? null, a.taskId ?? null, a.applicationId ?? null, a.draftId ?? null] : null,
+    a ? [a.kind, a.contactId ?? null, a.taskId ?? null, a.applicationId ?? null, a.followUp ?? false] : null,
     status.progress ?? null,
   ]);
 }
@@ -95,7 +95,7 @@ function pick(ctx: Ctx): PatientStatus {
       detail: "Nothing is sent to anyone until you say so.",
       step: "tell",
       tone: "you",
-      nextAction: { kind: "confirm_details", label: "Check my details", detailsHref: "/start?view=judge" },
+      nextAction: { kind: "confirm_details", label: "Looks right, start looking", detailsHref: "/start?view=judge" },
     });
   }
 
@@ -236,13 +236,18 @@ function reaching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
     };
   }
 
-  const pending = s.contacts.find((c) => c.consented && (c.pendingDraftId || (c.state === "drafted" && !c.approved)));
+  const pending = s.contacts.find(
+    (c) => c.consented && ((c.state === "drafted" && !c.approved) || (c.state === "sent" && c.pendingFollowUp)),
+  );
   if (pending) {
     const call = pending.channel === "voice";
+    const followUp = pending.state === "sent";
     return {
-      headline: call
-        ? `Your call script for ${pending.name} is ready. Take a look before we call.`
-        : `Your message to ${pending.name} is ready. Take a look before it's sent.`,
+      headline: followUp
+        ? `${pending.name} hasn't replied yet. Your follow-up is ready. Take a look before it's sent.`
+        : call
+          ? `Your call script for ${pending.name} is ready. Take a look before we call.`
+          : `Your message to ${pending.name} is ready. Take a look before it's sent.`,
       detail: "It only includes what you agreed to share, and says it was written with AI help.",
       step: "reach",
       tone: "you",
@@ -250,7 +255,7 @@ function reaching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
         kind: "approve_message",
         label: call ? "Read the call script" : "Read the message",
         contactId: pending.id,
-        ...(pending.pendingDraftId ? { draftId: pending.pendingDraftId } : {}),
+        ...(followUp ? { followUp: true } : {}),
         name: pending.name,
         detailsHref: details(s, "outbox"),
       },
@@ -350,7 +355,8 @@ function waiting(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
 }
 
 function details(s: PatientCaseSnapshot, page: string): string {
-  return `/cases/${s.caseId}/${page}?view=judge`;
+  // No ?view= here: following "See details" must not switch the patient's saved view.
+  return `/cases/${s.caseId}/${page}`;
 }
 
 function weekday(iso: string, timeZone: string): string | null {

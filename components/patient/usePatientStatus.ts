@@ -3,20 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PatientStatus, PatientTimelineItem } from "@/lib/patient-status/types";
 
-export interface PatientDraft {
-  id: string;
-  contactId: string;
-  channel: "email" | "voice";
-  subject: string | null;
-  body: string;
-  sharedFields: string[];
-}
-
 export interface PatientStatusBody {
   caseId: string;
   status: PatientStatus;
   timeline: PatientTimelineItem[];
-  draft: PatientDraft | null;
 }
 
 export type LiveMode = "connecting" | "live" | "polling";
@@ -124,6 +114,9 @@ export function usePatientStatus(caseId: string): {
           // A malformed event is skipped; the next one replaces it.
         }
       });
+      source.addEventListener("failure", () => {
+        setError("We couldn't check for updates just now. We'll keep trying.");
+      });
       source.addEventListener("gone", () => {
         setMissing(true);
         source?.close();
@@ -139,9 +132,22 @@ export function usePatientStatus(caseId: string): {
       };
     };
 
+    // A hidden tab holds no stream open; coming back re-reads at once and reconnects.
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        source?.close();
+        source = null;
+        stopPolling();
+      } else if (!source && !pollTimer) {
+        void refresh();
+        openStream();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     openStream();
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
       source?.close();
       stopPolling();
     };

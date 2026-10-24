@@ -1,6 +1,6 @@
 import { getCaseActivity } from "@/lib/cases/activity";
 import { getPlanStore } from "@/lib/plan/store";
-import { getMessageFacts, type PendingDraft } from "@/lib/patient-status/message-facts";
+import { getMessageFacts } from "@/lib/patient-status/message-facts";
 import { patientStatus } from "@/lib/patient-status/status";
 import { patientTimeline } from "@/lib/patient-status/timeline";
 import type { PatientCaseSnapshot, PatientStatus, PatientTimelineItem } from "@/lib/patient-status/types";
@@ -13,8 +13,6 @@ export interface PatientStatusBody {
   caseId: string;
   status: PatientStatus;
   timeline: PatientTimelineItem[];
-  /** The waiting draft named by status.nextAction, so the patient can read exactly what would be sent. */
-  draft: PendingDraft | null;
 }
 
 /** Reads the case's own rows into the plain snapshot patientStatus() works on. Read-only. */
@@ -61,7 +59,7 @@ export async function loadPatientSnapshot(caseId: string, cache: { shortlistTota
       return {
         id: c.id, name: c.displayName, channel: c.channel, state: c.state, consented: c.consented, approved: c.approved,
         nextFollowUpAt: c.nextFollowUpAt, lastActivityAt: c.lastActivityAt,
-        pendingDraftId: f?.pendingDraftId ?? null, firstSentAt: f?.firstSentAt ?? null, lastReplyAt: f?.lastReplyAt ?? null,
+        pendingFollowUp: f?.pendingFollowUp ?? false, firstSentAt: f?.firstSentAt ?? null, lastReplyAt: f?.lastReplyAt ?? null,
       };
     }),
     tasks: taskRows.map((t) => ({ id: t.id, contactId: t.contactId, kind: t.kind, title: t.title, status: t.status, dueAt: t.dueAt })),
@@ -70,14 +68,8 @@ export async function loadPatientSnapshot(caseId: string, cache: { shortlistTota
   };
 }
 
-export async function buildPatientStatusBody(snapshot: PatientCaseSnapshot, now: Date, timeZone: string | undefined): Promise<PatientStatusBody> {
-  const status = patientStatus(snapshot, { now, timeZone });
-  const action = status.nextAction;
-  let draft: PendingDraft | null = null;
-  if (action?.kind === "approve_message" && action.draftId && action.contactId) {
-    draft = await getMessageFacts().draft(action.draftId, action.contactId).catch(() => null);
-  }
-  return { caseId: snapshot.caseId, status, timeline: patientTimeline(snapshot), draft };
+export function buildPatientStatusBody(snapshot: PatientCaseSnapshot, now: Date, timeZone: string | undefined): PatientStatusBody {
+  return { caseId: snapshot.caseId, status: patientStatus(snapshot, { now, timeZone }), timeline: patientTimeline(snapshot) };
 }
 
 /** ?tz= from the browser, only when it is a real IANA zone. */

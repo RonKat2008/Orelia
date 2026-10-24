@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: Ctx) {
     if (denied) return denied;
     const snapshot = await loadPatientSnapshot(id);
     if (!snapshot.found) return jsonError(404, "Case not found");
-    const body = await buildPatientStatusBody(snapshot, new Date(), timeZoneFrom(req));
+    const body = buildPatientStatusBody(snapshot, new Date(), timeZoneFrom(req));
     return NextResponse.json(body, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return jsonError(500, "Unable to load the case status", error);

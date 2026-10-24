@@ -23,8 +23,8 @@ export interface PatientContact {
   approved: boolean;
   nextFollowUpAt: string | null;
   lastActivityAt: string | null;
-  /** Unapproved, unsent outbound draft waiting for the patient, if one exists. */
-  pendingDraftId?: string | null;
+  /** A drafted follow-up (contact still 'sent') is waiting for the patient's approval. */
+  pendingFollowUp?: boolean;
   /** First time a message to this contact went out. */
   firstSentAt?: string | null;
   /** Latest reply received from this contact. */
@@ -92,10 +92,11 @@ export interface PatientNextAction {
   taskId?: string;
   taskKind?: string;
   applicationId?: string;
-  draftId?: string;
+  /** approve_message: this is a follow-up to someone already written to. */
+  followUp?: boolean;
   /** Who it is about, by name, when it is about one contact. */
   name?: string;
-  /** The detailed (judge) page for this step. */
+  /** The detailed page for this step. */
   detailsHref: string;
 }
 

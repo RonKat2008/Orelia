@@ -32,6 +32,17 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
     );
   }
 
+  if (!body && error) {
+    return (
+      <EmptyState
+        icon={<Compass />}
+        title="We couldn't load your case just now"
+        description={error}
+        action={<Button onClick={() => void refresh()}>Try again</Button>}
+      />
+    );
+  }
+
   if (!body) {
     return (
       <div role="status" aria-busy="true" className="grid gap-8">
@@ -44,7 +55,7 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
     );
   }
 
-  const { status, timeline, draft } = body;
+  const { status, timeline } = body;
   return (
     <div data-testid="patient-home" data-step={status.step} className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-10 sm:gap-12">
       <LiveStatus status={status} mode={mode} />
@@ -54,7 +65,7 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
         </p>
       ) : null}
       <PatientSteps current={status.step} />
-      <NextActionCard caseId={caseId} status={status} draft={draft} onDone={refresh} />
+      <NextActionCard caseId={caseId} status={status} onDone={refresh} />
       <WhatsHappened items={timeline} />
       <footer className="grid gap-4 border-t border-line pt-6 text-small text-ink-2 sm:flex sm:items-center sm:justify-between">
         <p className="m-0 max-w-prose">

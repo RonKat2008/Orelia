@@ -12,7 +12,6 @@ import type { CaseInput } from "@/lib/contracts";
 import { hasDisclosure } from "@/lib/safety/disclosure";
 import { shareLabel } from "@/lib/patient-status/plain";
 import type { PatientNextAction } from "@/lib/patient-status/types";
-import type { PatientDraft } from "../usePatientStatus";
 import { ActionError, ActionFrame, type ActionProps } from "./ActionFrame";
 
 type Shown = { id: string; channel: "email" | "voice"; subject: string | null; body: string; sharedFields: string[]; address: string | null };
@@ -25,27 +24,19 @@ function fromApi(draft: ApiDraft): Shown {
  * Read the exact draft, then Approve / Edit / Not now. Approve is the patient's click; the server sets approved_at
  * and runs the outbound gate. Nothing here approves on its own.
  */
-export function MessageCard({
-  caseId,
-  onDone,
-  action,
-  headline,
-  serverDraft,
-}: ActionProps & { action: PatientNextAction; headline: string; serverDraft: PatientDraft | null }) {
+export function MessageCard({ caseId, onDone, action, headline }: ActionProps & { action: PatientNextAction; headline: string }) {
   const contactId = action.contactId ?? "";
-  const [draft, setDraft] = useState<Shown | null>(
-    serverDraft && serverDraft.id === action.draftId ? { ...serverDraft, address: null } : null,
-  );
+  const [draft, setDraft] = useState<Shown | null>(null);
   const [record, setRecord] = useState<CaseInput | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [held, setHeld] = useState(false);
-  const needsFetch = !draft && !action.draftId;
-
   useEffect(() => {
     let active = true;
     void loadCase(caseId).then((found) => active && setRecord(found));
-    if (needsFetch && contactId) {
+    // The server returns the draft waiting for this contact (first message or follow-up), matched to the current
+    // consent, or writes one. It never approves anything.
+    if (contactId) {
       void createContactDraft(contactId).then((result) => {
         if (!active) return;
         if (result.ok) setDraft(fromApi(result.draft));
@@ -55,7 +46,7 @@ export function MessageCard({
     return () => {
       active = false;
     };
-  }, [caseId, contactId, needsFetch]);
+  }, [caseId, contactId]);
 
   const call = (draft?.channel ?? "email") === "voice";
   const disclosed = draft ? hasDisclosure(draft.body) : false;
@@ -65,6 +56,14 @@ export function MessageCard({
     if (!draft || !disclosed) return;
     setBusy(true);
     setErrors([]);
+    // Re-read first: if the draft was edited elsewhere since it was shown, show the new text instead of approving it.
+    const latest = await createContactDraft(contactId);
+    if (latest.ok && (latest.draft.id !== draft.id || latest.draft.body !== draft.body || (latest.draft.subject ?? null) !== draft.subject)) {
+      setDraft(fromApi(latest.draft));
+      setBusy(false);
+      toast.info("This message changed", { description: "Please read the new version. Nothing was sent." });
+      return;
+    }
     const result = await approveContactDraft(contactId, draft.id);
     if (!result.ok) {
       setBusy(false);
@@ -92,22 +91,12 @@ export function MessageCard({
   }
 
   return (
-    <ActionFrame kind="approve_message" title={call ? `Call script for ${action.name ?? "this contact"}` : `Message to ${action.name ?? "this contact"}`} lede={headline} detailsHref={action.detailsHref}>
+    <ActionFrame kind="approve_message" title={action.followUp ? `Follow-up to ${action.name ?? "this contact"}` : call ? `Call script for ${action.name ?? "this contact"}` : `Message to ${action.name ?? "this contact"}`} lede={headline} detailsHref={action.detailsHref}>
       {!draft && errors.length === 0 ? (
-        action.draftId ? (
-          <p className="m-0 text-body text-ink-2">
-            This message is waiting in the detailed view.{" "}
-            <Link href={action.detailsHref} className="font-semibold text-teal underline underline-offset-4 focus-ring rounded-sm">
-              Open it there
-            </Link>
-            .
-          </p>
-        ) : (
-          <div role="status" aria-busy="true" className="grid gap-3">
-            <span className="sr-only">Writing the message</span>
-            <Skeleton className="h-48 w-full" />
-          </div>
-        )
+        <div role="status" aria-busy="true" className="grid gap-3">
+          <span className="sr-only">Writing the message</span>
+          <Skeleton className="h-48 w-full" />
+        </div>
       ) : null}
       {draft ? (
         <>

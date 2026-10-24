@@ -1,4 +1,4 @@
-import { assertGated, type Channel, type ChannelGuardOptions, type GatedDraft, type ProviderRef } from './types';
+import { assertGated, type Channel, type ChannelGuardOptions, type GatedDraft, type OutboundThreadRef, type ProviderRef } from './types';
 
 export interface MockEmail {
   readonly to: string;
@@ -18,14 +18,14 @@ export class MockMailer implements Channel {
   private seq = 0;
   constructor(private guard: ChannelGuardOptions, private now = () => new Date()) {}
 
-  async send(gated: GatedDraft): Promise<ProviderRef> {
+  async send(gated: GatedDraft, thread?: OutboundThreadRef): Promise<ProviderRef> {
     const to = assertGated(gated, 'email', 'mock-mailer', this.guard);
     const n = ++this.seq;
     // Follow-ups to the same contact share a thread, like a real reply-in-thread.
     const prior = gated.contactId ? this.sent.find(m => m.contactId === gated.contactId) : undefined;
     const ref: ProviderRef = {
-      provider: 'mock-mailer', channel: 'email', inboxId: 'mock-inbox',
-      threadId: prior?.ref.threadId ?? `mock-thread-${n}`, messageId: `mock-message-${n}`, status: 'sent',
+      provider: 'mock-mailer', channel: 'email', inboxId: thread?.inboxId ?? 'mock-inbox',
+      threadId: thread?.threadId ?? prior?.ref.threadId ?? `mock-thread-${n}`, messageId: `mock-message-${n}`, status: 'sent',
     };
     this.sent.push({
       to, body: gated.body, approvedAt: gated.approvedAt, ref, sentAt: this.now().toISOString(),

@@ -25,6 +25,8 @@ export function createDurableDeps(opts: {
     loadContext: (contactId) => store.load(contactId),
     saveContext: (contactId, ctx) => store.save(contactId, ctx),
     draftFollowUp: (input) => store.createFollowUpDraft(input),
+    loadMessageApproval: (messageId) => store.loadMessageApproval(messageId),
+    loadThread: (contactId) => store.loadThread(contactId),
   };
 }
 
@@ -45,6 +47,9 @@ function createInMemoryDeps(env: Env): ConnectionDeps {
     async draftFollowUp({ contactId, followUpNumber }) {
       draftSeq += 1;
       return { messageId: `draft-${contactId}-${followUpNumber}-${draftSeq}` };
+    },
+    async loadMessageApproval() {
+      return null;
     },
   };
 }

@@ -1,8 +1,58 @@
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import * as s from '../../../../db/schema';
+import { createRuntimeClassifier, FixtureClassifier } from '../../../../lib/inbox/classifier';
+import { PostgresTaskStore } from '../../../../lib/inbox/task-store';
+import { DbRunStore } from '../../../../lib/agents/run-store';
+import type { DraftContext } from '../../../../lib/inbox/drafts';
+import { isOffline } from '../../../../lib/env';
+import { createWebhookIngest } from './ingest';
 import { inngestSendEvents } from '../../../../lib/workflows/events';
 import type { InboundDeps, Owner } from './inbound';
+
+/** Postgres unique_violation, including when the driver nests it on `cause`. */
+export function isUniqueViolation(err: unknown): boolean {
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (cur && typeof cur === 'object' && !seen.has(cur)) {
+    seen.add(cur);
+    if ((cur as { code?: unknown }).code === '23505') return true;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/** Draft context for a contact: resource name, consented fields and the patient fields the consent covers. */
+export async function loadDraftContext(contactId: string): Promise<DraftContext> {
+  const db = getDb();
+  const [c] = await db.select().from(s.contacts).where(eq(s.contacts.id, contactId));
+  if (!c) throw new Error('Contact not found');
+  const [consent] = await db.select().from(s.consents).where(eq(s.consents.contactId, contactId));
+  const [caseRow] = await db.select().from(s.cases).where(eq(s.cases.id, c.caseId));
+  const name = async (): Promise<{ name?: string; address?: string }> => {
+    if (c.targetKind === 'institution') {
+      const [r] = await db.select().from(s.institutions).where(eq(s.institutions.id, c.targetId));
+      return { name: r?.name, address: [r?.city, r?.state].filter(Boolean).join(', ') || undefined };
+    }
+    if (c.targetKind === 'expert') {
+      const [r] = await db.select().from(s.experts).where(eq(s.experts.id, c.targetId));
+      return { name: r?.name };
+    }
+    if (c.targetKind === 'organization') {
+      const [r] = await db.select().from(s.organizations).where(eq(s.organizations.id, c.targetId));
+      return { name: r?.name };
+    }
+    return {};
+  };
+  const target = await name();
+  const { diseaseName, diseaseCodes, subtype, stageSummary, homeCity, homeState, insurer, planId, travelLimitMiles, goals } = caseRow ?? {};
+  return {
+    contactId, caseId: c.caseId, resourceName: target.name ?? c.address,
+    ...(target.address ? { resourceAddress: target.address } : {}),
+    consent: { sharedFields: consent?.sharedFields ?? [] },
+    caseRecord: { diseaseName, diseaseCodes, subtype, stageSummary, homeCity, homeState, insurer, planId, travelLimitMiles, goals },
+  };
+}
 
 /** Lazy: nothing touches the database or credentials until a request arrives (keeps `next build` credential-free). */
 export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: NodeJS.ProcessEnv = process.env): InboundDeps {
@@ -26,12 +76,17 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
       const [existing] = await db().select({ id: s.messages.id }).from(s.messages)
         .where(eq(s.messages.providerMessageId, m.providerMessageId)).limit(1);
       if (existing) return 'duplicate';
-      await db().insert(s.messages).values({
-        contactId: m.contactId, direction: 'inbound', channel: 'email',
-        providerThreadId: m.providerThreadId, providerMessageId: m.providerMessageId,
-        ...(m.subject !== undefined ? { subject: m.subject } : {}), body: m.body,
-        sharedFields: [], receivedAt: m.receivedAt, ...(m.classification !== undefined ? { classification: m.classification } : {}),
-      });
+      try {
+        await db().insert(s.messages).values({
+          contactId: m.contactId, direction: 'inbound', channel: 'email',
+          providerThreadId: m.providerThreadId, providerMessageId: m.providerMessageId,
+          ...(m.subject !== undefined ? { subject: m.subject } : {}), body: m.body,
+          sharedFields: [], receivedAt: m.receivedAt, ...(m.classification !== undefined ? { classification: m.classification } : {}),
+        });
+      } catch (err) {
+        if (isUniqueViolation(err)) return 'duplicate';
+        throw err;
+      }
       await db().update(s.contacts).set({ lastActivityAt: m.receivedAt }).where(eq(s.contacts.id, m.contactId));
       return 'stored';
     },
@@ -43,5 +98,12 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
       }).where(and(eq(s.calls.providerCallId, e.providerCallId), eq(s.calls.contactId, e.contactId)));
     },
     sendEvents: (events) => inngestSendEvents()(events),
+    ingestInbound: (event) => createWebhookIngest({
+      inbox: {
+        classifier: isOffline(env.WAYFINDER_OFFLINE) ? new FixtureClassifier() : createRuntimeClassifier({ store: new DbRunStore() }),
+        loadContext: contactId => loadDraftContext(contactId),
+        tasks: new PostgresTaskStore(),
+      },
+    })(event),
   };
 }

@@ -47,6 +47,7 @@ function setup() {
   const store = new InMemoryContactContextStore();
   const sentAt = new Date(NOW.getTime() - 3600_000);
   store.contexts.set(CID, { ...initialContext(), state: 'sent', firstSentAt: sentAt, lastOutboundAt: sentAt });
+  store.approvals.set('m-1', NOW.toISOString());
   const send = vi.fn(async (_a?: any) => ({ providerRef: 'ref' }));
   const deps = createDurableDeps({ store, send, env: {} });
   deps.clock = { now: () => NOW, scale: 1 };
@@ -83,6 +84,7 @@ describe('durable deps end to end (in-memory store)', () => {
       }),
     ).rejects.toBe(stop);
     const messageId = store.drafts[0].messageId;
+    store.approvals.set(messageId, NOW.toISOString());
     const fu = followUpApprovedEvent({ contactId: CID, caseId: CASE, messageId, approvedAt: NOW.toISOString() });
     const wf = createFollowUpSendWorkflow(deps);
     const r1: any = await wf.handler({ event: fu, step: new FakeStep() });

@@ -17,6 +17,8 @@ export interface ContactContextStore {
     caseId: string;
     followUpNumber: 1 | 2;
   }): Promise<{ messageId: string }>;
+  loadMessageApproval(messageId: string): Promise<string | null>;
+  loadThread(contactId: string): Promise<{ inboxId?: string; threadId?: string; messageId: string } | null>;
 }
 
 export interface ContactRowLike {
@@ -128,11 +130,32 @@ export class PostgresContactContextStore implements ContactContextStore {
       .returning({ id: s.messages.id });
     return { messageId: created.id };
   }
+
+  async loadMessageApproval(messageId: string): Promise<string | null> {
+    const [row] = await this.db
+      .select({ approvedAt: s.messages.approvedAt })
+      .from(s.messages)
+      .where(eq(s.messages.id, messageId));
+    return row?.approvedAt ? row.approvedAt.toISOString() : null;
+  }
+
+  async loadThread(contactId: string): Promise<{ threadId?: string; messageId: string } | null> {
+    const outbound = await this.outbound(contactId);
+    const hit = [...outbound].reverse().find((m) => m.providerMessageId);
+    if (!hit?.providerMessageId) return null;
+    return {
+      messageId: hit.providerMessageId,
+      ...(hit.providerThreadId ? { threadId: hit.providerThreadId } : {}),
+    };
+  }
 }
 
 export class InMemoryContactContextStore implements ContactContextStore {
   contexts = new Map<string, ContactContext>();
   drafts: { messageId: string; contactId: string; followUpNumber: 1 | 2 }[] = [];
+  /** messages.approved_at. Absent means the row was never approved. */
+  approvals = new Map<string, string>();
+  threads = new Map<string, { inboxId?: string; threadId?: string; messageId: string }>();
   private seq = 0;
 
   load(contactId: string): Promise<ContactContext> {
@@ -154,5 +177,11 @@ export class InMemoryContactContextStore implements ContactContextStore {
     const ctx = this.contexts.get(input.contactId);
     if (ctx) ctx.followUpsDue = Math.max(ctx.followUpsDue, input.followUpNumber);
     return Promise.resolve({ messageId });
+  }
+  loadMessageApproval(messageId: string): Promise<string | null> {
+    return Promise.resolve(this.approvals.get(messageId) ?? null);
+  }
+  loadThread(contactId: string) {
+    return Promise.resolve(this.threads.get(contactId) ?? null);
   }
 }

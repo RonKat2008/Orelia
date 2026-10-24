@@ -55,6 +55,16 @@ describe('AgentMailChannel', () => {
     expect(c.body).not.toHaveProperty('attachments');
   });
 
+  it('send with a thread ref replies in that thread and still refuses a forged draft', async () => {
+    const { fetcher, channel } = setup(json({ message_id: 'msg_2', thread_id: 'thr_9' }));
+    const ref = await channel.send(gated(), { inboxId: 'case1@agentmail.to', messageId: 'msg_1', threadId: 'thr_9' });
+    expect(ref).toMatchObject({ threadId: 'thr_9', messageId: 'msg_2' });
+    const c = call(fetcher, 0);
+    expect(c.url).toBe('https://api.agentmail.to/v0/inboxes/case1%40agentmail.to/messages/msg_1/reply');
+    expect(c.body.to).toEqual([TEST_EMAIL]);
+    await expect(channel.send(forged(), { inboxId: 'i', messageId: 'm' })).rejects.toBeInstanceOf(ChannelError);
+  });
+
   it('replies in an existing thread', async () => {
     const { fetcher, channel } = setup(json({ message_id: 'msg_2', thread_id: 'thr_1' }));
     const ref = await channel.sendInThread(gated(), { inboxId: 'case1@agentmail.to', messageId: 'msg_1' });

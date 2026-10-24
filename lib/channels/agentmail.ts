@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { AgentMailClient } from 'agentmail';
-import { assertGated, ChannelError, type Channel, type ChannelGuardOptions, type GatedDraft, type KnownThreadLookup, type ProviderInbound, type ProviderRef } from './types';
+import { assertGated, ChannelError, type Channel, type ChannelGuardOptions, type GatedDraft, type KnownThreadLookup, type OutboundThreadRef, type ProviderInbound, type ProviderRef } from './types';
 
 const PROVIDER = 'agentmail' as const;
 const TOLERANCE_SECONDS = 300;
@@ -47,9 +47,13 @@ export class AgentMailChannel implements Channel {
     } catch (err) { throw this.mapError(err); }
   }
 
-  async send(gated: GatedDraft): Promise<ProviderRef> {
+  async send(gated: GatedDraft, thread?: OutboundThreadRef): Promise<ProviderRef> {
     const to = assertGated(gated, 'email', PROVIDER, this.opts.guard);
     const caseId = this.requireCase(gated);
+    if (thread?.messageId) {
+      const inboxId = thread.inboxId ?? (await this.createCaseInbox(caseId)).inboxId;
+      return this.reply(to, gated, caseId, inboxId, thread.messageId);
+    }
     const { inboxId } = await this.createCaseInbox(caseId);
     try {
       const res = await this.client.inboxes.messages.send(inboxId, {
@@ -62,13 +66,15 @@ export class AgentMailChannel implements Channel {
 
   /** Follow-up inside an existing thread; messageId is the last provider message to reply to. */
   async sendInThread(gated: GatedDraft, ctx: { inboxId: string; messageId: string }): Promise<ProviderRef> {
-    const to = assertGated(gated, 'email', PROVIDER, this.opts.guard);
-    const caseId = this.requireCase(gated);
+    return this.send(gated, ctx);
+  }
+
+  private async reply(to: string, gated: GatedDraft, caseId: string, inboxId: string, messageId: string): Promise<ProviderRef> {
     try {
-      const res = await this.client.inboxes.messages.reply(ctx.inboxId, ctx.messageId, {
+      const res = await this.client.inboxes.messages.reply(inboxId, messageId, {
         to: [to], text: gated.body, labels: this.labels(gated, caseId),
       }, NO_RETRY);
-      return this.ref(ctx.inboxId, res.threadId, res.messageId);
+      return this.ref(inboxId, res.threadId, res.messageId);
     } catch (err) { throw this.mapError(err); }
   }
 

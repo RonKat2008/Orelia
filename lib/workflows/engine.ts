@@ -25,6 +25,8 @@ export const CONTACT_REPLY = 'contact/reply';
 export const FOLLOW_UP_DRAFTED = 'contact/follow-up.drafted';
 export const FOLLOW_UP_APPROVED = 'contact/follow-up.approved';
 export const CONTACT_STALLED = 'contact/stalled';
+/** Emitted after a stalled contact is revived, so a new connection run can resume. */
+export const CONTACT_RESTART = 'contact/connection.restart';
 
 interface Base {
   contactId: string;

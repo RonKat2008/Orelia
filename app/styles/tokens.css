@@ -1,6 +1,6 @@
 /*
  * Legacy Wayfinder tokens (--wf-*), kept so pre-redesign CSS keeps working.
- * They now resolve to the Warm Paper tokens defined in app/styles/theme.css, so
+ * They now resolve to the Clear Day tokens defined in app/styles/theme.css, so
  * every legacy page follows the new palette and both themes automatically.
  *
  * New code: do not use --wf-* names. Use Tailwind classes from the Warm Paper
@@ -9,32 +9,32 @@
 
 :root {
   /* Base */
-  --wf-paper: var(--paper, #faf6ef);
-  --wf-paper-raised: var(--card, #fffdf9);
-  --wf-paper-sunk: var(--paper-2, #f3ede2);
-  --wf-ink: var(--ink, #1f2a2a);
-  --wf-ink-muted: var(--ink-2, #4a5654);
-  --wf-rule: var(--line, #e6ded0);
-  --wf-contour: color-mix(in oklab, var(--line, #e6ded0) 60%, var(--paper, #faf6ef));
+  --wf-paper: var(--paper, #fbfcfd);
+  --wf-paper-raised: var(--card, #ffffff);
+  --wf-paper-sunk: var(--paper-2, #f1f4f8);
+  --wf-ink: var(--ink, #0e1726);
+  --wf-ink-muted: var(--ink-2, #3d4a5c);
+  --wf-rule: var(--line, #e2e7ee);
+  --wf-contour: color-mix(in oklab, var(--line, #e2e7ee) 60%, var(--paper, #fbfcfd));
 
   /* Accent: the route */
-  --wf-route: var(--teal, #1f5e5b);
-  --wf-route-soft: color-mix(in oklab, var(--teal, #1f5e5b) 15%, transparent);
+  --wf-route: var(--teal, #0b6b66);
+  --wf-route-soft: color-mix(in oklab, var(--teal, #0b6b66) 15%, transparent);
 
   /* Semantic status */
-  --wf-verified: var(--ok, #2f6b4f);
-  --wf-pending: var(--warn-ink, #8a560b);
-  --wf-failed: var(--danger, #b4432f);
-  --wf-neutral: var(--ink-3, #5f6866);
-  --wf-quiet: var(--line-strong, #d3c8b5);
+  --wf-verified: var(--ok, #1e7a4c);
+  --wf-pending: var(--warn-ink, #8f5200);
+  --wf-failed: var(--danger, #c0352b);
+  --wf-neutral: var(--ink-3, #5a6779);
+  --wf-quiet: var(--line-strong, #c9d2dd);
 
   /* Score palette: ordered */
-  --wf-score-0: var(--teal, #1f5e5b);
-  --wf-score-1: color-mix(in oklab, var(--teal, #1f5e5b) 60%, var(--sage, #a8c3b0));
-  --wf-score-2: var(--warn, #a86b12);
-  --wf-score-3: var(--ink-3, #5f6866);
+  --wf-score-0: var(--teal, #0b6b66);
+  --wf-score-1: color-mix(in oklab, var(--teal, #0b6b66) 60%, var(--sage, #8ccfc2));
+  --wf-score-2: var(--warn, #b26a00);
+  --wf-score-3: var(--ink-3, #5a6779);
 
-  --wf-focus: var(--ring, #1f5e5b);
+  --wf-focus: var(--ring, #0b6b66);
   --wf-shadow: var(--elev-md);
 
   /* Type */

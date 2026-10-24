@@ -292,3 +292,6 @@ export async function draftFillWebForm(channel: WebFormChannel, input: DraftFill
 export function submitGatedWebForm(channel: WebFormChannel, gated: GatedDraft): Promise<ProviderRef> {
   return channel.send(gated);
 }
+
+/** Short names used by the brief / planner. */
+export { probeApplicationForm as probeForm, draftFillWebForm as draftFill, submitGatedWebForm as submitGated };

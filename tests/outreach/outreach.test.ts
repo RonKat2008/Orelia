@@ -143,7 +143,7 @@ describe('outreach API and safety boundary', () => {
     const ctx = setup(); const contact: Contact = { id: id(), caseId: ctx.store.caseId, targetId: id(), targetKind: 'trial', channel: 'email', address: 'intake@example.com', state: 'drafted' };
     const consent = { contactId: contact.id, sharedFields: [], approvedAt: new Date().toISOString() };
     expect(createDraft(contact, consent, ctx.store.record).body).toContain('eligibility review');
-    expect(createDraft({ ...contact, targetKind: 'organization', purpose: 'advocacy' }, consent, ctx.store.record).body).toContain('support and resources');
+    expect(createDraft({ ...contact, targetKind: 'organization', purpose: 'advocacy' }, consent, ctx.store.record).body).toContain('resources and programs');
     expect(createDraft({ ...contact, targetKind: 'organization', purpose: 'travel_aid' }, consent, ctx.store.record).body).toContain('application process');
     expect(createDraft(contact, consent, ctx.store.record).body).not.toContain('epithelioid sarcoma');
   });

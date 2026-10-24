@@ -50,6 +50,13 @@
       "when": 1792821401335,
       "tag": "0028_case_owner_session",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792821402000,
+      "tag": "0029_agent_run_usage",
+      "breakpoints": true
     }
   ]
 }

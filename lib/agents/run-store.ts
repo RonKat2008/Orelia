@@ -1,10 +1,12 @@
+import type { Usage } from "@/lib/ai/usage";
+import { emptyUsage } from "@/lib/ai/usage";
 import { randomUUID } from "node:crypto";
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { agentRuns } from "@/db/schema";
 import type { AgentRunStatus } from "@/lib/contracts";
 
-export interface RunRecord {
+export interface RunRecord extends Partial<Usage> {
   id: string;
   caseId: string;
   agent: string;
@@ -16,7 +18,7 @@ export interface RunRecord {
   outputSummary: string | null;
 }
 
-export interface RunUpdate {
+export interface RunUpdate extends Partial<Usage> {
   status: AgentRunStatus;
   counts?: Record<string, number>;
   error?: string;
@@ -35,6 +37,11 @@ function applyPatch(run: RunRecord, patch: RunUpdate): RunRecord {
   return {
     ...run,
     status: patch.status,
+    tokensIn: patch.tokensIn ?? run.tokensIn,
+    tokensOut: patch.tokensOut ?? run.tokensOut,
+    cacheRead: patch.cacheRead ?? run.cacheRead,
+    cacheCreation: patch.cacheCreation ?? run.cacheCreation,
+    costUsd: patch.costUsd === undefined ? run.costUsd : patch.costUsd,
     counts: patch.counts ?? run.counts,
     error: patch.error ?? run.error,
     outputSummary: patch.outputSummary ?? run.outputSummary,
@@ -50,7 +57,7 @@ export class MemoryRunStore implements RunStore {
   async create(caseId: string, agent: string): Promise<string> {
     const id = randomUUID();
     this.runs.set(id, {
-      id, caseId, agent, status: "queued", counts: null,
+      id, caseId, agent, status: "queued", counts: null, ...emptyUsage(),
       startedAt: null, finishedAt: null, error: null, outputSummary: null,
     });
     return id;
@@ -82,6 +89,9 @@ export class DbRunStore implements RunStore {
 
   async update(runId: string, patch: RunUpdate): Promise<void> {
     const set: Partial<typeof agentRuns.$inferInsert> = { status: patch.status };
+    for (const key of ["tokensIn", "tokensOut", "cacheRead", "cacheCreation", "costUsd"] as const) {
+      if (patch[key] !== undefined) Object.assign(set, { [key]: patch[key] });
+    }
     if (patch.counts !== undefined) set.counts = patch.counts;
     if (patch.error !== undefined) set.error = patch.error;
     if (patch.outputSummary !== undefined) set.outputSummary = patch.outputSummary;

@@ -20,6 +20,8 @@ const envSchema = z.object({
   INNGEST_EVENT_KEY: optionalEnv,
   INNGEST_SIGNING_KEY: optionalEnv,
   WAYFINDER_OFFLINE: optionalEnv,
+  WAYFINDER_SESSION_SECRET: optionalEnv,
+  WAYFINDER_APP_ORIGIN: optionalEnv,
 });
 
 export type Env = z.infer<typeof envSchema>;

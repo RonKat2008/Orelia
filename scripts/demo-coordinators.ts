@@ -12,6 +12,7 @@ import type { DemoMail, DemoMessage } from './demo/mail';
 import {
   parseReplyAllowlist,
   parseTimeScale,
+  BORROWED_LOOKBACK_MS,
   planReplies,
   type Coordinator,
 } from './demo/coordinator-engine';
@@ -57,7 +58,7 @@ export async function runOnce(deps: RunDeps): Promise<RunResult> {
     allowlist,
     now: deps.now(),
     timeScale: parseTimeScale(deps.env),
-    ...(state.coordinators.some((c) => c.borrowed) ? { notBefore: Date.parse(state.createdAt) } : {}),
+    ...(state.coordinators.some((c) => c.borrowed) ? { notBefore: Date.parse(state.createdAt) - BORROWED_LOOKBACK_MS } : {}),
   });
 
   const mail = guardDemoMail(deps.mail, deps.env, coordinators.map((c) => c.address));

@@ -4,6 +4,7 @@ import { createDemoMail } from "@/scripts/demo/agentmail-mail";
 import {
   parseReplyAllowlist,
   parseTimeScale,
+  BORROWED_LOOKBACK_MS,
   planReplies,
   type Coordinator,
 } from "@/scripts/demo/coordinator-engine";
@@ -109,7 +110,7 @@ export async function triggerScriptedReplies(
     allowlist: parseReplyAllowlist(env, addresses),
     now: opts.now ?? Date.now(),
     timeScale: parseTimeScale(env),
-    ...(coordinators.some((c) => c.borrowed) ? { notBefore: Date.parse(state.createdAt) } : {}),
+    ...(coordinators.some((c) => c.borrowed) ? { notBefore: Date.parse(state.createdAt) - BORROWED_LOOKBACK_MS } : {}),
   });
 
   const refused: string[] = [];

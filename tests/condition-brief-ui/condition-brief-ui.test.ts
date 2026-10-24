@@ -202,11 +202,11 @@ describe("legend and header", () => {
   });
   const header = (b = sampleBrief) =>
     renderToStaticMarkup(createElement(BriefHeader, { brief: b, busy: false, onRefresh: noop }));
-  it("uses an h2 under the case layout's single h1, with the shared uppercase eyebrow", () => {
+  it("uses an h2 under the case layout's single h1, with a judge-only eyebrow", () => {
     const out = header();
     expect(out).not.toContain("<h1");
     expect(out).toMatch(/<h2[^>]*>What the public sources say about/);
-    expect(out).toMatch(/<p class="[^"]*uppercase[^"]*">Condition brief<\/p>/);
+    expect(out).toMatch(/<p class="[^"]*in-data-\[view=patient\]:hidden[^"]*">Condition brief<\/p>/);
   });
   it("shows disease, date, offline badge and dropped count", () => {
     const out = header();

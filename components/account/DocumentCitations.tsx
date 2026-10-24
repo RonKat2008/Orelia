@@ -33,8 +33,8 @@ export function DocumentCitations({ caseId, query, heading = "From your document
   if (hits.length === 0) return null;
 
   return (
-    <section aria-label={heading} className="grid gap-3 rounded-lg border border-line bg-paper-2/60 p-5">
-      <h3 className="m-0 font-display text-h4 font-normal text-ink">{heading}</h3>
+    <section aria-label={heading} className="grid max-w-reading gap-3 border-t border-line pt-6">
+      <h2 className="m-0 font-display text-h3 font-normal text-ink display-soft">{heading}</h2>
       <ul className="m-0 grid list-none gap-4 p-0">
         {hits.map((hit, index) => (
           <li key={`${hit.documentId}-${hit.page ?? 0}-${index}`} className="grid gap-1">

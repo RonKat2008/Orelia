@@ -6,6 +6,7 @@ import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
 import { SPRING } from "@/lib/ui/motion";
 import { cn } from "@/lib/ui/cn";
 import type { EvidenceLevel } from "@/lib/condition-brief/contract";
+import { Details } from "@/components/ui/details";
 import { EvidenceMarker } from "./Evidence";
 import { LEVEL_EXPLAINER, LEVEL_FILTERS, LEVEL_LABEL, type LevelFilter } from "./model";
 
@@ -33,16 +34,16 @@ export function LevelLegend({ value, onChange, counts }: LevelLegendProps) {
   }
 
   return (
-    <div className="grid gap-5" data-testid="level-legend">
+    <div className="grid gap-3" data-testid="level-legend">
       <div className="grid gap-2">
-        <p id="level-filter-label" className="m-0 text-micro text-ink-3">
+        <p id="level-filter-label" className="m-0 text-small font-semibold text-ink-2">
           Show statements that are
         </p>
         <div
           role="radiogroup"
           aria-labelledby="level-filter-label"
           onKeyDown={onKeyDown}
-          className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-line bg-paper-2 p-1 shadow-inset sm:rounded-pill"
+          className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-paper-2 p-1 sm:rounded-pill"
         >
           {LEVEL_FILTERS.map((level) => {
             const active = level === value;
@@ -59,7 +60,7 @@ export function LevelLegend({ value, onChange, counts }: LevelLegendProps) {
                 tabIndex={active ? 0 : -1}
                 onClick={() => onChange(level)}
                 className={cn(
-                  "relative isolate inline-flex min-h-9 items-center gap-1.5 rounded-pill px-4 text-small font-semibold focus-ring",
+                  "relative isolate inline-flex min-h-11 items-center gap-1.5 rounded-pill px-4 text-small font-semibold focus-ring",
                   "transition-colors duration-150 motion-reduce:transition-none",
                   active ? "text-on-teal" : "text-ink-2 hover:text-ink",
                   reduced && active && "bg-teal",
@@ -75,7 +76,7 @@ export function LevelLegend({ value, onChange, counts }: LevelLegendProps) {
                 ) : null}
                 {LEVEL_LABEL[level]}
                 {typeof count === "number" ? (
-                  <span className="text-micro opacity-80" aria-label={`${count} items`}>
+                  <span className="text-small opacity-80" aria-label={`${count} items`}>
                     {count}
                   </span>
                 ) : null}
@@ -84,16 +85,18 @@ export function LevelLegend({ value, onChange, counts }: LevelLegendProps) {
           })}
         </div>
       </div>
-      <dl className="m-0 grid gap-3 md:grid-cols-3">
-        {LEVELS.map((level) => (
-          <div key={level} className="grid content-start gap-1.5 border-t border-line pt-3">
-            <dt>
-              <EvidenceMarker level={level} />
-            </dt>
-            <dd className="m-0 text-small text-ink-2">{LEVEL_EXPLAINER[level]}</dd>
-          </div>
-        ))}
-      </dl>
+      <Details summary="what these labels mean" lazy={false}>
+        <dl className="m-0 grid gap-4">
+          {LEVELS.map((level) => (
+            <div key={level} className="grid content-start gap-1">
+              <dt>
+                <EvidenceMarker level={level} />
+              </dt>
+              <dd className="m-0 text-small text-ink-2">{LEVEL_EXPLAINER[level]}</dd>
+            </div>
+          ))}
+        </dl>
+      </Details>
     </div>
   );
 }

@@ -19,7 +19,7 @@ export function SourceDetails({ source }: { source: BriefSource }) {
       </dl>
       {source.excerpt ? (
         <figure className="m-0 grid gap-1.5">
-          <figcaption className="text-micro text-ink-3">Excerpt we read</figcaption>
+          <figcaption className="text-small text-ink-3">Excerpt we read</figcaption>
           <blockquote className="m-0 whitespace-pre-wrap border-l-2 border-line-strong pl-4 text-small text-ink-2">
             {source.excerpt}
           </blockquote>
@@ -44,7 +44,7 @@ export function SourceDetails({ source }: { source: BriefSource }) {
 function Row({ term, children }: { term: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-0.5">
-      <dt className="text-micro text-ink-3">{term}</dt>
+      <dt className="text-small text-ink-3">{term}</dt>
       <dd className="m-0 text-ink">{children}</dd>
     </div>
   );

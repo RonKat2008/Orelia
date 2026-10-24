@@ -24,11 +24,11 @@ export function SourceChips({ sourceIds, index, onOpen }: SourceChipsProps) {
             aria-label={chipAriaLabel(n, source)}
             onClick={() => onOpen(source)}
             className={cn(
-              "inline-flex min-h-7 items-center gap-1.5 rounded-pill border border-line-strong bg-card px-2.5 text-micro font-semibold normal-case tracking-normal text-ink-2",
+              "inline-flex min-h-9 items-center gap-1.5 rounded-pill border border-line-strong bg-card px-2.5 text-small font-semibold normal-case tracking-normal text-ink-2",
               "transition-colors duration-150 hover:border-teal/50 hover:bg-teal-soft hover:text-teal-ink focus-ring motion-reduce:transition-none",
             )}
           >
-            <span aria-hidden className="grid size-4 place-items-center rounded-pill bg-paper-2 text-[0.6875rem] text-ink">
+            <span aria-hidden className="grid size-4 place-items-center rounded-pill bg-paper-2 text-small text-ink">
               {n}
             </span>
             <span aria-hidden>{chipText(source)}</span>

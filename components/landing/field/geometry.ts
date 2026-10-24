@@ -1,8 +1,12 @@
 /**
- * Pure geometry for the hero "wayfinding field": many fine paths that drift in from
- * beyond the edges and converge on one lit point. The WebGL shader (FieldCanvas) and
- * the static SVG poster (FieldPoster) share this math, so the poster is a true still
- * frame of the live field. Field space: x in [-aspect, aspect], y in [-1, 1], y up.
+ * Pure geometry for the hero "convergence field": hundreds of sources (papers, trials,
+ * centres, aid) stream in from beyond the edges of the hero on gently spiralling paths
+ * and merge into one glowing node, where a few points periodically settle into a small
+ * ordered ring (the patient's plan). The vertex shaders (shaders.ts) and the static SVG
+ * poster (poster-geometry.ts) share this math, so the poster is a faithful still.
+ *
+ * Field space: x in [-aspect, aspect], y in [-1, 1], y up. One field unit is half the
+ * hero height, so distances are isotropic in CSS pixels.
  */
 
 export interface Point {
@@ -10,31 +14,64 @@ export interface Point {
   y: number;
 }
 
-export interface PathSeed {
-  /** Direction the path arrives from, radians. */
+/** Source types, in the order the shader's colour uniforms use. */
+export const SOURCE_TYPES = ["paper", "trial", "center", "aid"] as const;
+export type SourceType = (typeof SOURCE_TYPES)[number];
+
+export interface ParticleSeed {
+  /** Direction the particle arrives from (its start angle around the centre), radians. */
   angle: number;
-  /** Start distance from the target, in field units (beyond the edge for most). */
+  /** Start distance as a multiple (>= 1) of the distance from the centre to the hero edge. */
   reach: number;
-  /** Signed curvature: perpendicular offset of the control point, as a share of distance. */
-  bend: number;
+  /** Signed spiral turn accumulated on the way in, radians. */
+  swirl: number;
   /** 0..1 start offset in the travel cycle. */
   phase: number;
   /** Travel cycles per second. */
   speed: number;
+  /** Dot diameter in CSS pixels (1..3). */
+  size: number;
+  /** Peak opacity (kept low so text over the field stays legible). */
+  alpha: number;
+  /** Index into SOURCE_TYPES. */
+  type: number;
 }
 
-/** Normalised (0..1, top-left origin) position of the lit point, by layout. */
+/** Normalised (0..1, top-left origin) position of the convergence centre, plus its scale. */
 export interface FieldLayout {
   targetX: number;
   targetY: number;
+  /** Radius of the settled plan ring, CSS px. */
+  ringPx: number;
+  /** Radius of the soft glow, CSS px. */
+  glowPx: number;
+  /** Particles fade out below this share of the hero height (keeps copy on clean paper). */
+  fadeBelowY: number;
 }
 
-export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.535, targetY: 0.36 };
-export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.84, targetY: 0.1 };
+/** Desktop: in the open gap between the headline column and the agents panel. */
+export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.31, ringPx: 26, glowPx: 120, fadeBelowY: 2 };
+/** Mobile: top-right, above the headline, so the copy stays on clean paper. */
+export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.88, targetY: 0.03, ringPx: 17, glowPx: 70, fadeBelowY: 0.26 };
 export const WIDE_BREAKPOINT_PX = 1024;
 
-export const WOBBLE_AMPLITUDE = 0.045;
-export const WOBBLE_FREQUENCY = 2.0;
+export const PARTICLE_COUNT_DESKTOP = 880;
+export const PARTICLE_COUNT_LOW_POWER = 300;
+
+/** Arrival easing exponent: higher = more deceleration near the centre. */
+export const EASE_POWER = 1.6;
+/** Shortest start distance, field units, so particles near an edge still travel. */
+export const MIN_TRAVEL = 0.45;
+/** Sideways meander amplitude, radians; zero at the edge and on arrival. */
+export const MEANDER = 0.14;
+
+/** Each particle draws a short comet trail of ghosts at earlier progress. */
+export const TRAIL_POINTS = 4;
+export const TRAIL_SPACING = 0.011;
+
+/** Plan ring: how many points settle, and the resolve cycle length in seconds. */
+export const PLAN_POINTS = 6;
+export const RESOLVE_PERIOD_S = 9;
 
 /** Deterministic PRNG (mulberry32) so the server poster and tests are reproducible. */
 export function createRandom(seed: number): () => number {
@@ -53,88 +90,132 @@ export function layoutForWidth(widthPx: number): FieldLayout {
 }
 
 /** Converts the normalised layout target into field space for a given aspect ratio. */
-export function targetInField(layout: FieldLayout, aspect: number): Point {
+export function targetInField(layout: Pick<FieldLayout, "targetX" | "targetY">, aspect: number): Point {
   return { x: (layout.targetX * 2 - 1) * aspect, y: 1 - layout.targetY * 2 };
 }
 
-export function makePathSeeds(count: number, seed = 7): PathSeed[] {
-  const random = createRandom(seed);
-  return Array.from({ length: count }, () => ({
-    angle: random() * Math.PI * 2,
-    reach: 1.1 + random() * 1.5,
-    bend: (random() - 0.5) * 0.9,
-    phase: random(),
-    speed: 1 / (16 + random() * 14),
+/** Rough mix of what the agents find: more papers and centres than trials and aid. */
+const TYPE_WEIGHTS = [0.34, 0.2, 0.28, 0.18];
+
+function pickType(value: number): number {
+  let acc = 0;
+  for (let i = 0; i < TYPE_WEIGHTS.length; i += 1) {
+    acc += TYPE_WEIGHTS[i];
+    if (value < acc) return i;
+  }
+  return TYPE_WEIGHTS.length - 1;
+}
+
+interface Stream {
+  angle: number;
+  swirl: number;
+  reach: number;
+  type: number;
+}
+
+/** Share of particles that travel in a shared stream; the rest drift in on their own. */
+export const STREAM_SHARE = 0.74;
+export const STREAM_COUNT = 13;
+
+function makeStreams(random: () => number): Stream[] {
+  return Array.from({ length: STREAM_COUNT }, (_, i) => ({
+    angle: ((i + random() * 0.6) / STREAM_COUNT) * Math.PI * 2,
+    swirl: (random() < 0.85 ? 1 : -1) * (0.7 + random() * 0.8),
+    reach: 1.05 + random() * 0.35,
+    type: pickType(random()),
   }));
 }
 
 /**
- * Position along a path at p in [0, 1] (0 = start beyond the edge, 1 = the target).
- * A quadratic bezier bent sideways, plus a wobble that calms as it arrives.
- * Mirrors `pathPoint` in the vertex shader; keep the two in step.
+ * Seeds for the particles. Most travel in one of a dozen loose streams (each mostly one
+ * source type), so the field reads as curved rivers converging; the rest are strays.
  */
-export function pathPoint(seed: PathSeed, p: number, target: Point, aspect: number): Point {
-  const dirX = Math.cos(seed.angle);
-  const dirY = Math.sin(seed.angle);
-  const startX = target.x + dirX * seed.reach * Math.max(aspect, 1);
-  const startY = target.y + dirY * seed.reach;
-  const dx = target.x - startX;
-  const dy = target.y - startY;
-  const dist = Math.hypot(dx, dy) || 1;
-  const perpX = -dy / dist;
-  const perpY = dx / dist;
-  const ctrlX = (startX + target.x) / 2 + perpX * seed.bend * dist;
-  const ctrlY = (startY + target.y) / 2 + perpY * seed.bend * dist;
-  const q = 1 - p;
-  const wobble = Math.sin(p * Math.PI * 2 * WOBBLE_FREQUENCY + seed.phase * Math.PI * 2) * WOBBLE_AMPLITUDE * q * dist;
-  return {
-    x: q * q * startX + 2 * q * p * ctrlX + p * p * target.x + perpX * wobble,
-    y: q * q * startY + 2 * q * p * ctrlY + p * p * target.y + perpY * wobble,
-  };
+export function makeParticleSeeds(count: number, seed = 7): ParticleSeed[] {
+  const random = createRandom(seed);
+  const streams = makeStreams(random);
+  return Array.from({ length: count }, () => {
+    const sizeRoll = random();
+    const look = {
+      phase: random(),
+      speed: 1 / (7 + random() * 9),
+      size: 1.2 + 1.8 * sizeRoll * sizeRoll,
+      alpha: 0.4 + random() * 0.38,
+    };
+    if (random() < STREAM_SHARE) {
+      const stream = streams[Math.floor(random() * streams.length)];
+      const spread = (random() + random() - 1) * 0.065;
+      return {
+        ...look,
+        angle: stream.angle + spread,
+        reach: stream.reach + random() * 0.12,
+        swirl: stream.swirl + (random() - 0.5) * 0.09,
+        type: random() < 0.8 ? stream.type : pickType(random()),
+      };
+    }
+    // Strays: mostly turn the same way, so the field still reads as one gentle vortex.
+    const direction = random() < 0.86 ? 1 : -1;
+    return {
+      ...look,
+      angle: random() * Math.PI * 2,
+      reach: 1.04 + random() * 0.5,
+      swirl: direction * (0.45 + random() * 0.95),
+      alpha: look.alpha * 0.7,
+      type: pickType(random()),
+    };
+  });
 }
 
-/** Radius of contour ring `index` at angle theta (a gently irregular, topographic loop). */
-export function contourRadius(index: number, theta: number, breath = 0): number {
-  const base = 0.07 + index * 0.075;
-  const wobble = 0.07 * Math.sin(3 * theta + index * 0.9) + 0.045 * Math.sin(5 * theta - index * 1.7 + breath);
-  return base * (1 + wobble);
+/** Distance from `from` (inside the field) to the field edge along `angle`. */
+export function edgeDistance(from: Point, angle: number, aspect: number): number {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const tx = Math.abs(dx) < 1e-4 ? Number.POSITIVE_INFINITY : ((dx > 0 ? aspect : -aspect) - from.x) / dx;
+  const ty = Math.abs(dy) < 1e-4 ? Number.POSITIVE_INFINITY : ((dy > 0 ? 1 : -1) - from.y) / dy;
+  return Math.max(0, Math.min(tx, ty));
 }
 
-const round = (value: number) => Math.round(value);
-
-export interface PosterGeometry {
-  width: number;
-  height: number;
-  target: Point;
-  paths: string[];
-  contours: string[];
+/** Arrival easing: fast from the edge, settling as it reaches the centre. */
+export function easeArrival(p: number): number {
+  return 1 - Math.pow(1 - Math.min(Math.max(p, 0), 1), EASE_POWER);
 }
 
-/** SVG path data for the static poster (server-rendered, reduced-motion and pre-WebGL view). */
-export function buildPoster(layout: FieldLayout, aspect: number, pathCount = 44, ringCount = 12): PosterGeometry {
-  const height = 1000;
-  const width = Math.round(height * aspect);
-  const target = targetInField(layout, aspect);
-  const toSvg = (point: Point) => ({
-    x: round(((point.x / aspect + 1) / 2) * width),
-    y: round(((1 - point.y) / 2) * height),
-  });
+/** Start distance from the centre for a seed (always at or beyond the hero edge). */
+export function startRadius(seed: ParticleSeed, target: Point, aspect: number): number {
+  return seed.reach * Math.max(edgeDistance(target, seed.angle, aspect), MIN_TRAVEL);
+}
 
-  const paths = makePathSeeds(pathCount, 11).map((seed) => {
-    const steps = 20;
-    const points = Array.from({ length: steps + 1 }, (_, i) => toSvg(pathPoint(seed, (i / steps) * 0.94, target, aspect)));
-    return points.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x} ${pt.y}`).join("");
-  });
+/**
+ * Position at progress p in [0, 1] (0 = beyond the edge, 1 = the centre): a spiral whose
+ * radius shrinks with the eased progress while the angle turns by `swirl`, with a small
+ * meander in the middle of the journey. Mirrors `particlePoint` in shaders.ts; keep in step.
+ */
+export function particlePoint(seed: ParticleSeed, p: number, target: Point, aspect: number): Point {
+  const e = easeArrival(p);
+  const radius = startRadius(seed, target, aspect) * (1 - e);
+  const theta =
+    seed.angle + seed.swirl * e + MEANDER * Math.sin(e * Math.PI * 3 + seed.phase * Math.PI * 2) * 4 * e * (1 - e);
+  return { x: target.x + Math.cos(theta) * radius, y: target.y + Math.sin(theta) * radius };
+}
 
-  const contours = Array.from({ length: ringCount }, (_, index) => {
-    const steps = 48;
-    const points = Array.from({ length: steps }, (_, i) => {
-      const theta = (i / steps) * Math.PI * 2;
-      const r = contourRadius(index, theta);
-      return toSvg({ x: target.x + Math.cos(theta) * r, y: target.y + Math.sin(theta) * r });
-    });
-    return `${points.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x} ${pt.y}`).join("")}Z`;
-  });
+/** Opacity multiplier along the path: fades in at the edge, out as it merges. Mirrors the shader. */
+export function particleFade(p: number): number {
+  const e = easeArrival(p);
+  const fadeIn = smoothstep(0, 0.06, p);
+  const fadeOut = 1 - smoothstep(0.86, 0.99, e);
+  return fadeIn * fadeOut * proximityBoost(e);
+}
 
-  return { width, height, target: toSvg(target), paths, contours };
+/** Faint near the edges (over the copy), brighter as sources gather at the node. */
+export function proximityBoost(e: number): number {
+  return 0.5 + 0.8 * smoothstep(0.25, 0.85, e);
+}
+
+export function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(Math.max((x - edge0) / (edge1 - edge0), 0), 1);
+  return t * t * (3 - 2 * t);
+}
+
+/** Angles of the settled plan ring (evenly spaced, starting at the top). */
+export function planRingAngles(count = PLAN_POINTS): number[] {
+  return Array.from({ length: count }, (_, i) => Math.PI / 2 + (i / count) * Math.PI * 2);
 }

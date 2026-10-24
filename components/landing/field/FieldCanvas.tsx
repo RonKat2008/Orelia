@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createField, readPalette, type FieldHandle } from "./field-renderer";
+import { createField, type FieldHandle } from "./field-renderer";
+import { readPalette } from "./palette";
 
 interface FieldCanvasProps {
   isPaused: boolean;
@@ -11,7 +12,7 @@ interface FieldCanvasProps {
 
 const LOW_POWER_QUERY = "(pointer: coarse), (max-width: 767px)";
 
-/** The live WebGL field. Loaded with next/dynamic (ssr: false) after first paint. */
+/** The live WebGL convergence field. Loaded with next/dynamic (ssr: false) after first paint. */
 export default function FieldCanvas({ isPaused, onReady }: FieldCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handleRef = useRef<FieldHandle | null>(null);

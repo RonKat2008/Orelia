@@ -1,178 +1,61 @@
 import { Geometry, Mesh, Program, Renderer, Transform } from "ogl";
 import {
-  WOBBLE_AMPLITUDE,
-  WOBBLE_FREQUENCY,
-  contourRadius,
+  PARTICLE_COUNT_DESKTOP,
+  PARTICLE_COUNT_LOW_POWER,
+  PLAN_POINTS,
+  TRAIL_POINTS,
+  createRandom,
   layoutForWidth,
-  makePathSeeds,
+  makeParticleSeeds,
   targetInField,
   type FieldLayout,
 } from "./geometry";
+import type { FieldPalette } from "./palette";
+import { DOT_FRAGMENT, GLOW_FRAGMENT, GLOW_VERTEX, PARTICLE_VERTEX, PLAN_VERTEX } from "./shaders";
 
 /**
- * Imperative OGL renderer for the hero field. Browser-only; loaded lazily by FieldCanvas.
- * Three meshes: fine converging path streaks (GL_LINES), faint topographic contours,
- * and the lit point (a soft gold glow).
+ * Imperative OGL renderer for the hero convergence field. Browser-only; loaded lazily by
+ * FieldCanvas. Three meshes, all animated in the vertex shader from static buffers:
+ * the inbound source particles (gl.POINTS), the soft glow node with its resolve ring, and
+ * the plan points that settle into an ordered ring.
  */
 
-const MAX_DPR = 1.5;
-const SEGMENTS_PER_STREAK = 14;
-const STREAK_LENGTH = 0.26;
-const RING_COUNT = 20;
-const RING_STEPS = 120;
-const MOBILE_FRAME_MS = 1000 / 30;
+const MAX_DPR = 2;
+const MAX_DPR_LOW_POWER = 1.5;
+/**
+ * Start mid-cycle so the first frame already shows a populated field, timed so the plan
+ * ring first settles about 2.5 s after the canvas appears.
+ */
+const TIME_OFFSET_S = 56.7;
+/** Where inbound particles dissolve into the glow, CSS px from the centre. */
+const MERGE_PX_SCALE = 0.32;
 
-const PATH_VERTEX = /* glsl */ `
-attribute vec4 aSeed;   // angle, reach, bend, phase
-attribute vec2 aStreak; // u along streak (0 = head), speed
-uniform float uTime;
-uniform float uAspect;
-uniform vec2 uTarget;
-varying float vAlpha;
-
-vec2 pathPoint(float p) {
-  vec2 dir = vec2(cos(aSeed.x), sin(aSeed.x));
-  vec2 start = uTarget + vec2(dir.x * aSeed.y * max(uAspect, 1.0), dir.y * aSeed.y);
-  vec2 d = uTarget - start;
-  float dist = max(length(d), 0.0001);
-  vec2 perp = vec2(-d.y, d.x) / dist;
-  vec2 ctrl = (start + uTarget) * 0.5 + perp * aSeed.z * dist;
-  float q = 1.0 - p;
-  float wobble = sin(p * 6.2831853 * ${WOBBLE_FREQUENCY.toFixed(1)} + aSeed.w * 6.2831853) * ${WOBBLE_AMPLITUDE} * q * dist;
-  return q * q * start + 2.0 * q * p * ctrl + p * p * uTarget + perp * wobble;
-}
-
-void main() {
-  float s = fract(uTime * aStreak.y + aSeed.w);
-  float raw = s - aStreak.x * ${STREAK_LENGTH};
-  float p = clamp(raw, 0.0, 1.0);
-  // Ease out: paths travel briskly from the edge and settle as they arrive.
-  float eased = 1.0 - (1.0 - p) * (1.0 - p);
-  vec2 pos = pathPoint(eased);
-  float fadeIn = smoothstep(0.0, 0.12, raw);
-  float fadeOut = 1.0 - smoothstep(0.6, 0.93, eased);
-  vAlpha = (1.0 - aStreak.x) * fadeIn * fadeOut * step(0.0, raw);
-  gl_Position = vec4(pos.x / uAspect, pos.y, 0.0, 1.0);
-}
-`;
-
-const LINE_FRAGMENT = /* glsl */ `
-precision mediump float;
-uniform vec3 uColor;
-uniform float uOpacity;
-varying float vAlpha;
-void main() {
-  gl_FragColor = vec4(uColor, vAlpha * uOpacity);
-}
-`;
-
-const RING_VERTEX = /* glsl */ `
-attribute vec3 aRing; // cos, sin, radius
-attribute float aIndex;
-uniform float uTime;
-uniform float uAspect;
-uniform vec2 uTarget;
-varying float vAlpha;
-void main() {
-  float breathe = 1.0 + 0.012 * sin(uTime * 0.35 + aIndex * 0.6);
-  vec2 pos = uTarget + aRing.xy * aRing.z * breathe;
-  vAlpha = 1.0 - smoothstep(4.0, ${RING_COUNT.toFixed(1)}, aIndex);
-  gl_Position = vec4(pos.x / uAspect, pos.y, 0.0, 1.0);
-}
-`;
-
-const GLOW_VERTEX = /* glsl */ `
-attribute vec2 aCorner;
-uniform float uAspect;
-uniform vec2 uTarget;
-uniform float uSize;
-varying vec2 vUv;
-void main() {
-  vUv = aCorner;
-  vec2 pos = uTarget + aCorner * uSize;
-  gl_Position = vec4(pos.x / uAspect, pos.y, 0.0, 1.0);
-}
-`;
-
-const GLOW_FRAGMENT = /* glsl */ `
-precision mediump float;
-uniform vec3 uColor;
-uniform float uTime;
-uniform float uOpacity;
-varying vec2 vUv;
-void main() {
-  float d = length(vUv);
-  float pulse = 0.85 + 0.15 * sin(uTime * 0.9);
-  float halo = exp(-d * d * 14.0) * 0.6 * pulse;
-  float core = smoothstep(0.05, 0.03, d);
-  gl_FragColor = vec4(uColor, clamp(halo + core, 0.0, 1.0) * uOpacity);
-}
-`;
-
-export interface FieldPalette {
-  line: [number, number, number];
-  contour: [number, number, number];
-  glow: [number, number, number];
-  lineOpacity: number;
-  contourOpacity: number;
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const clean = hex.trim().replace("#", "");
-  const full = clean.length === 3 ? clean.replace(/./g, (c) => c + c) : clean;
-  const value = Number.parseInt(full.slice(0, 6), 16);
-  if (Number.isNaN(value)) return [0.12, 0.16, 0.16];
-  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
-}
-
-/** Reads the Warm Paper tokens so the field follows the active theme. */
-export function readPalette(element: Element): FieldPalette {
-  const styles = getComputedStyle(element);
-  const isDark = styles.colorScheme.includes("dark");
-  return {
-    line: hexToRgb(styles.getPropertyValue("--ink")),
-    contour: hexToRgb(styles.getPropertyValue("--teal")),
-    glow: hexToRgb(styles.getPropertyValue("--gold")),
-    lineOpacity: isDark ? 0.34 : 0.4,
-    contourOpacity: isDark ? 0.24 : 0.2,
-  };
-}
-
-function buildStreakGeometry(gl: Renderer["gl"], count: number) {
-  const seeds = makePathSeeds(count);
-  const verticesPerStreak = SEGMENTS_PER_STREAK * 2;
-  const seedData = new Float32Array(count * verticesPerStreak * 4);
-  const streakData = new Float32Array(count * verticesPerStreak * 2);
-  seeds.forEach((seed, s) => {
-    for (let k = 0; k < SEGMENTS_PER_STREAK; k += 1) {
-      for (let end = 0; end < 2; end += 1) {
-        const v = s * verticesPerStreak + k * 2 + end;
-        seedData.set([seed.angle, seed.reach, seed.bend, seed.phase], v * 4);
-        streakData.set([(k + end) / SEGMENTS_PER_STREAK, seed.speed], v * 2);
-      }
+function buildParticleGeometry(gl: Renderer["gl"], count: number) {
+  const seeds = makeParticleSeeds(count);
+  const vertices = count * TRAIL_POINTS;
+  const path = new Float32Array(vertices * 4);
+  const look = new Float32Array(vertices * 4);
+  const trail = new Float32Array(vertices);
+  seeds.forEach((seed, i) => {
+    for (let k = 0; k < TRAIL_POINTS; k += 1) {
+      const v = i * TRAIL_POINTS + k;
+      path.set([seed.angle, seed.reach, seed.swirl, seed.phase], v * 4);
+      look.set([seed.speed, seed.size, seed.alpha, seed.type], v * 4);
+      trail[v] = k;
     }
   });
   return new Geometry(gl, {
-    aSeed: { size: 4, data: seedData },
-    aStreak: { size: 2, data: streakData },
+    aPath: { size: 4, data: path },
+    aLook: { size: 4, data: look },
+    aTrail: { size: 1, data: trail },
   });
 }
 
-function buildRingGeometry(gl: Renderer["gl"]) {
-  const ring = new Float32Array(RING_COUNT * RING_STEPS * 2 * 3);
-  const index = new Float32Array(RING_COUNT * RING_STEPS * 2);
-  let v = 0;
-  for (let i = 0; i < RING_COUNT; i += 1) {
-    for (let k = 0; k < RING_STEPS; k += 1) {
-      for (const step of [k, (k + 1) % RING_STEPS]) {
-        const theta = (step / RING_STEPS) * Math.PI * 2;
-        ring.set([Math.cos(theta), Math.sin(theta), contourRadius(i, theta)], v * 3);
-        index[v] = i;
-        v += 1;
-      }
-    }
-  }
-  return new Geometry(gl, { aRing: { size: 3, data: ring }, aIndex: { size: 1, data: index } });
+function buildPlanGeometry(gl: Renderer["gl"]) {
+  const random = createRandom(23);
+  const data = new Float32Array(PLAN_POINTS * 3);
+  for (let i = 0; i < PLAN_POINTS; i += 1) data.set([i, (random() - 0.5) * 2.4, random()], i * 3);
+  return new Geometry(gl, { aPlan: { size: 3, data } });
 }
 
 function buildGlowGeometry(gl: Renderer["gl"]) {
@@ -183,10 +66,7 @@ function buildGlowGeometry(gl: Renderer["gl"]) {
 
 const SOFTWARE_RENDERERS = /swiftshader|llvmpipe|softpipe|software|basic render/i;
 
-/**
- * True when WebGL runs on the CPU (no GPU, or a blocklisted one). Drawing thousands of
- * lines there costs real main-thread time and battery, so the poster is the better view.
- */
+/** True when WebGL runs on the CPU (no GPU, or a blocklisted one): the poster is the better view. */
 function isSoftwareRenderer(gl: WebGLRenderingContext | WebGL2RenderingContext): boolean {
   const info = gl.getExtension("WEBGL_debug_renderer_info");
   const renderer = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
@@ -207,137 +87,157 @@ export interface FieldOptions {
   onFirstFrame: () => void;
 }
 
-/** Starts the field. Throws if WebGL is unavailable (the caller keeps the poster). */
-export function createField({ canvas, container, palette, isLowPower, onFirstFrame }: FieldOptions): FieldHandle {
+function createRenderer(canvas: HTMLCanvasElement, isLowPower: boolean): Renderer {
   // Probe first so a missing/exhausted WebGL fails quietly (OGL would log an error).
-  const attributes = { alpha: true, antialias: !isLowPower, premultipliedAlpha: true };
+  const attributes = { alpha: true, antialias: false, premultipliedAlpha: true };
   const probe: WebGL2RenderingContext | WebGLRenderingContext | null =
     (canvas.getContext("webgl2", attributes) as WebGL2RenderingContext | null) ??
     (canvas.getContext("webgl", attributes) as WebGLRenderingContext | null);
   if (!probe) throw new Error("WebGL unavailable");
   if (isSoftwareRenderer(probe)) throw new Error("Software WebGL: keeping the static poster");
-
   const renderer = new Renderer({
     canvas,
-    dpr: Math.min(window.devicePixelRatio || 1, MAX_DPR),
+    dpr: Math.min(window.devicePixelRatio || 1, isLowPower ? MAX_DPR_LOW_POWER : MAX_DPR),
     alpha: true,
-    antialias: !isLowPower,
+    antialias: false,
     premultipliedAlpha: true,
     webgl: probe instanceof WebGL2RenderingContext ? 2 : 1,
   });
-  const gl = renderer.gl;
-  if (!gl || gl.isContextLost()) throw new Error("WebGL unavailable");
-  gl.clearColor(0, 0, 0, 0);
+  if (!renderer.gl || renderer.gl.isContextLost()) throw new Error("WebGL unavailable");
+  renderer.gl.clearColor(0, 0, 0, 0);
+  return renderer;
+}
 
-  // Aliased lines (no MSAA on low-power devices) read heavier, so draw them lighter.
-  const lineScale = isLowPower ? 0.6 : 1;
-  const shared = { uTime: { value: 0 }, uAspect: { value: 1 }, uTarget: { value: [0, 0] } };
-  const pathProgram = new Program(gl, {
-    vertex: PATH_VERTEX,
-    fragment: LINE_FRAGMENT,
-    uniforms: { ...shared, uColor: { value: palette.line }, uOpacity: { value: palette.lineOpacity * lineScale } },
-    transparent: true,
-    depthTest: false,
+/** Starts the field. Throws if WebGL is unavailable (the caller keeps the poster). */
+export function createField({ canvas, container, palette, isLowPower, onFirstFrame }: FieldOptions): FieldHandle {
+  const renderer = createRenderer(canvas, isLowPower);
+  const gl = renderer.gl;
+
+  const shared = {
+    uTime: { value: TIME_OFFSET_S },
+    uAspect: { value: 1 },
+    uTarget: { value: [0, 0] },
+    uPx: { value: 0.002 },
+    uDpr: { value: renderer.dpr },
+  };
+  const sizes = { uRingPx: { value: 24 }, uGlowPx: { value: 110 }, uMergePx: { value: 60 }, uQuadPx: { value: 160 } };
+  const mask = { uFadeBelowY: { value: 2 } };
+  const opacity = { particles: { value: palette.particleOpacity }, halo: { value: palette.haloOpacity } };
+  const colours = {
+    uSrc0: { value: palette.sources[0] },
+    uSrc1: { value: palette.sources[1] },
+    uSrc2: { value: palette.sources[2] },
+    uSrc3: { value: palette.sources[3] },
+    uGlow: { value: palette.glow },
+    uRing: { value: palette.ring },
+  };
+  const base = { transparent: true, depthTest: false, depthWrite: false };
+
+  const particleProgram = new Program(gl, {
+    ...base,
+    vertex: PARTICLE_VERTEX,
+    fragment: DOT_FRAGMENT,
+    uniforms: { ...shared, ...colours, ...mask, uMergePx: sizes.uMergePx, uOpacity: opacity.particles },
   });
-  const ringProgram = new Program(gl, {
-    vertex: RING_VERTEX,
-    fragment: LINE_FRAGMENT,
-    uniforms: { ...shared, uColor: { value: palette.contour }, uOpacity: { value: palette.contourOpacity } },
-    transparent: true,
-    depthTest: false,
+  const planProgram = new Program(gl, {
+    ...base,
+    vertex: PLAN_VERTEX,
+    fragment: DOT_FRAGMENT,
+    uniforms: { ...shared, uColor: colours.uRing, uRingPx: sizes.uRingPx, uOpacity: { value: 1 } },
   });
   const glowProgram = new Program(gl, {
+    ...base,
     vertex: GLOW_VERTEX,
     fragment: GLOW_FRAGMENT,
-    uniforms: { ...shared, uColor: { value: palette.glow }, uOpacity: { value: 1 }, uSize: { value: 0.5 } },
-    transparent: true,
-    depthTest: false,
+    uniforms: { ...shared, ...colours, ...sizes, uHaloOpacity: opacity.halo, uOpacity: { value: 1 } },
   });
+  const programs = [particleProgram, glowProgram, planProgram];
 
-  const programs = [pathProgram, ringProgram, glowProgram];
-  // Colour blends as SRC_ALPHA (so the buffer holds premultiplied colour) and alpha
-  // accumulates with ONE: together that is correct premultiplied output for the
-  // premultiplied canvas, with no squared alpha and no darkened halos.
-  programs.forEach((program) =>
-    program.setBlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA),
-  );
-  // OGL reports compile errors itself; we avoid a synchronous LINK_STATUS query here
-  // because it stalls the main thread until the driver finishes compiling.
-  if (gl.isContextLost()) throw new Error("WebGL context lost");
+  // Premultiplied output throughout. Light: normal "over" blending (additive washes out
+  // on white). Dark: additive colour so overlapping sources glow; alpha still "over".
+  const applyBlend = (isDark: boolean) =>
+    programs.forEach((program) =>
+      isDark
+        ? program.setBlendFunc(gl.ONE, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+        : program.setBlendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA),
+    );
+  applyBlend(palette.isDark);
 
   const scene = new Transform();
-  const streakCount = isLowPower ? 900 : 2000;
-  new Mesh(gl, { geometry: buildRingGeometry(gl), program: ringProgram, mode: gl.LINES }).setParent(scene);
-  new Mesh(gl, { geometry: buildStreakGeometry(gl, streakCount), program: pathProgram, mode: gl.LINES }).setParent(scene);
-  new Mesh(gl, { geometry: buildGlowGeometry(gl), program: glowProgram }).setParent(scene);
+  const count = isLowPower ? PARTICLE_COUNT_LOW_POWER : PARTICLE_COUNT_DESKTOP;
+  const geometries = [buildParticleGeometry(gl, count), buildGlowGeometry(gl), buildPlanGeometry(gl)];
+  new Mesh(gl, { geometry: geometries[0], program: particleProgram, mode: gl.POINTS }).setParent(scene);
+  new Mesh(gl, { geometry: geometries[1], program: glowProgram }).setParent(scene);
+  new Mesh(gl, { geometry: geometries[2], program: planProgram, mode: gl.POINTS }).setParent(scene);
+  if (gl.isContextLost()) throw new Error("WebGL context lost");
 
-  let layout: FieldLayout = layoutForWidth(container.clientWidth);
   const resize = () => {
     const width = Math.max(container.clientWidth, 1);
     const height = Math.max(container.clientHeight, 1);
     renderer.setSize(width, height);
     const aspect = width / height;
-    layout = layoutForWidth(width);
+    const layout: FieldLayout = layoutForWidth(width);
     const target = targetInField(layout, aspect);
     shared.uAspect.value = aspect;
     shared.uTarget.value = [target.x, target.y];
+    shared.uPx.value = 2 / height;
+    mask.uFadeBelowY.value = layout.fadeBelowY;
+    sizes.uRingPx.value = layout.ringPx;
+    sizes.uGlowPx.value = layout.glowPx;
+    sizes.uMergePx.value = layout.glowPx * MERGE_PX_SCALE;
+    sizes.uQuadPx.value = Math.max(layout.glowPx * 1.4, layout.ringPx * 4.6);
   };
   resize();
-  const resizeObserver = new ResizeObserver(resize);
-  resizeObserver.observe(container);
 
   let isPaused = false;
-  let isVisible = true;
+  let isOnScreen = true;
   let frame = 0;
   let last = 0;
-  let elapsed = 0;
   let hasDrawn = false;
-  // Start mid-cycle so the first frame already shows a populated field.
-  const timeOffset = 40;
 
-  const draw = (now: number) => {
-    frame = requestAnimationFrame(draw);
-    // First frame after (re)start: draw immediately, advance no time.
-    const delta = last ? now - last : Number.POSITIVE_INFINITY;
-    if (isLowPower && delta < MOBILE_FRAME_MS) return;
-    last = now;
-    elapsed += Number.isFinite(delta) ? Math.min(delta, 100) / 1000 : 0;
-    shared.uTime.value = timeOffset + elapsed;
-    try {
-      renderer.render({ scene });
-    } catch {
-      // Context lost mid-flight: stop drawing; the poster underneath is still a complete view.
-      cancelAnimationFrame(frame);
-      frame = 0;
-      isPaused = true;
-      return;
-    }
+  const render = () => {
+    renderer.render({ scene });
     if (!hasDrawn) {
       hasDrawn = true;
       onFirstFrame();
     }
   };
 
-  const sync = () => {
-    const shouldRun = !isPaused && isVisible && document.visibilityState === "visible";
-    if (shouldRun && !frame) {
-      last = 0;
-      frame = requestAnimationFrame(draw);
-    } else if (!shouldRun) {
-      if (frame) cancelAnimationFrame(frame);
+  const draw = (now: number) => {
+    frame = requestAnimationFrame(draw);
+    // Advance by real elapsed time, clamped so a long stall does not jump the field.
+    if (last) shared.uTime.value += Math.min(now - last, 100) / 1000;
+    last = now;
+    try {
+      render();
+    } catch {
+      // Context lost mid-flight: stop; the poster underneath is still a complete view.
+      cancelAnimationFrame(frame);
       frame = 0;
-      // Paused or hidden before the first frame: still paint one still frame.
-      if (!hasDrawn) {
-        shared.uTime.value = timeOffset;
-        renderer.render({ scene });
-        hasDrawn = true;
-        onFirstFrame();
-      }
+      isPaused = true;
     }
   };
 
+  const sync = () => {
+    const shouldRun = !isPaused && isOnScreen && document.visibilityState === "visible";
+    if (shouldRun && !frame) {
+      last = 0;
+      frame = requestAnimationFrame(draw);
+    } else if (!shouldRun && frame) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    }
+    // Paused or hidden before the first frame: still paint one still frame.
+    if (!shouldRun && !hasDrawn) render();
+  };
+
+  const resizeObserver = new ResizeObserver(() => {
+    resize();
+    if (!frame) render();
+  });
+  resizeObserver.observe(container);
   const intersection = new IntersectionObserver(([entry]) => {
-    isVisible = entry?.isIntersecting ?? true;
+    isOnScreen = entry?.isIntersecting ?? true;
     sync();
   });
   intersection.observe(container);
@@ -348,15 +248,18 @@ export function createField({ canvas, container, palette, isLowPower, onFirstFra
     setPaused(paused) {
       isPaused = paused;
       sync();
-      if (paused) renderer.render({ scene });
     },
     setPalette(next) {
-      pathProgram.uniforms.uColor.value = next.line;
-      pathProgram.uniforms.uOpacity.value = next.lineOpacity * lineScale;
-      ringProgram.uniforms.uColor.value = next.contour;
-      ringProgram.uniforms.uOpacity.value = next.contourOpacity;
-      glowProgram.uniforms.uColor.value = next.glow;
-      if (!frame) renderer.render({ scene });
+      colours.uSrc0.value = next.sources[0];
+      colours.uSrc1.value = next.sources[1];
+      colours.uSrc2.value = next.sources[2];
+      colours.uSrc3.value = next.sources[3];
+      colours.uGlow.value = next.glow;
+      colours.uRing.value = next.ring;
+      opacity.particles.value = next.particleOpacity;
+      opacity.halo.value = next.haloOpacity;
+      applyBlend(next.isDark);
+      if (!frame) render();
     },
     destroy() {
       cancelAnimationFrame(frame);
@@ -364,7 +267,10 @@ export function createField({ canvas, container, palette, isLowPower, onFirstFra
       resizeObserver.disconnect();
       intersection.disconnect();
       document.removeEventListener("visibilitychange", sync);
-      // Do not force-lose the context: React may remount on the same canvas (Strict Mode).
+      // Free GPU buffers and programs. The context itself is not force-lost so React can
+      // remount on the same canvas (Strict Mode); the browser reclaims it with the canvas.
+      geometries.forEach((geometry) => geometry.remove());
+      programs.forEach((program) => program.remove());
     },
   };
 }

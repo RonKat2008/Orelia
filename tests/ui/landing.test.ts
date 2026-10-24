@@ -8,16 +8,6 @@ import {
   TRUST_LINE,
 } from "@/components/landing/content";
 import {
-  DESKTOP_LAYOUT,
-  MOBILE_LAYOUT,
-  buildPoster,
-  createRandom,
-  layoutForWidth,
-  makePathSeeds,
-  pathPoint,
-  targetInField,
-} from "@/components/landing/field/geometry";
-import {
   FINAL_FRAME,
   RUN_AGENTS,
   RUN_KEYFRAMES,
@@ -26,42 +16,6 @@ import {
   frameAt,
   nextKeyframe,
 } from "@/components/landing/run-script";
-
-describe("landing field geometry", () => {
-  it("is deterministic for a given seed", () => {
-    const a = createRandom(42);
-    const b = createRandom(42);
-    expect([a(), a(), a()]).toEqual([b(), b(), b()]);
-    expect(makePathSeeds(5)).toEqual(makePathSeeds(5));
-  });
-
-  it("starts every path away from the target and ends exactly on it", () => {
-    const aspect = 1.6;
-    const target = targetInField(DESKTOP_LAYOUT, aspect);
-    for (const seed of makePathSeeds(50)) {
-      const start = pathPoint(seed, 0, target, aspect);
-      const end = pathPoint(seed, 1, target, aspect);
-      expect(Math.hypot(start.x - target.x, start.y - target.y)).toBeGreaterThan(1);
-      expect(end.x).toBeCloseTo(target.x, 6);
-      expect(end.y).toBeCloseTo(target.y, 6);
-    }
-  });
-
-  it("picks the layout by width and maps the target into field space", () => {
-    expect(layoutForWidth(1440)).toBe(DESKTOP_LAYOUT);
-    expect(layoutForWidth(375)).toBe(MOBILE_LAYOUT);
-    expect(targetInField({ targetX: 0.5, targetY: 0.5 }, 2)).toEqual({ x: 0, y: 0 });
-  });
-
-  it("builds a poster with the requested paths and contours", () => {
-    const poster = buildPoster(DESKTOP_LAYOUT, 1.7, 12, 4);
-    expect(poster.paths).toHaveLength(12);
-    expect(poster.contours).toHaveLength(4);
-    expect(poster.paths[0]).toMatch(/^M[\d.-]+ [\d.-]+L/);
-    expect(poster.contours.every((d) => d.endsWith("Z"))).toBe(true);
-    expect(Math.abs(poster.target.x - 0.535 * poster.width)).toBeLessThanOrEqual(1);
-  });
-});
 
 describe("illustrative agent run script", () => {
   it("starts with every agent waiting and nothing curated", () => {

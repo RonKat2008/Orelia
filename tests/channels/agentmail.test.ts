@@ -23,8 +23,7 @@ const call = (f: ReturnType<typeof vi.fn<typeof fetch>>, i: number) => {
     body: init.body ? JSON.parse(String(init.body)) : undefined,
   };
 };
-// gatedEmail has no caseId, so add one to the (re-frozen) gated payload.
-const gated = (contactId = 'c1', caseId = 'case-1') => Object.freeze({ ...gatedEmail({ contactId }), caseId }) as ReturnType<typeof gatedEmail>;
+const gated = (contactId = 'c1', caseId = 'case-1') => gatedEmail({ contactId, caseId });
 
 describe('AgentMailChannel', () => {
   it('creates an idempotent per-case inbox', async () => {

@@ -3,6 +3,7 @@ import { guardCase } from "@/lib/auth/ownership";
 import { readSession } from "@/lib/auth/session";
 import { checkRateLimit, clientIp, getRateLimitStore, RESEARCH_IP_LIMITS, RESEARCH_LIMITS, rateLimitedResponse } from "@/lib/rate-limit";
 import { ATTEMPT_AGENT, beginPhase } from "@/lib/agents/phase-runs";
+import { reapIfStuck } from "@/lib/workflows/research-watchdog";
 import { isOffline } from "@/lib/env";
 import { inngest } from "@/lib/workflows/inngest";
 import { RESEARCH_EVENT, RESEARCH_STARTABLE, executeResearch, failResearch } from "@/lib/workflows/research-workflow";
@@ -23,6 +24,8 @@ export async function POST(req: Request, { params }: Ctx) {
     const denied = await guardCase(req, id);
     if (denied) return denied;
     const services = getServices();
+    // A run whose function died leaves the case 'researching' forever; reclaim it (CAS inside, idempotent) so retry works.
+    await reapIfStuck(id, { cases: services.cases, runs: services.runs }).catch(() => undefined);
     const found = await services.cases.get(id);
     if (!found) return jsonError(404, "Case not found");
     if (!RESEARCH_STARTABLE.some((status) => status === found.status)) {

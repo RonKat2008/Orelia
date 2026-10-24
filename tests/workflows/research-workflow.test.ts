@@ -141,6 +141,18 @@ describe("research durability", () => {
     expect(await deps.store.listByCase(c.id)).toHaveLength(1);
   });
 
+  it("a stale 'researching' case (function died) is reclaimed and restartable; a fresh one still gets 409", async () => {
+    const { deps, c } = await setup();
+    vi.stubEnv("INNGEST_EVENT_KEY", "");
+    mocks.after.mockImplementation(() => undefined);
+    await deps.cases.setStatus(c.id, "researching");
+    const old = await deps.store.create(c.id, "literature");
+    await deps.store.update(old, { status: "running", startedAt: new Date(Date.now() - 10 * 60_000) });
+    expect((await post(c.id)).status).toBe(202);
+    expect((await deps.store.listByCase(c.id)).map((r) => r.agent)).toEqual(["research"]);
+    expect((await post(c.id)).status).toBe(409);
+  });
+
   it("failResearch also fails open runs so no card keeps spinning", async () => {
     const { deps, c } = await setup();
     await deps.cases.setStatus(c.id, "researching");

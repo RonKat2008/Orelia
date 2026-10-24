@@ -49,6 +49,7 @@ export interface ResearchStep {
   run<T>(id: string, work: () => Promise<T>): Promise<T>;
 }
 
+const ALL_FAILED_MIN = 2;
 const DEFAULT_AGENT_TIMEOUT_MS = 150_000;
 
 /**
@@ -173,6 +174,18 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
     return { results, runStatuses };
   });
+  // Every source failed: an empty shortlist would look like success. End as failed so the patient can retry.
+  const outcomes = Object.values(fanout.runStatuses);
+  // (A single failed agent among stubs is a partial result, not a total outage.)
+  if (!outcomes.includes("done") && outcomes.filter((o) => o === "failed").length >= ALL_FAILED_MIN) {
+    const message = "Every research source failed, so there is nothing to show yet. Please try again.";
+    await step.run("all-failed", async () => {
+      await deps.cases.setStatus(caseId, "research_failed");
+      await failOpenRuns(deps.store, caseId, message);
+      return { failed: true };
+    });
+    throw new Error(message);
+  }
   return finalizeCase(caseId, caseRecord, fanout.results, fanout.runStatuses, deps, step);
 }
 

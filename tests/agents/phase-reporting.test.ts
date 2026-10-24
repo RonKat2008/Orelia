@@ -60,3 +60,15 @@ describe("post-search phase reporting", () => {
     expect((await store.listByCase(c.id)).every((r) => ["done", "failed", "not_implemented"].includes(r.status))).toBe(true);
   });
 });
+
+describe("all sources failing", () => {
+  const failing: ResearchAgent = { name: "literature", model: "claude-haiku-5-5", run: async () => ({ status: "error", message: "502" }) };
+  it("ends research_failed with no open rows instead of an empty ready shortlist", async () => {
+    const cases = new MemoryCaseStore();
+    const store = new MemoryRunStore();
+    const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
+    await expect(runResearch(c.id, { store, persist: new MemoryPersist(), cases, ports: {} as SourcePorts, agents: [failing, { ...failing, name: "trials" }] })).rejects.toThrow(/Every research source failed/);
+    expect((await cases.get(c.id))?.status).toBe("research_failed");
+    expect((await store.listByCase(c.id)).every((r) => ["done", "failed", "not_implemented"].includes(r.status))).toBe(true);
+  });
+});

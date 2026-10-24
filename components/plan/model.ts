@@ -123,3 +123,105 @@ export function applicationStepContext(plan: ContactPlan | null, app: { contactI
 export function stepContextText(ctx: StepContext): string {
   return `Step ${ctx.number} of ${ctx.total} in the plan for ${ctx.resourceName}: ${PURPOSE_LABELS[ctx.purpose]} by ${CHANNEL_LABELS[ctx.channel].toLowerCase()}`;
 }
+
+/* ---------- After approve: what was drafted ---------- */
+
+export interface MaterializedItem {
+  status: string;
+  channel?: string;
+}
+
+/** Defensive read of PATCH approve's `materialized` array. Unknown shapes become []. */
+export function parseMaterialized(value: unknown): MaterializedItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(item => {
+    if (!item || typeof item !== 'object') return [];
+    const { status, channel } = item as { status?: unknown; channel?: unknown };
+    if (typeof status !== 'string') return [];
+    return [{ status, ...(typeof channel === 'string' ? { channel } : {}) }];
+  });
+}
+
+/** Only real drafts: email/voice drafts and web_form applications drafted. Not scheduled, follow_up_plan or mismatches. */
+export function draftsReadyCount(items: MaterializedItem[]): number {
+  return items.filter(i => i.status === 'drafted' || i.status === 'application_drafted').length;
+}
+
+export interface ApproveOutcome {
+  count: number;
+  headline: string;
+  detail: string;
+}
+
+export function approveOutcome(items: MaterializedItem[]): ApproveOutcome {
+  const count = draftsReadyCount(items);
+  if (count > 0) {
+    return {
+      count,
+      headline: `${count} ${count === 1 ? 'draft' : 'drafts'} ready in the outbox`,
+      detail: 'Read each one and approve it yourself. Nothing is sent until you do.',
+    };
+  }
+  const has = (s: string) => items.some(i => i.status === s);
+  const headline = 'Plan approved. Nothing to review in the outbox yet';
+  if (items.length === 0) {
+    return { count, headline, detail: 'No drafts were written. You can still open the outbox to write one yourself.' };
+  }
+  if (has('channel_mismatch')) {
+    return { count, headline, detail: 'A step is on a channel that contact is not set up for, so no draft was written. Check the plan channels.' };
+  }
+  if (has('scheduled') || has('follow_up_plan')) {
+    return { count, headline, detail: 'The remaining steps are scheduled or follow-ups that wait for earlier steps. They will appear here when due.' };
+  }
+  return { count, headline, detail: 'No drafts could be written right now. Nothing was sent.' };
+}
+
+/* ---------- Tracker: plan steps per contact ---------- */
+
+const FINISHED_STATES = new Set(['connected', 'declined', 'stalled']);
+
+function afterText(waitFor: WaitFor): string {
+  if (waitFor === 'none') return 'right after the previous step';
+  if (waitFor === 'reply') return 'if there is no reply yet';
+  const match = /^business_days:(\d+)$/.exec(waitFor);
+  if (!match) return 'later';
+  const days = Number(match[1]);
+  return `after ${days} business ${days === 1 ? 'day' : 'days'}`;
+}
+
+const DUE_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+function dueText(nextAt: string | null | undefined): string {
+  if (!nextAt) return '';
+  const at = new Date(nextAt);
+  return Number.isFinite(at.getTime()) ? ` (due ${DUE_FORMAT.format(at)})` : '';
+}
+
+export interface ContactPlanLine {
+  current: string;
+  next: string;
+}
+
+/**
+ * Current step rule: messages sent = sentCount when known, else 0 for a drafted contact and 1 for any later state
+ * (the first message went out). Current step = the enabled step at index max(sent - 1, 0), clamped to the last step:
+ * a drafted contact is on step 1, and each sent message moves the contact one step on. Next = the step after it, with
+ * its wait. A finished contact (connected, declined, stalled) has no next step. Pure.
+ */
+export function contactPlanLine(
+  plan: ContactPlan | null,
+  contact: { contactId: string; state: string; sentCount?: number; /** ISO time the workflow scheduled the next step. */ nextAt?: string | null },
+): ContactPlanLine | null {
+  const resource = plan?.resources.find(r => r.contactId === contact.contactId);
+  if (!plan || !resource) return null;
+  const steps = sortedSteps(resource).filter(s => s.enabled);
+  if (steps.length === 0) return null;
+  const sent = contact.sentCount ?? (contact.state === 'drafted' ? 0 : 1);
+  const index = Math.min(Math.max(sent - 1, 0), steps.length - 1);
+  const cur = steps[index];
+  const current = `Step ${index + 1} of ${steps.length}: ${PURPOSE_LABELS[cur.purpose]} by ${CHANNEL_LABELS[cur.channel].toLowerCase()}`;
+  if (plan.status !== 'approved') return { current, next: 'Plan not approved yet' };
+  const nextStep = steps[index + 1];
+  if (!nextStep || FINISHED_STATES.has(contact.state)) return { current, next: 'Last step' };
+  return { current, next: `Next: ${PURPOSE_LABELS[nextStep.purpose]} by ${CHANNEL_LABELS[nextStep.channel].toLowerCase()}, ${afterText(nextStep.waitFor)}${dueText(contact.nextAt)}` };
+}

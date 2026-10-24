@@ -17,6 +17,9 @@ import {
   Stepper,
 } from "@/components/ui";
 import { EmptyState } from "@/components/threads/states";
+import { getPlan } from "@/components/plan/client";
+import { contactPlanLine } from "@/components/plan/model";
+import type { ContactPlan } from "@/lib/plan/contract";
 import { loadThreads } from "@/components/threads/load";
 import { contactLabel, outreachSnapshot, readStoredOutreach, subscribeOutreach, type ApiContact } from "./client";
 import { loadCaseContacts, loadCaseTasks } from "./case-activity";
@@ -77,6 +80,7 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
   const [liveTasks, setLiveTasks] = useState<OutreachTask[]>([]);
   const [done, setDone] = useState<Record<string, OutreachTask["status"]>>({});
 
+  const [plan, setPlan] = useState<ContactPlan | null>(null);
   const [threadTasks, setThreadTasks] = useState<OutreachTask[]>([]);
 
   useEffect(() => {
@@ -84,6 +88,17 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
     void loadCaseContacts(caseId).then((rows) => {
       if (!active || !rows) return;
       setLiveContacts(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId]);
+
+  // The contact plan is optional: on a 404 or any failure the tracker just shows no plan line.
+  useEffect(() => {
+    let active = true;
+    void getPlan(caseId).then((res) => {
+      if (active) setPlan(res.ok ? res.plan : null);
     });
     return () => {
       active = false;
@@ -208,6 +223,7 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
             const name = titleCase(contactLabel(contact));
             const index = JOURNEY.indexOf(state);
             const offPath = index === -1;
+            const planLine = contactPlanLine(plan, { contactId: contact.id, state, nextAt: contact.nextFollowUpAt });
             const ChannelIcon = contact.channel === "email" ? Mail : PhoneCall;
             return (
               <li key={contact.id}>
@@ -255,6 +271,13 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
                     <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
                     {followUpNote(contact, state, schedulingPaused)}
                   </p>
+
+                  {planLine ? (
+                    <p className="m-0 mt-2 grid gap-0.5 text-small text-ink-2" data-plan-line>
+                      <span className="font-semibold text-ink">{planLine.current}</span>
+                      <span>{planLine.next}</span>
+                    </p>
+                  ) : null}
 
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <Button asChild variant="secondary" size="sm">

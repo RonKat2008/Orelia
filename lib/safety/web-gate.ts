@@ -1,5 +1,6 @@
-import { activeContactCount, MAX_ACTIVE_CONTACTS } from './caps';
+import { activeContactCount, activeTargetIds, MAX_ACTIVE_CONTACTS } from './caps';
 import { AI_DISCLOSURE_EMAIL } from './disclosure';
+import { sameFieldValue } from './field-value';
 import { containsUnsharedField } from './minimize';
 import { flagMedicalAdvice } from './no-medical-advice';
 import { isWebAllowed } from './web-allowlist';
@@ -31,7 +32,7 @@ function checkFieldSources(form: WebFormDraftPayload, input: WebGateInput, refus
     const { source } = field;
     if (source.kind === 'consent') {
       if (!consent.sharedFields.includes(source.key)) refuse('unshared_field');
-      else if (!Object.hasOwn(caseRecord, source.key) || String(field.value) !== String(caseRecord[source.key])) refuse('consent_mismatch');
+      else if (!Object.hasOwn(caseRecord, source.key) || !sameFieldValue(field.value, caseRecord[source.key])) refuse('consent_mismatch');
     } else if (source.kind === 'doc') {
       if (!docIds.includes(source.docId)) refuse('unshared_field');
     } else if (source.kind === 'disclosure') {
@@ -54,7 +55,11 @@ function checkContact(input: WebGateInput, address: string, refuse: (r: GateRefu
     if ((contact.address && !sameUrl(contact.address, address)) || (draft.caseId && contact.caseId && draft.caseId !== contact.caseId)) refuse('consent_mismatch');
     if (activeContactCount([contact]) === 0) refuse('inactive_contact');
   }
-  if (!contact && activeContactCount(contacts) >= MAX_ACTIVE_CONTACTS) refuse('contact_cap');
+  if (contact) return;
+  // The cap is on resources: an application to a resource the patient already actively contacts is not new.
+  const active = activeTargetIds(contacts);
+  if (draft.targetId && active.has(`t:${draft.targetId}`)) return;
+  if (active.size >= MAX_ACTIVE_CONTACTS) refuse('contact_cap');
 }
 
 /**

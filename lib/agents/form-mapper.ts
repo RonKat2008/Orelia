@@ -4,6 +4,7 @@ import { search, type DocumentStore } from "@/lib/case-docs";
 import type { PageField } from "@/lib/channels/browser-types";
 import { SHARED_FIELDS } from "@/lib/outreach/draft";
 import { AI_DISCLOSURE_EMAIL } from "@/lib/safety/disclosure";
+import { formatFieldValue } from "@/lib/safety/field-value";
 import { minimize } from "@/lib/safety/minimize";
 import type { FilledField, MissingField } from "@/lib/web-application/types";
 import { buildSystemPrompt } from "./prompts/common";
@@ -77,16 +78,6 @@ export function composeDisclosureNote(): string {
 
 const norm = (s: string): string => s.normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
 const AUTHORIZE = /\b(authori[sz]e|consent|agree|certify|confirm|acknowledge|terms|permission)\b/i;
-
-function stringify(value: unknown): string | undefined {
-  if (typeof value === "string") return value.trim() || undefined;
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (Array.isArray(value)) {
-    const parts = value.map((v) => (typeof v === "string" || typeof v === "number" ? String(v).trim() : "")).filter(Boolean);
-    return parts.length ? parts.join(", ") : undefined;
-  }
-  return undefined;
-}
 
 function missingFor(field: PageField, reason: MissingField["reason"], question: string): MissingField {
   return { fieldKey: field.key, label: cleanField(field.label, LABEL_CHARS) ?? "", required: field.required, reason, question };
@@ -163,7 +154,7 @@ export async function mapFormFields(input: MapFormFieldsInput): Promise<MapFormF
   const shared = new Set(sharedKeys);
   const consented: Record<string, string> = {};
   for (const [k, v] of Object.entries(minimize(input.caseRecord, sharedKeys))) {
-    const s = stringify(v);
+    const s = formatFieldValue(v);
     if (s !== undefined) consented[k] = s;
   }
 

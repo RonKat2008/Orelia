@@ -71,12 +71,18 @@ export async function approveApplication(id: string, input: ApproveApplicationIn
   const sharedDocIds = [...(input.sharedDocIds ?? usedDocIds(draft))];
 
   // The form URL is not the contact's email/phone address, so the gate sees the application as its own draft
-  // (no contactId) and still enforces the five-contact cap; the consent used is the one for this contact.
+  // (no contactId). The five-contact cap counts resources: passing the contact's targetId means an application to a
+  // resource the patient already contacts is not a new contact. The consent used is the one for this contact.
+  const contacts = await deps.outreach.contacts(draft.caseId);
+  const targetId = contacts.find(c => c.id === draft.contactId)?.targetId;
   const gate = checkOutbound({
-    draft: { channel: 'web_form', address: draft.url, body: summary(draft), caseId: draft.caseId, approvedAt: now, webForm: webForm(draft) },
+    draft: {
+      channel: 'web_form', address: draft.url, body: summary(draft), caseId: draft.caseId, approvedAt: now, webForm: webForm(draft),
+      ...(targetId ? { targetId } : {}),
+    },
     caseRecord,
     consent: { sharedFields: consent.sharedFields, sharedDocIds },
-    contacts: await deps.outreach.contacts(draft.caseId),
+    contacts,
     allowlist: [],
     webAllowlist: parseWebAllowlist(env.OUTBOUND_WEB_ALLOWLIST ?? ''),
     now,

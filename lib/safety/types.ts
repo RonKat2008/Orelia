@@ -5,6 +5,8 @@ export interface SafetyContact {
   readonly id?: string;
   readonly caseId?: string;
   readonly address?: string;
+  /** The resource (target) this contact reaches; several contacts at one resource count once toward the cap. */
+  readonly targetId?: string;
   readonly state: string;
   readonly lastSentAt?: Timestamp | null;
   readonly followUpsSent?: number;
@@ -39,6 +41,8 @@ export interface SafetyDraft {
   readonly subject?: string;
   readonly contactId?: string;
   readonly caseId?: string;
+  /** web_form only: the resource the form belongs to, so an application to an already-contacted resource is not a new contact. */
+  readonly targetId?: string;
   readonly approvedAt?: Timestamp | null;
   readonly isFollowUp?: boolean;
 }

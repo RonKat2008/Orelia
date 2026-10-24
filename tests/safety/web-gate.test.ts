@@ -189,3 +189,27 @@ describe('web form gate', () => {
     expect(reasons(input)).toContain('consent_mismatch');
   });
 });
+
+describe('web gate contact cap counts resources, not addresses', () => {
+  const five = Array.from({ length: 5 }, (_, i) => ({ id: `c${i}`, caseId: 'case-1', targetId: `t${i}`, address: `p${i}@example.org`, state: 'sent' }));
+  it('an application to a resource already contacted is not a new contact', () => {
+    const input = valid();
+    expect(checkOutbound({ ...input, draft: { ...input.draft, targetId: 't2' }, contacts: five })).toMatchObject({ ok: true });
+  });
+  it('an application to a new resource still hits the cap', () => {
+    const input = valid();
+    expect(reasons({ ...input, draft: { ...input.draft, targetId: 't9' }, contacts: five })).toContain('contact_cap');
+    expect(reasons({ ...input, contacts: five })).toContain('contact_cap');
+  });
+  it('a resource whose only contact is closed does not exempt the application', () => {
+    const input = valid();
+    const closed = five.map(c => (c.targetId === 't2' ? { ...c, state: 'declined' } : c));
+    const sixth = [...closed, { id: 'c5', caseId: 'case-1', targetId: 't5', address: 'x@example.org', state: 'sent' }];
+    expect(reasons({ ...input, draft: { ...input.draft, targetId: 't2' }, contacts: sixth })).toContain('contact_cap');
+  });
+  it('two contacts at one resource count once toward the cap', () => {
+    const input = valid();
+    const shared = [...five.slice(0, 3), { id: 'c3', caseId: 'case-1', targetId: 't0', address: '+15550001', state: 'sent' }];
+    expect(checkOutbound({ ...input, draft: { ...input.draft, targetId: 't9' }, contacts: [...shared, five[4]] })).toMatchObject({ ok: true });
+  });
+});

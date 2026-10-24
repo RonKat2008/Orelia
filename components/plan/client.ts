@@ -1,6 +1,6 @@
 import { contactPlanSchema, type ContactPlan, type PlanEdit } from '@/lib/plan/contract';
 
-export type PlanResult = { ok: true; plan: ContactPlan } | { ok: false; status: number; message: string };
+export type PlanResult = { ok: true; plan: ContactPlan; /** PATCH approve only: raw `materialized` from the response. */ materialized?: unknown } | { ok: false; status: number; message: string };
 
 type Fetch = typeof fetch;
 
@@ -15,7 +15,7 @@ async function read(res: Response): Promise<PlanResult> {
   }
   if (res.ok) {
     const parsed = contactPlanSchema.safeParse((body as { plan?: unknown } | null)?.plan);
-    if (parsed.success) return { ok: true, plan: parsed.data };
+    if (parsed.success) return { ok: true, plan: parsed.data, materialized: (body as { materialized?: unknown } | null)?.materialized };
     return { ok: false, status: 502, message: 'The plan came back in an unexpected shape.' };
   }
   const error = (body as { error?: unknown } | null)?.error;

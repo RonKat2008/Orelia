@@ -40,20 +40,24 @@ This plan changes the original sarcoma spec in four ways, all from your answers:
 All eight hard rules from your doc still apply. Pediatric cases, non-U.S. resources, EHR integration, fax and any
 medical recommendation stay out of scope.
 
-The repo is `~/wayfinder` (RonKat2008/wayfinder). It is currently a TypeScript starter with a vitest setup, which this
-plan replaces with Next.js.
+The repo is `~/wayfinder` (RonKat2008/wayfinder). It started as a TypeScript starter; it is now a Next.js app.
 
 ## Stack
 - **App:** Next.js App Router with TypeScript, deployed on Vercel. Database is Neon Postgres with Drizzle ORM and
   migrations.
-- **Models:** Claude Agent SDK. The orchestrator, intake extractor, verifier and inbox classifier run on
-  `claude-opus-5-5`. Research agents run in parallel on `claude-haiku-5-5`.
+- **Models:** agents call the Anthropic Messages API through `@anthropic-ai/sdk`, using tool use
+  (`lib/agents/runtime.ts`, `runAgent()`). The intake extractor and inbox classifier run on `claude-opus-5-5`.
+  Research agents run in parallel on `claude-haiku-5-5`. The verifier is deterministic code, not a model.
+  The Claude Agent SDK was removed: it runs a Claude Code subprocess, which does not fit Vercel functions.
+- **Durable research:** Inngest runs each research pass as a `case/research.requested` event
+  (`lib/workflows/research-workflow.ts`, served from `app/api/inngest`). Phases are queue, run-agents, verify,
+  rank, persist, under one 180-second deadline.
 - **Validation:** Zod for every agent's input and output. Agents return JSON only, and nothing is written to the
   database until it passes Zod.
 - **Live updates:** server-sent events, read from `agent_runs`.
 - **Tests:** Vitest. Recorded API responses live in `/fixtures/api`, and recorded model outputs in `/fixtures/llm`, so
   the whole flow runs offline with no keys.
-- **New dependencies, which need your OK:**
+- **Key dependencies:**
 
   | Package | Purpose |
   |---|---|
@@ -62,7 +66,7 @@ plan replaces with Next.js.
   | `inngest` | Durable follow-up timers (already "preferred" in your doc) |
   | `drizzle-orm`, `drizzle-kit`, `@neondatabase/serverless` | Database |
   | `zod` | Schemas |
-  | `@anthropic-ai/claude-agent-sdk` | Agents |
+  | `@anthropic-ai/sdk` | Agents (Messages API, tool use) |
 
   AgentCall has no SDK that I could verify, so it is called over REST with `fetch` and needs no package.
 
@@ -72,12 +76,13 @@ Intake (paste/upload) → Opus extracts the Case → patient confirms/edits
   → Orchestrator fans out the research swarm (parallel; every run is an agent_runs row, streamed over SSE)
       Literature (PubMed) · Trials (CT.gov v2) · Identity (NPPES) · Centers (NCI JSON + Exa)
       Advocacy (Exa) · Aid (Exa) · ContactFinder (Exa, intake doors only) · Network (stub) · Logistics (stub)
-  → Verifier (Opus): drops claims with no evidence, merges duplicates (NPI / URL), flags conflicts
+  → Verifier (deterministic): drops claims with no evidence, merges duplicates (NPI / NCT / URL / name), flags conflicts
   → Ranker (deterministic; weights in config/ranking.ts) → shortlist grouped by resource kind
   → Patient selects (≤5 active contacts) + consent (fields to share per contact)
   → One ConnectionAgent per contact (an Inngest workflow):
       draft (email or call script) → APPROVAL → OutboundGate → AgentMail / AgentCall
-      → wait for reply/transcript or a timer (3 and 7 business days) → follow up → stalled
+      → wait for reply/transcript or a timer (follow-ups at business days 3 and 7 after the first send;
+        stalled at business day 10 with no reply)
   → InboxAgent classifies each reply or call transcript → tasks (referral, slides, records, call, redirect,
     unclear, declined) → patient approves → the connection agent continues
   → Tracker (every contact's state machine)
@@ -91,6 +96,23 @@ refuses unless all of these hold:
 - the body contains only the case fields the patient ticked, plus the AI-assistance disclosure.
 
 For calls, that disclosure is spoken at the start. Unit tests cover every refusal path.
+
+Current code details:
+- The gate is `checkOutbound()`. It returns a `GatedDraft`, and the channel adapters (`lib/channels/agentmail.ts`,
+  `agentcall.ts`) accept only that type (`assertGated`).
+- The allowlist check is skipped only when `mode` is `prod` and `OUTBOUND_ALLOW_REAL=true`. Dev and demo always
+  enforce it.
+- Refusal reasons: `not_approved`, `invalid_draft`, `not_allowlisted`, `consent_mismatch`, `inactive_contact`,
+  `contact_cap`, `follow_up_cadence`, `unshared_field`, `missing_disclosure`, `medical_advice`.
+- Inbound webhooks are signature-checked: AgentMail uses Svix headers (`app/api/webhooks/agentmail`), and AgentCall
+  uses an HMAC-SHA256 `X-AgentCall-Signature` (`app/api/webhooks/agentcall`).
+
+## Planned (in progress, not in the code yet)
+- **Curator:** a step after rank that tiers each resource as best, good, backup or exclude. Every tier carries
+  evidence-cited reasons.
+- **Neon AI Gateway:** one gateway layer with a model per role, configured in `config/models.ts`.
+- **Case document embeddings:** a per-case pgvector store (`qwen3-embedding-0-6b`, 1024 dimensions). Outreach agents
+  search it, and results are filtered by the contact's consent fields.
 
 ## File tree (target)
 ```
@@ -112,7 +134,8 @@ lib/sources/                    typed wrappers, no prompts: pubmed.ts, ctgov.ts,
                                 (each: fetch fn + rate limiter + a FixtureTransport for offline mode)
 lib/agents/                     orchestrator.ts, intake-extractor.ts, research/{literature,trials,identity,centers,
                                 advocacy,aid,contact-finder,network,logistics}.ts, verifier.ts, connection.ts, inbox.ts
-lib/agents/runtime.ts           runAgent(): Agent SDK call → Zod parse → agent_runs bookkeeping; offline replay from /fixtures/llm
+lib/agents/runtime.ts           runAgent(): Messages API tool-use loop (@anthropic-ai/sdk) → Zod parse → agent_runs bookkeeping;
+                                offline replay from /fixtures/llm
 lib/ranking/rank.ts             pure, deterministic; builds score_breakdown with evidence ids
 lib/channels/                   types.ts (Channel interface), mock-mailer.ts, agentmail.ts, agentcall.ts, mock-caller.ts
 lib/safety/                     outbound-gate.ts, allowlist.ts, minimize.ts, disclosure.ts, caps.ts, no-medical-advice.ts
@@ -164,8 +187,8 @@ tests/                          mirrors lib/
   `source_url` comes from the wrapper, never from the model. Exa results become evidence only from URLs that Exa
   returned and the wrapper fetched.
 - **`Verifier`:** `(ResearchResult[]) → { kept, dropped: {record, reason}[], merged, conflicts }`. Dropping claims
-  that have no evidence is plain code, not the model, so the result is deterministic and testable. Opus only proposes
-  merges and flags conflicts.
+  that have no evidence is plain code, not the model, so the result is deterministic and testable. The orchestrator
+  has an optional Opus `proposer` hook for merges and conflicts, but the app does not wire it.
 - **`rank(candidates, weights)`:** a pure function returning `Ranked[]` with `breakdown: {factor, points, text,
   evidenceIds}[]`.
 - **`ConnectionAgent`:** `draft(contact, consent) → Draft` (an email or a call script), `onInbound(event) →
@@ -191,7 +214,7 @@ tests/                          mirrors lib/
    - Consent screen and drafts for both email and call scripts.
    - Approval goes through OutboundGate to AgentMail (one inbox per case) or AgentCall.
    - Webhooks bring in replies and call transcripts, and the InboxAgent turns them into tasks.
-   - Inngest drives follow-ups at business day 3 and day 7, then marks the contact `stalled`.
+   - Inngest drives follow-ups at business day 3 and day 7, then marks the contact `stalled` at business day 10.
    - A tracker page shows every contact's state.
 4. **Demo.**
    - `seed-demo.ts` creates AgentMail inboxes that pose as intake coordinators. `demo-coordinators.ts` sends scripted
@@ -235,8 +258,10 @@ tests/                          mirrors lib/
   for agent text.
 - **Contracts:** every agent's output fixture parses against its Zod schema.
 - **Workflows (M3):** the business-day math, and the connection state machine run with a fake clock.
-- **Offline end to end:** `npm run demo:offline` runs intake through shortlist (and the M3/M4 loop with
-  MockMailer/MockCaller) from fixtures, and asserts every displayed claim has an evidence URL.
+- **Offline end to end:** `npm run demo:offline -- --all` (or `--case <slug>`) runs intake through shortlist, and the
+  M3/M4 loop with MockMailer/MockCaller, from fixtures. It asserts every displayed claim has an evidence URL.
+  `WAYFINDER_OFFLINE=1` replays `fixtures/api` and `fixtures/llm`. `runAgent()` also replays when no
+  `ANTHROPIC_API_KEY` is set. The demo is described in `docs/DEMO.md`.
 - **UI:** I check it by hand with Claude in Chrome. Playwright isn't in your stack, so I'll ask before adding it.
 
 ## Verification (per gate)
@@ -253,8 +278,8 @@ tests/                          mirrors lib/
 - **Neon:** I can create the project through the Neon MCP if you want.
 
 ## Risks I'll report rather than paper over
-- **Agent SDK on Vercel:** the Agent SDK runs a Claude Code subprocess. That may not run inside Vercel functions. If
-  it doesn't, I'll ask before switching the runtime to the Anthropic SDK's Messages tool use.
+- **Agent SDK on Vercel (resolved):** the Agent SDK runs a Claude Code subprocess, which does not fit Vercel functions.
+  It was removed. Agents now run on `@anthropic-ai/sdk` Messages tool use.
 - **AgentCall:** its docs were thin in my search. I'll confirm the REST shape and webhook signing before Lane D starts.
 - **Exa evidence quality:** an Exa result counts as evidence only if the page we fetched contains the claim. The
   verifier checks for that.

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Case, CaseInput } from "@/lib/contracts";
 import { goalSchema } from "@/lib/contracts";
 import { Reveal } from "@/components/motion/Reveal";
+import { EmptyState, LoadingSkeleton } from "@/components/threads/states";
 import type { DemoReport } from "./demos";
 import { confirmAndResearch, extractCase } from "./case-client";
 
@@ -101,6 +102,10 @@ export function IntakeFlow({ demos }: Props) {
           Paste a synthetic report or upload a text file. Wayfinder extracts the details it needs to
           search. It does not interpret the diagnosis.
         </p>
+        {demos.length === 0 ? (
+          <EmptyState title="No demo reports" detail="Paste a synthetic report below. Wayfinder does not interpret the diagnosis." />
+        ) : null}
+        {busy && !draft ? <LoadingSkeleton label="Reading the report" /> : null}
         <div className="row">
           <label className="field" style={{ flex: "1 1 220px" }}>
             <span>Demo case</span>
@@ -239,7 +244,7 @@ export function IntakeFlow({ demos }: Props) {
       </Reveal>
 
       <div aria-live="polite">
-        <Reveal revealKey={message ?? "none"}>{message ? <p className="notice">{message}</p> : null}</Reveal>
+        <Reveal revealKey={message ?? "none"}>{message ? <p className="notice" role="status">{message}</p> : null}</Reveal>
       </div>
     </div>
   );

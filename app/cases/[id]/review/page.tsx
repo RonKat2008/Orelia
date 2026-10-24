@@ -7,6 +7,7 @@ import { RANKING_WEIGHTS, type RankingWeights } from "@/config/ranking";
 import { ReviewCheckpoint, type ReviewResource, type ReviewSubmit } from "@/components/ranking/ReviewCheckpoint";
 import { WeightsPanel } from "@/components/ranking/WeightsPanel";
 import type { AgreementSummary } from "@/components/ranking/model";
+import { ErrorState, LoadingSkeleton } from "@/components/threads/states";
 
 interface PreviewRow {
   id: string;
@@ -24,9 +25,11 @@ export default function ReviewPage() {
   const [resources, setResources] = useState<ReviewResource[]>([]);
   const [agreement, setAgreement] = useState<AgreementSummary[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function rerank(next: RankingWeights) {
     setWeights(next);
+    setBusy(true);
     const response = await fetch("/api/ranking/preview", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -61,6 +64,16 @@ export default function ReviewPage() {
     setAgreement(payload.agreement ?? []);
   }
 
+  async function finishRerank(next: RankingWeights) {
+    try {
+      await rerank(next);
+    } catch {
+      setStatus("Preview ranking is unavailable.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="shell">
       <header className="masthead">
@@ -75,13 +88,22 @@ export default function ReviewPage() {
         previews a new order and does not replace the saved shortlist.{" "}
         <Link href={`/cases/${caseId}/shortlist`}>Back to the shortlist</Link>.
       </p>
-      <WeightsPanel weights={weights} onChange={(next) => void rerank(next)} />
+      <WeightsPanel weights={weights} onChange={(next) => void finishRerank(next)} />
       <p>
-        <button type="button" onClick={() => void rerank(weights)}>
+        <button type="button" onClick={() => void finishRerank(weights)} disabled={busy}>
           Preview this order
         </button>
       </p>
-      {status ? <p role="status">{status}</p> : null}
+      {busy ? <LoadingSkeleton label="Previewing this order" /> : null}
+      {status ? (
+        <ErrorState
+          title="Preview ranking is unavailable"
+          detail={status}
+          onRetry={() => void finishRerank(weights)}
+          actionHref={`/cases/${caseId}/shortlist`}
+          actionLabel="Back to the shortlist"
+        />
+      ) : null}
       <ReviewCheckpoint caseId={caseId} resources={resources} agreement={agreement} onSubmit={saveReview} />
     </main>
   );

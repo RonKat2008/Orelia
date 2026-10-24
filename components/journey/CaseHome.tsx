@@ -23,7 +23,11 @@ export function CaseHome({ caseId }: { caseId: string }) {
         coordinates contact. It does not interpret the case or suggest care.
       </p>
 
-      {data?.missingCase ? <p className="error">This case was not found.</p> : null}
+      {!data ? null : data.missingCase ? (
+        <p className="error" role="alert">
+          This case was not found. <Link href="/">Start from intake</Link>.
+        </p>
+      ) : null}
       {data && !data.missingCase && !summary ? (
         <p className="notice">Case details could not be loaded. You can still move through the steps above.</p>
       ) : null}

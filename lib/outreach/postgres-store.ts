@@ -15,7 +15,7 @@ export class PostgresOutreachStore implements OutreachStore {
   async candidates(caseId: string, ids: string[]): Promise<Candidate[]> {
     const rows = await this.db.select().from(s.caseCandidates).where(and(eq(s.caseCandidates.caseId, caseId), inArray(s.caseCandidates.id, ids)));
     return Promise.all(rows.map(async row => {
-      const evidence = await this.db.select().from(s.evidence).where(and(eq(s.evidence.targetId, row.targetId), eq(s.evidence.targetKind, row.targetKind)));
+      const evidence = await this.db.select().from(s.evidence).where(and(eq(s.evidence.caseId, caseId), eq(s.evidence.targetId, row.targetId), eq(s.evidence.targetKind, row.targetKind)));
       const [org] = row.targetKind === 'organization' ? await this.db.select().from(s.organizations).where(eq(s.organizations.id, row.targetId)) : [];
       return { ...row, evidence, purpose: org?.kind };
     }));

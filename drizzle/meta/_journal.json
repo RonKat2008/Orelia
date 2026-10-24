@@ -15,6 +15,13 @@
       "when": 1792819415745,
       "tag": "0001_contact_follow_up_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792820906205,
+      "tag": "0027_evidence_case_scope",
+      "breakpoints": true
     }
   ]
 }

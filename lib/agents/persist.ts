@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   caseCandidates,
@@ -164,6 +164,7 @@ export class DbPersist implements Persist {
           .insert(evidenceTable)
           .values({
             id: e.id,
+            caseId,
             targetKind: record.resource.kind,
             targetId,
             claimType: e.claimType,
@@ -172,7 +173,7 @@ export class DbPersist implements Persist {
             sourceKind: e.sourceKind,
             fetchedAt: new Date(e.fetchedAt),
           })
-          .onConflictDoUpdate({ target: evidenceTable.id, set: { targetId, fetchedAt: new Date(e.fetchedAt) } });
+          .onConflictDoUpdate({ target: [evidenceTable.caseId, evidenceTable.id], set: { targetId, fetchedAt: new Date(e.fetchedAt) } });
       }
     }
 
@@ -207,7 +208,7 @@ export class DbPersist implements Persist {
     const evRows = await db
       .select()
       .from(evidenceTable)
-      .where(inArray(evidenceTable.targetId, cands.map((c) => c.targetId)));
+      .where(and(eq(evidenceTable.caseId, caseId), inArray(evidenceTable.targetId, cands.map((c) => c.targetId))));
 
     return cands
       .map((c) => ({

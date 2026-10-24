@@ -8,6 +8,13 @@
       "when": 1792816679279,
       "tag": "0000_tense_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792819415745,
+      "tag": "0001_contact_follow_up_columns",
+      "breakpoints": true
     }
   ]
 }

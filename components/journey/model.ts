@@ -46,7 +46,11 @@ export type JourneySnapshot = {
   selectedCount: number | null;
   openTaskCount: number | null;
   contacts: JourneyContact[] | null;
+  /** Status of the case's contact plan, or null/undefined when none has been built. */
+  planStatus?: JourneyPlanStatus | null;
 };
+
+export type JourneyPlanStatus = "draft" | "approved";
 
 export type JourneyStep = {
   id: JourneyStage;
@@ -131,6 +135,7 @@ function currentStage(snapshot: JourneySnapshot): JourneyStage {
   const sent = contacts.some((contact) => contact.state && contact.state !== "drafted");
   const waiting = contacts.some((contact) => contact.approved !== true);
   if ((snapshot.openTaskCount ?? 0) > 0 || sent) return "tracker";
+  if (snapshot.planStatus === "draft") return "plan";
   if (waiting) return "outreach";
   return "tracker";
 }
@@ -201,6 +206,15 @@ export function readContacts(value: unknown): JourneyContact[] | null {
       state: typeof contact.state === "string" ? contact.state : null,
     };
   });
+}
+
+/** `{ plan: { status } }` from GET /api/cases/[id]/plan -> the plan status, or null. */
+export function readPlanStatus(value: unknown): JourneyPlanStatus | null {
+  if (!value || typeof value !== "object") return null;
+  const plan = (value as { plan?: unknown }).plan;
+  if (!plan || typeof plan !== "object") return null;
+  const status = (plan as { status?: unknown }).status;
+  return status === "draft" || status === "approved" ? status : null;
 }
 
 export function readOpenTaskCount(value: unknown): number | null {

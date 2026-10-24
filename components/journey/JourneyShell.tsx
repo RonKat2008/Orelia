@@ -52,6 +52,7 @@ export function JourneyShell({ caseId, children }: { caseId: string; children: R
           selectedCount: loaded.selectedCount,
           openTaskCount: loaded.openTaskCount,
           contacts: loaded.contacts,
+          planStatus: loaded.planStatus,
         }),
       );
     });

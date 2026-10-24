@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS "appointments" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   "case_id" uuid NOT NULL REFERENCES "cases"("id") ON DELETE cascade,
   "owner_key" text,
-  "contact_id" uuid REFERENCES "contacts"("id") ON DELETE set null,
+  "contact_id" uuid REFERENCES "contacts"("id") ON DELETE cascade,
   "kind" text NOT NULL,
   "title" text NOT NULL,
   "starts_at" timestamp with time zone,

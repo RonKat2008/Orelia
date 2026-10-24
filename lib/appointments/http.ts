@@ -1,5 +1,5 @@
 import { rejectCrossOrigin } from '../auth/origin';
-import { guardCase } from '../auth/ownership';
+import { getOwnerStore, guardCase } from '../auth/ownership';
 import { getViewer, type Viewer } from '../auth/viewer';
 import { checkRateLimit, clientIp, getRateLimitStore, rateLimitedResponse, type RateRule } from '../rate-limit';
 import { getConnectionStore, googleSync } from '../integrations/google/connection';
@@ -36,14 +36,34 @@ export function serviceDeps(req: Request): ServiceDeps {
  */
 export async function authorizeAppointment(req: Request, id: string): Promise<{ ok: true; appt: Appointment; viewer: Viewer | null } | { ok: false; response: Response }> {
   if (!UUID.test(id)) return { ok: false, response: notFound() };
-  const appt = await getAppointmentStore().get(id);
+  let appt: Appointment | undefined;
+  try { appt = await getAppointmentStore().get(id); } catch (error) { return { ok: false, response: rejectCrossOrigin(req) ?? errorResponse(error, 'load') }; }
   if (!appt) {
     // Same CSRF answer as for a real id, so a cross-site probe learns nothing.
     return { ok: false, response: rejectCrossOrigin(req) ?? notFound() };
   }
   const denied = await guardCase(req, appt.caseId);
   if (denied) return { ok: false, response: denied };
-  return { ok: true, appt, viewer: getViewer(req) };
+  return { ok: true, appt, viewer: await getViewer(req) };
+}
+
+/**
+ * Viewer-scoped routes (all-cases list, feeds, Google): a valid session that owns at least one case. No session, a
+ * tampered one, or a session with no cases all get the same opaque 404 (CSRF first on mutations).
+ */
+export async function requireViewer(req: Request): Promise<{ ok: true; viewer: Viewer } | { ok: false; response: Response }> {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    const csrf = rejectCrossOrigin(req);
+    if (csrf) return { ok: false, response: csrf };
+  }
+  try {
+    const viewer = await getViewer(req);
+    if (!viewer) return { ok: false, response: notFound() };
+    const owners = getOwnerStore();
+    const hasCase = viewer.kind === 'account' ? ((await owners.casesForAccount?.(viewer.accountId)) ?? []).length > 0 : await owners.ownsAnyCase(viewer.key);
+    if (!hasCase) return { ok: false, response: notFound() };
+    return { ok: true, viewer };
+  } catch (error) { return { ok: false, response: errorResponse(error, 'viewer') }; }
 }
 
 export const MUTATION_LIMITS = (key: string): RateRule[] => [{ key: `appointments:write:${key}`, max: 120, windowMs: HOUR }];

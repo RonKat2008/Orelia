@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!id) return json({ error: 'Not found' }, 404);
   const denied = await guardCase(req, id);
   if (denied) return denied;
-  const viewer = getViewer(req);
+  const viewer = await getViewer(req);
   const slow = await limited(MUTATION_LIMITS(viewerKeyOrIp(req, viewer)));
   if (slow) return slow;
   try {

@@ -1,6 +1,4 @@
-import { rejectCrossOrigin } from '@/lib/auth/origin';
-import { getViewer } from '@/lib/auth/viewer';
-import { appOrigin, errorResponse, FEED_CREATE_LIMITS, json, limited } from '@/lib/appointments/http';
+import { appOrigin, errorResponse, FEED_CREATE_LIMITS, json, limited, requireViewer } from '@/lib/appointments/http';
 import { signFeedToken, type FeedRow } from '@/lib/appointments/feed';
 import { getAppointmentStore } from '@/lib/appointments/store';
 
@@ -14,8 +12,9 @@ function view(req: Request, f: FeedRow) {
 
 /** GET /api/calendar/feeds — the viewer's private subscription feeds (live ones carry their URL). */
 export async function GET(req: Request) {
-  const viewer = getViewer(req);
-  if (!viewer) return json({ feeds: [] });
+  const auth = await requireViewer(req);
+  if (!auth.ok) return auth.response;
+  const { viewer } = auth;
   try {
     const feeds = await getAppointmentStore().feeds(viewer.key);
     return json({ feeds: feeds.map(f => view(req, f)) });
@@ -24,10 +23,9 @@ export async function GET(req: Request) {
 
 /** POST /api/calendar/feeds — mint a new private feed URL. */
 export async function POST(req: Request) {
-  const csrf = rejectCrossOrigin(req);
-  if (csrf) return csrf;
-  const viewer = getViewer(req);
-  if (!viewer) return json({ reasons: ['no_session'] }, 401);
+  const auth = await requireViewer(req);
+  if (!auth.ok) return auth.response;
+  const { viewer } = auth;
   const slow = await limited(FEED_CREATE_LIMITS(viewer.key));
   if (slow) return slow;
   try {

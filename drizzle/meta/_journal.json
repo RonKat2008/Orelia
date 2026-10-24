@@ -148,6 +148,13 @@
       "when": 1792823000000,
       "tag": "0045_appointments",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792823100000,
+      "tag": "0046_appointments_contact_cascade",
+      "breakpoints": true
     }
   ]
 }

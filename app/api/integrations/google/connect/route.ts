@@ -1,5 +1,4 @@
-import { getViewer } from '@/lib/auth/viewer';
-import { limited, OAUTH_LIMITS } from '@/lib/appointments/http';
+import { limited, notFound, OAUTH_LIMITS, requireViewer } from '@/lib/appointments/http';
 import { clientIp } from '@/lib/rate-limit';
 import { hasTokenKey } from '@/lib/crypto/token-box';
 import { authorizationUrl, googleConfig, OAUTH_COOKIE, OAUTH_TTL_MS, redirectUri, SCOPE_EVENTS, SCOPE_FREEBUSY, startFlow } from '@/lib/integrations/google/oauth';
@@ -13,11 +12,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const back = (reason: string) => Response.redirect(new URL(`/calendar?google=${reason}`, url.origin), 303);
+  const auth = await requireViewer(req);
+  if (!auth.ok) return auth.response;
+  const { viewer } = auth;
   const cfg = googleConfig();
-  if (!cfg || !hasTokenKey()) return back('unavailable');
-  const viewer = getViewer(req);
-  if (!viewer) return back('no_session');
+  // Not configured on this deployment: the route does not exist (the UI only links here when status says available).
+  if (!cfg || !hasTokenKey()) return notFound();
   const slow = await limited(OAUTH_LIMITS(viewer.key, clientIp(req)));
   if (slow) return slow;
   const scopes = url.searchParams.get('scope') === 'freebusy' ? [SCOPE_EVENTS, SCOPE_FREEBUSY] : [SCOPE_EVENTS];

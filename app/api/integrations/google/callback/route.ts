@@ -1,4 +1,5 @@
 import { getViewer } from '@/lib/auth/viewer';
+import { notFound } from '@/lib/appointments/http';
 import { checkFlow, exchangeCode, googleConfig, OAUTH_COOKIE, redirectUri, SCOPE_EVENTS } from '@/lib/integrations/google/oauth';
 import { connectionFromTokens, getConnectionStore } from '@/lib/integrations/google/connection';
 
@@ -19,8 +20,8 @@ export async function GET(req: Request) {
   const clear = `${OAUTH_COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/integrations/google; Max-Age=0`;
   const back = (path: string, reason: string) => new Response(null, { status: 303, headers: { Location: new URL(`${path}?google=${reason}`, url.origin).toString(), 'Set-Cookie': clear, 'Cache-Control': 'no-store' } });
   const cfg = googleConfig();
-  if (!cfg) return back('/calendar', 'unavailable');
-  const viewer = getViewer(req);
+  if (!cfg) return notFound();
+  const viewer = await getViewer(req);
   const check = checkFlow(cookie(req, OAUTH_COOKIE), url.searchParams.get('state'), viewer?.key ?? null, new Date());
   if (!check.ok) return back('/calendar', 'invalid_state');
   if (url.searchParams.get('error')) return back(check.flow.returnTo, 'declined');

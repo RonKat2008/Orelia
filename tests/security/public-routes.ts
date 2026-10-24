@@ -11,6 +11,9 @@ export const publicRoutes: Record<string, { methods: readonly string[]; protecti
   '/api/auth/[...path]': { methods: ['GET', 'POST'], protection: 'Neon Auth (Better Auth) proxy: sign-up/sign-in/OAuth/password reset; its own CSRF and trusted-origin checks plus our same-origin check on POST; 404 when accounts are not configured; no case data.' },
   '/api/account': { methods: ['GET', 'DELETE'], protection: 'GET reports only whether accounts are enabled and who is signed in (null when signed out); DELETE requires same-origin, the signed-in account and confirm:"DELETE", and only touches that account.' },
   '/api/account/sign-out': { methods: ['POST'], protection: 'Same-origin only; ends the caller\'s own sessions and clears the anonymous cookie; no data returned.' },
+  '/api/cron/appointments': { methods: ['GET'], protection: 'Vercel Cron: Authorization: Bearer CRON_SECRET (constant-time compare, fails closed when unset); writes in-app reminder marks, returns only counts.' },
+  '/api/calendar/feed/[token]': { methods: ['GET'], protection: 'Private calendar subscription capability: HMAC-signed feed id (WAYFINDER_TOKEN_KEY subkey), revocable, rate limited per feed; 404 for any bad or revoked token. Fetched by calendar apps, which have no session.' },
+  '/api/integrations/google/callback': { methods: ['GET'], protection: 'Google OAuth redirect: 404 unless Google is configured; requires the AES-GCM sealed, 10-minute flow cookie whose state AND viewer session must both match before the PKCE code exchange; returns only a same-site redirect.' },
 };
 /** Routes whose response is a status probe with no storage behind it (the storage-failure probe expects < 400). */
 export const statusOnlyRoutes = new Set(['/api/health', '/api/account:GET', '/api/account/sign-out:POST']);

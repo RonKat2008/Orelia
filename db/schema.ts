@@ -539,7 +539,7 @@ export const appointments = pgTable("appointments", {
   caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
   /** Viewer key of the case owner when the row was written (session id today, account id later). */
   ownerKey: text("owner_key"),
-  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
   kind: text("kind").notNull(),
   title: text("title").notNull(),
   startsAt: timestamp("starts_at", { withTimezone: true }),

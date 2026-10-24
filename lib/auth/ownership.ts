@@ -18,6 +18,8 @@ export interface OwnerStore {
   /** Attaches this browser session's unclaimed cases to the account; returns how many. */
   claimSessionCases?(sessionId: string, accountId: string): Promise<number>;
   casesForAccount?(accountId: string): Promise<string[]>;
+  /** Whether this session owns at least one case (viewer-scoped routes answer 404 otherwise). */
+  ownsAnyCase(sessionId: string): Promise<boolean>;
 }
 
 export class MemoryOwnerStore implements OwnerStore {
@@ -53,6 +55,9 @@ export class MemoryOwnerStore implements OwnerStore {
   }
   async casesForAccount(accountId: string) {
     return [...this.accounts].filter(([, a]) => a === accountId).map(([caseId]) => caseId);
+  }
+  async ownsAnyCase(sessionId: string) {
+    return [...this.owners.values()].includes(sessionId);
   }
   /** Test/dev helpers to register relationships. */
   registerCase(caseId: string, owner: string | null = null, accountId: string | null = null) {
@@ -102,6 +107,10 @@ export class PostgresOwnerStore implements OwnerStore {
       .where(eq(tasks.id, taskId))
       .limit(1);
     return row ? (row.direct ?? row.viaContact ?? undefined) : undefined;
+  }
+  async ownsAnyCase(sessionId: string) {
+    const [row] = await getDb().select({ id: cases.id }).from(cases).where(eq(cases.ownerSessionId, sessionId)).limit(1);
+    return !!row;
   }
 }
 

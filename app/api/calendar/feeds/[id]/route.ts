@@ -13,7 +13,7 @@ export async function DELETE(req: Request, { params }: Ctx) {
   const csrf = rejectCrossOrigin(req);
   if (csrf) return csrf;
   const { id } = await params;
-  const viewer = getViewer(req);
+  const viewer = await getViewer(req);
   if (!viewer || !UUID.test(id)) return notFound();
   try {
     const ok = await getAppointmentStore().revokeFeed(id, viewer.key, new Date());

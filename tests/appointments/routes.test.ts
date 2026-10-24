@@ -137,7 +137,7 @@ describe('calendar feed routes', () => {
   }
 
   it('requires a session and an Origin to mint a feed', async () => {
-    expect((await createFeed(req('/api/calendar/feeds', null, { method: 'POST' }))).status).toBe(401);
+    expect((await createFeed(req('/api/calendar/feeds', null, { method: 'POST' }))).status).toBe(404);
     expect((await createFeed(req('/api/calendar/feeds', 'alice', { method: 'POST', origin: false }))).status).toBe(403);
   });
 

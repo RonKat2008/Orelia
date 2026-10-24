@@ -3,6 +3,7 @@ import { getDb } from '../../db/client';
 import * as s from '../../db/schema';
 import type { FeedRow } from './feed';
 import { candidateSlotSchema, prepNotesSchema, type Appointment, type AppointmentKind, type AppointmentSource, type AppointmentStatus } from './schema';
+import { accountIdFromKey } from '../auth/viewer';
 
 export type NewAppointment = Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'remindedAt' | 'googleEventId' | 'requestMessageId' | 'sequence'> & { id?: string };
 export type AppointmentPatch = Partial<Pick<Appointment,
@@ -120,7 +121,8 @@ export class PostgresAppointmentStore implements AppointmentStore {
     return rows.map(rowToAppointment);
   }
   async listForOwner(ownerKey: string) {
-    const owned = this.db.select({ id: s.cases.id }).from(s.cases).where(eq(s.cases.ownerSessionId, ownerKey));
+    const accountId = accountIdFromKey(ownerKey);
+    const owned = this.db.select({ id: s.cases.id }).from(s.cases).where(accountId ? eq(s.cases.accountId, accountId) : eq(s.cases.ownerSessionId, ownerKey));
     const rows = await this.db.select().from(s.appointments).where(inArray(s.appointments.caseId, owned)).orderBy(asc(sql`${s.appointments.startsAt} NULLS LAST`)).limit(500);
     return rows.map(rowToAppointment);
   }

@@ -49,6 +49,8 @@ import { signSession } from '../../lib/auth/session';
 import { checkRateLimit, CONDITION_BRIEF_LIMITS, DELETE_CASE_LIMITS, getRateLimitStore, REFRESH_RESEARCH_LIMITS, RESEARCH_LIMITS, resetMemoryRateLimitStore } from '../../lib/rate-limit';
 import { MemoryHistoryStore } from '../../lib/history/store';
 import { MemoryShareStore } from '../../lib/history/share';
+import { MemoryAppointmentStore } from '../../lib/appointments/store';
+import { MemoryConnectionStore } from '../../lib/integrations/google/connection';
 
 const inventory: { route: string; method: Method; handler: Handler }[] = [];
 for (const file of routeFiles()) {
@@ -58,7 +60,7 @@ for (const file of routeFiles()) {
   }
 }
 const cookie = (owner: string) => `wf_session=${signSession(owner, { WAYFINDER_SESSION_SECRET: SECRET })}`;
-const holder = globalThis as typeof globalThis & { __wayfinderOwnerStore?: MemoryOwnerStore; __wayfinderHistoryStore?: unknown; __wayfinderShareStore?: unknown };
+const holder = globalThis as typeof globalThis & { __wayfinderOwnerStore?: MemoryOwnerStore; __wayfinderHistoryStore?: unknown; __wayfinderShareStore?: unknown; __wayfinderAppointmentStore?: unknown; __wayfinderConnectionStore?: unknown };
 // Memory-backed stores (used when DATABASE_URL is empty) are storage boundaries too: fail them on the error probe.
 const failingWhenAsked = <T extends object>(store: T): T => new Proxy(store, {
   get(target, prop, receiver) {
@@ -86,6 +88,8 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   holder.__wayfinderHistoryStore = failingWhenAsked(new MemoryHistoryStore());
   holder.__wayfinderShareStore = failingWhenAsked(new MemoryShareStore());
+  holder.__wayfinderAppointmentStore = failingWhenAsked(new MemoryAppointmentStore());
+  holder.__wayfinderConnectionStore = failingWhenAsked(new MemoryConnectionStore());
   holder.__wayfinderOwnerStore = new MemoryOwnerStore();
   holder.__wayfinderOwnerStore.registerCase(CASE_ID, 'owner');
   holder.__wayfinderOwnerStore.registerContact(CONTACT_ID, CASE_ID);
@@ -97,6 +101,8 @@ afterEach(() => {
   delete holder.__wayfinderOwnerStore;
   delete holder.__wayfinderHistoryStore;
   delete holder.__wayfinderShareStore;
+  delete holder.__wayfinderAppointmentStore;
+  delete holder.__wayfinderConnectionStore;
   resetMemoryRateLimitStore();
   vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers();
 });

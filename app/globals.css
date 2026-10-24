@@ -1,22 +1,23 @@
 :root {
-  --ink: #1c1915;
-  --ink-soft: #3f3830;
-  --muted: #5c5348;
-  --paper: #f4efe6;
-  --paper-2: #fbf8f3;
-  --line: #d9d0c3;
-  --green: #1a4636;
-  --green-deep: #123328;
-  --banner-bg: #efe2cc;
-  --banner-ink: #2c2116;
-  --focus: #0b5cab;
-  --danger: #8a2b1f;
-  --warn: #6b4a12;
-  --ok: #1a4636;
-  --shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --sans: "Avenir Next", "Segoe UI", sans-serif;
-  color-scheme: light;
+  /* Legacy names used across pages, mapped onto the design tokens in
+     app/styles/tokens.css so every page follows the light/dark themes. */
+  --ink: var(--wf-ink);
+  --ink-soft: var(--wf-ink);
+  --muted: var(--wf-ink-muted);
+  --paper: var(--wf-paper);
+  --paper-2: var(--wf-paper-raised);
+  --line: var(--wf-rule);
+  --green: var(--wf-route);
+  --green-deep: var(--wf-ink);
+  --banner-bg: var(--wf-paper-raised);
+  --banner-ink: var(--wf-ink);
+  --focus: var(--wf-focus);
+  --danger: var(--wf-failed);
+  --warn: var(--wf-pending);
+  --ok: var(--wf-verified);
+  --shadow: var(--wf-shadow);
+  --serif: var(--wf-font-display);
+  --sans: var(--wf-font-text);
 }
 
 * {
@@ -31,7 +32,7 @@ body {
   color: var(--ink);
   font-family: var(--sans);
   font-size: 17px;
-  line-height: 1.5;
+  line-height: var(--wf-leading-text);
   overflow-wrap: break-word;
 }
 
@@ -81,22 +82,25 @@ a:hover {
 .eyebrow {
   margin: 0;
   color: var(--muted);
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.9rem;
 }
 
 h1,
 h2,
 h3 {
   font-family: var(--serif);
-  font-weight: 560;
+  font-weight: 500;
   line-height: 1.2;
   margin: 0 0 8px;
 }
 
 h1 {
-  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-size: var(--wf-text-hero);
+  font-weight: 400;
+  line-height: var(--wf-leading-display);
+  letter-spacing: -0.01em;
+  max-width: 22ch;
+  margin-bottom: 16px;
 }
 
 h2 {
@@ -148,10 +152,18 @@ select {
   width: 100%;
   font: inherit;
   color: var(--ink);
-  background: #fff;
+  background: var(--wf-paper);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--wf-radius-control);
   padding: 10px 12px;
+  transition: border-color var(--wf-duration-fast) ease;
+}
+
+input[type="text"]:hover,
+input[type="number"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--muted);
 }
 
 textarea {
@@ -169,23 +181,45 @@ button,
 .button {
   font: inherit;
   font-weight: 600;
-  border-radius: 999px;
+  border-radius: var(--wf-radius-control);
   border: 1px solid var(--green);
   background: var(--green);
-  color: #f7f4ee;
-  padding: 10px 16px;
+  color: var(--wf-paper-raised);
+  padding: 10px 18px;
   min-height: 44px;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: background-color var(--wf-duration-fast) ease, border-color var(--wf-duration-fast) ease,
+    transform var(--wf-duration-fast) ease;
+}
+
+button:hover:not(:disabled),
+.button:hover {
+  background: var(--wf-ink);
+  border-color: var(--wf-ink);
+  color: var(--wf-paper-raised);
+}
+
+button:active:not(:disabled),
+.button:active {
+  transform: scale(0.98);
 }
 
 button.secondary,
 a.secondary {
   background: transparent;
-  color: var(--green-deep);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+button.secondary:hover:not(:disabled),
+a.secondary:hover {
+  background: var(--wf-paper-sunk);
+  border-color: var(--muted);
+  color: var(--ink);
 }
 
 button:disabled {
@@ -196,7 +230,8 @@ button:disabled {
 .banner {
   background: var(--banner-bg);
   color: var(--banner-ink);
-  border-bottom: 1px solid #ddc9a6;
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 0 3px 0 var(--wf-pending);
 }
 
 .banner p {
@@ -212,19 +247,17 @@ button:disabled {
   gap: 6px;
   border-radius: 999px;
   padding: 2px 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 600;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--wf-paper);
 }
 
 .status.queued { color: var(--muted); }
-.status.running { color: var(--focus); border-color: #b9d2ee; }
-.status.done { color: var(--ok); border-color: #b7d2c6; }
-.status.failed { color: var(--danger); border-color: #ecc3bc; }
-.status.not_implemented { color: var(--warn); border-color: #ead7ae; }
+.status.running { color: var(--warn); border-color: currentColor; }
+.status.done { color: var(--ok); border-color: currentColor; }
+.status.failed { color: var(--danger); border-color: currentColor; }
+.status.not_implemented { color: var(--wf-neutral); }
 
 .cards {
   display: grid;
@@ -247,6 +280,8 @@ button:disabled {
 
 .notice {
   border-left: 3px solid var(--green);
+  border-radius: 0 var(--wf-radius-control) var(--wf-radius-control) 0;
+  background: var(--wf-paper-raised);
   padding: 8px 12px;
   margin: 0;
   color: var(--ink-soft);
@@ -288,7 +323,114 @@ details summary {
   align-items: center;
 }
 
+/* Intake: the four steps, drawn as a route with waypoints. */
+.journey {
+  list-style: none;
+  counter-reset: journey;
+  margin: 0 0 32px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.journey li {
+  counter-increment: journey;
+  position: relative;
+  padding-top: 30px;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.journey li::before {
+  content: counter(journey);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  background: var(--paper);
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  z-index: 1;
+}
+
+.journey li::after {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 22px;
+  right: -12px;
+  border-top: 2px dotted var(--line);
+}
+
+.journey li:first-child::before {
+  background: var(--green);
+  color: var(--wf-paper-raised);
+}
+
+.journey li:first-child::after {
+  border-top-style: solid;
+  border-top-color: var(--green);
+}
+
+.journey li:last-child::after {
+  display: none;
+}
+
+.resource-card {
+  display: grid;
+  gap: 16px;
+}
+
+.resource-card__head h3 {
+  font-size: 1.4rem;
+}
+
+.resource-card[data-selected="true"] {
+  border-color: var(--green);
+  box-shadow: inset 4px 0 0 var(--green), var(--shadow);
+}
+
+.resource-card__actions {
+  display: grid;
+  gap: 4px;
+}
+
+.swarm-cards-heading {
+  margin-top: 16px;
+}
+
 @media (max-width: 640px) {
+  .journey {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .journey li {
+    padding: 0 0 16px 34px;
+    min-height: 22px;
+  }
+
+  .journey li::after {
+    top: 22px;
+    left: 10px;
+    right: auto;
+    bottom: 0;
+    border-top: 0;
+    border-left: 2px dotted var(--line);
+  }
+
+  .journey li:first-child::after {
+    border-left-style: solid;
+    border-left-color: var(--green);
+  }
+
   .grid-2 {
     grid-template-columns: 1fr;
   }

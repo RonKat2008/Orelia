@@ -4,7 +4,7 @@ export type Kind = 'expert' | 'institution' | 'trial' | 'organization';
 export interface Candidate { id: string; caseId: string; targetId: string; targetKind: Kind; purpose?: 'advocacy' | 'financial_aid' | 'travel_aid'; evidence: { claim: string; claimType: string; sourceUrl: string }[] }
 export interface Contact extends SafetyContact { id: string; caseId: string; targetId: string; targetKind: Kind; channel: 'email' | 'voice'; address: string; purpose?: Candidate['purpose'] }
 export interface Consent { contactId: string; sharedFields: string[]; approvedAt: string }
-export interface Draft extends SafetyDraft { id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null }
+export interface Draft extends SafetyDraft { contextDocIds?: string[]; id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null }
 export interface ProviderRef { messageId?: string; threadId?: string; callId?: string }
 export interface Channel { kind: 'email' | 'voice'; send(draft: GatedDraft): Promise<ProviderRef> }
 /** Atomic methods must serialize competing requests in the backing store. */

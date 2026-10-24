@@ -1,3 +1,4 @@
+import { search } from '../case-docs';
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
 import { parseAllowlist, normalizeAddress } from '../safety/allowlist';
@@ -44,7 +45,8 @@ export class OutreachService {
     if (!consent?.approvedAt) throw new OutreachError(422, ['consent_required']);
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
-    const draft = createDraft(contact, consent, record);
+    const docs = await search({ caseId: contact.caseId, contactId: contact.id, allowedFields: [], query: 'intake requirements hours referral process', k: 5 });
+    const draft = createDraft(contact, consent, record, docs);
     await this.store.saveDraft(draft);
     return draft;
   }

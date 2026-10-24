@@ -19,6 +19,8 @@ export interface WorkflowStep {
 }
 
 /** @deprecated Retired: contact-connection is now triggered by CONTACT_APPROVED. Kept for compatibility. */
+/** Emitted when the patient approves a contact plan; the executor re-reads the plan and its approval from the store. */
+export const PLAN_APPROVED = 'plan/approved';
 export const CONTACT_CREATED = 'contact/created';
 export const CONTACT_APPROVED = 'contact/approved';
 export const CONTACT_REPLY = 'contact/reply';

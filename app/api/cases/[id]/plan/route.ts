@@ -5,6 +5,7 @@ import { applyPlanEdits, buildContactPlan } from '@/lib/plan';
 import { planPatchBodySchema } from '@/lib/plan/contract';
 import { loadPlanInputs } from '@/lib/plan/inputs';
 import { getPlanStore } from '@/lib/plan/store';
+import { emitPlanApproved } from '@/lib/plan/approved-event';
 import { jsonError, parseBody, parseId } from '../../_lib/http';
 
 export const runtime = 'nodejs';
@@ -64,6 +65,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (!applied.ok) return jsonError(400, applied.error);
     const saved = await store.save(applied.plan, current.version);
     if (!saved) return jsonError(409, 'The contact plan changed; reload and try again');
+    if (current.status !== 'approved' && saved.status === 'approved') await emitPlanApproved(id, saved.version);
     return NextResponse.json({ plan: saved });
   } catch (err) {
     return jsonError(500, 'Unable to update the contact plan', err);

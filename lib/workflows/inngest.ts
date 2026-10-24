@@ -11,6 +11,7 @@ import {
   createStalledRevivalWorkflow,
   type ConnectionDeps,
 } from './connection-workflow';
+import { createPlanExecutionWorkflow, createDefaultPlanExecDeps } from './plan-workflow';
 
 export const inngest = new Inngest({ id: 'wayfinder' });
 
@@ -32,5 +33,6 @@ export function createWorkflowFunctions(deps: ConnectionDeps) {
     createFollowUpSendWorkflow(deps),
     createStalledRevivalWorkflow(deps),
     createConnectionRestartWorkflow(deps),
+    createPlanExecutionWorkflow(createDefaultPlanExecDeps(deps)),
   ].map(toInngestFunction);
 }

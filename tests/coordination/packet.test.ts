@@ -209,6 +209,10 @@ void SUMMARY_DOC; void OUTSIDE_DOC;
 describe('timeline lines that start with their own date', () => {
   const doc = { id: 'd-1', title: 'Notes', text: 'Clinic notes\n06/15/2021 — Follow-up visit\nAdmission 2023-04-02\n2019-06-12: Initial visit' };
   const timeline = buildSections({ name: 'Center', claims: [], docs: [doc], requirements: [], patientQuestions: [] }).find(s => s.key === 'timeline')!.items;
+  it('key test lines drop a leading date too', () => {
+    const tests = buildSections({ name: 'Center', claims: [], docs: [{ id: 'd-2', title: 'Imaging', text: '2024-12-05 — CT angiography head and neck\nClassification: Likely pathogenic' }], requirements: [], patientQuestions: [] }).find(s => s.key === 'tests')!.items;
+    expect(tests.map(i => [i.date, i.text])).toEqual([['2024-12-05', 'CT angiography head and neck'], [null, 'Classification: Likely pathogenic']]);
+  });
   it('drop the leading date so the packet does not print it twice', () => {
     expect(timeline.map(i => [i.date, i.text])).toEqual([
       ['2019-06-12', 'Initial visit'],

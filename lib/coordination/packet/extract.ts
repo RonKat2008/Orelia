@@ -235,8 +235,9 @@ export function buildSections(input: BuildInput, previousIncluded?: Partial<Reco
       const found = findDates(line)[0];
       const date = found?.date ?? null;
       const score = relevance(line, keywords);
-      if (date) timeline.push({ text: withoutLeadingDate(line, found), date, sourceDocId: doc.id, sourceUrl: null, score, order });
-      if (isTestLine(line)) tests.push({ item: { text: line, date, sourceDocId: doc.id, sourceUrl: null }, score, order });
+      const text = withoutLeadingDate(line, found);
+      if (date) timeline.push({ text, date, sourceDocId: doc.id, sourceUrl: null, score, order });
+      if (isTestLine(line)) tests.push({ item: { text, date, sourceDocId: doc.id, sourceUrl: null }, score, order });
     }
   });
 

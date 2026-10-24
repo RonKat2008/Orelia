@@ -1,3 +1,4 @@
+import { addUsage, emptyUsage, priceUsage, usageContext, caseBudget, BudgetExceededError } from "@/lib/ai/usage";
 import type Anthropic from "@anthropic-ai/sdk";
 import { createClaudeClient, hasClaudeCredentials } from "@/lib/ai/gateway";
 import { z, type ZodObject, type ZodRawShape, type ZodType } from "zod";
@@ -127,6 +128,7 @@ async function queryOnce(opts: RunAgentOptions<unknown>, prompt: string): Promis
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: prompt }];
 
   for (let turn = 0; turn < maxTurns; turn++) {
+    await usageContext.getStore()?.beforeCall();
     const response = await client.messages.create({
       model: opts.model,
       max_tokens: MAX_TOKENS,
@@ -134,6 +136,8 @@ async function queryOnce(opts: RunAgentOptions<unknown>, prompt: string): Promis
       ...(apiTools.length > 0 ? { tools: apiTools } : {}),
       messages,
     });
+
+    await usageContext.getStore()?.capture(response.model ?? opts.model, response.usage ?? {});
 
     if (response.stop_reason !== "tool_use") {
       if (response.stop_reason === "max_tokens") throw new Error("Model output was truncated (max_tokens)");
@@ -175,11 +179,23 @@ function tryParse<T>(text: string, schema: ZodType<T>): { ok: true; value: T } |
 export async function runAgent<T>(opts: RunAgentOptions<T>): Promise<T> {
   const runId = await opts.store.create(opts.caseId, opts.name);
   await opts.store.update(runId, { status: "running", startedAt: new Date() });
+  let usage = emptyUsage();
+  await opts.store.update(runId, { status: "running", ...usage });
   try {
     const offline = replayOffline();
     const output = offline
       ? await loadFixture(opts.name, opts.offlineKey, opts.output)
-      : await runLive(opts);
+      : await usageContext.run({
+          beforeCall: async () => {
+            const rows = await opts.store.listByCase(opts.caseId);
+            const spent = rows.reduce((sum, row) => sum + (row.costUsd ?? 0), 0);
+            if (spent >= caseBudget()) throw new BudgetExceededError();
+          },
+          capture: async (model, value) => {
+            usage = addUsage(usage, priceUsage(model, value));
+            await opts.store.update(runId, { status: "running", ...usage });
+          },
+        }, () => runLive(opts));
     assertNoMedicalAdvice(output);
     if (!offline && process.env.WAYFINDER_RECORD_LLM === "1") {
       await saveFixture(opts.name, opts.offlineKey, output);

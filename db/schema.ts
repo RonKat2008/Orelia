@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  doublePrecision,
   index,
   vector,
   integer,
@@ -275,6 +276,11 @@ export const reviews = pgTable("reviews", {
 });
 
 export const agentRuns = pgTable("agent_runs", {
+  tokensIn: integer("tokens_in").default(0).notNull(),
+  tokensOut: integer("tokens_out").default(0).notNull(),
+  cacheRead: integer("cache_read").default(0).notNull(),
+  cacheCreation: integer("cache_creation").default(0).notNull(),
+  costUsd: doublePrecision("cost_usd"),
   id: uuid("id").primaryKey().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()

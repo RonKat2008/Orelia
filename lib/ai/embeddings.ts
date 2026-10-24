@@ -1,3 +1,4 @@
+import { captureEmbeddingUsage, usageContext, type ProviderUsage } from './usage';
 import { modelFor } from '@/config/models';
 import { gatewayConfig } from './gateway';
 
@@ -28,6 +29,7 @@ export async function embed(texts: string[]): Promise<number[][]> {
   for (let offset = 0; offset < texts.length; offset += 150) {
     const batch = texts.slice(offset, offset + 150);
     for (let attempt = 0; ; attempt++) {
+      await usageContext.getStore()?.beforeCall();
       const response = await fetch(`${gateway.base}/v1/embeddings`, {
         method: 'POST', headers: { Authorization: `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: modelFor('embedding'), input: batch, dimensions: DIMENSIONS }),
@@ -39,7 +41,8 @@ export async function embed(texts: string[]): Promise<number[][]> {
         continue;
       }
       if (!response.ok) throw new Error(`Embedding request failed (${response.status})`);
-      const data = await response.json() as { data?: { index: number; embedding: number[] }[] };
+      const data = await response.json() as { model?: string; usage?: ProviderUsage; data?: { index: number; embedding: number[] }[] };
+      await captureEmbeddingUsage(data.model ?? modelFor('embedding'), data.usage ?? {});
       const sorted = data.data?.slice().sort((a, b) => a.index - b.index);
       if (!sorted || sorted.length !== batch.length || sorted.some((row, i) => row.index !== i || !Array.isArray(row.embedding) || row.embedding.length !== DIMENSIONS || row.embedding.some(n => !Number.isFinite(n)) || !row.embedding.some(n => n !== 0))) {
         throw new Error('Invalid embedding response');

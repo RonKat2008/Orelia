@@ -1,0 +1,525 @@
+{
+  "source_url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find",
+  "generated_at": "2026-10-24T04:30:51.590Z",
+  "method": "Fetched the cancer.gov find page with curl and parsed each state-grouped list entry (name, location, designation, profile link) from its HTML, de-duplicated by profile URL.",
+  "centers": [
+    {
+      "name": "Abramson Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Philadelphia",
+      "state": "PA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/upennabramson"
+    },
+    {
+      "name": "Alvin J. Siteman Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "St. Louis",
+      "state": "MO",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/washingtonsiteman"
+    },
+    {
+      "name": "Cancer Center at Illinois",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "Urbana",
+      "state": "IL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ccil"
+    },
+    {
+      "name": "Case Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Cleveland",
+      "state": "OH",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/casewestern"
+    },
+    {
+      "name": "Chao Family Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Orange",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucirvinechao"
+    },
+    {
+      "name": "City of Hope Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Duarte",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/beckmancityofhope"
+    },
+    {
+      "name": "Cold Spring Harbor Laboratory Cancer Center",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "Cold Spring Harbor",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/coldspringharbor"
+    },
+    {
+      "name": "Dan L Duncan Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Houston",
+      "state": "TX",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/baylorduncan"
+    },
+    {
+      "name": "Dana-Farber/Harvard Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Boston",
+      "state": "MA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/dfharvard"
+    },
+    {
+      "name": "Dartmouth Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Lebanon",
+      "state": "NH",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/dartmouthnorriscotton"
+    },
+    {
+      "name": "David H. Koch Institute for Integrative Cancer Research at MIT",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "Cambridge",
+      "state": "MA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/mitkoch"
+    },
+    {
+      "name": "Duke Cancer Institute",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Durham",
+      "state": "NC",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/dukeci"
+    },
+    {
+      "name": "Fox Chase Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Philadelphia",
+      "state": "PA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/foxchase"
+    },
+    {
+      "name": "Fred and Pamela Buffett Cancer Center",
+      "designation": "Clinical Cancer Center",
+      "city": "Omaha",
+      "state": "NE",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/nebraska"
+    },
+    {
+      "name": "Fred Hutchinson/University of Washington/Seattle Children’s Cancer Consortium",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Seattle",
+      "state": "WA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/fredhutchcrc"
+    },
+    {
+      "name": "Georgetown Lombardi Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Washington",
+      "state": "DC",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/georgetownlombardi"
+    },
+    {
+      "name": "Harold C. Simmons Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Dallas",
+      "state": "TX",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/utswsimmons"
+    },
+    {
+      "name": "Herbert Irving Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "New York",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/irvingcolumbia"
+    },
+    {
+      "name": "Holden Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Iowa City",
+      "state": "IA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/iowaholden"
+    },
+    {
+      "name": "Hollings Cancer Center",
+      "designation": "Clinical Cancer Center",
+      "city": "Charleston",
+      "state": "SC",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/muschollings"
+    },
+    {
+      "name": "Huntsman Cancer Institute",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Salt Lake City",
+      "state": "UT",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/utahhuntsman"
+    },
+    {
+      "name": "Indiana University Melvin and Bren Simon Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Indianapolis",
+      "state": "IN",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/indianasimon"
+    },
+    {
+      "name": "Jonsson Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Los Angeles",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uclajonsson"
+    },
+    {
+      "name": "Knight Cancer Institute",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Portland",
+      "state": "OR",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ohsuknight"
+    },
+    {
+      "name": "Laura and Isaac Perlmutter Cancer Center at NYU Langone Health",
+      "designation": "Comprehensive Cancer Center",
+      "city": "New York",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/nyuci"
+    },
+    {
+      "name": "Markey Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Lexington",
+      "state": "KY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ukmarkey"
+    },
+    {
+      "name": "Masonic Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Minneapolis",
+      "state": "MN",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/minnesotamasonic"
+    },
+    {
+      "name": "Mayo Clinic Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Phoenix",
+      "state": "AZ",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/mayoclinic"
+    },
+    {
+      "name": "Mays Cancer Center at UT Health San Antonio",
+      "designation": "Clinical Cancer Center",
+      "city": "San Antonio",
+      "state": "TX",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/utsanantonio"
+    },
+    {
+      "name": "Memorial Sloan-Kettering Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "New York",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/memorialsloankettering"
+    },
+    {
+      "name": "Moffitt Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Tampa",
+      "state": "FL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/moffitt"
+    },
+    {
+      "name": "Montefiore Einstein Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Bronx",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/meccc"
+    },
+    {
+      "name": "Moores Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "La Jolla",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucsdmoores"
+    },
+    {
+      "name": "Mount Sinai Tisch Cancer Center",
+      "designation": "Clinical Cancer Center",
+      "city": "New York",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/tischmountsinai"
+    },
+    {
+      "name": "O’Neal Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Birmingham",
+      "state": "AL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uabccc"
+    },
+    {
+      "name": "Purdue Institute for Cancer Research",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "West Lafayette",
+      "state": "IN",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/purdueccr"
+    },
+    {
+      "name": "Robert H. Lurie Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Chicago",
+      "state": "IL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/northwesternlurie"
+    },
+    {
+      "name": "Roswell Park Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Buffalo",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/roswellpark"
+    },
+    {
+      "name": "Rutgers Cancer Institute of New Jersey",
+      "designation": "Comprehensive Cancer Center",
+      "city": "New Brunswick",
+      "state": "NJ",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/cinj"
+    },
+    {
+      "name": "Salk Institute Cancer Center",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "La Jolla",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/salk"
+    },
+    {
+      "name": "Sanford Burnham Prebys Medical Discovery Institute",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "La Jolla",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/sanfordburnham"
+    },
+    {
+      "name": "Sidney Kimmel Cancer Center at Thomas Jefferson University",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Philadelphia",
+      "state": "PA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/jeffersonkimmel"
+    },
+    {
+      "name": "Sidney Kimmel Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Baltimore",
+      "state": "MD",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/hopkinskimmel"
+    },
+    {
+      "name": "St. Jude Children's Research Hospital",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Memphis",
+      "state": "TN",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/stjude"
+    },
+    {
+      "name": "Stanford Cancer Institute (SCI)",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Stanford",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/stanfordci"
+    },
+    {
+      "name": "Stephenson Cancer Center",
+      "designation": "Clinical Cancer Center",
+      "city": "Oklahoma City",
+      "state": "OK",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/stephenson"
+    },
+    {
+      "name": "Sylvester Comprehensive Cancer Center",
+      "designation": "Clinical Cancer Center",
+      "city": "Miami",
+      "state": "FL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/sylvester-miami"
+    },
+    {
+      "name": "The Barbara Ann Karmanos Cancer Institute",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Detroit",
+      "state": "MI",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/waynestatekarmanos"
+    },
+    {
+      "name": "The Jackson Laboratory Cancer Center",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "Bar Harbor",
+      "state": "ME",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/jacksonlab"
+    },
+    {
+      "name": "The Ohio State University Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Columbus",
+      "state": "OH",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/osujames"
+    },
+    {
+      "name": "The University of Chicago Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Chicago",
+      "state": "IL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uchicagoccc"
+    },
+    {
+      "name": "The University of Kansas Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Kansas City",
+      "state": "KS",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/kucc"
+    },
+    {
+      "name": "The University of Texas MD Anderson Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Houston",
+      "state": "TX",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/mdanderson"
+    },
+    {
+      "name": "The Wistar Institute Cancer Center",
+      "designation": "Basic Laboratory Cancer Center",
+      "city": "Philadelphia",
+      "state": "PA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/wistar"
+    },
+    {
+      "name": "UC Davis Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Sacramento",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucdaviscc"
+    },
+    {
+      "name": "UCSF Helen Diller Family Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "San Francisco",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucsfhelendiller"
+    },
+    {
+      "name": "UNC Lineberger Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Chapel Hill",
+      "state": "NC",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/unclineberger"
+    },
+    {
+      "name": "University of Arizona Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Tucson",
+      "state": "AZ",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/arizonacc"
+    },
+    {
+      "name": "University of Colorado Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Aurora",
+      "state": "CO",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucolorado"
+    },
+    {
+      "name": "University of Florida Health Cancer Institute",
+      "designation": "Clinical Cancer Center",
+      "city": "Gainesville",
+      "state": "FL",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ufhealth"
+    },
+    {
+      "name": "University of Hawai'i Cancer Center",
+      "designation": "Clinical Cancer Center",
+      "city": "Honolulu",
+      "state": "HI",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uhawaiicc"
+    },
+    {
+      "name": "University of Maryland Marlene and Stewart Greenebaum Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Baltimore",
+      "state": "MD",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/umdgreenebaum"
+    },
+    {
+      "name": "University of Michigan Rogel Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Ann Arbor",
+      "state": "MI",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/umichiganccc"
+    },
+    {
+      "name": "University of New Mexico Cancer Research and Treatment Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Albuquerque",
+      "state": "NM",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/newmexicocrtc"
+    },
+    {
+      "name": "University of Virginia Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Charlottesville",
+      "state": "VA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uvacc"
+    },
+    {
+      "name": "University of Wisconsin Carbone Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Madison",
+      "state": "WI",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uwcarbone"
+    },
+    {
+      "name": "UPMC Hillman Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Pittsburgh",
+      "state": "PA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/upci"
+    },
+    {
+      "name": "USC Norris Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Los Angeles",
+      "state": "CA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uscnorris"
+    },
+    {
+      "name": "Vanderbilt-Ingram Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Nashville",
+      "state": "TN",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/vanderbiltingram"
+    },
+    {
+      "name": "VCU Massey Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Richmond",
+      "state": "VA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/vcumassey"
+    },
+    {
+      "name": "Wake Forest Baptist Comprehensive Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Winston-Salem",
+      "state": "NC",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/wakeforest"
+    },
+    {
+      "name": "Wilmot Cancer Institute",
+      "designation": "Clinical Cancer Center",
+      "city": "Rochester",
+      "state": "NY",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/wilmot"
+    },
+    {
+      "name": "Winship Cancer Institute",
+      "designation": "Comprehensive Cancer Center",
+      "city": "Atlanta",
+      "state": "GA",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/emorywinship"
+    },
+    {
+      "name": "Yale Cancer Center",
+      "designation": "Comprehensive Cancer Center",
+      "city": "New Haven",
+      "state": "CT",
+      "url": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/yalecc"
+    }
+  ]
+}

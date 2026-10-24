@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AgentTool } from "@/lib/agents/runtime";
 import type { ExaPort } from "./source-ports";
 import { trackedTool, type ProvenanceTracker } from "./shared";
+import { UNTRUSTED_NOTICE, cleanField, wrapUntrusted } from "./untrusted";
 
 const MAX_TEXT_CHARS = 700;
 const DEFAULT_RESULTS = 8;
@@ -24,7 +25,12 @@ export function exaSearchTool(exa: ExaPort, tracker: ProvenanceTracker): AgentTo
       const results = await exa.search({ query, numResults: numResults ?? DEFAULT_RESULTS });
       return {
         query,
-        results: results.map((r) => ({ title: r.title, url: r.url, excerpt: r.text?.slice(0, MAX_TEXT_CHARS) })),
+        notice: UNTRUSTED_NOTICE,
+        results: results.map((r) => ({
+          title: cleanField(r.title),
+          url: r.url,
+          excerpt: wrapUntrusted(r.text, MAX_TEXT_CHARS, r.url),
+        })),
       };
     },
   });

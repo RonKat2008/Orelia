@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { HAIKU } from "@/lib/agents/models";
 import { toStateCode } from "./geo";
+import { UNTRUSTED_NOTICE, cleanField } from "./untrusted";
 import { runResearch, trackedTool } from "./shared";
 import type { TrialRegistry } from "@/lib/contracts";
 import type { CtgovPort, CtgovStudy } from "./source-ports";
@@ -57,13 +58,14 @@ function trialsTool(ctgov: CtgovPort, tracker: ProvenanceTracker): AgentTool {
         .slice(0, MAX_TRIALS);
       for (const s of usStudies) tracker.rememberTrial(s.nctId, registryFacts(s, s.sites));
       return {
+        notice: UNTRUSTED_NOTICE,
         trials: usStudies.map((s) => ({
           nctId: s.nctId,
-          title: s.title,
+          title: cleanField(s.title) ?? "",
           status: s.status,
           phases: s.phases,
-          sponsor: s.sponsor,
-          usSites: s.sites.slice(0, MAX_SITES),
+          sponsor: cleanField(s.sponsor),
+          usSites: s.sites.slice(0, MAX_SITES).map((site) => ({ ...site, facility: cleanField(site.facility) })),
           sourceUrl: ctgovUrl(s.nctId),
         })),
       };

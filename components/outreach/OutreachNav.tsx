@@ -3,6 +3,7 @@ import "./outreach.css";
 
 const links = [
   { slug: "consent", label: "Consent" },
+  { slug: "plan", label: "Plan" },
   { slug: "outbox", label: "Outbox" },
   { slug: "tracker", label: "Tracker" },
   { slug: "threads", label: "Threads" },

@@ -58,6 +58,10 @@ describe("resolveJourney", () => {
 
   it("marks earlier steps complete and names a single current step", () => {
     const resolved = plan("ready", { selectedCount: 1, contacts: null });
+    expect(resolved.steps.map((step) => step.id)).toEqual([
+      "intake", "research", "shortlist", "consent", "plan", "outreach", "tracker",
+    ]);
+    expect(resolved.steps.find((step) => step.id === "plan")?.href).toBe(`/cases/${caseId}/plan`);
     expect(resolved.steps.filter((step) => step.state === "current").map((step) => step.id)).toEqual(["consent"]);
     expect(resolved.steps.filter((step) => step.state === "complete").map((step) => step.id)).toEqual([
       "intake",

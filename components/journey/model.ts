@@ -3,6 +3,7 @@ export const JOURNEY_STAGES = [
   "research",
   "shortlist",
   "consent",
+  "plan",
   "outreach",
   "tracker",
 ] as const;
@@ -14,6 +15,7 @@ export const STAGE_LABELS: Record<JourneyStage, string> = {
   research: "Research",
   shortlist: "Shortlist",
   consent: "Consent",
+  plan: "Plan",
   outreach: "Outreach",
   tracker: "Tracker",
 };
@@ -55,6 +57,7 @@ const NEXT: Record<JourneyStage, { label: string; path: (caseId: string) => stri
   research: { label: "Open the research swarm", path: (id) => `/cases/${id}/swarm` },
   shortlist: { label: "Choose who to contact", path: (id) => `/cases/${id}/shortlist` },
   consent: { label: "Choose fields to share", path: (id) => `/cases/${id}/consent` },
+  plan: { label: "Review the contact plan", path: (id) => `/cases/${id}/plan` },
   outreach: { label: "Review drafts before anything is sent", path: (id) => `/cases/${id}/outbox` },
   tracker: { label: "Open the tracker", path: (id) => `/cases/${id}/tracker` },
 };
@@ -64,6 +67,7 @@ export function stageHref(stage: JourneyStage, caseId: string): string {
   if (stage === "research") return `/cases/${caseId}/swarm`;
   if (stage === "shortlist") return `/cases/${caseId}/shortlist`;
   if (stage === "consent") return `/cases/${caseId}/consent`;
+  if (stage === "plan") return `/cases/${caseId}/plan`;
   if (stage === "outreach") return `/cases/${caseId}/outbox`;
   return `/cases/${caseId}/tracker`;
 }

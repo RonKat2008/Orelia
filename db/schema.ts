@@ -381,3 +381,13 @@ export const webApplications = pgTable("web_applications", {
   result: jsonb("result").$type<Record<string, unknown>>(),
   ...timestamps,
 }, (table) => [index("web_applications_case_idx").on(table.caseId)]);
+
+// ---- research-to-care (rd-experts lane): expert_traces ----
+/** One row per tracer run; the full ExpertTrace (chains + code-stamped evidence) lives in `trace`. Latest by traced_at wins. */
+export const expertTraces = pgTable("expert_traces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  tracedAt: timestamp("traced_at", { withTimezone: true }).notNull().defaultNow(),
+  trace: jsonb("trace").$type<Record<string, unknown>>().notNull(),
+}, (table) => [index("expert_traces_case_idx").on(table.caseId)]);
+// ---- end research-to-care ----

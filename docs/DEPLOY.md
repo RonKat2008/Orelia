@@ -88,8 +88,9 @@ P = Production, Pr = Preview, D = Development. Names only below; never commit va
 | `NEON_AI_GATEWAY_TOKEN` | one of | one of | one of | Neon AI Gateway token. Mark Sensitive. |
 | `EXA_API_KEY` | yes | yes | optional | dashboard.exa.ai -> API keys. Required in prod, optional in demo mode. |
 | `NCBI_API_KEY` | optional | optional | optional | NCBI account settings. Raises PubMed rate limit; app works without it. |
-| `INNGEST_EVENT_KEY` | yes | yes | no | Inngest -> Manage -> Event Keys (section 6). |
-| `INNGEST_SIGNING_KEY` | yes | yes | no | Inngest -> Manage -> Signing Key (section 6). Starts with `signkey-`. |
+| `INNGEST_EVENT_KEY` | warn | warn | no | Inngest -> Manage -> Event Keys (section 6). |
+| `INNGEST_SIGNING_KEY` | warn | warn | no | Inngest -> Manage -> Signing Key (section 6). Starts with `signkey-`. |
+Missing Inngest keys only warn at build time; `/api/health` reports `inngest: "unconfigured"` with status `degraded` (HTTP 200), and workflow events (follow-ups, sends) are refused, so nothing is sent until they are set.
 | `AGENTMAIL_API_KEY` | yes | yes | optional | console.agentmail.to -> API Keys. Leave empty locally for dry-run mode. |
 | `AGENTMAIL_WEBHOOK_SECRET` | yes | yes | no | AgentMail webhook page after creating the webhook (section 7). Looks like `whsec_...`. Required in prod; in demo mode required once `AGENTMAIL_API_KEY` is set. |
 | `AGENTCALL_API_KEY` | if calls | if calls | optional | agentcall.co dashboard. Looks like `ac_live_...`. Skip entirely if not demoing voice. |

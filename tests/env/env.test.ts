@@ -70,8 +70,6 @@ describe("requirementsFor", () => {
     expect(names("demo")).toEqual([
       "DATABASE_URL",
       "MODEL_ACCESS",
-      "INNGEST_EVENT_KEY",
-      "INNGEST_SIGNING_KEY",
       "WAYFINDER_SESSION_SECRET",
       "OUTBOUND_ALLOWLIST",
     ]);
@@ -132,8 +130,9 @@ describe("assertEnv", () => {
     }
     expect(err).toBeInstanceOf(EnvValidationError);
     const e = err as EnvValidationError;
-    expect(e.message).toMatch(/^Missing required environment variables for prod: .*INNGEST_SIGNING_KEY.* \(see docs\/DEPLOY\.md\)$/);
-    expect(e.missing).toContain("INNGEST_SIGNING_KEY");
+    expect(e.message).toMatch(/^Missing required environment variables for prod: .*AGENTMAIL_WEBHOOK_SECRET.* \(see docs\/DEPLOY\.md\)$/);
+    expect(e.missing).toContain("AGENTMAIL_WEBHOOK_SECRET");
+    expect(e.missing).not.toContain("INNGEST_SIGNING_KEY");
     expect(e.missing).not.toContain("DATABASE_URL");
     expect(e.message).not.toContain(V);
     expect(JSON.stringify(e.missing)).not.toContain(V);
@@ -175,7 +174,7 @@ describe("warnings", () => {
 
 describe("deployStatus", () => {
   it("reports model access and outbound", () => {
-    expect(deployStatus({})).toEqual({ mode: "dev", gateway: "not", inngest: "not", outbound: "allowlist", modelAccess: "none" });
+    expect(deployStatus({})).toEqual({ mode: "dev", gateway: "not", inngest: "unconfigured", outbound: "allowlist", modelAccess: "none" });
     const s = deployStatus({
       VERCEL_ENV: "production",
       OUTBOUND_ALLOW_REAL: "true",

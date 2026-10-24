@@ -107,4 +107,21 @@ describe("GET /api/health", () => {
     expect(res.status).toBe(503);
     expect(res.headers.get("cache-control")).toBe("no-store");
   });
+
+  it("is degraded (still ok) in prod when only Inngest is unconfigured", async () => {
+    const { INNGEST_EVENT_KEY: _a, INNGEST_SIGNING_KEY: _b, ...noInngest } = prodComplete;
+    const r = await healthReport({ source: noInngest, pingDb: async () => {} });
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe("degraded");
+    expect(r.inngest).toBe("unconfigured");
+    expect(r.env.missing).toEqual([]);
+  });
+
+  it("is ok with Inngest configured and down when a webhook secret is missing", async () => {
+    expect((await healthReport({ source: prodComplete, pingDb: async () => {} })).status).toBe("ok");
+    const { AGENTMAIL_WEBHOOK_SECRET: _w, ...noSecret } = prodComplete;
+    const r = await healthReport({ source: noSecret, pingDb: async () => {} });
+    expect(r.ok).toBe(false);
+    expect(r.status).toBe("down");
+  });
 });

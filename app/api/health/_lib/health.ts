@@ -12,6 +12,8 @@ export type DbStatus = "up" | "down" | "not_configured";
 
 export interface HealthReport {
   ok: boolean;
+  /** "ok", "degraded" (only Inngest missing; still serving) or "down". */
+  status: "ok" | "degraded" | "down";
   mode: string;
   db: DbStatus;
   gateway: string;
@@ -48,8 +50,10 @@ export async function healthReport(deps: HealthDeps): Promise<HealthReport> {
   const status = deployStatus(deps.source);
   const db = await checkDb(deps);
   const sha = deps.source.VERCEL_GIT_COMMIT_SHA;
+  const ok = db !== "down" && envCheck.ok;
   return {
-    ok: db !== "down" && envCheck.ok,
+    ok,
+    status: !ok ? "down" : status.inngest === "unconfigured" && envCheck.mode !== "offline" && envCheck.mode !== "dev" ? "degraded" : "ok",
     mode: envCheck.mode,
     db,
     gateway: status.gateway,

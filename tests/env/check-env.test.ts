@@ -13,7 +13,7 @@ describe("check-env main", () => {
     const { code, out } = run(["--mode", "prod"], { DATABASE_URL: V });
     expect(code).toBe(0);
     expect(out).toContain("Mode: prod");
-    expect(out).toMatch(/✗ missing\s+INNGEST_SIGNING_KEY/);
+    expect(out).toMatch(/✗ missing\s+AGENTMAIL_WEBHOOK_SECRET/);
     expect(out).toMatch(/✓ set\s+DATABASE_URL/);
   });
 

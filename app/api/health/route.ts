@@ -6,7 +6,7 @@ import { healthReport } from "./_lib/health";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET /api/health -> deployment readiness. 200 when ok, 503 otherwise. No secrets, no error text. */
+/** GET /api/health -> deployment readiness. 200 when ok or degraded (Inngest unconfigured), 503 when down. No secrets, no error text. */
 export async function GET() {
   const report = await healthReport({
     source: process.env,

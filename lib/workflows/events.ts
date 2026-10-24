@@ -43,6 +43,11 @@ export function followUpApprovedEvent(d: {
 /** Real sender backed by the Inngest client (lazy import keeps tests offline). */
 export function inngestSendEvents(): SendEvents {
   return async (events) => {
+    // Fail closed: without Inngest nothing is queued, so no follow-up or send can happen.
+    const devServer = (process.env.INNGEST_DEV ?? '') !== '' && process.env.INNGEST_DEV !== '0';
+    if (!devServer && !(process.env.INNGEST_EVENT_KEY ?? '').trim()) {
+      throw new Error('Inngest is not configured (INNGEST_EVENT_KEY); workflow events are refused and nothing is sent');
+    }
     const { inngest } = await import('./inngest');
     await inngest.send(events as Parameters<typeof inngest.send>[0]);
   };

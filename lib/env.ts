@@ -144,8 +144,6 @@ export function requirementsFor(mode: EnvMode, source: EnvSource = process.env):
   const reqs: EnvRequirement[] = [
     { name: "DATABASE_URL", why: "Postgres (Neon) connection" },
     MODEL_ACCESS,
-    { name: "INNGEST_EVENT_KEY", why: "send durable workflow events" },
-    { name: "INNGEST_SIGNING_KEY", why: "verify Inngest function calls" },
     { name: "WAYFINDER_SESSION_SECRET", why: "sign session cookies" },
   ];
 
@@ -184,6 +182,10 @@ export interface EnvReport {
   unset: string[];
 }
 
+export function inngestConfigured(source: EnvSource = process.env): boolean {
+  return isSet(source, "INNGEST_EVENT_KEY") && isSet(source, "INNGEST_SIGNING_KEY");
+}
+
 function modelAccess(source: EnvSource): "gateway" | "anthropic" | "none" {
   if (isSet(source, GATEWAY_BASE) && isSet(source, GATEWAY_TOKEN)) return "gateway";
   if (isSet(source, "ANTHROPIC_API_KEY")) return "anthropic";
@@ -216,6 +218,12 @@ export function checkEnv(mode?: EnvMode, source: EnvSource = process.env): EnvRe
     warnings.push("WAYFINDER_SIM_TIME_SCALE is set in prod; simulated time should only be used for demos");
   }
 
+  if ((m === "prod" || m === "demo") && !inngestConfigured(source)) {
+    warnings.push(
+      "Inngest is not configured (INNGEST_EVENT_KEY / INNGEST_SIGNING_KEY): durable workflows and follow-ups are disabled and fail closed (nothing is sent)",
+    );
+  }
+
   const set = TRACKED_ENV_NAMES.filter((n) => isSet(source, n));
   const unset = TRACKED_ENV_NAMES.filter((n) => !isSet(source, n));
   return { mode: m, ok: missing.length === 0, missing, warnings, set, unset };
@@ -239,7 +247,7 @@ export function assertEnv(mode?: EnvMode, source: EnvSource = process.env): EnvR
 export function deployStatus(source: EnvSource = process.env): {
   mode: EnvMode;
   gateway: "configured" | "not";
-  inngest: "configured" | "not";
+  inngest: "configured" | "unconfigured";
   outbound: "allowlist" | "real";
   modelAccess: "gateway" | "anthropic" | "none";
 } {
@@ -247,7 +255,7 @@ export function deployStatus(source: EnvSource = process.env): {
   return {
     mode,
     gateway: isSet(source, GATEWAY_BASE) && isSet(source, GATEWAY_TOKEN) ? "configured" : "not",
-    inngest: isSet(source, "INNGEST_EVENT_KEY") && isSet(source, "INNGEST_SIGNING_KEY") ? "configured" : "not",
+    inngest: inngestConfigured(source) ? "configured" : "unconfigured",
     outbound: mode === "prod" && source.OUTBOUND_ALLOW_REAL === "true" ? "real" : "allowlist",
     modelAccess: modelAccess(source),
   };

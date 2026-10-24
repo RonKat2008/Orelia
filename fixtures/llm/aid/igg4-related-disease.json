@@ -2,8 +2,8 @@
   "records": [
     {
       "kind": "organization",
-      "id": "org:the-assistance-fund",
-      "name": "The Assistance Fund",
+      "id": "org:the-assistance-fund-igg4rd",
+      "name": "The Assistance Fund - IgG4-Related Disease Program",
       "organizationKind": "financial_aid",
       "url": "https://tafcares.org/newsroom/press-releases/the-assistance-fund-opens-new-program-for-immunoglobulin-g4-related-disease/",
       "evidenceRefs": [
@@ -12,25 +12,25 @@
     },
     {
       "kind": "organization",
-      "id": "org:national-organization-for-rare-disorders-nord-patient-assistance-programs",
+      "id": "org:nord-patient-assistance",
       "name": "National Organization for Rare Disorders (NORD) Patient Assistance Programs",
       "organizationKind": "financial_aid",
-      "url": "https://rarediseases.org/patient-assistance-programs/",
+      "url": "https://rarediseases.org/patient-assistance/page/2/",
       "evidenceRefs": [
-        "https://rarediseases.org/patient-assistance-programs/"
+        "https://rarediseases.org/patient-assistance/page/2/"
       ]
     }
   ],
   "evidence": [
     {
       "claimType": "financial_aid_program",
-      "claim": "A press release from The Assistance Fund announces a financial assistance program for people living with immunoglobulin G4-related disease, covering out-of-pocket costs such as copays and insurance premiums.",
+      "claim": "The Assistance Fund opened a new program for Immunoglobulin G4-Related Disease providing financial assistance for copayments, health insurance premiums, and incidental medical expenses",
       "sourceUrl": "https://tafcares.org/newsroom/press-releases/the-assistance-fund-opens-new-program-for-immunoglobulin-g4-related-disease/"
     },
     {
       "claimType": "financial_aid_program",
-      "claim": "NORD's Patient Assistance Programs page says NORD has helped patients who are struggling to afford their medications and care.",
-      "sourceUrl": "https://rarediseases.org/patient-assistance-programs/"
+      "claim": "NORD has provided assistance programs since 1987 including medication, financial assistance with insurance premiums and co-pays, diagnostic testing assistance, and travel assistance for clinical trials or consultation with disease specialists",
+      "sourceUrl": "https://rarediseases.org/patient-assistance/page/2/"
     }
   ]
 }

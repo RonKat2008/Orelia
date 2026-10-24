@@ -54,27 +54,27 @@
   "evidence": [
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT05994664 as RECRUITING (NA; sponsor Baylor College of Medicine) with U.S. sites in Houston, Texas.",
+      "claim": "ClinicalTrials.gov lists NCT05994664 as RECRUITING (sponsor Baylor College of Medicine) with a U.S. site in Houston, Texas.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT05994664"
     },
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT04806620 as RECRUITING (sponsor Brain Inflammation Collaborative) with U.S. sites in Delafield, Wisconsin.",
+      "claim": "ClinicalTrials.gov lists NCT04806620 as RECRUITING (sponsor Brain Inflammation Collaborative) with a U.S. site in Delafield, Wisconsin.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT04806620"
     },
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT07464093 as RECRUITING (NA; sponsor Brigham and Women's Hospital) with U.S. sites in Chestnut Hill, Massachusetts.",
+      "claim": "ClinicalTrials.gov lists NCT07464093 as RECRUITING (sponsor Brigham and Women's Hospital) with a U.S. site in Chestnut Hill, Massachusetts.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT07464093"
     },
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT02050113 as RECRUITING (NA; sponsor Andres Schanzer) with U.S. sites in Worcester, Massachusetts.",
+      "claim": "ClinicalTrials.gov lists NCT02050113 as RECRUITING (sponsor Andres Schanzer) with a U.S. site in Worcester, Massachusetts.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT02050113"
     },
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT05432466 as RECRUITING (PHASE3; sponsor Acer Therapeutics Inc.) with U.S. sites in Culver City, California.",
+      "claim": "ClinicalTrials.gov lists NCT05432466 as RECRUITING (Phase 3, sponsor Acer Therapeutics Inc.) with a U.S. site in Culver City, California.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT05432466"
     }
   ]

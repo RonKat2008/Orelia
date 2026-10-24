@@ -2,52 +2,12 @@
   "records": [
     {
       "kind": "trial",
-      "id": "trial:NCT07675967",
-      "nctId": "NCT07675967",
-      "title": "Clonal Hematopoiesis Chemotherapy and Radiation Effects Study",
-      "status": "RECRUITING",
-      "evidenceRefs": [
-        "https://clinicaltrials.gov/study/NCT07675967"
-      ]
-    },
-    {
-      "kind": "trial",
-      "id": "trial:NCT06625190",
-      "nctId": "NCT06625190",
-      "title": "Alpha/Beta T and B Cell Depletion With Zoledronic Acid for Solid Tumors",
-      "status": "RECRUITING",
-      "evidenceRefs": [
-        "https://clinicaltrials.gov/study/NCT06625190"
-      ]
-    },
-    {
-      "kind": "trial",
-      "id": "trial:NCT04390737",
-      "nctId": "NCT04390737",
-      "title": "Evaluate the Safety and Clinical Activity of HH2853",
-      "status": "RECRUITING",
-      "evidenceRefs": [
-        "https://clinicaltrials.gov/study/NCT04390737"
-      ]
-    },
-    {
-      "kind": "trial",
       "id": "trial:NCT07089992",
       "nctId": "NCT07089992",
       "title": "A Study of Pembrolizumab in People With Ultra-Rare Sarcomas",
       "status": "RECRUITING",
       "evidenceRefs": [
         "https://clinicaltrials.gov/study/NCT07089992"
-      ]
-    },
-    {
-      "kind": "trial",
-      "id": "trial:NCT07467772",
-      "nctId": "NCT07467772",
-      "title": "Ph 2 Elacestrant in ER Positive Uterine Sarcomas",
-      "status": "RECRUITING",
-      "evidenceRefs": [
-        "https://clinicaltrials.gov/study/NCT07467772"
       ]
     },
     {
@@ -64,32 +24,12 @@
   "evidence": [
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT07675967 as RECRUITING (sponsor Dana-Farber Cancer Institute) with U.S. sites in Boston, Massachusetts.",
-      "sourceUrl": "https://clinicaltrials.gov/study/NCT07675967"
-    },
-    {
-      "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT06625190 as RECRUITING (PHASE1/PHASE2; sponsor University of Florida) with U.S. sites in Gainesville, Florida.",
-      "sourceUrl": "https://clinicaltrials.gov/study/NCT06625190"
-    },
-    {
-      "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT04390737 as RECRUITING (PHASE1/PHASE2; sponsor Haihe Biopharma Co., Ltd.) with U.S. sites in Phoenix, Arizona; Jacksonville, Florida; Rochester, Minnesota; San Antonio, Texas.",
-      "sourceUrl": "https://clinicaltrials.gov/study/NCT04390737"
-    },
-    {
-      "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT07089992 as RECRUITING (PHASE2; sponsor Memorial Sloan Kettering Cancer Center) with U.S. sites in Basking Ridge, New Jersey; Middletown, New Jersey; Montvale, New Jersey; Commack, New York; Harrison, New York.",
+      "claim": "ClinicalTrials.gov lists NCT07089992 as RECRUITING (Phase 2, Memorial Sloan Kettering Cancer Center) with U.S. sites in Basking Ridge, NJ; Middletown, NJ; Montvale, NJ; Commack, NY; and Harrison, NY.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT07089992"
     },
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT07467772 as RECRUITING (PHASE2; sponsor Dana-Farber Cancer Institute) with U.S. sites in Boston, Massachusetts.",
-      "sourceUrl": "https://clinicaltrials.gov/study/NCT07467772"
-    },
-    {
-      "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT06239272 as RECRUITING (PHASE1/PHASE2; sponsor St. Jude Children's Research Hospital) with U.S. sites in Atlanta, Georgia; Chicago, Illinois; Baton Rouge, Louisiana; Boston, Massachusetts; St Louis, Missouri.",
+      "claim": "ClinicalTrials.gov lists NCT06239272 as RECRUITING (Phase 1/2, St. Jude Children's Research Hospital) with U.S. sites in Atlanta, GA; Chicago, IL; Baton Rouge, LA; Boston, MA; and St Louis, MO.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT06239272"
     }
   ]

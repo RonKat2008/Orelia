@@ -2,264 +2,70 @@
   "records": [
     {
       "kind": "expert",
-      "id": "expert:david-parham",
-      "name": "David Parham",
+      "id": "expert:akira-kawai",
+      "name": "Akira Kawai",
+      "specialty": "Musculoskeletal Oncology",
       "evidenceRefs": [
-        "lit:david-parham:30954717",
-        "lit:david-parham:30929036"
+        "lit:akira-kawai:41280247",
+        "lit:akira-kawai:41173044"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:sheri-spunt",
-      "name": "Sheri Spunt",
+      "id": "expert:bin-wang",
+      "name": "Bin Wang",
       "evidenceRefs": [
-        "lit:sheri-spunt:30954717",
-        "lit:sheri-spunt:30929036"
+        "lit:bin-wang:42286614"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:andrew-rosenberg",
-      "name": "Andrew Rosenberg",
+      "id": "expert:jie-liu",
+      "name": "Jie Liu",
+      "specialty": "Medical Oncology",
       "evidenceRefs": [
-        "lit:andrew-rosenberg:33247294",
-        "lit:andrew-rosenberg:20034988"
+        "lit:jie-liu:42286614"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:andrea-hayes-jordan",
-      "name": "Andrea Hayes-Jordan",
+      "id": "expert:adrian-lin",
+      "name": "Adrian Lin",
       "evidenceRefs": [
-        "lit:andrea-hayes-jordan:30954717",
-        "lit:andrea-hayes-jordan:30929036"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:paul-wakely",
-      "name": "Paul Wakely",
-      "evidenceRefs": [
-        "lit:paul-wakely:32113803",
-        "lit:paul-wakely:31233904"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:simon-kao",
-      "name": "Simon Kao",
-      "evidenceRefs": [
-        "lit:simon-kao:30954717",
-        "lit:simon-kao:30929036"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:steven-billings",
-      "name": "Steven Billings",
-      "evidenceRefs": [
-        "lit:steven-billings:26297060",
-        "lit:steven-billings:21677548"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:brielle-blanchard",
-      "name": "Brielle Blanchard",
-      "evidenceRefs": [
-        "lit:brielle-blanchard:37191372"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:edward-mccarthy",
-      "name": "Edward McCarthy",
-      "evidenceRefs": [
-        "lit:edward-mccarthy:33247294"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:jaylou-velez-torres",
-      "name": "Jaylou Velez-Torres",
-      "evidenceRefs": [
-        "lit:jaylou-velez-torres:33247294"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:jerad-gardner",
-      "name": "Jerad Gardner",
-      "evidenceRefs": [
-        "lit:jerad-gardner:37191372"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:julio-diaz-perez",
-      "name": "Julio Diaz-Perez",
-      "evidenceRefs": [
-        "lit:julio-diaz-perez:33247294"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:liping-li",
-      "name": "Liping Li",
-      "evidenceRefs": [
-        "lit:liping-li:37191372"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:smiljana-spasic",
-      "name": "Smiljana Spasic",
-      "evidenceRefs": [
-        "lit:smiljana-spasic:33247294"
-      ]
-    },
-    {
-      "kind": "expert",
-      "id": "expert:haijun-zhou",
-      "name": "Haijun Zhou",
-      "evidenceRefs": [
-        "lit:haijun-zhou:31087789"
+        "lit:adrian-lin:41899177"
       ]
     }
   ],
   "evidence": [
     {
-      "id": "lit:david-parham:30954717",
+      "id": "lit:akira-kawai:41280247",
       "claimType": "disease_publications",
-      "claim": "David Parham is listed as an author of PMID 30954717. In the PubMed results retrieved for Epithelioid sarcoma, David Parham appears on 4 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30954717/"
+      "claim": "Appears as an author on 2 papers about epithelioid sarcoma in the PubMed results retrieved; includes PMID 41280247.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41280247/"
     },
     {
-      "id": "lit:david-parham:30929036",
+      "id": "lit:akira-kawai:41173044",
       "claimType": "disease_publications",
-      "claim": "David Parham is listed as an author of PMID 30929036. In the PubMed results retrieved for Epithelioid sarcoma, David Parham appears on 4 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30929036/"
+      "claim": "Co-authored paper on regional lymph node metastasis in soft-tissue sarcoma (PMID 41173044).",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41173044/"
     },
     {
-      "id": "lit:sheri-spunt:30954717",
+      "id": "lit:bin-wang:42286614",
       "claimType": "disease_publications",
-      "claim": "Sheri Spunt is listed as an author of PMID 30954717. In the PubMed results retrieved for Epithelioid sarcoma, Sheri Spunt appears on 3 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30954717/"
+      "claim": "Appears as an author on 2 papers about soft tissue sarcoma in the PubMed results retrieved; includes PMID 42286614.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42286614/"
     },
     {
-      "id": "lit:sheri-spunt:30929036",
+      "id": "lit:jie-liu:42286614",
       "claimType": "disease_publications",
-      "claim": "Sheri Spunt is listed as an author of PMID 30929036. In the PubMed results retrieved for Epithelioid sarcoma, Sheri Spunt appears on 3 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30929036/"
+      "claim": "Appears as an author on 2 papers about soft tissue sarcoma in the PubMed results retrieved; includes PMID 42286614.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42286614/"
     },
     {
-      "id": "lit:andrew-rosenberg:33247294",
+      "id": "lit:adrian-lin:41899177",
       "claimType": "disease_publications",
-      "claim": "Andrew Rosenberg is listed as an author of PMID 33247294. In the PubMed results retrieved for Epithelioid sarcoma, Andrew Rosenberg appears on 2 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/33247294/"
-    },
-    {
-      "id": "lit:andrew-rosenberg:20034988",
-      "claimType": "disease_publications",
-      "claim": "Andrew Rosenberg is listed as an author of PMID 20034988. In the PubMed results retrieved for Epithelioid sarcoma, Andrew Rosenberg appears on 2 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/20034988/"
-    },
-    {
-      "id": "lit:andrea-hayes-jordan:30954717",
-      "claimType": "disease_publications",
-      "claim": "Andrea Hayes-Jordan is listed as an author of PMID 30954717. In the PubMed results retrieved for Epithelioid sarcoma, Andrea Hayes-Jordan appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30954717/"
-    },
-    {
-      "id": "lit:andrea-hayes-jordan:30929036",
-      "claimType": "disease_publications",
-      "claim": "Andrea Hayes-Jordan is listed as an author of PMID 30929036. In the PubMed results retrieved for Epithelioid sarcoma, Andrea Hayes-Jordan appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30929036/"
-    },
-    {
-      "id": "lit:paul-wakely:32113803",
-      "claimType": "disease_publications",
-      "claim": "Paul Wakely is listed as an author of PMID 32113803. In the PubMed results retrieved for Epithelioid sarcoma, Paul Wakely appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/32113803/"
-    },
-    {
-      "id": "lit:paul-wakely:31233904",
-      "claimType": "disease_publications",
-      "claim": "Paul Wakely is listed as an author of PMID 31233904. In the PubMed results retrieved for Epithelioid sarcoma, Paul Wakely appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31233904/"
-    },
-    {
-      "id": "lit:simon-kao:30954717",
-      "claimType": "disease_publications",
-      "claim": "Simon Kao is listed as an author of PMID 30954717. In the PubMed results retrieved for Epithelioid sarcoma, Simon Kao appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30954717/"
-    },
-    {
-      "id": "lit:simon-kao:30929036",
-      "claimType": "disease_publications",
-      "claim": "Simon Kao is listed as an author of PMID 30929036. In the PubMed results retrieved for Epithelioid sarcoma, Simon Kao appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30929036/"
-    },
-    {
-      "id": "lit:steven-billings:26297060",
-      "claimType": "disease_publications",
-      "claim": "Steven Billings is listed as an author of PMID 26297060. In the PubMed results retrieved for Epithelioid sarcoma, Steven Billings appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/26297060/"
-    },
-    {
-      "id": "lit:steven-billings:21677548",
-      "claimType": "disease_publications",
-      "claim": "Steven Billings is listed as an author of PMID 21677548. In the PubMed results retrieved for Epithelioid sarcoma, Steven Billings appears on 2 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/21677548/"
-    },
-    {
-      "id": "lit:brielle-blanchard:37191372",
-      "claimType": "disease_publications",
-      "claim": "Brielle Blanchard is listed as an author of PMID 37191372. In the PubMed results retrieved for Epithelioid sarcoma, Brielle Blanchard appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37191372/"
-    },
-    {
-      "id": "lit:edward-mccarthy:33247294",
-      "claimType": "disease_publications",
-      "claim": "Edward McCarthy is listed as an author of PMID 33247294. In the PubMed results retrieved for Epithelioid sarcoma, Edward McCarthy appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/33247294/"
-    },
-    {
-      "id": "lit:jaylou-velez-torres:33247294",
-      "claimType": "disease_publications",
-      "claim": "Jaylou Velez-Torres is listed as an author of PMID 33247294. In the PubMed results retrieved for Epithelioid sarcoma, Jaylou Velez-Torres appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/33247294/"
-    },
-    {
-      "id": "lit:jerad-gardner:37191372",
-      "claimType": "disease_publications",
-      "claim": "Jerad Gardner is listed as an author of PMID 37191372. In the PubMed results retrieved for Epithelioid sarcoma, Jerad Gardner appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37191372/"
-    },
-    {
-      "id": "lit:julio-diaz-perez:33247294",
-      "claimType": "disease_publications",
-      "claim": "Julio Diaz-Perez is listed as an author of PMID 33247294. In the PubMed results retrieved for Epithelioid sarcoma, Julio Diaz-Perez appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/33247294/"
-    },
-    {
-      "id": "lit:liping-li:37191372",
-      "claimType": "disease_publications",
-      "claim": "Liping Li is listed as an author of PMID 37191372. In the PubMed results retrieved for Epithelioid sarcoma, Liping Li appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37191372/"
-    },
-    {
-      "id": "lit:smiljana-spasic:33247294",
-      "claimType": "disease_publications",
-      "claim": "Smiljana Spasic is listed as an author of PMID 33247294. In the PubMed results retrieved for Epithelioid sarcoma, Smiljana Spasic appears on 1 paper(s), 1 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/33247294/"
-    },
-    {
-      "id": "lit:haijun-zhou:31087789",
-      "claimType": "disease_publications",
-      "claim": "Haijun Zhou is listed as an author of PMID 31087789. In the PubMed results retrieved for Epithelioid sarcoma, Haijun Zhou appears on 1 paper(s), 0 from the last 5 years.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31087789/"
+      "claim": "Appears as an author on 1 paper about soft tissue sarcoma in the PubMed results retrieved (PMID 41899177).",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41899177/"
     }
   ]
 }

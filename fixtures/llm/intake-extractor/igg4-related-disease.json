@@ -1,9 +1,6 @@
 {
-  "diseaseName": "IgG4-related disease",
-  "diseaseCodes": {
-    "icd10": "D89.84"
-  },
-  "stageSummary": "Multi-organ; serum IgG4 412 mg/dL; IgG4+/IgG+ ratio approx. 55%; high disease activity (RI 14)",
+  "diseaseName": "IgG4-related disease (IgG4-RD)",
+  "stageSummary": "Multi-organ IgG4-related disease meeting 2019 ACR/EULAR classification criteria. Disease activity currently high (IgG4-RD responder index score 14).",
   "homeCity": "Asheville",
   "homeState": "NC",
   "insurer": "Bluepeak Health PPO",

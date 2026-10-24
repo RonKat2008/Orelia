@@ -24,12 +24,12 @@
   "evidence": [
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT07061938 as RECRUITING (PHASE1/PHASE2; sponsor Acepodia Biotech, Inc.) with U.S. sites in Atlanta, Georgia; Boston, Massachusetts.",
+      "claim": "ClinicalTrials.gov lists NCT07061938 as RECRUITING (Phase 1/Phase 2, sponsor Acepodia Biotech, Inc.) with U.S. sites in Atlanta, Georgia and Boston, Massachusetts.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT07061938"
     },
     {
       "claimType": "trial_recruiting",
-      "claim": "ClinicalTrials.gov lists NCT07190196 as RECRUITING (PHASE3; sponsor Sanofi) with U.S. sites in Fontana, California; Sacramento, California; San Jose, California; Tustin, California; Margate, Florida.",
+      "claim": "ClinicalTrials.gov lists NCT07190196 as RECRUITING (Phase 3, sponsor Sanofi) with U.S. sites in Fontana, California; Sacramento, California; San Jose, California; Tustin, California; and Margate, Florida.",
       "sourceUrl": "https://clinicaltrials.gov/study/NCT07190196"
     }
   ]

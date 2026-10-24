@@ -2,19 +2,131 @@
   "records": [
     {
       "kind": "institution",
-      "id": "inst:johns-hopkins-cardiovascular-connective-tissue-disorder-clinic",
-      "name": "Johns Hopkins Cardiovascular Connective Tissue Disorder Clinic",
+      "id": "inst:cleveland-clinic-veds",
+      "name": "Cleveland Clinic",
       "institutionKind": "rare_disease_center",
+      "city": "Cleveland",
+      "state": "OH",
+      "evidenceRefs": [
+        "https://www.fightveds.org/find-a-doctor"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:uh-cleveland-harrington",
+      "name": "UH Cleveland Medical Center, Harrington Heart and Vascular Institute",
+      "institutionKind": "rare_disease_center",
+      "city": "Cleveland",
+      "state": "OH",
+      "evidenceRefs": [
+        "https://www.fightveds.org/find-a-doctor"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:johns-hopkins-cvctd",
+      "name": "Johns Hopkins Institute of Genetic Medicine, Cardiovascular Connective Tissue Disorder Clinic",
+      "institutionKind": "rare_disease_center",
+      "city": "Baltimore",
+      "state": "MD",
       "evidenceRefs": [
         "https://www.hopkinsmedicine.org/genetic-medicine/patient-care/genetics-clinics/cardiovascular-connective-tissue-disorder-clinic"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:eds-center-baltimore",
+      "name": "EDS Center for Research & Clinical Care",
+      "institutionKind": "rare_disease_center",
+      "city": "Baltimore",
+      "state": "MD",
+      "evidenceRefs": [
+        "https://www.fightveds.org/find-a-doctor"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:vanderbilt-veds",
+      "name": "Vanderbilt Health",
+      "institutionKind": "rare_disease_center",
+      "city": "Nashville",
+      "state": "TN",
+      "evidenceRefs": [
+        "https://www.vanderbilthealth.com/condition/vascular-ehlers-danlos"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:mayo-clinic-ctd",
+      "name": "Mayo Clinic, Connective Tissue Disorder Clinic",
+      "institutionKind": "rare_disease_center",
+      "evidenceRefs": [
+        "https://www.mayoclinic.org/departments-centers/connective-tissue-disorder-clinic/overview/ovc-20567756"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:lurie-childrens-ctd",
+      "name": "Lurie Children's, Connective Tissue Disorders Program",
+      "institutionKind": "rare_disease_center",
+      "city": "Chicago",
+      "state": "IL",
+      "evidenceRefs": [
+        "https://www.luriechildrens.org/en/specialties-conditions/vascular-ehlers-danlos-syndrome-veds/"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:seattle-childrens-cardiac-genetics",
+      "name": "Seattle Children's Hospital, Cardiac Genetics Program",
+      "institutionKind": "rare_disease_center",
+      "city": "Seattle",
+      "state": "WA",
+      "evidenceRefs": [
+        "https://www.seattlechildrens.org/clinics/heart/treatments-and-services/cardiac-genetics/"
       ]
     }
   ],
   "evidence": [
     {
       "claimType": "disease_program",
-      "claim": "The Johns Hopkins Institute of Genetic Medicine lists a Cardiovascular Connective Tissue Disorder Clinic.",
+      "claim": "Cleveland Clinic has Dr. Sean Lyden with experience treating vascular Ehlers-Danlos Syndrome",
+      "sourceUrl": "https://www.fightveds.org/find-a-doctor"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "UH Cleveland Medical Center, Harrington Heart and Vascular Institute has Dr. Heather Gornik with experience treating vascular Ehlers-Danlos Syndrome",
+      "sourceUrl": "https://www.fightveds.org/find-a-doctor"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "Johns Hopkins Institute of Genetic Medicine provides expert diagnosis and treatment plans for people with aortic aneurysm syndromes and related disorders through the Cardiovascular Connective Tissue Disorder Clinic",
       "sourceUrl": "https://www.hopkinsmedicine.org/genetic-medicine/patient-care/genetics-clinics/cardiovascular-connective-tissue-disorder-clinic"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "EDS Center for Research & Clinical Care in Baltimore, MD treats vascular Ehlers-Danlos Syndrome",
+      "sourceUrl": "https://www.fightveds.org/find-a-doctor"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "Vanderbilt Health offers medical and support services with care teams having advanced training and extensive experience diagnosing and treating Vascular Ehlers-Danlos",
+      "sourceUrl": "https://www.vanderbilthealth.com/condition/vascular-ehlers-danlos"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "Mayo Clinic's Connective Tissue Disorder Clinic diagnoses and coordinates care for people affected with Ehlers-Danlos syndrome",
+      "sourceUrl": "https://www.mayoclinic.org/departments-centers/connective-tissue-disorder-clinic/overview/ovc-20567756"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "Lurie Children's follows patients with diagnoses of VEDS in the Connective Tissue Disorder Program",
+      "sourceUrl": "https://www.luriechildrens.org/en/specialties-conditions/vascular-ehlers-danlos-syndrome-veds/"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "Seattle Children's Hospital Cardiac Genetics Program serves children with Ehlers-Danlos syndrome, vascular type and related genetic conditions",
+      "sourceUrl": "https://www.seattlechildrens.org/clinics/heart/treatments-and-services/cardiac-genetics/"
     }
   ]
 }

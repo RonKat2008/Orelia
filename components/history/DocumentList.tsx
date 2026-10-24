@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Trash2 } from "lucide-react";
 import {
-  Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, List, ListRow,
 } from "@/components/ui";
 import type { HistoryTimeline } from "@/lib/history/contract";
 
@@ -35,31 +34,31 @@ export function DocumentList({
 
   return (
     <section aria-labelledby="docs-heading" className="grid gap-3">
-      <h3 id="docs-heading" className="m-0 font-display text-h4 font-normal text-ink">
+      <h2 id="docs-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
         Records you added ({documents.length})
-      </h3>
-      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-2 p-0">
+      </h2>
+      <List>
         {documents.map((doc) => (
-          <li key={doc.id} className="flex min-w-0 items-center justify-between gap-3 rounded-md border border-line bg-card p-3">
-            <span className="flex min-w-0 items-center gap-2">
-              <FileText aria-hidden className="size-4 shrink-0 text-teal" />
-              <span className="truncate text-body text-ink">{doc.title}</span>
-              <Badge tone="outline">{doc.docType.replaceAll("_", " ")}</Badge>
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={`Delete ${doc.title}`}
-              onClick={() => {
-                setError(null);
-                setPending(doc);
-              }}
-            >
-              <Trash2 aria-hidden /> Delete
-            </Button>
-          </li>
+          <ListRow
+            key={doc.id}
+            title={doc.title}
+            meta={doc.docType.replaceAll("_", " ")}
+            trailing={
+              <Button
+                variant="link"
+                className="min-h-11 text-small"
+                aria-label={`Delete ${doc.title}`}
+                onClick={() => {
+                  setError(null);
+                  setPending(doc);
+                }}
+              >
+                Delete
+              </Button>
+            }
+          />
         ))}
-      </ul>
+      </List>
       <Dialog open={pending !== null} onOpenChange={(open) => !open && !busy && setPending(null)}>
         <DialogContent>
           <DialogHeader>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { HistoryTimeline, HistorySummary } from "@/lib/history/contract";
 import { ALL_SHARE_SECTIONS, buildSummary } from "@/lib/history/summary";
 import { Skeleton } from "@/components/ui/feedback";
+import { LoadingState } from "@/components/ui/states";
 import { HistorySummaryView } from "./HistorySummaryView";
 import { PrintButton } from "./PrintButton";
 
@@ -25,11 +26,10 @@ export function PrintableSummary({ caseId }: { caseId: string }) {
 
   if (state.status === "loading") {
     return (
-      <div role="status" aria-busy="true" className="grid gap-4">
-        <span className="sr-only">Loading your summary</span>
+      <LoadingState label="Loading your summary">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
-      </div>
+      </LoadingState>
     );
   }
   if (state.status === "error") {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FlaskConical, Printer, ScrollText } from "lucide-react";
-import { Button, EmptyState, Skeleton, controlClasses, toast } from "@/components/ui";
+import { FlaskConical, Plus, Printer } from "lucide-react";
+import { Button, EmptyState, LoadingState, PageHeader, Skeleton, controlClasses, toast } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
 import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
 import {
@@ -21,6 +21,14 @@ import { ShareDialog } from "./ShareDialog";
 import { eventAnchorId, filterEvents, kindsToParam, parseKinds, toggleKind } from "./model";
 
 const HIGHLIGHT_MS = 4000;
+/** Heading level of the page title: h2 while the case shell still prints the h1 (lane A part 2 flips this). */
+const CASE_PAGE_HEADING = "h2" as const;
+
+const HEADER_COPY = {
+  eyebrow: "Medical history",
+  title: "Your records",
+  lede: "Add letters and test results once. We'll use them when we contact people.",
+} as const;
 
 function SamplePicker({ onLoad }: { onLoad: (slug: SampleSlug) => Promise<"ok" | "missing" | string> }) {
   const [slug, setSlug] = useState<SampleSlug>(HISTORY_SAMPLE_SLUGS[0]);
@@ -53,7 +61,16 @@ function SamplePicker({ onLoad }: { onLoad: (slug: SampleSlug) => Promise<"ok" |
 }
 
 /** Client container for the medical-history page: fetches the timeline and composes every panel. */
-export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: string; samplesEnabled?: boolean }) {
+export function HistoryWorkspace({
+  caseId,
+  samplesEnabled = false,
+  libraryNote,
+}: {
+  caseId: string;
+  samplesEnabled?: boolean;
+  /** One quiet line under the header (the account-library import). */
+  libraryNote?: ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -61,6 +78,7 @@ export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: s
   const [timeline, setTimeline] = useState<HistoryTimeline | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const kinds = useMemo(() => parseKinds(searchParams.get("kinds")), [searchParams]);
 
   const [reloadKey, setReloadKey] = useState(0);
@@ -146,14 +164,22 @@ export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: s
   }, [caseId]);
 
   if (loadError) {
-    return <p role="alert" className="rounded-md border border-danger/30 bg-danger-soft p-4 text-danger">{loadError}</p>;
+    return (
+      <>
+        <PageHeader as={CASE_PAGE_HEADING} {...HEADER_COPY} />
+        <p role="alert" className="m-0 border-l-2 border-danger pl-4 text-body text-ink">{loadError}</p>
+      </>
+    );
   }
   if (!timeline) {
     return (
-      <div aria-busy="true" aria-label="Loading your medical history" className="grid gap-4">
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <>
+        <PageHeader as={CASE_PAGE_HEADING} {...HEADER_COPY} />
+        <LoadingState label="Loading your records">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </LoadingState>
+      </>
     );
   }
 
@@ -161,33 +187,54 @@ export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: s
   const visible = filterEvents(timeline.events, kinds);
   const titles = new Map(timeline.documents.map((doc) => [doc.id, doc.title]));
 
+  const showAdd = !hasRecords || adding;
+
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
+      <PageHeader
+        as={CASE_PAGE_HEADING}
+        {...HEADER_COPY}
+        action={
+          hasRecords ? (
+            <Button
+              onClick={() => {
+                setAdding(true);
+                requestAnimationFrame(() => document.getElementById("add-records")?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }));
+              }}
+            >
+              <Plus aria-hidden /> Add records
+            </Button>
+          ) : undefined
+        }
+      />
+
+      {libraryNote ? <div className="-mt-4">{libraryNote}</div> : null}
+
       {!hasRecords ? (
         <EmptyState
-          icon={<ScrollText />}
-          title="Bring your records together"
-          description="Add visit notes, genetic reports, imaging and lab results. Wayfinder lays them out on one timeline and flags where two records say different things. It organises what your records say and cites each one; it never interprets them or offers medical advice."
+          title="No records yet"
+          description="Add your first one below. We put them in order and show where each line came from."
         />
       ) : null}
 
-      <RecordDropzone onSubmit={onAdd} onUploadPdf={onPdf} />
+      {showAdd ? <RecordDropzone onSubmit={onAdd} onUploadPdf={onPdf} primary={!hasRecords} /> : null}
       {samplesEnabled ? <SamplePicker onLoad={onSample} /> : null}
 
       {hasRecords ? (
         <>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
             <ShareDialog caseId={caseId} />
-            <Button asChild variant="secondary">
-              <Link href={`/cases/${encodeURIComponent(caseId)}/history/summary`}>
-                <Printer aria-hidden /> Printable summary
-              </Link>
-            </Button>
+            <Link
+              href={`/cases/${encodeURIComponent(caseId)}/history/summary`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-sm text-body font-semibold text-teal underline decoration-teal/35 underline-offset-[0.22em] hover:text-teal-ink focus-ring"
+            >
+              <Printer aria-hidden className="size-4" /> Printable summary
+            </Link>
           </div>
           <ConflictsPanel conflicts={timeline.conflicts} />
           <HistorySearch caseId={caseId} onPick={pick} />
           <section aria-labelledby="timeline-heading" className="grid gap-4">
-            <h3 id="timeline-heading" className="m-0 font-display text-h3 font-light text-ink">Timeline</h3>
+            <h2 id="timeline-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">Timeline</h2>
             <KindFilters
               events={timeline.events}
               selected={kinds}

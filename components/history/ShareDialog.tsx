@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Copy, Printer, Share2 } from "lucide-react";
 import {
-  Badge, Button, Checkbox, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Button, Checkbox, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
   DialogTrigger, Field, Input, Label, controlClasses, toast,
 } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
@@ -15,7 +15,7 @@ import {
   type ListedShare,
 } from "./model";
 
-const STATUS_TONE = { active: "ok", expired: "neutral", revoked: "danger" } as const;
+const STATUS_TEXT = { active: "text-ok", expired: "text-ink-2", revoked: "text-danger" } as const;
 
 function SharesList({ caseId, shares, onChanged }: { caseId: string; shares: ListedShare[]; onChanged: () => void }) {
   const [error, setError] = useState<string | null>(null);
@@ -35,17 +35,17 @@ function SharesList({ caseId, shares, onChanged }: { caseId: string; shares: Lis
       {error ? <p role="alert" className="m-0 text-small font-semibold text-danger">{error}</p> : null}
       <ul className="m-0 grid list-none gap-2 p-0">
         {shares.map((share) => (
-          <li key={share.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-card p-3">
+          <li key={share.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-3">
             <span className="grid gap-0.5 text-small">
               <span className="font-semibold text-ink">{share.label || "Untitled link"}</span>
               <span className="text-ink-2">
                 {share.status === "revoked" ? "Revoked" : `Expires ${formatExpiry(share.expiresAt)}`} · {share.sections.length} sections
               </span>
             </span>
-            <span className="flex items-center gap-2">
-              <Badge tone={STATUS_TONE[share.status]}>{SHARE_STATUS_LABELS[share.status]}</Badge>
+            <span className="flex items-center gap-4">
+              <span className={cn("text-small font-semibold", STATUS_TEXT[share.status])}>{SHARE_STATUS_LABELS[share.status]}</span>
               {share.status === "active" ? (
-                <Button size="sm" variant="secondary" aria-label={`Revoke ${share.label || "link"}`} onClick={() => void revoke(share)}>
+                <Button size="sm" variant="link" className="min-h-11" aria-label={`Revoke ${share.label || "link"}`} onClick={() => void revoke(share)}>
                   Revoke
                 </Button>
               ) : null}
@@ -110,7 +110,7 @@ export function ShareDialog({ caseId, disabled }: { caseId: string; disabled?: b
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="secondary" disabled={disabled}>
+        <Button variant="link" className="min-h-11 text-body" disabled={disabled}>
           <Share2 aria-hidden /> Share with a doctor
         </Button>
       </DialogTrigger>
@@ -124,10 +124,9 @@ export function ShareDialog({ caseId, disabled }: { caseId: string; disabled?: b
         </DialogHeader>
 
         {url ? (
-          <div className="grid gap-3 rounded-md border border-teal/30 bg-teal-soft p-4" role="status">
+          <div className="grid gap-3 border-l-2 border-teal bg-teal-soft p-4" role="status">
             <p className="m-0 text-small font-semibold text-ink">
-              Your link is ready. Copy it now: it is shown only once. It expires in {days} {days === 1 ? "day" : "days"} and
-              you can revoke it below at any time.
+              Your link is ready. Copy it now: we show it only once. It ends in {days} {days === 1 ? "day" : "days"}, and you can turn it off below at any time.
             </p>
             <div className="flex gap-2">
               <Input readOnly value={url} aria-label="Share link" onFocus={(e) => e.currentTarget.select()} />
@@ -165,7 +164,7 @@ export function ShareDialog({ caseId, disabled }: { caseId: string; disabled?: b
                 </select>
               </Field>
               <Field label="Label" htmlFor="share-label" optional>
-                <Input id="share-label" value={label} maxLength={100} placeholder="Dr. Lee, genetics" onChange={(e) => setLabel(e.target.value)} />
+                <Input id="share-label" value={label} maxLength={100} placeholder="Dr. Lee, genetics" autoComplete="off" onChange={(e) => setLabel(e.target.value)} />
               </Field>
             </div>
             {error ? <p role="alert" className="m-0 text-small font-semibold text-danger">{error}</p> : null}

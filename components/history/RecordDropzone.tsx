@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { FileUp, Loader2 } from "lucide-react";
-import { Button, Field, Input, Textarea, controlClasses } from "@/components/ui";
+import { Button, Field, Input, Tabs, TabsContent, TabsList, TabsTrigger, Textarea, controlClasses } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
 import { DOC_TYPES, MAX_RECORD_CHARS, MAX_TITLE_CHARS, type AddRecordBody, type DocType } from "@/lib/history/contract";
 import { checkRecordFile, checkRecordText, MAX_PDF_MB, PDF_FILE_PATTERN, PDF_TOO_LARGE_MESSAGE } from "./model";
@@ -23,7 +23,10 @@ type FileStatus = { name: string; state: "reading" | "uploading" | "done" | "err
 export function RecordDropzone({
   onSubmit,
   onUploadPdf,
+  primary = true,
 }: {
+  /** The page's one primary action when there are no records yet; a secondary once the header owns it. */
+  primary?: boolean;
   /** Uploads a PDF for server-side text extraction. Resolves to an error message, or null on success. */
   onUploadPdf: (file: File) => Promise<string | null>;
   /** Resolves to an error message, or null on success. */
@@ -90,7 +93,7 @@ export function RecordDropzone({
   async function onPaste(event: FormEvent) {
     event.preventDefault();
     if (!title.trim() || !text.trim()) {
-      setPasteError("Add a title and the record text first.");
+      setPasteError("Add a title and paste the record text");
       return;
     }
     if (text.length > MAX_RECORD_CHARS) {
@@ -110,43 +113,96 @@ export function RecordDropzone({
     setDocType("");
   }
 
+  const variant = primary ? "primary" : "secondary";
   return (
-    <section aria-labelledby="add-records-heading" className="grid gap-5 rounded-lg border border-line bg-card p-5 sm:p-6">
-      <h3 id="add-records-heading" className="m-0 font-display text-h4 font-normal text-ink">
-        Add your records
-      </h3>
-      <div
-        onDragOver={(event) => {
-          event.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          "grid justify-items-center gap-3 rounded-md border-2 border-dashed px-4 py-8 text-center transition-colors motion-reduce:transition-none",
-          dragging ? "border-teal bg-teal-soft" : "border-line-strong bg-paper-2/60",
-        )}
-      >
-        <FileUp aria-hidden className="size-6 text-teal" />
-        <p className="m-0 max-w-[46ch] text-body text-ink-2">
-          Drop .txt, .md or text-based .pdf files here. For a scanned PDF, copy its text and paste it below.
-        </p>
-        <input
-          ref={fileInput}
-          id={inputId}
-          type="file"
-          multiple
-          accept=".txt,.md,.markdown,.pdf,text/plain,text/markdown"
-          className="sr-only"
-          onChange={(event) => event.target.files && void handleFiles(event.target.files)}
-        />
-        <Button type="button" variant="secondary" onClick={() => fileInput.current?.click()}>
-          Choose files
-        </Button>
-      </div>
+    <section id="add-records" aria-label="Add your records" className="grid scroll-mt-24 gap-4">
+      <Tabs defaultValue="upload" className="gap-5">
+        <TabsList aria-label="How to add a record">
+          <TabsTrigger value="upload">Upload files</TabsTrigger>
+          <TabsTrigger value="paste">Paste text</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upload" className="grid gap-4">
+          <div
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            className={cn(
+              "grid justify-items-start gap-4 rounded-lg border border-dashed px-5 py-6 transition-colors motion-reduce:transition-none",
+              dragging ? "border-teal bg-teal-soft" : "border-line-strong bg-paper-2/60",
+            )}
+          >
+            <p className="m-0 max-w-[46ch] text-body text-ink-2">
+              Drop .txt, .md or .pdf files here. For a scanned PDF, copy its text and use Paste text.
+            </p>
+            <input
+              ref={fileInput}
+              id={inputId}
+              type="file"
+              multiple
+              aria-label="Choose record files"
+              accept=".txt,.md,.markdown,.pdf,text/plain,text/markdown"
+              className="sr-only"
+              tabIndex={-1}
+              onChange={(event) => event.target.files && void handleFiles(event.target.files)}
+            />
+            <Button type="button" variant={variant} size={primary ? "lg" : "md"} onClick={() => fileInput.current?.click()}>
+              <FileUp aria-hidden /> Choose files
+            </Button>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="paste">
+          <form onSubmit={onPaste} className="grid gap-4" noValidate>
+            <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+              <Field label="Title" htmlFor="paste-title">
+                <Input id="paste-title" value={title} maxLength={MAX_TITLE_CHARS} autoComplete="off" onChange={(e) => setTitle(e.target.value)} />
+              </Field>
+              <Field label="Type" htmlFor="paste-type" optional>
+                <select
+                  id="paste-type"
+                  value={docType}
+                  onChange={(e) => setDocType(e.target.value as DocType | "")}
+                  className={cn(controlClasses, "h-11")}
+                >
+                  <option value="">We will work it out</option>
+                  {DOC_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {DOC_TYPE_LABELS[type]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <Field
+              label="Record text"
+              htmlFor="paste-text"
+              hint={`${text.length.toLocaleString("en-US")} / ${MAX_RECORD_CHARS.toLocaleString("en-US")} characters`}
+              error={pasteError ?? undefined}
+            >
+              <Textarea
+                id="paste-text"
+                rows={6}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                aria-invalid={pasteError ? true : undefined}
+                aria-describedby={pasteError ? "paste-text-hint paste-text-error" : "paste-text-hint"}
+              />
+            </Field>
+            <div>
+              <Button type="submit" variant={variant} size={primary ? "lg" : "md"} loading={saving} loadingText="Adding">
+                Add this record
+              </Button>
+            </div>
+          </form>
+        </TabsContent>
+      </Tabs>
 
       {files.length > 0 ? (
-        <ul aria-live="polite" className="m-0 grid list-none gap-2 p-0 text-small">
+        <ul aria-live="polite" aria-label="Files being added" className="m-0 grid list-none gap-2 p-0 text-small">
           {files.map((file) => (
             <li key={file.name} className="flex items-start gap-2 text-ink-2">
               {file.state === "reading" || file.state === "uploading" ? (
@@ -163,43 +219,6 @@ export function RecordDropzone({
           ))}
         </ul>
       ) : null}
-
-      <form onSubmit={onPaste} className="grid gap-4" noValidate>
-        <h4 className="m-0 text-lead font-semibold text-ink">Paste a record</h4>
-        <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
-          <Field label="Title" htmlFor="paste-title">
-            <Input id="paste-title" value={title} maxLength={MAX_TITLE_CHARS} onChange={(e) => setTitle(e.target.value)} />
-          </Field>
-          <Field label="Type" htmlFor="paste-type" optional>
-            <select
-              id="paste-type"
-              value={docType}
-              onChange={(e) => setDocType(e.target.value as DocType | "")}
-              className={cn(controlClasses, "h-11")}
-            >
-              <option value="">Let Wayfinder guess</option>
-              {DOC_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {DOC_TYPE_LABELS[type]}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <Field
-          label="Record text"
-          htmlFor="paste-text"
-          hint={`${text.length.toLocaleString("en-US")} / ${MAX_RECORD_CHARS.toLocaleString("en-US")} characters`}
-          error={pasteError ?? undefined}
-        >
-          <Textarea id="paste-text" rows={6} value={text} onChange={(e) => setText(e.target.value)} aria-describedby="paste-text-hint" />
-        </Field>
-        <div>
-          <Button type="submit" disabled={saving} aria-busy={saving}>
-            {saving ? "Adding..." : "Add record"}
-          </Button>
-        </div>
-      </form>
     </section>
   );
 }

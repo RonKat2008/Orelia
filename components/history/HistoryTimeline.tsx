@@ -77,17 +77,17 @@ function EventCard({
       viewport={{ once: true, margin: "0px 0px -8% 0px" }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], delay: Math.min(index, STAGGER_CAP) * STAGGER_STEP }}
       className={cn(
-        "relative grid scroll-mt-24 gap-2 rounded-md border bg-card p-4 shadow-xs",
-        highlighted ? "border-teal ring-2 ring-teal" : "border-line",
+        "relative grid scroll-mt-24 gap-2 border-b py-4 pl-1",
+        highlighted ? "border-teal bg-teal-soft ring-2 ring-teal" : "border-line",
       )}
       data-highlighted={highlighted || undefined}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="teal">
-          <Icon aria-hidden />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-small text-ink-2">
+        <span className="inline-flex items-center gap-1.5 font-semibold text-teal-ink dark:text-teal">
+          <Icon aria-hidden className="size-4" />
           {EVENT_KIND_LABELS[event.kind]}
-        </Badge>
-        <span className="text-small text-ink-2">{formatPartialDate(event.date)}</span>
+        </span>
+        <span>{formatPartialDate(event.date)}</span>
         {conflicts.length > 0 ? (
           <Badge tone="warn">
             <Scale aria-hidden />
@@ -95,7 +95,7 @@ function EventCard({
           </Badge>
         ) : null}
       </div>
-      <h4 className="m-0 text-lead font-semibold text-ink">{event.title}</h4>
+      <h4 className="m-0 text-body font-semibold text-ink">{event.title}</h4>
       {who ? <p className="m-0 text-small text-ink-2">{who}</p> : null}
       {event.findings.length > 0 ? (
         <ul className="m-0 grid gap-1 pl-5 text-body text-ink">
@@ -132,7 +132,7 @@ export function HistoryTimelineView({
               <button
                 type="button"
                 onClick={() => scrollToId(yearAnchorId(group.year), reduced)}
-                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-sm border border-line bg-card px-3 text-small font-semibold text-ink hover:bg-paper-2 focus-ring"
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-sm px-3 text-small font-semibold text-ink hover:bg-paper-2 focus-ring"
               >
                 {group.year}
                 <span className="text-ink-2">{group.events.length}</span>
@@ -144,8 +144,8 @@ export function HistoryTimelineView({
       <div className="grid gap-8">
         {groups.map((group) => (
           <section key={group.year} id={yearAnchorId(group.year)} aria-label={`${group.year} events`} className="grid scroll-mt-24 gap-3">
-            <h3 className="m-0 font-display text-h3 font-light text-ink">{group.year}</h3>
-            <ol className="m-0 grid list-none gap-3 border-l border-line-strong p-0 pl-4">
+            <h3 className="m-0 font-display text-h3 font-normal text-ink display-soft">{group.year}</h3>
+            <ol className="m-0 grid list-none gap-0 border-t border-line p-0">
               {group.events.map((event) => (
                 <EventCard
                   key={event.id}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
-import { Badge, Input } from "@/components/ui";
+import { Input } from "@/components/ui";
 import type { HistorySearchHit } from "@/lib/history/contract";
 import { searchHistory } from "./client";
 import { formatPartialDate, matchLabel } from "./model";
@@ -32,15 +32,15 @@ export function HistorySearch({ caseId, onPick }: { caseId: string; onPick: (eve
   const current = q && state?.q === q ? state : null;
   return (
     <section aria-labelledby="search-heading" className="grid gap-3">
-      <h3 id="search-heading" className="m-0 font-display text-h4 font-normal text-ink">
+      <h2 id="search-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
         Search your records
-      </h3>
+      </h2>
       <div className="relative">
         <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
         <Input
           type="search"
           aria-label="Search your records"
-          placeholder="Try a gene, a medication, or a doctor's name"
+          placeholder="A gene, a medicine, or a doctor's name"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="pl-10"
@@ -53,7 +53,7 @@ export function HistorySearch({ caseId, onPick }: { caseId: string; onPick: (eve
           <p className="m-0 text-small text-ink-2">No matches in your records.</p>
         ) : null}
         {current && current.hits.length > 0 ? (
-          <ul className="m-0 grid list-none gap-2 p-0">
+          <ul className="m-0 grid list-none border-t border-line p-0">
             {current.hits.map((hit) => {
               const body = (
                 <>
@@ -61,7 +61,7 @@ export function HistorySearch({ caseId, onPick }: { caseId: string; onPick: (eve
                   <span className="flex flex-wrap items-center gap-2 text-small text-ink-2">
                     <span>Source: {hit.docTitle}</span>
                     {hit.date ? <span>{formatPartialDate(hit.date)}</span> : null}
-                    <Badge tone="outline">{matchLabel(hit.match)}</Badge>
+                    <span>{matchLabel(hit.match)}</span>
                   </span>
                 </>
               );
@@ -72,13 +72,13 @@ export function HistorySearch({ caseId, onPick }: { caseId: string; onPick: (eve
                     <button
                       type="button"
                       onClick={() => onPick(hit.eventId as string)}
-                      className="grid w-full gap-1 rounded-md border border-line bg-card p-3 text-left hover:border-teal focus-ring"
+                      className="grid w-full gap-1 border-b border-line px-3 py-3 text-left hover:bg-paper-2 focus-ring"
                     >
                       {body}
                       <span className="text-small font-semibold text-teal">Show on timeline</span>
                     </button>
                   ) : (
-                    <div className="grid gap-1 rounded-md border border-line bg-card p-3">{body}</div>
+                    <div className="grid gap-1 border-b border-line px-3 py-3">{body}</div>
                   )}
                 </li>
               );

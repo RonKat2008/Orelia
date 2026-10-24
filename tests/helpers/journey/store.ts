@@ -25,8 +25,9 @@ export class MemoryJourneyStore implements OutreachStore {
     return true;
   }
   async delivered(d: Draft, ref: ProviderRef, sentAt: string) { this.drafts.get(d.id)!.sentAt = sentAt; this.people = this.people.map(c => c.id === d.contactId ? { ...c, state: 'sent' } : c); this.deliveries.push(ref); }
-  candidate(claim = 'New patient intake: intake@example.com', targetKind: Candidate['targetKind'] = 'expert') {
-    const candidate: Candidate = { id: id(), caseId: this.caseId, targetId: id(), targetKind, evidence: [{ claim, claimType: 'intake_contact', sourceUrl: 'https://example.com/intake' }] };
+  candidate(claim = 'intake@example.com', targetKind: Candidate['targetKind'] = 'expert') {
+    // Stored evidence rows carry sourceKind (the Postgres store selects whole rows), which contact-point parsing requires.
+    const candidate: Candidate = { id: id(), caseId: this.caseId, targetId: id(), targetKind, evidence: [{ claim, claimType: 'contact_point.email.new_patient_line', sourceUrl: 'https://example.com/intake', sourceKind: 'exa' } as Candidate['evidence'][number]] };
     this.choices.push(candidate); return candidate;
   }
 }

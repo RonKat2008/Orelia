@@ -19,6 +19,7 @@ import { MockCaller } from '@/lib/channels/mock-caller';
 import { checkOutbound, type GatedDraft } from '@/lib/safety/outbound-gate';
 import { hasDisclosure, AI_DISCLOSURE_VOICE } from '@/lib/safety/disclosure';
 import { MemoryTaskStore } from '@/lib/inbox/task-store';
+import { MemoryInboundMessageStore } from '@/lib/inbox/inbound-store';
 import { FixtureClassifier } from '@/lib/inbox/classifier';
 import { ingestInbound } from '@/lib/inbox/ingest';
 import { inboxHandlers } from '@/lib/inbox/http';
@@ -29,7 +30,9 @@ import { initialContext, transition } from '@/lib/workflows/connection-machine';
 import type { WorkflowStep } from '@/lib/workflows/engine';
 import { MemoryJourneyStore } from '../helpers/journey/store';
 
-const request = (data: unknown) => new Request('http://localhost', { method: 'POST', body: JSON.stringify(data) });
+// Same-origin requests carrying the wf_session cookie issued on case creation (the ownership guard is never bypassed).
+let sessionCookie = '';
+const request = (data: unknown) => new Request('http://localhost', { method: 'POST', body: JSON.stringify(data), headers: { origin: 'http://localhost', ...(sessionCookie ? { cookie: sessionCookie } : {}) } });
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const globals = globalThis as typeof globalThis & { __wayfinderServices?: Services; __wayfinderCurations?: MemoryCurationStore };
 const secret = `whsec_${Buffer.from('journey-test-secret').toString('base64')}`;
@@ -40,7 +43,9 @@ function signed(body: string) {
 }
 
 beforeEach(() => {
+  sessionCookie = '';
   vi.stubEnv('WAYFINDER_OFFLINE', '1');
+  vi.stubEnv('WAYFINDER_SESSION_SECRET', 'journey-session-secret');
   vi.stubEnv('DATABASE_URL', '');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-03-02T14:00:00Z')); // Monday; includes weekend crossings.
@@ -57,6 +62,8 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
   it('extracts, confirms, researches and exposes evidence-backed curator tiers through the real routes', async () => {
     const response = await intake(request({ reportText: await readFile(`fixtures/reports/${slug}.md`, 'utf8') }));
     expect(response.status).toBe(201);
+    sessionCookie = (response.headers.get('set-cookie') ?? '').split(';')[0]!;
+    expect(sessionCookie).toMatch(/^wf_session=/);
     const { case: created } = await response.json();
     expect(created.status).toBe('draft');
     expect((await confirm(request({ fields: {} }), context(created.id))).status).toBe(200);
@@ -81,7 +88,7 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
     // Preserve the persisted shortlist's resource identity and evidence. A synthetic intake door
     // is added explicitly because recorded research does not promise allowlisted contact points.
     const persisted = await services.persist.getShortlist(created.id);
-    store.choices = persisted.slice(0, 2).map((item, i) => ({ id: crypto.randomUUID(), caseId: created.id, targetId: item.targetId, targetKind: item.targetKind, evidence: [...item.evidence, { claim: i ? 'Intake +14155550123' : 'Intake intake@example.com', claimType: 'intake_contact', sourceUrl: 'https://journey.example/intake' }] }));
+    store.choices = persisted.slice(0, 2).map((item, i) => ({ id: crypto.randomUUID(), caseId: created.id, targetId: item.targetId, targetKind: item.targetKind, evidence: [...item.evidence, i ? { claim: '+14155550123', claimType: 'contact_point.voice.nppes_location_phone', sourceUrl: 'https://journey.example/intake', sourceKind: 'nppes' as const } : { claim: 'intake@example.com', claimType: 'contact_point.email.new_patient_line', sourceUrl: 'https://journey.example/intake', sourceKind: 'exa' as const }] }));
     // Remove real contact doors in these synthetic outreach targets; never rewrite research output.
     for (const choice of store.choices) choice.evidence = choice.evidence.filter(e => !/contact|intake|referral|appointment|navigator/i.test(e.claimType + ' ' + e.claim) || e.sourceUrl === 'https://journey.example/intake');
     const guard = { allowlist: ['intake@example.com', '+14155550123'], mode: 'dev' as const };
@@ -111,16 +118,15 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
     const fixture = JSON.parse(await readFile('fixtures/inbox/01-needs-referral-basic.json', 'utf8'));
     const owner = contacts.find((c: { channel: string }) => c.channel === 'email');
     const tasks = new MemoryTaskStore();
+    const inboundMessages = new MemoryInboundMessageStore();
     const events: unknown[] = [];
     const inbound: InboundDeps = { secret, lookupThread: async id => id === mail.sent[0].ref.threadId ? { contactId: owner.id, caseId: created.id } : undefined, lookupCall: async () => undefined,
       storeCallEvent: async () => {}, sendEvents: async event => { events.push(event); },
-      storeInboundMessage: async message => {
-        await ingestInbound({ channel: 'email', providerThreadId: message.providerThreadId, body: message.body, receivedAt: new Date().toISOString() }, {
-          tasks, classifier: new FixtureClassifier(), lookupThread: async () => owner.id,
-          loadContext: async () => ({ contactId: owner.id, caseId: created.id, resourceName: 'Synthetic intake', consent: { sharedFields: ['diseaseName'] }, caseRecord: created, currentPhysician: { name: 'Synthetic physician', email: 'referral@example.com' } }),
-        });
-        return 'stored';
-      },
+      storeInboundMessage: async message => { inboundMessages.add({ id: message.providerMessageId, contactId: message.contactId, body: message.body }); return 'stored'; },
+      ingestInbound: async event => ingestInbound({ ...event, receivedAt: event.receivedAt ?? new Date().toISOString() }, {
+        tasks, classifier: new FixtureClassifier(), lookupThread: async () => owner.id,
+        loadContext: async () => ({ contactId: owner.id, caseId: created.id, resourceName: 'Synthetic intake', consent: { sharedFields: ['diseaseName'] }, caseRecord: created, currentPhysician: { name: 'Synthetic physician', email: 'referral@example.com' } }),
+      }),
     };
     const body = (thread: string) => JSON.stringify({ event_type: 'message.received', message: { inbox_id: 'mock-inbox', thread_id: thread, message_id: 'reply-1', from: 'intake@example.com', text: fixture.event.body, timestamp: new Date().toISOString() } });
     expect((await handleAgentMailWebhook(signed(body('unknown')), inbound)).status).toBe(404);
@@ -128,7 +134,7 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
     expect((await handleAgentMailWebhook(signed(body(mail.sent[0].ref.threadId!)), inbound)).status).toBe(200);
     expect(events).toHaveLength(1); expect(tasks.rows.size).toBe(1);
     const task = [...tasks.rows.values()][0]; expect(task.status).toBe('open');
-    const approved = await inboxHandlers({ tasks, outreach: store }).approve(request({}), task.id);
+    const approved = await inboxHandlers({ tasks, outreach: store, inbound: inboundMessages }).approve(request({}), task.id);
     expect(approved.status).toBe(200);
     const next = await approved.json();
     expect(next.draft.approvedAt).toBeNull(); expect(next.draft.sentAt).toBeNull();
@@ -149,7 +155,7 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
       waitForEvent: async (_id, options) => { vi.setSystemTime(new Date(options.timeout)); return null; },
       sendEvent: async (_id, event) => { emitted.push(event); },
     };
-    const outcome = await createConnectionWorkflow({ clock: { now: () => new Date(), scale: 1 }, tz: 'UTC',
+    const outcome = await createConnectionWorkflow({ loadMessageApproval: async () => first.toISOString(), clock: { now: () => new Date(), scale: 1 }, tz: 'UTC',
       loadContext: async () => state, saveContext: async (_id, nextState) => { state = nextState; },
       send: async () => { throw new Error('Already sent; follow-ups require approval'); },
       draftFollowUp: async input => { draftedAt.push(new Date().toISOString()); return followUps.createFollowUpDraft(input); },

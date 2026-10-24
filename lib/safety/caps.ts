@@ -9,6 +9,15 @@ export function activeContactCount(contacts: readonly SafetyContact[]): number {
   return contacts.filter(contact => !terminal.has(contact.state)).length;
 }
 
+/** Active resources: active contacts grouped by targetId (a contact without one counts on its own). */
+export function activeTargetIds(contacts: readonly SafetyContact[]): Set<string> {
+  const ids = new Set<string>();
+  contacts.forEach((contact, i) => {
+    if (!terminal.has(contact.state)) ids.add(contact.targetId ? `t:${contact.targetId}` : `c:${contact.id ?? contact.address ?? i}`);
+  });
+  return ids;
+}
+
 /**
  * Real time uses the workflow business-day calendar (weekends and US federal holidays).
  * WAYFINDER_SIM_TIME_SCALE compresses that same deadline for the demo (1440 ≈ one simulated

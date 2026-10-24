@@ -19,6 +19,8 @@ const canonical = (text: string) => text.normalize('NFKC').replace(/\s*,\s*/g, '
 
 /** True when a filled form value is the rendering of the case field (select options may differ only in case). */
 export function sameFieldValue(filled: unknown, caseValue: unknown): boolean {
+  // Checkboxes carry booleans: only an identical boolean matches.
+  if (typeof filled === 'boolean' || typeof caseValue === 'boolean') return filled === caseValue;
   const a = formatFieldValue(filled);
   const b = formatFieldValue(caseValue);
   return a !== undefined && b !== undefined && canonical(a) === canonical(b);

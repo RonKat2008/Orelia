@@ -25,6 +25,11 @@ describe('sameFieldValue', () => {
     expect(sameFieldValue('a', ['a', 'b'])).toBe(false);
     expect(sameFieldValue('', [])).toBe(false);
   });
+  it('matches booleans only to the same boolean', () => {
+    expect(sameFieldValue(true, true)).toBe(true);
+    expect(sameFieldValue(true, 'true')).toBe(false);
+    expect(sameFieldValue(false, true)).toBe(false);
+  });
 });
 
 describe('web gate with list-valued consented fields', () => {

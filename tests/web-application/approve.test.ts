@@ -102,4 +102,15 @@ describe('approveApplication', () => {
     expect(JSON.stringify(res)).not.toContain('secret');
     expect((await failed.applications.get('app-1'))?.status).toBe('failed');
   });
+
+  it('an application to a resource the patient already contacts does not count as a sixth contact', async () => {
+    const active = Array.from({ length: 5 }, (_, i) => ({ id: `contact-${i + 1}`, caseId: 'case-1', targetId: `target-${i + 1}`, state: 'sent', address: `p${i}@example.org` }));
+    const consent = async () => ({ contactId: 'contact-1', sharedFields: ['diseaseName'], approvedAt: '2026-10-24T11:00:00Z' });
+    const known = await setup({ outreach: { getCase: async () => record, consent, contacts: async () => active } });
+    expect(await approveApplication('app-1', {}, known.deps)).toMatchObject({ ok: true });
+    expect(known.submitted).toHaveLength(1);
+    const unknown = await setup({ outreach: { getCase: async () => record, consent, contacts: async () => active } }, draft({ contactId: 'contact-9' }));
+    expect(await approveApplication('app-1', {}, unknown.deps)).toMatchObject({ ok: false, status: 422, reasons: ['contact_cap'] });
+    expect(unknown.submitted).toHaveLength(0);
+  });
 });

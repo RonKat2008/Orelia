@@ -3,7 +3,7 @@ import { getConsultService } from "@/lib/coordination/consult";
 
 /**
  * /review/[token] must answer 404 for an unknown, forged, expired, cancelled or already-decided link. The page
- * itself also calls notFound(), but app/loading.tsx makes the page stream, so by then the status is already 200.
+ * itself also calls notFound(), but app/review/loading.tsx makes the page stream, so by then the status is already 200.
  * Deciding here, before rendering starts, gives a real 404 status (and the standard not-found page) with the same
  * lookup the API uses. A lookup failure (not a miss) passes through so the client form can show its retry state.
  */

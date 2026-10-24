@@ -6,7 +6,7 @@ import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
 import { demoDestinationFor, outboundAllowlist, sharedDemoAddresses } from './demo-destinations';
 import { isWebFormOnly, type ReachabilityEvidence } from './reachability';
-import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore, type ProviderRef } from './types';
+import { isReplyClassification, OutreachError, type Candidate, type Channel, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
 /**
  * The only addresses outreach may use are contact points stamped by code from tool output (intake-door
  * classification, NPPES location phone, CT.gov central contact), each with its source URL. Free-text claims are
@@ -74,6 +74,9 @@ export class OutreachService {
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
     if (contact.state !== 'drafted') {
+      // They asked for records or slides and the patient approved writing the reply: that letter is what needs approval now.
+      const reply = await this.store.pendingReply?.(contact);
+      if (reply) return reply;
       // Waiting for a reply and the sweep drafted a follow-up: that is what needs the patient's approval now.
       if (contact.state === 'sent') {
         const followUp = await this.store.pendingFollowUp?.(contact);
@@ -101,6 +104,7 @@ export class OutreachService {
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
     const now = this.clock().toISOString();
+    if (isReplyClassification(draft.classification)) return this.approveReply(contact, draft, consent, record, now);
     const contacts = await this.store.contacts(contact.caseId);
     const gate = checkOutbound({ draft: { ...draft, approvedAt: now }, caseRecord: record, consent, contacts, allowlist: outboundAllowlist(this.env), now, mode: this.env.NODE_ENV === 'production' ? 'prod' : 'dev' });
     const reasons = gate.ok ? [] : [...gate.reasons];
@@ -117,6 +121,30 @@ export class OutreachService {
     }
     await this.store.delivered(draft, ref, now);
     return { draftId, approvedAt: now, sentAt: now, provider: ref };
+  }
+  /**
+   * A reply letter (records, slides) to a contact who asked for it. The full outbound gate runs as for any message;
+   * the gate is told the thread's real send/reply times (read from stored messages), so the follow-up cadence is
+   * waived only while their reply is newer than our last send. Stores without reply support refuse.
+   */
+  private async approveReply(contact: Contact, draft: Draft, consent: { contactId: string; sharedFields: string[]; approvedAt: string }, record: NonNullable<Awaited<ReturnType<OutreachStore['getCase']>>>, now: string): Promise<SentApproveResult> {
+    const { threadTimes, reserveReply, deliveredReply } = this.store;
+    if (!threadTimes || !reserveReply || !deliveredReply) throw new OutreachError(409, ['reply_unsupported']);
+    const times = await threadTimes.call(this.store, contact);
+    const contacts = (await this.store.contacts(contact.caseId)).map(c => c.id === contact.id ? { ...c, lastSentAt: times.lastSentAt, lastReplyAt: times.lastReplyAt } : c);
+    const gate = checkOutbound({ draft: { ...draft, approvedAt: now, isReply: true }, caseRecord: record, consent, contacts, allowlist: outboundAllowlist(this.env), now, mode: this.env.NODE_ENV === 'production' ? 'prod' : 'dev' });
+    if (!gate.ok) throw new OutreachError(422, [...gate.reasons]);
+    if (activeContactCount(contacts) > MAX_ACTIVE_CONTACTS) throw new OutreachError(422, ['contact_cap']);
+    const channel = this.channels.find(c => c.kind === contact.channel);
+    if (!channel) throw new OutreachError(503, ['channel_unavailable']);
+    if (!await reserveReply.call(this.store, draft, now)) throw new OutreachError(409, ['already_approved_or_consent_changed']);
+    let ref: ProviderRef;
+    try { ref = await channel.send(gate.payload); } catch (error) {
+      if (isDefiniteNonDelivery(error)) await this.store.unreserve?.(draft);
+      throw error;
+    }
+    await deliveredReply.call(this.store, draft, ref, now);
+    return { draftId: draft.id, approvedAt: now, sentAt: now, provider: ref };
   }
 }
 

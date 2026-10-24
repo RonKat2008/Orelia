@@ -10,6 +10,8 @@ export interface SafetyContact {
   readonly state: string;
   readonly lastSentAt?: Timestamp | null;
   readonly followUpsSent?: number;
+  /** Latest inbound reply received on this contact's thread (read from stored messages by the caller). */
+  readonly lastReplyAt?: Timestamp | null;
 }
 export type WebFormValueSource =
   | { readonly kind: 'consent'; readonly key: string }
@@ -45,6 +47,11 @@ export interface SafetyDraft {
   readonly targetId?: string;
   readonly approvedAt?: Timestamp | null;
   readonly isFollowUp?: boolean;
+  /**
+   * An answer to something the contact asked for in a reply (records, slides). It is NOT a follow-up only while the
+   * contact's own reply is newer than our last send (see checkOutbound): one answer per reply, never a nudge.
+   */
+  readonly isReply?: boolean;
 }
 export interface SafetyConsent {
   readonly sharedFields: readonly string[];

@@ -1,6 +1,6 @@
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { normalizeAddress } from '../safety/allowlist';
-import { OutreachError, type Contact, type Draft, type OutreachStore } from '../outreach/types';
+import { OutreachError, REPLY_CLASSIFICATION_PREFIX, type Contact, type Draft, type OutreachStore } from '../outreach/types';
 import { DELIVERY_PREPARED } from './drafts';
 import { inboundReplyContactPoint } from './contact-point';
 import type { InboundMessageStore } from './inbound-store';
@@ -97,9 +97,13 @@ async function approveLetter(task: StoredTask, now: string, deps: ApproveDeps, i
       if (!recipient) throw new OutreachError(409, ['recipient_not_created']);
     }
     const consent = await outreach.consent(original.id);
+    // Answering the asker on a thread we already wrote to: mark it a reply letter so the outbox and the patient view
+    // offer it (draft() returns it) and approval runs the gate's reply rule instead of the follow-up cadence.
+    const isReply = (task.kind === 'slides' || task.kind === 'records') && recipient.state !== 'drafted';
     const draft: Draft = {
       id: newId(), contactId: recipient.id, caseId: task.caseId, channel: 'email', address: recipient.address,
       subject: task.letter.subject, body: task.letter.body, sharedFields: [...(consent?.sharedFields ?? [])], approvedAt: null, sentAt: null,
+      ...(isReply ? { classification: `${REPLY_CLASSIFICATION_PREFIX}${task.kind}` } : {}),
     };
     await outreach.saveDraft(draft);
     const hasConsent = !!(await outreach.consent(recipient.id));

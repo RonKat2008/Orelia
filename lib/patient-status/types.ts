@@ -25,6 +25,8 @@ export interface PatientContact {
   lastActivityAt: string | null;
   /** A drafted follow-up (contact still 'sent') is waiting for the patient's approval. */
   pendingFollowUp?: boolean;
+  /** They asked for records or slides, and the reply letter we wrote is waiting for the patient's approval. */
+  pendingReply?: "records" | "slides" | null;
   /** First time a message to this contact went out. */
   firstSentAt?: string | null;
   /** Latest reply received from this contact. */
@@ -94,6 +96,8 @@ export interface PatientNextAction {
   applicationId?: string;
   /** approve_message: this is a follow-up to someone already written to. */
   followUp?: boolean;
+  /** approve_message: this answers their request for records or slides (a reply letter, not a follow-up). */
+  reply?: "records" | "slides";
   /** Who it is about, by name, when it is about one contact. */
   name?: string;
   /** The detailed page for this step. */

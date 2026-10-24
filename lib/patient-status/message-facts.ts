@@ -7,6 +7,8 @@ import type { PatientApplication } from "./types";
 export interface ContactMessageFacts {
   /** A follow-up the sweep drafted for a contact still waiting on a reply, not yet approved. */
   pendingFollowUp: boolean;
+  /** A reply letter (records or slides) the patient asked us to write, not yet approved: its kind, else null. */
+  pendingReply: "records" | "slides" | null;
   firstSentAt: string | null;
   lastReplyAt: string | null;
 }
@@ -37,6 +39,8 @@ export class PostgresMessageFacts implements MessageFacts {
     for (const id of ids) {
       const mine = rows.filter((r) => r.contactId === id);
       const followUp = mine.some((r) => r.direction === "outbound" && !r.approvedAt && !r.sentAt && (r.classification ?? "").startsWith("follow_up_"));
+      const reply = mine.find((r) => r.direction === "outbound" && !r.approvedAt && !r.sentAt && (r.classification ?? "").startsWith("reply_"));
+      const replyKind = reply?.classification === "reply_slides" ? "slides" : reply ? "records" : null;
       const sent = [
         ...mine.filter((r) => r.direction === "outbound" && r.sentAt).map((r) => r.sentAt!.getTime()),
         ...voice.filter((c) => c.contactId === id && c.startedAt).map((c) => c.startedAt!.getTime()),
@@ -44,6 +48,7 @@ export class PostgresMessageFacts implements MessageFacts {
       const replies = mine.filter((r) => r.direction === "inbound" && r.receivedAt).map((r) => r.receivedAt!.getTime());
       out.set(id, {
         pendingFollowUp: followUp,
+        pendingReply: replyKind,
         firstSentAt: sent.length ? new Date(Math.min(...sent)).toISOString() : null,
         lastReplyAt: replies.length ? new Date(Math.max(...replies)).toISOString() : null,
       });

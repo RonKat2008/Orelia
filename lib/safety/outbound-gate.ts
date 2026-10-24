@@ -71,6 +71,13 @@ function checkWebOutbound(input: OutboundInput, approvalTime: number, reasons: G
   issued.add(payload);
   return { ok: true, payload };
 }
+/** The contact replied after our last send, and both times are real and not in the future. */
+function answersFreshReply(contact: SafetyContact, nowTime: number): boolean {
+  if (!contact.lastSentAt || !contact.lastReplyAt) return false;
+  const sent = new Date(contact.lastSentAt).getTime();
+  const replied = new Date(contact.lastReplyAt).getTime();
+  return Number.isFinite(sent) && Number.isFinite(replied) && replied > sent && replied <= nowTime;
+}
 export function checkOutbound(input: OutboundInput): OutboundResult {
   const { draft, caseRecord, consent, contacts, allowlist, now, mode } = input;
   const reasons: GateRefusal[] = [];
@@ -92,7 +99,10 @@ export function checkOutbound(input: OutboundInput): OutboundResult {
     if (activeContactCount([contact]) === 0) refuse('inactive_contact');
   }
   if (!contact && activeContactCount(contacts) >= MAX_ACTIVE_CONTACTS) refuse('contact_cap');
-  const followUp = draft.isFollowUp || (contact && (contact.state !== 'drafted' || !!contact.lastSentAt));
+  // A reply answers a request the contact made on this thread: it is exempt from the follow-up cadence only when
+  // their reply is newer than our last send (so at most one answer per reply). Anything else is a follow-up.
+  const answersReply = draft.isReply === true && !draft.isFollowUp && !!contact && answersFreshReply(contact, nowTime);
+  const followUp = !answersReply && (draft.isFollowUp || (contact && (contact.state !== 'drafted' || !!contact.lastSentAt)));
   if (followUp && (!contact?.lastSentAt || contact.followUpsSent === undefined || !canFollowUp(contact.lastSentAt, contact.followUpsSent, now))) refuse('follow_up_cadence');
 
   // Subjects leave the system too and must meet the same privacy/content restrictions.

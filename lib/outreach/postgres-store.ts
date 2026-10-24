@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, like, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import * as s from '../../db/schema';
-import { OutreachError, type SelectOptions, type Candidate, type Consent, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
+import { OutreachError, REPLY_CLASSIFICATION_PREFIX, type SelectOptions, type Candidate, type Consent, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
 const normAddress = (address: string) => address.trim().toLowerCase();
 /**
  * Pure dedupe decision: a proposed contact is skipped only when a contact with the same normalized address
@@ -93,7 +93,51 @@ export class PostgresOutreachStore implements OutreachStore {
     ]);
   }
   async saveDraft(draft: Draft) {
-    await this.db.insert(s.messages).values({ id: draft.id, contactId: draft.contactId, channel: draft.channel, direction: 'outbound', subject: draft.subject, body: draft.body, sharedFields: draft.sharedFields });
+    await this.db.insert(s.messages).values({ id: draft.id, contactId: draft.contactId, channel: draft.channel, direction: 'outbound', subject: draft.subject, body: draft.body, sharedFields: draft.sharedFields, ...(draft.classification ? { classification: draft.classification } : {}) });
+  }
+  async pendingReply(contact: Contact): Promise<Draft | undefined> {
+    const [row] = await this.db.select().from(s.messages).where(and(
+      eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'),
+      isNull(s.messages.approvedAt), isNull(s.messages.sentAt), like(s.messages.classification, `${REPLY_CLASSIFICATION_PREFIX}%`),
+    )).limit(1);
+    return row ? { ...row, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: null, sentAt: null } : undefined;
+  }
+  async threadTimes(contact: Contact): Promise<{ lastSentAt: string | null; lastReplyAt: string | null }> {
+    const [row] = (await this.db.execute(sql`
+      SELECT
+        GREATEST(
+          (SELECT max(sent_at) FROM messages WHERE contact_id = ${contact.id}::uuid AND direction = 'outbound'),
+          (SELECT max(started_at) FROM calls WHERE contact_id = ${contact.id}::uuid)
+        ) AS last_sent_at,
+        (SELECT max(received_at) FROM messages WHERE contact_id = ${contact.id}::uuid AND direction = 'inbound') AS last_reply_at
+    `)).rows as { last_sent_at: string | Date | null; last_reply_at: string | Date | null }[];
+    const iso = (v: string | Date | null | undefined) => v == null ? null : new Date(v).toISOString();
+    return { lastSentAt: iso(row?.last_sent_at), lastReplyAt: iso(row?.last_reply_at) };
+  }
+  async reserveReply(draft: Draft, approvedAt: string) {
+    // Lock the contact row first (as reserve does) so two reply approvals on one thread serialize.
+    const result = await this.db.batch([
+      this.db.update(s.contacts).set({ lastActivityAt: new Date(approvedAt) }).where(eq(s.contacts.id, draft.contactId)),
+      this.db.execute(sql`
+        UPDATE messages SET approved_at = ${approvedAt}::timestamptz
+        WHERE id = ${draft.id}::uuid AND contact_id = ${draft.contactId}::uuid AND direction = 'outbound'
+          AND classification LIKE ${`${REPLY_CLASSIFICATION_PREFIX}%`} AND approved_at IS NULL AND sent_at IS NULL
+          AND body = ${draft.body} AND COALESCE(subject, '') = ${draft.subject ?? ''}
+          AND EXISTS (SELECT 1 FROM consents WHERE contact_id = ${draft.contactId}::uuid AND approved_at IS NOT NULL AND shared_fields = ARRAY(SELECT jsonb_array_elements_text(${JSON.stringify(draft.sharedFields)}::jsonb)))
+          AND EXISTS (SELECT 1 FROM contacts WHERE id = ${draft.contactId}::uuid AND state IN ('replied', 'task_open', 'records_sent') AND address = ${draft.address})
+          AND (SELECT max(received_at) FROM messages WHERE contact_id = ${draft.contactId}::uuid AND direction = 'inbound')
+            > COALESCE((SELECT max(sent_at) FROM messages WHERE contact_id = ${draft.contactId}::uuid AND direction = 'outbound'), '-infinity'::timestamptz)
+          AND NOT EXISTS (SELECT 1 FROM messages other WHERE other.contact_id = ${draft.contactId}::uuid AND other.id <> ${draft.id}::uuid AND other.direction = 'outbound' AND other.approved_at IS NOT NULL AND other.sent_at IS NULL)
+        RETURNING id
+      `),
+    ]);
+    return result[1].rows.length === 1;
+  }
+  async deliveredReply(draft: Draft, ref: ProviderRef, sentAt: string) {
+    await this.db.batch([
+      this.db.update(s.messages).set({ sentAt: new Date(sentAt), providerMessageId: ref.messageId, providerThreadId: ref.threadId }).where(eq(s.messages.id, draft.id)),
+      this.db.update(s.contacts).set({ state: 'records_sent', lastActivityAt: new Date(sentAt) }).where(eq(s.contacts.id, draft.contactId)),
+    ]);
   }
   async pendingDraft(contact: Contact, sharedFields: readonly string[]): Promise<Draft | undefined> {
     const rows = await this.db.select().from(s.messages).where(and(

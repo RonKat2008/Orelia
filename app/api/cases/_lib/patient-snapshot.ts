@@ -59,7 +59,7 @@ export async function loadPatientSnapshot(caseId: string, cache: { shortlistTota
       return {
         id: c.id, name: c.displayName, channel: c.channel, state: c.state, consented: c.consented, approved: c.approved,
         nextFollowUpAt: c.nextFollowUpAt, lastActivityAt: c.lastActivityAt,
-        pendingFollowUp: f?.pendingFollowUp ?? false, firstSentAt: f?.firstSentAt ?? null, lastReplyAt: f?.lastReplyAt ?? null,
+        pendingFollowUp: f?.pendingFollowUp ?? false, pendingReply: f?.pendingReply ?? null, firstSentAt: f?.firstSentAt ?? null, lastReplyAt: f?.lastReplyAt ?? null,
       };
     }),
     tasks: taskRows.map((t) => ({ id: t.id, contactId: t.contactId, kind: t.kind, title: t.title, status: t.status, dueAt: t.dueAt })),

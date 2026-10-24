@@ -17,7 +17,7 @@ import { checkOutbound } from '../safety/outbound-gate';
 import { parseTimeScale } from '../workflows/clock';
 import { contactApprovedEvent, followUpApprovedEvent, type SendEvents } from '../workflows/events';
 import { OutreachService } from './service';
-import { OutreachError, type Channel, type OutreachStore, type ProviderRef } from './types';
+import { isReplyClassification, OutreachError, type Channel, type OutreachStore, type ProviderRef } from './types';
 
 type Env = Record<string, string | undefined>;
 
@@ -222,6 +222,9 @@ export class WiredOutreachService extends OutreachService {
   override async approve(id: string, draftId: string): Promise<WiredApproveResult> {
     const followUp = await this.followUps.get(draftId, id);
     if (followUp && isFollowUpClassification(followUp.classification)) return this.approveFollowUp(id, draftId, followUp.caseId);
+    // A reply letter (records, slides) is sent by OutreachService under the gate's reply rule. It is not a first
+    // message: no first-send stamp and no contact/approved event (that would restart the follow-up timers).
+    if (followUp && isReplyClassification(followUp.classification)) return super.approve(id, draftId);
     const result = await super.approve(id, draftId);
     if ('queued' in result) return result;
     const contact = await this.requireContact(id);

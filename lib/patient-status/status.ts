@@ -16,6 +16,8 @@ const INTAKE = new Set(["draft", "extracted", "unconfirmed"]);
 const SEARCHING = new Set(["confirmed", "researching"]);
 const TERMINAL_RUN = new Set(["done", "failed", "not_implemented"]);
 const MAX_PICKS = 5;
+/** Contact states in which a reply letter can be waiting: they replied, and we may answer. */
+const REPLY_STATES = new Set(["replied", "task_open", "records_sent"]);
 
 /** Plain names for what each research agent reads. Names only: no claims about what was found. */
 export const SOURCE_NAMES: Record<string, string> = {
@@ -71,7 +73,7 @@ export function statusKey(status: PatientStatus): string {
     status.detail ?? null,
     status.step,
     status.tone,
-    a ? [a.kind, a.contactId ?? null, a.taskId ?? null, a.applicationId ?? null, a.followUp ?? false] : null,
+    a ? [a.kind, a.contactId ?? null, a.taskId ?? null, a.applicationId ?? null, a.followUp ?? false, ...(a.reply ? [a.reply] : [])] : null,
     status.progress ?? null,
   ]);
 }
@@ -232,6 +234,26 @@ function reaching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
         applicationId: application.id,
         ...(application.contactId ? { contactId: application.contactId } : {}),
         name,
+        detailsHref: details(s, "outbox"),
+      },
+    };
+  }
+
+  // A reply letter answers something they asked for, so it comes before any first message or follow-up.
+  const replying = s.contacts.find((c) => c.consented && c.pendingReply && REPLY_STATES.has(c.state));
+  if (replying?.pendingReply) {
+    const what = replying.pendingReply === "slides" ? "slides" : "records";
+    return {
+      headline: `${replying.name} asked for your ${what}. Here's the reply we wrote. Take a look before it's sent.`,
+      detail: "It only includes what you agreed to share, and says it was written with AI help.",
+      step: "reach",
+      tone: "you",
+      nextAction: {
+        kind: "approve_message",
+        label: "Read the reply",
+        contactId: replying.id,
+        reply: replying.pendingReply,
+        name: replying.name,
         detailsHref: details(s, "outbox"),
       },
     };

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { guardCase } from "@/lib/auth/ownership";
+import { readSession } from "@/lib/auth/session";
+import { checkRateLimit, getRateLimitStore, rateLimitedResponse, type RateRule } from "@/lib/rate-limit";
 import { buildConditionBrief, ConditionBriefUnavailableError } from "@/lib/condition-brief/build";
 import type { ConditionBrief } from "@/lib/condition-brief/contract";
 import { getConditionBriefStore } from "@/lib/condition-brief/store";
@@ -10,6 +12,13 @@ import { getServices } from "../../_lib/services";
 export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+const HOUR_MS = 60 * 60 * 1000;
+/** Each rebuild fans out to several public APIs and one model call. */
+const BRIEF_LIMITS = (caseId: string, sessionId: string): RateRule[] => [
+  { key: `condition-brief:case:${caseId}`, max: 6, windowMs: HOUR_MS },
+  { key: `condition-brief:session:${sessionId}`, max: 20, windowMs: HOUR_MS },
+];
 
 const postBodySchema = z.object({ refresh: z.boolean().optional() }).strict();
 
@@ -45,6 +54,8 @@ export async function POST(req: Request, { params }: Ctx) {
       const cached = await store.latest(id);
       if (cached) return NextResponse.json({ brief: cached });
     }
+    const limit = await checkRateLimit(getRateLimitStore(), BRIEF_LIMITS(id, readSession(req) ?? "anonymous"), new Date());
+    if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
     const found = await getServices().cases.get(id);
     if (!found) return jsonError(404, "Case not found");
     const brief = await rebuild(id, found.diseaseName);

@@ -40,6 +40,7 @@ beforeEach(async () => {
   delete process.env.WAYFINDER_DEMO;
   delete process.env.DATABASE_URL;
   delete holder.__wayfinderServices;
+  delete (globalThis as { __rateLimitStore?: unknown }).__rateLimitStore;
   const owners = new MemoryOwnerStore();
   holder.__wayfinderOwnerStore = owners;
   caseId = (await getServices().cases.create({ diseaseName: "Vascular Ehlers-Danlos syndrome", goals: [] } as never, "ready")).id;
@@ -126,5 +127,20 @@ describe("condition-brief route: GET/POST", () => {
     expect(r500.status).toBe(500);
     expect(JSON.stringify(await r500.json())).not.toContain("secret");
     expect(await briefs.latest(caseId)).toBeNull();
+  });
+});
+
+describe("condition-brief route: rate limit", () => {
+  it("caps rebuilds per case and returns 429 with Retry-After", async () => {
+    for (let i = 0; i < 6; i++) expect((await post({ body: { refresh: true } })).status).toBe(201);
+    const limited = await post({ body: { refresh: true } });
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toBeTruthy();
+    expect(builder.buildConditionBrief).toHaveBeenCalledTimes(6);
+  });
+
+  it("does not count cached reads against the limit", async () => {
+    expect((await post()).status).toBe(201);
+    for (let i = 0; i < 10; i++) expect((await post()).status).toBe(200);
   });
 });

@@ -11,7 +11,7 @@ import {
   HISTORY_FIXTURE_LABELS, HISTORY_SAMPLE_SLUGS, type SampleSlug,
 } from "./samples";
 import type { AddRecordBody, EventKind, HistoryTimeline } from "@/lib/history/contract";
-import { addRecord, deleteDocument, getTimeline, loadSample } from "./client";
+import { addRecord, deleteDocument, getTimeline, loadSample, uploadPdf } from "./client";
 import { ConflictsPanel } from "./ConflictsPanel";
 import { DocumentList } from "./DocumentList";
 import { HistorySearch } from "./HistorySearch";
@@ -112,6 +112,13 @@ export function HistoryWorkspace({ caseId }: { caseId: string }) {
     return null;
   }, [caseId]);
 
+  const onPdf = useCallback(async (file: File): Promise<string | null> => {
+    const result = await uploadPdf(caseId, file);
+    if (!result.ok) return result.message;
+    setTimeline(result.data);
+    return null;
+  }, [caseId]);
+
   const onDelete = useCallback(async (docId: string): Promise<string | null> => {
     const result = await deleteDocument(caseId, docId);
     if (!result.ok) return result.message;
@@ -156,7 +163,7 @@ export function HistoryWorkspace({ caseId }: { caseId: string }) {
         />
       ) : null}
 
-      <RecordDropzone onSubmit={onAdd} />
+      <RecordDropzone onSubmit={onAdd} onUploadPdf={onPdf} />
       <SamplePicker onLoad={onSample} />
 
       {hasRecords ? (

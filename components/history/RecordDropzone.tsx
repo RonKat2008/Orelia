@@ -5,7 +5,7 @@ import { FileUp, Loader2 } from "lucide-react";
 import { Button, Field, Input, Textarea, controlClasses } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
 import { DOC_TYPES, MAX_RECORD_CHARS, MAX_TITLE_CHARS, type AddRecordBody, type DocType } from "@/lib/history/contract";
-import { checkRecordFile, checkRecordText } from "./model";
+import { checkRecordFile, checkRecordText, MAX_PDF_MB, PDF_FILE_PATTERN, PDF_TOO_LARGE_MESSAGE } from "./model";
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   visit_note: "Visit note",
@@ -22,7 +22,10 @@ type FileStatus = { name: string; state: "reading" | "uploading" | "done" | "err
 /** Adds records: drop or choose text files, or paste text. Each file reports its own progress. */
 export function RecordDropzone({
   onSubmit,
+  onUploadPdf,
 }: {
+  /** Uploads a PDF for server-side text extraction. Resolves to an error message, or null on success. */
+  onUploadPdf: (file: File) => Promise<string | null>;
   /** Resolves to an error message, or null on success. */
   onSubmit: (body: AddRecordBody) => Promise<string | null>;
 }) {
@@ -47,6 +50,16 @@ export function RecordDropzone({
       const check = checkRecordFile(file.name);
       if (!check.ok) {
         setStatus(file.name, { state: "error", message: check.message });
+        continue;
+      }
+      if (PDF_FILE_PATTERN.test(file.name)) {
+        if (file.size > MAX_PDF_MB * 1024 * 1024) {
+          setStatus(file.name, { state: "error", message: PDF_TOO_LARGE_MESSAGE });
+          continue;
+        }
+        setStatus(file.name, { state: "uploading" });
+        const pdfError = await onUploadPdf(file);
+        setStatus(file.name, pdfError ? { state: "error", message: pdfError } : { state: "done" });
         continue;
       }
       let content = "";
@@ -116,7 +129,7 @@ export function RecordDropzone({
       >
         <FileUp aria-hidden className="size-6 text-teal" />
         <p className="m-0 max-w-[46ch] text-body text-ink-2">
-          Drop .txt or .md files here. For a PDF, copy its text and paste it below.
+          Drop .txt, .md or text-based .pdf files here. For a scanned PDF, copy its text and paste it below.
         </p>
         <input
           ref={fileInput}

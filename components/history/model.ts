@@ -12,8 +12,9 @@ import {
 
 export const UNDATED = "Undated";
 export const TEXT_FILE_PATTERN = /\.(txt|md|markdown)$/i;
-export const PDF_MESSAGE =
-  "PDFs can't be read here yet. Open the PDF, copy its text, and paste it into the box below.";
+export const PDF_FILE_PATTERN = /\.pdf$/i;
+export const MAX_PDF_MB = 10;
+export const PDF_TOO_LARGE_MESSAGE = `That PDF is larger than ${MAX_PDF_MB} MB. Open it, copy its text, and paste it into the box below.`;
 export const SHARE_EXPIRY_DAYS = [1, 7, 14, 30] as const;
 
 export type YearGroup = { year: string; events: HistoryEvent[] };
@@ -102,9 +103,9 @@ export function titleFromFilename(name: string): string {
 
 /** Validates a picked file before reading it; text length is checked after reading. */
 export function checkRecordFile(name: string): FileCheck {
-  if (/\.pdf$/i.test(name)) return { ok: false, reason: "pdf", message: PDF_MESSAGE };
+  if (PDF_FILE_PATTERN.test(name)) return { ok: true, title: titleFromFilename(name) };
   if (!TEXT_FILE_PATTERN.test(name)) {
-    return { ok: false, reason: "type", message: `${name}: only .txt and .md files can be added. Paste other records instead.` };
+    return { ok: false, reason: "type", message: `${name}: only .txt, .md and .pdf files can be added. Paste other records instead.` };
   }
   return { ok: true, title: titleFromFilename(name) };
 }

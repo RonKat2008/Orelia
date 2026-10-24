@@ -70,11 +70,11 @@ describe('formatPartialDate', () => {
 });
 
 describe('record files', () => {
-  it('rejects PDFs with a paste hint and unknown types', () => {
-    const pdf = checkRecordFile('scan.PDF');
-    expect(pdf.ok).toBe(false);
-    if (!pdf.ok) expect(pdf.message).toMatch(/paste/i);
-    expect(checkRecordFile('x.docx').ok).toBe(false);
+  it('accepts PDFs (server extracts the text) and rejects unknown types', () => {
+    expect(checkRecordFile('scan.PDF').ok).toBe(true);
+    const docx = checkRecordFile('x.docx');
+    expect(docx.ok).toBe(false);
+    if (!docx.ok) expect(docx.message).toMatch(/paste/i);
   });
   it('accepts txt/md and derives a title', () => {
     expect(checkRecordFile('visit_note-2020.md')).toEqual({ ok: true, title: 'visit note 2020' });

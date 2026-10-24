@@ -92,6 +92,12 @@ export const getTimeline = (caseId: string, f: Fetch = fetch) =>
 export const addRecord = (caseId: string, body: AddRecordBody, f: Fetch = fetch) =>
   call<HistoryTimeline>(f, base(caseId), pick(timelineSchema, "timeline"), json("POST", body));
 
+export const uploadPdf = (caseId: string, file: File, f: Fetch = fetch) => {
+  const form = new FormData();
+  form.set("file", file);
+  return call<HistoryTimeline>(f, `${base(caseId)}/pdf`, pick(timelineSchema, "timeline"), { method: "POST", body: form });
+};
+
 export const deleteDocument = (caseId: string, docId: string, f: Fetch = fetch) =>
   call<HistoryTimeline>(f, `${base(caseId)}/documents/${encodeURIComponent(docId)}`, pick(timelineSchema, "timeline"), { method: "DELETE" });
 

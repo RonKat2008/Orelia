@@ -122,3 +122,34 @@ describe('history routes: sample', () => {
     expect((await sample({ body: { slug: 'vascular-eds' } })).status).toBe(404);
   });
 });
+
+describe('PDF upload route', () => {
+  const upload = async (bytes: Uint8Array, name = 'letter.pdf', o: Opts = {}) => {
+    const { POST: PDF } = await import('@/app/api/cases/[id]/history/pdf/route');
+    const form = new FormData();
+    form.set('file', new File([bytes as BlobPart], name, { type: 'application/pdf' }));
+    const r = new Request(`${ORIGIN}/api/cases/${o.id ?? CASE}/history/pdf`, { method: 'POST', headers: { cookie: cookie(o.who ?? 'owner'), origin: ORIGIN }, body: form });
+    return PDF(r, ctx(o));
+  };
+
+  it('adds a record from a text PDF', async () => {
+    const { makePdf } = await import('./pdf-fixture');
+    const res = await upload(makePdf([['Genetics clinic visit 2024-03-12. COL3A1 c.2357G>A variant of uncertain significance reported.']]));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.timeline.documents.map((d: { title: string }) => d.title)).toContain('letter');
+  });
+
+  it('rejects a scanned PDF with a friendly 422 and does not store anything', async () => {
+    const { makePdf } = await import('./pdf-fixture');
+    const res = await upload(makePdf([[]]));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toMatch(/paste/i);
+    expect((await (await get()).json()).timeline.documents).toEqual([]);
+  });
+
+  it('denies other users', async () => {
+    const { makePdf } = await import('./pdf-fixture');
+    expect((await upload(makePdf([['Some record text for the test run.']]), 'a.pdf', { who: 'intruder' })).status).toBeGreaterThanOrEqual(403);
+  });
+});

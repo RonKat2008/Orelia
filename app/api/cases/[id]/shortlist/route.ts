@@ -57,7 +57,8 @@ export async function GET(req: Request, { params }: Ctx) {
     const byKey = new Map(items.map((i) => [curationKey(i.targetKind, i.targetId), i]));
     const suggested = (curation?.suggested ?? [])
       .map((k) => byKey.get(k))
-      .filter((i): i is ShortlistItem => !!i && curation?.byTarget.get(curationKey(i.targetKind, i.targetId))?.tier === "best")
+      // The judge's suggested list is already curated (keeps, by tier then score); only an excluded pick is skipped.
+      .filter((i): i is ShortlistItem => !!i && (curation?.byTarget.get(curationKey(i.targetKind, i.targetId))?.tier ?? "exclude") !== "exclude")
       // Never pre-check a resource with no contact route (also covers curations stored before this rule).
       .filter((i) => isReachable(i.evidence))
       .slice(0, 5)

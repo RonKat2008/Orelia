@@ -47,14 +47,14 @@ describe("GET shortlist with curation", () => {
     expect(body.groups.expert[0]).toMatchObject({ tier: "backup", tierReasons: [], rank: 1, name: "N-e0" });
   });
 
-  it("returns tier, tierReasons, summary and best-only suggested capped at 5", async () => {
+  it("returns tier, tierReasons, summary and the judge's suggested picks (any kept tier) capped at 5", async () => {
     const byTarget: StoredCuration["byTarget"] = new Map();
-    for (let i = 0; i < 8; i++) byTarget.set(`expert:e${i}`, { tier: i < 7 ? "best" : "good", tierReasons: [{ text: `r${i}`, evidenceIds: [] }] });
+    for (let i = 0; i < 8; i++) byTarget.set(`expert:e${i}`, { tier: i < 6 ? "best" : i === 6 ? "exclude" : "good", tierReasons: [{ text: `r${i}`, evidenceIds: [] }] });
     state.curation = {
       byTarget,
       summary: "Summary.",
-      // includes a non-best and an unknown key, both of which must be dropped
-      suggested: ["expert:e0", "expert:e1", "expert:e7", "expert:nope", "expert:e2", "expert:e3", "expert:e4", "expert:e5"],
+      // a good-tier keep stays; an excluded and an unknown key are dropped
+      suggested: ["expert:e0", "expert:e7", "expert:e6", "expert:nope", "expert:e1", "expert:e2", "expert:e3", "expert:e4"],
     } satisfies StoredCuration;
     const body = await call();
     expect(body.curationSummary).toBe("Summary.");
@@ -62,7 +62,7 @@ describe("GET shortlist with curation", () => {
     expect(body.groups.expert[7].tier).toBe("good");
     expect(body.suggested).toHaveLength(5);
     expect(body.suggested[0]).toEqual({ targetKind: "expert", targetId: "e0", name: "N-e0" });
-    expect(body.suggested.map((s: { targetId: string }) => s.targetId)).toEqual(["e0", "e1", "e2", "e3", "e4"]);
+    expect(body.suggested.map((s: { targetId: string }) => s.targetId)).toEqual(["e0", "e7", "e1", "e2", "e3"]);
   });
 
   it("never suggests a best pick with no contact route, though it is still listed", async () => {

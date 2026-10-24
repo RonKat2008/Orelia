@@ -59,6 +59,9 @@ export function parseReplyAllowlist(
   return [...new Set(fallback)];
 }
 
+/** Borrowed inboxes: mail up to this long before the seed still counts (a message may be approved just before seeding). */
+export const BORROWED_LOOKBACK_MS = 6 * 60 * 60 * 1000;
+
 /** WAYFINDER_SIM_TIME_SCALE, read the same way as the follow-up workflow's clock. */
 export function parseTimeScale(env: Record<string, string | undefined>): number {
   return parseWorkflowTimeScale(env.WAYFINDER_SIM_TIME_SCALE);

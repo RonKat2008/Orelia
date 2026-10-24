@@ -98,8 +98,10 @@ export async function main(
     });
     caseId = res.caseId;
     caseWritten = res.written;
-  } else {
+  } else if (caseId) {
     log(`Reusing case ${caseId}`);
+  } else {
+    log("No demo case written (--no-case): use a case created in the app.");
   }
 
   const state: DemoState = {

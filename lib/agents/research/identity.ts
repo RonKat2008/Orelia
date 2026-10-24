@@ -6,7 +6,7 @@ import { HAIKU } from "@/lib/agents/models";
 import type { AgentTool } from "@/lib/agents/runtime";
 import { pubmedAuthorsTool } from "./pubmed-tool";
 import { runResearch, trackedTool, type ProvenanceTracker } from "./shared";
-import type { NppesPort } from "./source-ports";
+import type { NppesPort, PubmedAuthorHit } from "./source-ports";
 import type { ResearchAgent } from "./types";
 
 export const nppesProviderUrl = (npi: string): string =>
@@ -16,6 +16,36 @@ const SEED_AUTHORS = 6;
 
 const normalize = (s: string): string => s.toLowerCase().replace(/[^a-z]/g, "");
 const firstToken = (s: string): string => normalize(s.trim().split(/\s+/)[0] ?? "");
+const middleInitial = (name?: string): string => {
+  const token = (name ?? "").trim().split(/\s+/)[0] ?? "";
+  return token ? token[0]!.toLowerCase() : "";
+};
+
+/**
+ * PubMed often lists the same person once as "Jerad" and again as "Jerad M".
+ * Those rows are one author. Conflicting middle initials stay ambiguous so two namesakes are not verified as one NPI.
+ */
+function mergedAuthor(hits: readonly PubmedAuthorHit[], first: string, last: string): {
+  ambiguous: boolean;
+  papers: PubmedAuthorHit["papers"];
+  author: { firstName: string; lastName: string; middleName?: string; affiliation?: string; affiliations?: string[] };
+} {
+  const initials = new Set(hits.map((h) => middleInitial(h.middleName)).filter(Boolean));
+  const ambiguous = initials.size > 1;
+  const papers = [...new Map(hits.flatMap((h) => h.papers.map((p) => [p.pmid, p] as const))).values()];
+  const affiliations = [...new Set(hits.flatMap((h) => [...(h.affiliations ?? []), ...(h.affiliation ? [h.affiliation] : [])]))];
+  const middleName = hits.find((h) => h.middleName)?.middleName;
+  return {
+    ambiguous,
+    papers,
+    author: {
+      firstName: hits[0]?.firstName ?? first,
+      lastName: hits[0]?.lastName ?? last,
+      ...(!ambiguous && middleName ? { middleName } : {}),
+      ...(affiliations.length ? { affiliation: affiliations[0], affiliations } : {}),
+    },
+  };
+}
 
 const inputSchema = z.object({
   firstName: z.string().min(1),
@@ -74,14 +104,15 @@ export const identityAgent: ResearchAgent = {
   name: "identity",
   model: HAIKU,
   run: async (c, ctx) => {
-    const assessments = new Map<string, { verdict: IdentityAssessment; provider?: RawProvider }>();
+    const assessments = new Map<string, { verdict: IdentityAssessment; provider?: RawProvider; papers: PubmedAuthorHit["papers"]; name?: string }>();
     const key = (first: string, last: string) => `${firstToken(first)}|${normalize(last)}`;
     const authors = await ctx.ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: 15 });
     const assess = async (first: string, last: string, providers: RawProvider[], truncated: boolean) => {
       const hits = authors.filter((a) => key(a.firstName, a.lastName) === key(first, last));
-      const author = hits.length === 1 ? hits[0] : undefined;
-      const verdict = matchIdentity(author ?? { firstName: first, lastName: last }, providers, c.diseaseName, { truncated: truncated || hits.length !== 1 });
-      assessments.set(key(first, last), { verdict, provider: providers.find((p) => String(p.number) === verdict.npi) });
+      const merged = mergedAuthor(hits, first, last);
+      const verdict = matchIdentity(merged.author, providers, c.diseaseName, { truncated: truncated || merged.ambiguous });
+      const name = hits.slice().sort((a, b) => b.paperCount - a.paperCount)[0]?.name;
+      assessments.set(key(first, last), { verdict, papers: merged.papers, ...(name ? { name } : {}), provider: providers.find((p) => String(p.number) === verdict.npi) });
       return verdict;
     };
     const result = await runResearch({
@@ -117,8 +148,7 @@ export const identityAgent: ResearchAgent = {
       const parts = r.name.trim().split(/\s+/);
       const item = assessments.get(key(parts[0] ?? "", parts.at(-1) ?? ""));
       const verdict = item?.verdict;
-      const author = authors.find((a) => key(a.firstName, a.lastName) === key(parts[0] ?? "", parts.at(-1) ?? ""));
-      const papers = author?.papers.filter((p) => mentionStrength(p.title, c) === "exact") ?? [];
+      const papers = item?.papers.filter((p) => mentionStrength(p.title, c) === "exact") ?? [];
       const profile = { ...r.profile, paperCount: new Set(papers.map((p) => p.pmid)).size, recentPaperCount: new Set(papers.filter((p) => p.year && p.year >= new Date().getFullYear() - 5).map((p) => p.pmid)).size };
       const npi = verdict?.verified ? verdict.npi : null;
       const refs = r.evidenceRefs.filter((ref) => result.evidence.some((e) => e.sourceUrl === ref || e.id === ref));
@@ -126,7 +156,7 @@ export const identityAgent: ResearchAgent = {
       if (!source) return { ...r, npi: null, verified: false, credentials: undefined, specialty: undefined };
       const stamped = { ...source, id: undefined, claimType: npi ? "identity_verified" : "identity_unverified", claim: `${verdict?.summary ?? "NPI rejected: no corroborated author"}. ${(verdict?.reasons ?? []).join("; ")}`, sourceUrl: npi ? nppesProviderUrl(npi) : source.sourceUrl };
       evidence.push(stamped);
-      return { ...r, name: author?.name ?? r.name, profile, npi, verified: !!npi, credentials: npi && typeof item?.provider?.basic.credential === "string" ? item.provider.basic.credential : undefined, specialty: npi ? item?.provider?.taxonomies?.find((t) => t.primary)?.desc ?? undefined : undefined, evidenceRefs: [stamped.sourceUrl] };
+      return { ...r, name: item?.name ?? r.name, profile, npi, verified: !!npi, credentials: npi && typeof item?.provider?.basic.credential === "string" ? item.provider.basic.credential : undefined, specialty: npi ? item?.provider?.taxonomies?.find((t) => t.primary)?.desc ?? undefined : undefined, evidenceRefs: [stamped.sourceUrl] };
     });
     return { status: "ok", records, evidence };
   },

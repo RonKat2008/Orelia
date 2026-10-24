@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveJourney } from "../../components/journey/model";
 import {
   addPatientNote,
@@ -80,7 +80,25 @@ describe("case documents", () => {
     ]);
   });
 
-  it("uses the documents API when it answers and a fixture when it does not", async () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("never shows sample documents for a live case when the API fails", async () => {
+    const down = await loadDocuments(caseId, async () => {
+      throw new Error("offline");
+    });
+    expect(down.status).toBe("error");
+    const missing = await loadDocuments(caseId, async () => new Response("no", { status: 404 }));
+    expect(missing.status).toBe("error");
+    const saved = await addPatientNote(
+      caseId,
+      { title: "t", text: "x", sharedField: "home city" },
+      async () => new Response("missing", { status: 404 }),
+    );
+    expect("error" in saved).toBe(true);
+  });
+
+  it("uses the documents API when it answers and a labelled fixture only when offline", async () => {
+    vi.stubEnv("NEXT_PUBLIC_WAYFINDER_OFFLINE", "1");
     const live = await loadDocuments(caseId, async () =>
       new Response(JSON.stringify({ documents: [] }), { status: 200 }),
     );
@@ -96,7 +114,8 @@ describe("case documents", () => {
     expect(failed.status).toBe("error");
   });
 
-  it("posts a patient note and keeps a local copy when the route is absent", async () => {
+  it("posts a patient note and keeps a local copy when offline and the route is absent", async () => {
+    vi.stubEnv("NEXT_PUBLIC_WAYFINDER_OFFLINE", "1");
     const saved = await addPatientNote(
       caseId,
       { title: "Travel limit", text: "I can travel within 200 miles.", sharedField: "home city" },

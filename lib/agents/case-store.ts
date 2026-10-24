@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { cases } from "@/db/schema";
 import type { Case, CaseInput } from "@/lib/contracts";
@@ -10,6 +10,8 @@ export interface CaseStore {
   /** Replace the editable fields and set the status. */
   update(id: string, input: CaseInput, status: string): Promise<Case | null>;
   setStatus(id: string, status: string): Promise<void>;
+  /** Atomically claim a case, including across server instances. */
+  compareAndSetStatus(id: string, expected: readonly string[], status: string): Promise<boolean>;
 }
 
 type Row = typeof cases.$inferSelect;
@@ -66,6 +68,13 @@ export class DbCaseStore implements CaseStore {
     return row ? rowToCase(row) : null;
   }
 
+  async compareAndSetStatus(id: string, expected: readonly string[], status: string): Promise<boolean> {
+    const rows = await this.db.update(cases).set({ status })
+      .where(and(eq(cases.id, id), inArray(cases.status, [...expected])))
+      .returning({ id: cases.id });
+    return rows.length === 1;
+  }
+
   async setStatus(id: string, status: string): Promise<void> {
     await this.db.update(cases).set({ status }).where(eq(cases.id, id));
   }
@@ -90,6 +99,13 @@ export class MemoryCaseStore implements CaseStore {
     const next: Case = { ...input, id, status, createdAt: prev.createdAt };
     this.rows.set(id, next);
     return next;
+  }
+
+  async compareAndSetStatus(id: string, expected: readonly string[], status: string): Promise<boolean> {
+    const prev = this.rows.get(id);
+    if (!prev || !expected.includes(prev.status)) return false;
+    this.rows.set(id, { ...prev, status });
+    return true;
   }
 
   async setStatus(id: string, status: string): Promise<void> {

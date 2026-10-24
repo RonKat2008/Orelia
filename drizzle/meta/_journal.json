@@ -71,6 +71,13 @@
       "when": 1792821600000,
       "tag": "0031_web_applications",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792821700000,
+      "tag": "0032_contact_plans",
+      "breakpoints": true
     }
   ]
 }

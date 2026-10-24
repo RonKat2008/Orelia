@@ -37,6 +37,11 @@ import {
 import { loadCaseContacts } from "./case-activity";
 import { formatWhen, titleCase } from "./format";
 import { LetterSheet, MessageBody } from "./LetterSheet";
+import { ApplicationCard } from "./ApplicationCard";
+import { loadApplications, type ApiApplication } from "./applications";
+import { getPlan } from "@/components/plan/client";
+import { applicationStepContext, draftStepContext, stepContextText } from "@/components/plan/model";
+import type { ContactPlan } from "@/lib/plan/contract";
 
 type Row = {
   contact: ApiContact;
@@ -61,18 +66,27 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const [pending, setPending] = useState<{ done: number; total: number } | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [plan, setPlan] = useState<ContactPlan | null>(null);
+  const [applications, setApplications] = useState<ApiApplication[]>([]);
 
   useEffect(() => {
     let active = true;
     void (async () => {
       const stored = readStoredOutreach(caseId);
       const live = await loadCaseContacts(caseId);
-      const [record, titles] = await Promise.all([loadCase(caseId), loadDocumentTitles(caseId)]);
+      const [record, titles, planResult, apps] = await Promise.all([
+        loadCase(caseId),
+        loadDocumentTitles(caseId),
+        getPlan(caseId),
+        loadApplications(caseId),
+      ]);
       if (!active) return;
       setCaseRecord(record);
       setDocTitles(titles);
+      setPlan(planResult.ok ? planResult.plan : null);
+      setApplications(apps);
       const people = live && live.length > 0 ? live : stored?.contacts ?? [];
-      if (people.length === 0) {
+      if (people.length === 0 && apps.length === 0) {
         setPhase("empty");
         return;
       }
@@ -142,7 +156,11 @@ export function OutboxList({ caseId }: { caseId: string }) {
     );
   }
 
-  const waiting = rows.filter((row) => row.draft && !row.approvedAt && !row.held).length;
+  const waiting =
+    rows.filter((row) => row.draft && !row.approvedAt && !row.held).length +
+    applications.filter((app) => app.status === "draft").length;
+  const replaceApplication = (next: ApiApplication) =>
+    setApplications((current) => current.map((app) => (app.id === next.id ? next : app)));
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
@@ -153,6 +171,23 @@ export function OutboxList({ caseId }: { caseId: string }) {
             ? `${waiting} ${waiting === 1 ? "draft is" : "drafts are"} waiting for you. Nothing has been sent.`
             : "Nothing is waiting for your approval."}
       </p>
+      {applications.length > 0 ? (
+        <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-10 p-0" aria-label="Online applications">
+          {applications.map((app) => {
+            const ctx = applicationStepContext(plan, app);
+            return (
+              <li key={app.id}>
+                <ApplicationCard
+                  caseId={caseId}
+                  application={app}
+                  stepContext={ctx ? stepContextText(ctx) : null}
+                  onChange={replaceApplication}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
       <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-10 p-0">
         {rows.map((row) => {
           const draft = row.draft;
@@ -165,6 +200,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
           const approved = Boolean(row.approvedAt);
           const docIds = draft?.contextDocIds ?? [];
           const blocked = !draft || !disclosed || approved || row.held;
+          const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? row.contact.channel });
           return (
             <li key={row.contact.id}>
               <Card
@@ -182,24 +218,32 @@ export function OutboxList({ caseId }: { caseId: string }) {
                       {name}
                     </CardTitle>
                   </div>
-                  {approved ? (
-                    <Badge tone="ok" size="md">
-                      <CircleCheck aria-hidden /> Approved
-                    </Badge>
-                  ) : row.held ? (
-                    <Badge tone="neutral" size="md">
-                      <Pause aria-hidden /> On hold
-                    </Badge>
-                  ) : draft ? (
-                    <Badge tone="gold" size="md" dot>
-                      Waiting for you
-                    </Badge>
-                  ) : (
-                    <Badge tone="danger" size="md">
-                      No draft
-                    </Badge>
-                  )}
+                  <span className="basis-full sm:basis-auto">
+                    {approved ? (
+                      <Badge tone="ok" size="md">
+                        <CircleCheck aria-hidden /> Approved
+                      </Badge>
+                    ) : row.held ? (
+                      <Badge tone="neutral" size="md">
+                        <Pause aria-hidden /> On hold
+                      </Badge>
+                    ) : draft ? (
+                      <Badge tone="gold" size="md" dot>
+                        Waiting for you
+                      </Badge>
+                    ) : (
+                      <Badge tone="danger" size="md">
+                        No draft
+                      </Badge>
+                    )}
+                  </span>
                 </div>
+
+                {stepCtx ? (
+                  <p className="m-0 -mt-2 mb-6 text-small font-semibold text-teal" data-plan-step>
+                    {stepContextText(stepCtx)}
+                  </p>
+                ) : null}
 
                 {draft ? (
                   <div className="grid grid-cols-[minmax(0,1fr)] gap-6">

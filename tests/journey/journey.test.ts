@@ -58,6 +58,10 @@ describe("resolveJourney", () => {
 
   it("marks earlier steps complete and names a single current step", () => {
     const resolved = plan("ready", { selectedCount: 1, contacts: null });
+    expect(resolved.steps.map((step) => step.id)).toEqual([
+      "intake", "research", "shortlist", "consent", "plan", "outreach", "tracker",
+    ]);
+    expect(resolved.steps.find((step) => step.id === "plan")?.href).toBe(`/cases/${caseId}/plan`);
     expect(resolved.steps.filter((step) => step.state === "current").map((step) => step.id)).toEqual(["consent"]);
     expect(resolved.steps.filter((step) => step.state === "complete").map((step) => step.id)).toEqual([
       "intake",
@@ -115,5 +119,43 @@ describe("loadJourney", () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 404 }));
     const loaded = await loadJourney(caseId, fetchImpl as unknown as typeof fetch);
     expect(loaded.missingCase).toBe(true);
+  });
+});
+
+describe("resolveJourney: contact plan", () => {
+  const consented = [{ consented: true, approved: false, state: "drafted" }];
+
+  it("shows Plan as current while a draft plan waits for review", () => {
+    const resolved = plan("ready", { selectedCount: 1, contacts: consented, planStatus: "draft" });
+    expect(resolved.current).toBe("plan");
+    expect(resolved.nextHref).toBe(`/cases/${caseId}/plan`);
+    expect(resolved.steps.find((s) => s.id === "consent")?.state).toBe("complete");
+    expect(resolved.steps.find((s) => s.id === "plan")?.state).toBe("current");
+  });
+
+  it("moves to the outbox once the plan is approved", () => {
+    expect(plan("ready", { selectedCount: 1, contacts: consented, planStatus: "approved" }).current).toBe("outreach");
+  });
+
+  it("consent still comes first, and replies still win", () => {
+    expect(
+      plan("ready", { selectedCount: 1, contacts: [{ consented: false, state: "drafted" }], planStatus: "draft" }).current,
+    ).toBe("consent");
+    expect(
+      plan("ready", { selectedCount: 1, contacts: [{ consented: true, approved: true, state: "sent" }], planStatus: "draft" }).current,
+    ).toBe("tracker");
+  });
+
+  it("loadJourney reads the plan status and tolerates a missing plan", async () => {
+    const routes: Record<string, unknown> = {
+      [`/api/cases/${caseId}`]: { case: { diseaseName: "Synthetic", status: "ready" } },
+      [`/api/cases/${caseId}/plan`]: { plan: { status: "approved" } },
+    };
+    const fetchImpl = vi.fn(async (url: string) =>
+      routes[url] ? new Response(JSON.stringify(routes[url]), { status: 200 }) : new Response("{}", { status: 404 }),
+    ) as unknown as typeof fetch;
+    expect((await loadJourney(caseId, fetchImpl)).planStatus).toBe("approved");
+    delete routes[`/api/cases/${caseId}/plan`];
+    expect((await loadJourney(caseId, fetchImpl)).planStatus).toBeNull();
   });
 });

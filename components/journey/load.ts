@@ -2,10 +2,12 @@ import {
   countSelected,
   readContacts,
   readOpenTaskCount,
+  readPlanStatus,
   readTasks,
   summarizeCase,
   type CaseSummary,
   type JourneyContact,
+  type JourneyPlanStatus,
   type JourneyTask,
 } from "./model";
 
@@ -16,6 +18,7 @@ export type JourneyData = {
   openTaskCount: number | null;
   contacts: JourneyContact[] | null;
   tasks: JourneyTask[] | null;
+  planStatus: JourneyPlanStatus | null;
   missingCase: boolean;
 };
 
@@ -35,6 +38,7 @@ export async function loadJourney(caseId: string, fetchImpl: typeof fetch = fetc
     openTaskCount: null,
     contacts: null,
     tasks: null,
+    planStatus: null,
     missingCase: false,
   };
 
@@ -63,7 +67,10 @@ export async function loadJourney(caseId: string, fetchImpl: typeof fetch = fetc
       tasks = readTasks(await readJson(tasksResponse));
     }
 
-    return { summary, status, selectedCount, openTaskCount, contacts, tasks, missingCase: false };
+    const planResponse = await fetchImpl(`/api/cases/${caseId}/plan`).catch(() => null);
+    const planStatus = planResponse && planResponse.ok ? readPlanStatus(await readJson(planResponse)) : null;
+
+    return { summary, status, selectedCount, openTaskCount, contacts, tasks, planStatus, missingCase: false };
   } catch {
     return empty;
   }

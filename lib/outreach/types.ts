@@ -17,6 +17,11 @@ export interface OutreachStore {
   consent(id: string): Promise<Consent | undefined>;
   saveConsent(consent: Consent): Promise<void>;
   saveDraft(draft: Draft): Promise<void>;
+  /**
+   * Optional: a first-message draft for this contact that is neither approved nor sent and was written for
+   * exactly these shared fields. When present, draft() returns it instead of writing a duplicate.
+   */
+  pendingDraft?(contact: Contact, sharedFields: readonly string[]): Promise<Draft | undefined>;
   draft(id: string, contact: Contact): Promise<Draft | undefined>;
   /** Compare-and-set: reserve approval BEFORE sending; never automatically retry an ambiguous send. */
   reserve(draft: Draft, approvedAt: string): Promise<boolean>;

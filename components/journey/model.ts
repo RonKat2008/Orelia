@@ -3,6 +3,7 @@ export const JOURNEY_STAGES = [
   "research",
   "shortlist",
   "consent",
+  "plan",
   "outreach",
   "tracker",
 ] as const;
@@ -14,6 +15,7 @@ export const STAGE_LABELS: Record<JourneyStage, string> = {
   research: "Search",
   shortlist: "Shortlist",
   consent: "Consent",
+  plan: "Plan",
   outreach: "Outbox",
   tracker: "Tracker",
 };
@@ -23,6 +25,7 @@ export const STAGE_HINTS: Record<JourneyStage, string> = {
   research: "Agents read public sources",
   shortlist: "Pick up to five contacts",
   consent: "Choose what is shared",
+  plan: "Check how each is contacted",
   outreach: "Approve each draft",
   tracker: "Replies and follow-up",
 };
@@ -43,7 +46,11 @@ export type JourneySnapshot = {
   selectedCount: number | null;
   openTaskCount: number | null;
   contacts: JourneyContact[] | null;
+  /** Status of the case's contact plan, or null/undefined when none has been built. */
+  planStatus?: JourneyPlanStatus | null;
 };
+
+export type JourneyPlanStatus = "draft" | "approved";
 
 export type JourneyStep = {
   id: JourneyStage;
@@ -66,6 +73,7 @@ const NEXT: Record<JourneyStage, { label: string; path: (caseId: string) => stri
   research: { label: "Open the research swarm", path: (id) => `/cases/${id}/swarm` },
   shortlist: { label: "Choose who to contact", path: (id) => `/cases/${id}/shortlist` },
   consent: { label: "Choose fields to share", path: (id) => `/cases/${id}/consent` },
+  plan: { label: "Review the contact plan", path: (id) => `/cases/${id}/plan` },
   outreach: { label: "Review drafts before anything is sent", path: (id) => `/cases/${id}/outbox` },
   tracker: { label: "Open the tracker", path: (id) => `/cases/${id}/tracker` },
 };
@@ -75,6 +83,7 @@ export function stageHref(stage: JourneyStage, caseId: string): string {
   if (stage === "research") return `/cases/${caseId}/swarm`;
   if (stage === "shortlist") return `/cases/${caseId}/shortlist`;
   if (stage === "consent") return `/cases/${caseId}/consent`;
+  if (stage === "plan") return `/cases/${caseId}/plan`;
   if (stage === "outreach") return `/cases/${caseId}/outbox`;
   return `/cases/${caseId}/tracker`;
 }
@@ -126,6 +135,7 @@ function currentStage(snapshot: JourneySnapshot): JourneyStage {
   const sent = contacts.some((contact) => contact.state && contact.state !== "drafted");
   const waiting = contacts.some((contact) => contact.approved !== true);
   if ((snapshot.openTaskCount ?? 0) > 0 || sent) return "tracker";
+  if (snapshot.planStatus === "draft") return "plan";
   if (waiting) return "outreach";
   return "tracker";
 }
@@ -196,6 +206,15 @@ export function readContacts(value: unknown): JourneyContact[] | null {
       state: typeof contact.state === "string" ? contact.state : null,
     };
   });
+}
+
+/** `{ plan: { status } }` from GET /api/cases/[id]/plan -> the plan status, or null. */
+export function readPlanStatus(value: unknown): JourneyPlanStatus | null {
+  if (!value || typeof value !== "object") return null;
+  const plan = (value as { plan?: unknown }).plan;
+  if (!plan || typeof plan !== "object") return null;
+  const status = (plan as { status?: unknown }).status;
+  return status === "draft" || status === "approved" ? status : null;
 }
 
 export function readOpenTaskCount(value: unknown): number | null {

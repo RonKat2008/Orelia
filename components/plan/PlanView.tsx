@@ -1,0 +1,137 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, EmptyState, Skeleton, toast } from '@/components/ui';
+import type { ContactPlan, PlanEdit } from '@/lib/plan/contract';
+import { buildPlan, getOrBuildPlan, patchPlan, type PlanResult } from './client';
+import { movedIds, toggleEdit, withOrder, withToggle } from './model';
+import { PlanBoard } from './PlanBoard';
+
+type Phase = 'loading' | 'ready' | 'error';
+
+export function PlanView({ caseId }: { caseId: string }) {
+  const router = useRouter();
+  const [plan, setPlan] = useState<ContactPlan | null>(null);
+  const [phase, setPhase] = useState<Phase>('loading');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const planRef = useRef<ContactPlan | null>(null);
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
+
+  const apply = useCallback((res: PlanResult) => {
+    if (res.ok) {
+      setPlan(res.plan);
+      setPhase('ready');
+    } else {
+      setError(res.message);
+      setPhase('error');
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    apply(await getOrBuildPlan(caseId));
+  }, [apply, caseId]);
+
+  useEffect(() => {
+    let active = true;
+    void getOrBuildPlan(caseId).then(res => {
+      if (active) apply(res);
+    });
+    return () => {
+      active = false;
+    };
+  }, [apply, caseId]);
+
+  const edit = useCallback(
+    async (edits: PlanEdit[], optimistic: ContactPlan | null): Promise<PlanResult | null> => {
+      const before = planRef.current;
+      if (!before) return null;
+      setBusy(true);
+      if (optimistic) setPlan(optimistic);
+      const res = await patchPlan(caseId, before.version, edits);
+      setBusy(false);
+      if (res.ok) {
+        setPlan(res.plan);
+        return res;
+      }
+      setPlan(before);
+      if (res.status === 409) {
+        toast.info('Plan changed, reloading');
+        setPhase('loading');
+        await load();
+      } else {
+        toast.error(res.message);
+      }
+      return res;
+    },
+    [caseId, load],
+  );
+
+  const onToggle = (resourceKey: string, stepId: string, enabled: boolean) => {
+    const current = planRef.current;
+    if (!current) return;
+    void edit([toggleEdit(resourceKey, stepId, enabled)], withToggle(current, resourceKey, stepId, enabled));
+  };
+
+  const onMove = (resourceKey: string, stepId: string, delta: -1 | 1) => {
+    const current = planRef.current;
+    const resource = current?.resources.find(r => r.resourceKey === resourceKey);
+    if (!current || !resource) return;
+    const stepIds = movedIds(resource, stepId, delta);
+    if (!stepIds) return;
+    void edit([{ type: 'reorder', resourceKey, stepIds }], withOrder(current, resourceKey, stepIds));
+  };
+
+  const onApprove = async () => {
+    const res = await edit([{ type: 'approve' }], null);
+    if (res?.ok) router.push(`/cases/${caseId}/outbox`);
+  };
+
+  const onRebuild = async () => {
+    setBusy(true);
+    const res = await buildPlan(caseId);
+    setBusy(false);
+    if (res.ok) {
+      setPlan(res.plan);
+      toast.success('Plan rebuilt');
+    } else if (res.status === 409) {
+      toast.info('Plan changed, reloading');
+      setPhase('loading');
+      await load();
+    } else {
+      toast.error(res.message);
+    }
+  };
+
+  if (phase === 'loading') {
+    return (
+      <div className="ds-root flex flex-col gap-4" role="status" aria-busy="true">
+        <p className="text-lead text-ink-2">
+          Getting your plan ready. If this is your first visit, we are building it from the resources you chose.
+        </p>
+        <Skeleton className="h-40 w-full rounded-lg" />
+        <Skeleton className="h-40 w-full rounded-lg" />
+      </div>
+    );
+  }
+
+  if (phase === 'error' || !plan) {
+    return (
+      <div className="ds-root">
+        <EmptyState
+          title="We could not build a plan yet"
+          description={error ?? 'Choose who to contact on the shortlist, then come back.'}
+          action={<Button variant="secondary" onClick={() => {
+            setPhase('loading');
+            void load();
+          }}>Try again</Button>}
+        />
+      </div>
+    );
+  }
+
+  return <PlanBoard plan={plan} busy={busy} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />;
+}

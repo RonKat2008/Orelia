@@ -148,3 +148,39 @@ describe('outreach API and safety boundary', () => {
     expect(createDraft(contact, consent, ctx.store.record).body).not.toContain('epithelioid sarcoma');
   });
 });
+
+describe('draft reuse (contact plan approval writes drafts before the outbox opens)', () => {
+  class ReusingStore extends MemoryStore {
+    async pendingDraft(contact: Contact, sharedFields: readonly string[]) {
+      return [...this.drafts.values()].find(d => d.contactId === contact.id && !d.approvedAt && !d.sentAt
+        && JSON.stringify(d.sharedFields) === JSON.stringify(sharedFields));
+    }
+  }
+  function reusing() {
+    const store = new ReusingStore();
+    const email = new MockChannel('email'); const voice = new MockChannel('voice');
+    const env = { NODE_ENV: 'test', OUTBOUND_ALLOWLIST: 'intake@example.com,+14155550123' };
+    const service = new OutreachService(store, [email, voice], env, () => new Date('2026-10-23T12:00:00Z'));
+    return { store, email, voice, env, service, api: outreachHandlers(service) };
+  }
+
+  it('returns the pending unapproved draft instead of writing a second one', async () => {
+    const ctx = reusing(); const { contact, draft } = await ready(ctx);
+    const again = await ctx.service.draft(contact.id);
+    expect(again.id).toBe(draft.id);
+    expect(ctx.store.drafts.size).toBe(1);
+  });
+
+  it('writes a fresh draft when consent changed or the pending one was approved', async () => {
+    const ctx = reusing(); const { contact, draft } = await ready(ctx);
+    await ctx.service.consent(contact.id, ['diseaseName', 'homeState']);
+    const changed = await ctx.service.draft(contact.id);
+    expect(changed.id).not.toBe(draft.id);
+    expect(changed.sharedFields).toEqual(['diseaseName', 'homeState']);
+  });
+
+  it('stores without pendingDraft keep the old behaviour', async () => {
+    const ctx = setup(); const { contact, draft } = await ready(ctx);
+    expect((await ctx.service.draft(contact.id)).id).not.toBe(draft.id);
+  });
+});

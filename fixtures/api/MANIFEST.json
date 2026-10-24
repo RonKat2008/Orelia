@@ -320,5 +320,376 @@
     "url": "https://api.exa.ai/search",
     "status": 200,
     "fetched_at": "2026-10-24T04:40:44.514Z"
+  },
+  {
+    "file": "pubmed/epithelioid-sarcoma/esearch-strict.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%28%22epithelioid+sarcoma%22%5Btiab%5D+OR+%22epithelioid+sarcoma%22%5BMeSH+Terms%5D%29+AND+humans%5BMeSH+Terms%5D&retmax=300&retmode=json&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:31.627Z"
+  },
+  {
+    "file": "pubmed/epithelioid-sarcoma/efetch-strict-1.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=3473316%2C31130564%2C33751732%2C2764450%2C4405886%2C26645461%2C35504627%2C32589100%2C35963159%2C32302562%2C33051050%2C9336649%2C9839166%2C35839307%2C3972150%2C33289402%2C19141382%2C33414109%2C26297060%2C34278633%2C4014539%2C26365879%2C16778474%2C3312866%2C4093952%2C33035458%2C34405755%2C2430001%2C37326105%2C26297059%2C31686193%2C18436180%2C1551057%2C8986982%2C9765140%2C34193249%2C21677548%2C40947015%2C10821502%2C414532%2C34243995%2C2258299%2C37316954%2C29266231%2C15685075%2C10567895%2C23623614%2C32307188%2C25025387%2C6890623%2C19997734%2C3628114%2C1156322%2C4094985%2C41874585%2C31087789%2C6701222%2C28233450%2C137071%2C12107573%2C3101280%2C2451925%2C206237%2C38497120%2C21382784%2C17478394%2C1734011%2C27769872%2C28498412%2C7395516%2C22575361%2C11507697%2C7962802%2C40907264%2C17624553%2C2450058%2C1132175%2C36078034%2C18831016%2C25200863%2C34681807%2C20118913%2C15541084%2C16961663%2C33176534%2C3548316%2C35639915%2C3666798%2C7534682%2C2724011%2C7520581%2C27442626%2C1430344%2C17179622%2C2580443%2C4334247%2C34301170%2C22964694%2C33247294%2C6281155&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:33.623Z"
+  },
+  {
+    "file": "pubmed/epithelioid-sarcoma/efetch-strict-2.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=31670758%2C7991803%2C28802505%2C35346504%2C8099901%2C7936567%2C3392084%2C10456531%2C17652004%2C34281526%2C39115147%2C16157200%2C32814436%2C38388250%2C30954717%2C30291790%2C27776545%2C6684093%2C33494986%2C32799369%2C37752442%2C32113803%2C29068073%2C38879847%2C24620901%2C30971563%2C36597286%2C18480401%2C6724535%2C330614%2C30929036%2C31233904%2C25479928%2C7685133%2C27800093%2C2473832%2C7114752%2C36813596%2C28250889%2C14675288%2C38433059%2C6087526%2C15577812%2C6293160%2C1689556%2C3539305%2C15579921%2C9462274%2C3705524%2C16324194%2C27493191%2C21242638%2C4340662%2C9035681%2C12239049%2C37191372%2C24674671%2C41291778%2C21083605%2C2472786%2C9416703%2C2649435%2C7679559%2C889339%2C10886744%2C4362691%2C33394376%2C16444310%2C33288368%2C19326021%2C15201798%2C10774940%2C29340997%2C15050080%2C38155016%2C15503263%2C12641789%2C26315812%2C3717528%2C25845048%2C6897170%2C32275460%2C26767876%2C1298730%2C30087080%2C23793215%2C32851904%2C1569689%2C8852321%2C17516745%2C25750961%2C3239914%2C24685864%2C40319847%2C11520372%2C12743818%2C945875%2C31215292%2C10612139%2C10867152&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:36.127Z"
+  },
+  {
+    "file": "pubmed/epithelioid-sarcoma/efetch-strict-3.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=29260248%2C29202999%2C24337357%2C29602652%2C23161234%2C31537427%2C19335024%2C10525872%2C473473%2C35516973%2C19866439%2C16818048%2C30091959%2C15078349%2C4774988%2C1451061%2C27045049%2C22749727%2C12798726%2C3977362%2C28381140%2C7439826%2C6512821%2C29747250%2C11852861%2C6243238%2C24636595%2C3750610%2C11903586%2C33470921%2C19309339%2C6884858%2C22169376%2C11309041%2C20034988%2C16786373%2C34379944%2C3977363%2C32792170%2C10399186%2C2378399%2C34637163%2C11109797%2C4636913%2C8826729%2C23435749%2C21953993%2C16343734%2C3711398%2C2196989%2C17883136%2C6203417%2C23886403%2C28541826%2C22240247%2C36893069%2C39789853%2C8300938%2C738663%2C33103211%2C27040929%2C11284318%2C31311568%2C1569245%2C38634642%2C17765459%2C16613163%2C25858929%2C20881848%2C12376923%2C2418696%2C19460217%2C42831342%2C32250542%2C22430612%2C391846%2C3034928%2C19575870%2C14964501%2C23242066%2C5051642%2C4141205%2C22715439%2C32886445%2C30692474%2C19757197%2C29508464%2C9253633%2C18346795%2C22487511%2C10223300%2C17052316%2C20451074%2C4682033%2C1226337%2C4001200%2C6261597%2C10572273%2C7719607%2C9361357&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:39.663Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-parham-david.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=David&last_name=Parham&state=CA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:42.469Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-spunt-sheri.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Sheri&last_name=Spunt&state=CA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:45.982Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-billings-steven.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Steven&last_name=Billings&state=OH&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:46.575Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-hayes-jordan-andrea.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Andrea&last_name=Hayes-Jordan&state=NC&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:48.619Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-kao-simon.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Simon&last_name=Kao&state=IA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:49.537Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-rosenberg-andrew.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Andrew&last_name=Rosenberg&state=FL&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:52.399Z"
+  },
+  {
+    "file": "nppes/epithelioid-sarcoma/strict-wakely-paul.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Paul&last_name=Wakely&state=OH&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:53.623Z"
+  },
+  {
+    "file": "pubmed/vascular-eds/esearch-strict.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%28%22vascular+Ehlers-Danlos+syndrome%22%5Btiab%5D+OR+%22vascular+Ehlers-Danlos+syndrome%22%5BMeSH+Terms%5D%29+AND+humans%5BMeSH+Terms%5D&retmax=300&retmode=json&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:54.780Z"
+  },
+  {
+    "file": "pubmed/vascular-eds/efetch-strict-1.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=28306228%2C36977837%2C34686263%2C24922459%2C25758994%2C32127191%2C40533124%2C15127738%2C19462862%2C38926786%2C16928994%2C17159712%2C30999998%2C40247137%2C32197145%2C35984436%2C24550430%2C34560710%2C33651202%2C25101913%2C40598578%2C39906986%2C30999999%2C39265229%2C33475873%2C26761529%2C37460211%2C35779834%2C31328377%2C41845085%2C27687326%2C32915071%2C17715121%2C35964930%2C32115322%2C32518415%2C36503916%2C35686681%2C21548220%2C34705050%2C31353273%2C31000321%2C40497944%2C31692252%2C34845584%2C41338889%2C30259903%2C33223285%2C25205403%2C24650746%2C33006458%2C41272811%2C32306189%2C35543214%2C21852761%2C24922461%2C17053184%2C40104886%2C29050841%2C41905781%2C31639107%2C22143279%2C33334864%2C32941194%2C12016538%2C33641388%2C40345454%2C26454306%2C29700641%2C30534875%2C39730916%2C30474650%2C31188187%2C29940997%2C36764582%2C24399159%2C41310758%2C33468574%2C22268198%2C34529342%2C41616879%2C36584154%2C30793832%2C38495666%2C36754639%2C35296576%2C28102592%2C29381997%2C29778910%2C35587586%2C30357907%2C35245290%2C34226255%2C39645092%2C37827202%2C20825985%2C33368646%2C42124361%2C37068529%2C28779530&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:56.081Z"
+  },
+  {
+    "file": "pubmed/vascular-eds/efetch-strict-2.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=20500229%2C38030331%2C22019127%2C31126764%2C39836470%2C23645670%2C36402305%2C40559232%2C31449940%2C33277910%2C35318067%2C30497941%2C36189931%2C41242771%2C38623759%2C20098810%2C31964572%2C16253833%2C31406019%2C21549076%2C23751452%2C31693161%2C37330246%2C31600821%2C37623198%2C34538206%2C39018432%2C39239969%2C33223282%2C41905459%2C35964932%2C34152227%2C29700788%2C29551664%2C33586854%2C33851936%2C36879253%2C42318957%2C27206743%2C25526469%2C29216800%2C41218953%2C30623691%2C36866665%2C30788842%2C22549280%2C19477391%2C30919682%2C15007000%2C36878244%2C39488620%2C39705273%2C39201504%2C29650765%2C31394236%2C35527463%2C37156368%2C35618343%2C17172533%2C34845833%2C26323967%2C37461200%2C35393024%2C22036072%2C42048161%2C22522144%2C30837697%2C18804950%2C38950604%2C25518796%2C37776192%2C41492809%2C25355833%2C30982307%2C36637850%2C32392932%2C26388241%2C32860234%2C16447226%2C31833208%2C36046937%2C33249204%2C31847606%2C38944978%2C34318601%2C31903687%2C24967021%2C26864667%2C26248323%2C32471395%2C35691461%2C24365320%2C38182694%2C17014025%2C25293415%2C40879620%2C38102934%2C37187299%2C37625987%2C35718944&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:57.588Z"
+  },
+  {
+    "file": "pubmed/vascular-eds/efetch-strict-3.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=23657781%2C35420538%2C27799058%2C30391766%2C22065459%2C29346445%2C29510914%2C40471774%2C19390073%2C23052746%2C34894819%2C37042257%2C40930761%2C37226776%2C39313806%2C20972483%2C40219677%2C30241104%2C42191857%2C20825986%2C31391389%2C31324749%2C27295357%2C11220066%2C22038052%2C35340190%2C32693780%2C8881656%2C30346365%2C28183226%2C39953236%2C25446311%2C31575845%2C35699227%2C27743245%2C33776002%2C19883511%2C36813023%2C38729586%2C37314760%2C22422654%2C30158381%2C22226700%2C38458387%2C34528600%2C30359590%2C28942401%2C22705941%2C15964526%2C31791984%2C14694786%2C17172534%2C32938213%2C40812464%2C25940258%2C29927864%2C37208760%2C25926429%2C42091551%2C18068944%2C37917379%2C37755470%2C23980448%2C40494625%2C25422335%2C37074961%2C24758669%2C31552453%2C18272325%2C19741548%2C21086191%2C38301384%2C22308214%2C19671829%2C42648567%2C37195081%2C16863833%2C32318814%2C38480037%2C41219626%2C10422149%2C36706158%2C24792277%2C22847070%2C26724513%2C23672283%2C42728080%2C41872842%2C30656563%2C28657457%2C28342678%2C38724151%2C21269862%2C29323927%2C25420629%2C40764132%2C41747624%2C31080229%2C37856617%2C25846194&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:20:58.946Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-shalhub-sherene.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Sherene&last_name=Shalhub&state=OR&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:01.076Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-byers-peter.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Peter&last_name=Byers&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:01.563Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-milewicz-dianna.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dianna&last_name=Milewicz&state=TX&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:02.044Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-dietz-harry.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Harry&last_name=Dietz&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:02.558Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-morris-shaine.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Shaine&last_name=Morris&state=TX&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:03.059Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-pepin-melanie.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Melanie&last_name=Pepin&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:04.081Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-black-james.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=James&last_name=Black&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:04.816Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-pyeritz-reed.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Reed&last_name=Pyeritz&state=PA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:05.386Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-oderich-gustavo.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Gustavo&last_name=Oderich&state=MN&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:05.739Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-bowen-caitlin.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Caitlin&last_name=Bowen&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:06.223Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-braverman-alan.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Alan&last_name=Braverman&state=MO&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:06.723Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-holmes-kathryn.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kathryn&last_name=Holmes&state=OR&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:07.234Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-loeys-bart.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Bart&last_name=Loeys&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:07.794Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-mcdonnell-nazli.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Nazli&last_name=McDonnell&state=CO&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:08.273Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-russo-melissa.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Melissa&last_name=Russo&state=RI&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:08.773Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-beecroft-taylor.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Taylor&last_name=Beecroft&state=TX&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:09.609Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-brooke-benjamin.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Benjamin&last_name=Brooke&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:10.234Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-cecchi-alana.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Alana&last_name=Cecchi&state=TX&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:10.585Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-coleman-dawn.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dawn&last_name=Coleman&state=MI&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:10.932Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-fishman-elliot.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Elliot&last_name=Fishman&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:11.318Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-hicks-kelli.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kelli&last_name=Hicks&state=WA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:12.462Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-lawrence-peter.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Peter&last_name=Lawrence&state=CA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:12.833Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-lemaire-scott.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Scott&last_name=LeMaire&state=TX&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:13.570Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-lindsay-mark.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mark&last_name=Lindsay&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:14.390Z"
+  },
+  {
+    "file": "nppes/vascular-eds/strict-prakash-siddharth.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Siddharth&last_name=Prakash&state=TX&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:15.347Z"
+  },
+  {
+    "file": "pubmed/igg4-related-disease/esearch-strict.json",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=%28%22IgG4-related+disease%22%5Btiab%5D+OR+%22IgG4-related+disease%22%5BMeSH+Terms%5D+OR+%22IgG4-related%22%5Btiab%5D%29+AND+humans%5BMeSH+Terms%5D&retmax=300&retmode=json&sort=relevance&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:16.191Z"
+  },
+  {
+    "file": "pubmed/igg4-related-disease/efetch-strict-1.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=22333367%2C32240759%2C27503251%2C34600619%2C29866378%2C30772965%2C40838448%2C38041648%2C30333424%2C35790701%2C34237420%2C35925351%2C33837927%2C36749002%2C36822758%2C36379910%2C39010269%2C37596115%2C28871762%2C25674895%2C23068295%2C25065016%2C32530044%2C34995766%2C28413094%2C35246287%2C31883235%2C34600621%2C32388968%2C37053356%2C28778436%2C28283514%2C31708540%2C28177871%2C23127945%2C30198210%2C35616587%2C32718841%2C36469346%2C35983918%2C36318998%2C35248448%2C26021892%2C25369435%2C26497415%2C34697896%2C33034247%2C22687783%2C22533594%2C22533593%2C22533592%2C22533591%2C22533595%2C38294009%2C36288984%2C38787572%2C29110571%2C25119258%2C25809420%2C36468740%2C33759779%2C30002467%2C25726306%2C33253646%2C31141636%2C37728301%2C37055347%2C40599784%2C25824063%2C29798112%2C31368650%2C33115666%2C32671453%2C37919119%2C35048971%2C27440428%2C29101259%2C35256059%2C28506361%2C25433197%2C22504232%2C31722794%2C22589378%2C36328041%2C33541828%2C30075107%2C22316447%2C33254091%2C35766010%2C24593168%2C36494285%2C26587853%2C36781039%2C25147016%2C32718696%2C38238220%2C36960748%2C33460019%2C28575535%2C29025159&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:17.566Z"
+  },
+  {
+    "file": "pubmed/igg4-related-disease/efetch-strict-2.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=35705247%2C27068616%2C23789481%2C21502106%2C39450944%2C39048338%2C28458319%2C31512237%2C30297197%2C33719923%2C29938895%2C29217085%2C33333647%2C36273965%2C37421192%2C34137884%2C22736240%2C23127947%2C38558068%2C23465296%2C25306871%2C35644582%2C36890018%2C29808497%2C34294662%2C32580259%2C31118383%2C28649778%2C36682742%2C28031133%2C29406918%2C32419100%2C29417330%2C26464522%2C25062559%2C36441499%2C31469124%2C27418350%2C32300834%2C38824933%2C30333398%2C30585995%2C38539040%2C29089834%2C27193771%2C33892496%2C31651647%2C30401468%2C32949993%2C28321597%2C26856357%2C37340618%2C25194429%2C31493905%2C37401823%2C38378328%2C26911454%2C32622036%2C36269307%2C28547965%2C32229230%2C21720208%2C36749679%2C29535033%2C31456806%2C27932429%2C33973364%2C27207156%2C25867228%2C36938954%2C24729516%2C33159798%2C34493553%2C30690697%2C28124667%2C38158996%2C31256053%2C29992203%2C32499098%2C34210692%2C24929696%2C34305927%2C38251568%2C22688163%2C25603828%2C30541967%2C29491289%2C23187777%2C35152313%2C31928980%2C33007301%2C38608192%2C40638015%2C30242320%2C24662563%2C30902377%2C33620878%2C37026488%2C37344441%2C26517603&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:19.940Z"
+  },
+  {
+    "file": "pubmed/igg4-related-disease/efetch-strict-3.xml",
+    "method": "GET",
+    "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=38607674%2C27494237%2C26362833%2C29741204%2C28420843%2C28091932%2C37833108%2C22963447%2C40399091%2C24407836%2C24164850%2C33875354%2C32234382%2C27988433%2C25028708%2C34024478%2C32353876%2C28968906%2C34252486%2C37258169%2C23818728%2C25595874%2C39724155%2C35353781%2C35355069%2C32524742%2C25742061%2C37263677%2C24266692%2C31880610%2C21971253%2C32611951%2C28025265%2C26706382%2C38648974%2C24488145%2C23830124%2C27147710%2C36045066%2C29875098%2C33172694%2C26139657%2C23886254%2C36052648%2C37449889%2C38195345%2C28322216%2C40924281%2C30311466%2C29935778%2C27863169%2C37149355%2C23666890%2C25927141%2C35595251%2C32209922%2C29108661%2C24577252%2C33323754%2C32957799%2C30585990%2C35345087%2C38570292%2C29584907%2C25810424%2C25935761%2C23985413%2C28720475%2C21688479%2C27871394%2C33871599%2C35793965%2C41443859%2C35359937%2C29322678%2C37635356%2C25662724%2C28582539%2C29507997%2C29584900%2C27329319%2C35244096%2C29888414%2C29338590%2C24729443%2C32895746%2C37748818%2C30334477%2C24361210%2C32668883%2C22689933%2C25667062%2C33794639%2C38760966%2C22751773%2C29551702%2C37806548%2C24608648%2C28229544%2C31319713&retmode=xml&tool=wayfinder&email=dev%40example.com",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:21.069Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-stone-john.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=John&last_name=Stone&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:21.939Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-carruthers-mollie.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mollie&last_name=Carruthers&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:22.736Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-deshpande-vikram.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Vikram&last_name=Deshpande&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:23.209Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-koster-matthew.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Matthew&last_name=Koster&state=MN&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:24.011Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-mahajan-vinay.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Vinay&last_name=Mahajan&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:24.547Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-mattoo-hamid.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Hamid&last_name=Mattoo&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:25.071Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-pillai-shiv.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Shiv&last_name=Pillai&state=MA&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:26.072Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-watanabe-tomohiro.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Tomohiro&last_name=Watanabe&state=MD&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:26.837Z"
+  },
+  {
+    "file": "nppes/igg4-related-disease/strict-yi-eunhee.json",
+    "method": "GET",
+    "url": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Eunhee&last_name=Yi&state=MN&limit=10",
+    "status": 200,
+    "fetched_at": "2026-10-24T05:21:27.618Z"
   }
 ]

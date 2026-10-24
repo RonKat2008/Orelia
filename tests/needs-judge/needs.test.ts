@@ -187,3 +187,22 @@ describe("needs feed the searches", () => {
     expect(Date.now() - t).toBeLessThan(1000);
   });
 });
+
+describe("settleNeeds / pickUpLateNeeds", () => {
+  it("returns a fast profile directly and hands a slow one to keepAlive", async () => {
+    const { settleNeeds } = await import("@/lib/agents/needs-judge-phase");
+    const fast = await settleNeeds(Promise.resolve(undefined), 50, () => { throw new Error("not late"); });
+    expect(fast).toEqual({ needs: undefined, late: false });
+    const kept: unknown[] = [];
+    const slow = await settleNeeds(new Promise(() => undefined), 10, (w) => kept.push(w));
+    expect(slow.late).toBe(true);
+    expect(kept).toHaveLength(1);
+  });
+  it("polls the store until the late profile lands, or gives up", async () => {
+    const { pickUpLateNeeds } = await import("@/lib/agents/needs-judge-phase");
+    let calls = 0;
+    const found = await pickUpLateNeeds("c1", async () => (++calls >= 3 ? ({ caseId: "c1" } as never) : null), 1_000, 5);
+    expect(found).toEqual({ caseId: "c1" });
+    expect(await pickUpLateNeeds("c1", async () => null, 20, 5)).toBeUndefined();
+  });
+});

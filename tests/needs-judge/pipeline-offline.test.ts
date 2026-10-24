@@ -5,6 +5,7 @@ import { MemoryCurationStore } from "@/lib/agents/curator-store";
 import { extractCase } from "@/lib/agents/intake-extractor";
 import { MemoryNeedsStore, setNeedsStoreForTests } from "@/lib/agents/needs";
 import { runResearch } from "@/lib/agents/orchestrator";
+import { makeDefaultJudge } from "@/lib/agents/needs-judge-phase";
 import { MemoryPersist } from "@/lib/agents/persist";
 import { researchAgents } from "@/lib/agents/research";
 import { createFixturePorts } from "@/lib/agents/research/fixture-ports";
@@ -54,4 +55,39 @@ describe("needs + judge through the full offline pipeline", () => {
       for (const v of result!.judgements) expect(v.score).toBe(summary.ranked.find((e) => e.record.resource.id === v.candidateId)?.score);
     });
   }
+});
+
+describe("a slow needs analyst never holds the pipeline for long", () => {
+  beforeEach(() => {
+    vi.stubEnv("WAYFINDER_OFFLINE", "1");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("settles late, keeps the analyst alive, and the judge picks the saved profile up", async () => {
+    const input = await extractCase(readFileSync("fixtures/reports/vascular-eds.md", "utf8"));
+    const cases = new MemoryCaseStore();
+    const c = await cases.create(input, "confirmed");
+    const late = new MemoryNeedsStore();
+    const profile = { caseId: c.id, fromCache: false, specialties: [], centerCapabilities: [], redFlags: [], trialEligibility: [], supportNeeds: [], questions: [], sources: [] } as unknown as import("@/lib/contracts").CareNeeds;
+    let saved = false;
+    let finish = () => {};
+    const kept: Promise<unknown>[] = [];
+    const seen: unknown[] = [];
+    const t0 = Date.now();
+    const summary = await runResearch(c.id, {
+      store: new MemoryRunStore(), persist: new MemoryPersist(), cases, ports: createFixturePorts(), agents: researchAgents, curations: new MemoryCurationStore(),
+      needs: () => new Promise((resolve) => { finish = () => { saved = true; resolve(profile); }; }),
+      needsWaitMs: 0, needsExtraWaitMs: 20, lateNeedsPickupMs: 2_000,
+      // The analyst only finishes after the fan-out has given up on it.
+      keepAlive: (w) => { kept.push(w); setTimeout(() => finish(), 30); },
+      loadNeeds: async () => (saved ? profile : null),
+      judge: async (id, cr, ranked, needs, store) => { seen.push(needs); return makeDefaultJudge(() => late)(id, cr, ranked, undefined, store); },
+    });
+    expect(kept).toHaveLength(1);
+    expect(seen[0]).toBe(profile);
+    expect(summary.curation).toBeDefined();
+    expect((await late.loadJudge(c.id))?.judgements.length).toBeGreaterThan(0);
+    expect(Date.now() - t0).toBeLessThan(10_000);
+  });
 });

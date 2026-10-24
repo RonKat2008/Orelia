@@ -9,7 +9,7 @@ import type { SourcePorts } from "./research/source-ports";
 import { toCandidate, type RankFn } from "./signals";
 import { getCurationStore, type CurationStore } from "./curator-store";
 import type { ValidatedCuration } from "./curator";
-import { boundedTerms, defaultNeeds, makeDefaultJudge, NEEDS_WAIT_MS, type JudgeFn, type NeedsFn } from "./needs-judge-phase";
+import { boundedTerms, defaultNeeds, makeDefaultJudge, NEEDS_EXTRA_WAIT_MS, NEEDS_WAIT_MS, pickUpLateNeeds, settleNeeds, type JudgeFn, type KeepAlive, type NeedsFn } from "./needs-judge-phase";
 import { verifyWithProposals, type Proposer, type VerifyOutput } from "./verifier";
 import { enrichVerified } from "./contact-enrichment";
 import { ATTEMPT_AGENT, PHASE_AGENT, beginPhase, ensureRun, failOpenRuns, settlePhase } from "./phase-runs";
@@ -36,6 +36,12 @@ export interface OrchestratorDeps {
   needs?: NeedsFn;
   /** How long the searches that use needs terms may wait for them, from the start of the fan-out. */
   needsWaitMs?: number;
+  /** How long verify/rank/judge may wait for the needs profile after the searches settle. */
+  needsExtraWaitMs?: number;
+  /** Keeps a late needs analyst running past its step; and where the judge looks for its saved profile. */
+  keepAlive?: KeepAlive;
+  loadNeeds?: (caseId: string) => Promise<CareNeeds | null>;
+  lateNeedsPickupMs?: number;
   /** Final judge (replaces the curator). Defaults to runJudge + saving the judge result. */
   judge?: JudgeFn;
   /** Where curation results are saved. Defaults to getCurationStore(). */
@@ -209,9 +215,10 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     );
 
     const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
-    const needs = (await needsPromise) ?? null;
+    // The needs profile may hold up the rest of the pipeline only briefly; a late one is picked up by the judge.
+    const settledNeeds = await settleNeeds(needsPromise, deps.needsExtraWaitMs ?? NEEDS_EXTRA_WAIT_MS, deps.keepAlive);
     const timings = { needsMs, needsWaitMs: needsWaitMs as number | null, fanoutMs: Date.now() - fanoutStarted };
-    return { results, runStatuses, needs, timings };
+    return { results, runStatuses, needs: settledNeeds.needs ?? null, needsLate: settledNeeds.late, timings };
   });
   // Every source failed: an empty shortlist would look like success. End as failed so the patient can retry.
   const outcomes = Object.values(fanout.runStatuses);
@@ -225,7 +232,7 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     });
     throw new Error(message);
   }
-  return finalizeCase(caseId, caseRecord, fanout.results, fanout.runStatuses, deps, step, fanout.needs ?? undefined, fanout.timings);
+  return finalizeCase(caseId, caseRecord, fanout.results, fanout.runStatuses, deps, step, fanout.needs ?? undefined, fanout.timings, fanout.needsLate === true);
 }
 
 async function finalizeCase(
@@ -235,8 +242,9 @@ async function finalizeCase(
   runStatuses: Record<string, string>,
   deps: OrchestratorDeps,
   step: ResearchStep,
-  needs: CareNeeds | undefined,
+  fanoutNeeds: CareNeeds | undefined,
   timings: { needsMs: number | null; needsWaitMs: number | null; fanoutMs: number },
+  needsLate = false,
 ): Promise<ResearchSummary> {
   // Post-search phases are recorded as agent_runs rows so the stream can show verify -> rank -> curate live.
   const checked = await step.run("verify", async () => {
@@ -267,15 +275,17 @@ async function finalizeCase(
     const judgeRun = await ensureRun(deps.store, caseId, PHASE_AGENT.judge);
     const adopting = new AdoptingStore(deps.store, new Map([[PHASE_AGENT.judge, judgeRun]]));
     await deps.store.update(judgeRun, { status: "running", startedAt: new Date() });
+    const needs = fanoutNeeds ?? (needsLate ? await pickUpLateNeeds(caseId, deps.loadNeeds, deps.lateNeedsPickupMs) : undefined);
     const out = deps.curate
       ? await deps.curate(caseId, caseRecord, ranked)
       : await (deps.judge ?? makeDefaultJudge())(caseId, caseRecord, ranked, needs, adopting);
     const kept = out.tiers.filter((t) => t.tier !== "exclude").length;
     // No-op when the judge already settled its row with its own timing summary.
     await settlePhase(deps.store, caseId, PHASE_AGENT.judge, `${kept} kept, ${out.tiers.length - kept} dropped${out.source === "fallback" ? " (judge unavailable: scored order kept)" : ""}`);
-    return { curation: out, judgeMs: Date.now() - started };
+    return { curation: out, judgeMs: Date.now() - started, needs: needs ?? null };
   });
   const curation = judged.curation;
+  const needs = judged.needs ?? undefined;
   await step.run("persist", async () => {
     // Below-threshold experts stay research: saved for the read-only Experts trace, never as candidates.
     const research = verified.kept.filter((k) => k.resource.kind === "expert" && k.shortlistEligibility?.eligible !== true);

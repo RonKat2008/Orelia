@@ -47,18 +47,11 @@ const PROMISES = [
 export function AboutPitch() {
   return (
     <article className="pitch-article">
-      <header className="masthead">
-        <Link className="wordmark" href="/">
-          Wayfinder
-        </Link>
-        <p className="eyebrow">For the demo</p>
-      </header>
-
       <h1>Expert finders tell you who the expert is. Wayfinder gets you actually seen by them.</h1>
       <p className="lede pitch-lede">
         You bring a case. A research swarm looks up specialists and centers, recruiting trials,
-        advocacy groups, and financial or travel aid. You choose who to contact. Agents then email
-        or call the intake teams you approved, and they keep following up until there is an
+        advocacy groups, and financial or travel aid, and every claim is validated against its source. You choose who to contact. After you approve,
+        Wayfinder emails, calls, or applies through the web form (or a combination) and keeps following up until there is an
         appointment, a screening, a membership, or an application — with you approving each step.
       </p>
 
@@ -99,7 +92,7 @@ export function AboutPitch() {
       <Reveal revealKey="try-demo">
         <div className="pitch-cta">
           <p>The walkthrough uses a synthetic epithelioid sarcoma report. It is not a real patient.</p>
-          <Link className="button" href="/">
+          <Link className="button" href="/start">
             Try the demo case
           </Link>
         </div>
@@ -113,7 +106,7 @@ const STEP_COPY: Record<(typeof STEPS)[number]["id"], string> = {
   swarm: "Nine research agents look in public sources at the same time and stream their progress.",
   shortlist: "You get a shortlist grouped by kind of help. Each reason links to its source.",
   approve: "You pick at most five contacts, tick the fields that may be shared, and approve each draft.",
-  outreach: "Approved drafts go to intake teams by email or a call that starts with an AI disclosure.",
+  outreach: "Approved plans go to intake teams by email, a call that starts with an AI disclosure, or a web-form application.",
   tasks: "Replies become tasks — send slides, get a referral, call to schedule — and you decide what happens next.",
   follow: "If nobody answers, a follow-up draft appears on business day 3 and again on day 7. Wayfinder does not send it on its own.",
 };

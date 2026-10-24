@@ -1,4 +1,5 @@
 import { AboutPitch } from "@/components/pitch/AboutPitch";
+import { SiteFooter, SiteHeader } from "@/components/shell";
 
 export const metadata = {
   title: "About Wayfinder",
@@ -7,8 +8,12 @@ export const metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="shell pitch">
-      <AboutPitch />
-    </main>
+    <div className="ds-root min-h-dvh bg-paper text-ink">
+      <SiteHeader />
+      <main id="main" className="shell pitch">
+        <AboutPitch />
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

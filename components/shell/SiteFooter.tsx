@@ -7,6 +7,7 @@ const COLUMNS = [
     heading: "Wayfinder",
     links: [
       { href: "/how-it-works", label: "How it works" },
+      { href: "/start", label: "Start a case" },
       { href: "/about", label: "About" },
       { href: "/demo", label: "See a demo" },
     ],
@@ -52,7 +53,7 @@ export function SiteFooter({ className }: { className?: string }) {
       </div>
       <div className="border-t border-line">
         <p className="page-container m-0 py-6 text-small text-ink-2">
-          Wayfinder never gives medical advice. If symptoms are urgent, contact your care team or call 911.
+          Wayfinder never gives medical advice. In an emergency call 911 or contact your care team.
         </p>
       </div>
     </footer>

@@ -107,7 +107,7 @@ export function DemoPanel() {
         </button>
         {status?.caseId ? (
           <p>
-            <Link href="/">Open intake and load the demo case</Link>
+            <Link href="/start">Open intake and load the demo case</Link>
           </p>
         ) : null}
       </section>

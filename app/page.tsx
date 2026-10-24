@@ -1,29 +1,40 @@
-import Link from "next/link";
-import { IntakeFlow } from "@/components/intake/IntakeFlow";
-import { loadDemoReports } from "@/components/intake/demos";
+import type { Metadata } from "next";
+import { FinalCta } from "@/components/landing/FinalCta";
+import { FindsBento } from "@/components/landing/FindsBento";
+import { Hero } from "@/components/landing/Hero";
+import { HowItAdapts } from "@/components/landing/HowItAdapts";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { LandingChoreography } from "@/components/landing/LandingChoreography";
+import { ProblemSection } from "@/components/landing/ProblemSection";
+import { TrustSection } from "@/components/landing/TrustSection";
+import { START_HREF } from "@/components/landing/content";
+import { LenisProvider } from "@/components/shell/LenisProvider";
+import { SiteFooter } from "@/components/shell/SiteFooter";
+import { SiteHeader } from "@/components/shell/SiteHeader";
 
-export default function HomePage() {
-  const demos = loadDemoReports();
+export const metadata: Metadata = {
+  title: "Wayfinder: find the experts, get seen",
+  description:
+    "For adults with a rare disease: research agents find specialists, trials, advocacy groups and aid, check every claim against its source, then call, email or apply online for you, only after you approve each message, and follow up.",
+};
+
+export default function LandingPage() {
   return (
-    <main className="shell">
-      <header className="masthead">
-        <Link className="wordmark" href="/">
-          Wayfinder
-        </Link>
-        <p className="eyebrow">Find the right door</p>
-      </header>
-      <h1>Tell us about the case</h1>
-      <p className="lede">
-        Wayfinder reads a report, then looks for specialists, centers, trials, advocacy groups, and
-        aid. You confirm every field before research starts.
-      </p>
-      <ol className="journey" aria-label="How Wayfinder works">
-        <li>Share a report</li>
-        <li>Confirm the details</li>
-        <li>Nine searches run at once</li>
-        <li>You choose who to contact</li>
-      </ol>
-      <IntakeFlow demos={demos} />
-    </main>
+    <LenisProvider>
+      <div className="ds-root">
+        <SiteHeader cta={{ href: START_HREF, label: "Start your case" }} />
+        <main id="main">
+          <Hero />
+          <ProblemSection />
+          <HowItWorks />
+          <HowItAdapts />
+          <TrustSection />
+          <FindsBento />
+          <FinalCta />
+        </main>
+        <SiteFooter />
+        <LandingChoreography />
+      </div>
+    </LenisProvider>
   );
 }

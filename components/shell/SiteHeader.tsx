@@ -16,7 +16,7 @@ export interface NavItem {
 
 export const MARKETING_NAV: NavItem[] = [
   { href: "/how-it-works", label: "How it works" },
-  { href: "/trust", label: "Trust & safety" },
+  { href: "/trust", label: "Trust" },
   { href: "/about", label: "About" },
 ];
 
@@ -32,7 +32,7 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /** Calm sticky header: translucent paper with blur, hairline underneath. */
-export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/", label: "Start a case" }, className }: SiteHeaderProps) {
+export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label: "Start a case" }, className }: SiteHeaderProps) {
   const pathname = usePathname() ?? "/";
 
   return (

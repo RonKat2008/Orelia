@@ -9,28 +9,13 @@
       "evidenceRefs": [
         "https://igg4ward.org/"
       ]
-    },
-    {
-      "kind": "organization",
-      "id": "org:igg4-rd-life",
-      "name": "IgG4-RD Life",
-      "organizationKind": "advocacy",
-      "url": "https://www.igg4-rd.life/",
-      "evidenceRefs": [
-        "https://www.igg4-rd.life/"
-      ]
     }
   ],
   "evidence": [
     {
       "claimType": "advocacy_organization",
-      "claim": "IgG4ward! Foundation is the first and only organization solely dedicated to IgG4-RD advocacy, research, and support, providing advocacy, education, and support to patients and caregivers impacted by IgG4-RD.",
+      "claim": "The IgG4ward! Foundation's site describes providing advocacy, education and support for people living with IgG4-related disease.",
       "sourceUrl": "https://igg4ward.org/"
-    },
-    {
-      "claimType": "advocacy_organization",
-      "claim": "IgG4-RD Life empowers, supports, and unites individuals affected by IgG4-RD through education, advocacy, and compassionate community programs.",
-      "sourceUrl": "https://www.igg4-rd.life/"
     }
   ]
 }

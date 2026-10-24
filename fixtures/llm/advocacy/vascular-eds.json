@@ -15,39 +15,19 @@
       "id": "org:the-veds-movement",
       "name": "The VEDS Movement",
       "organizationKind": "advocacy",
-      "url": "https://thevedsmovement.org/",
+      "url": "https://thevedsmovement.org/research/veds-collaborative/",
       "evidenceRefs": [
-        "https://thevedsmovement.org/"
+        "https://thevedsmovement.org/research/veds-collaborative/"
       ]
     },
     {
       "kind": "organization",
-      "id": "org:marfan-foundation",
-      "name": "Marfan Foundation",
+      "id": "org:collagen-advocacy-network",
+      "name": "Collagen Advocacy Network",
       "organizationKind": "advocacy",
-      "url": "https://marfan.org/",
+      "url": "https://collagenadvocacynetwork.org/",
       "evidenceRefs": [
-        "https://marfan.org/conditions/veds/"
-      ]
-    },
-    {
-      "kind": "organization",
-      "id": "org:ehlers-danlos-society",
-      "name": "The Ehlers-Danlos Society",
-      "organizationKind": "advocacy",
-      "url": "https://www.ehlers-danlos.com/",
-      "evidenceRefs": [
-        "https://www.ehlers-danlos.com/veds/"
-      ]
-    },
-    {
-      "kind": "organization",
-      "id": "org:beloveds-foundation",
-      "name": "BELOvEDS, A Nania Foundation Inc.",
-      "organizationKind": "advocacy",
-      "url": "https://belovedsfoundation.org/",
-      "evidenceRefs": [
-        "https://belovedsfoundation.org/"
+        "https://collagenadvocacynetwork.org/"
       ]
     },
     {
@@ -64,32 +44,22 @@
   "evidence": [
     {
       "claimType": "advocacy_organization",
-      "claim": "FIGHT vEDS is a non-profit organization dedicated to fighting and finding a treatment for vascular Ehlers-Danlos Syndrome, helping patients with information, genetic testing, and research opportunities.",
+      "claim": "FIGHT vEDS describes itself as a non-profit organization dedicated to fighting and finding a treatment for vascular Ehlers-Danlos Syndrome.",
       "sourceUrl": "https://www.fightveds.org/"
     },
     {
       "claimType": "advocacy_organization",
-      "claim": "The VEDS Movement's mission is to save lives and improve the quality of life of individuals with Vascular Ehlers-Danlos Syndrome through research, education, and support.",
-      "sourceUrl": "https://thevedsmovement.org/"
+      "claim": "The VEDS Movement's VEDS Collaborative page describes a group of patients, family members, researchers and clinicians.",
+      "sourceUrl": "https://thevedsmovement.org/research/veds-collaborative/"
     },
     {
       "claimType": "advocacy_organization",
-      "claim": "Marfan Foundation drives research, education and support for people living with Marfan, Loeys-Dietz, Vascular Ehlers-Danlos syndromes, and related genetic aortic and vascular conditions.",
-      "sourceUrl": "https://marfan.org/conditions/veds/"
+      "claim": "Collagen Advocacy Network describes advocacy, education and research for people living with genetically defined forms of Ehlers-Danlos Syndrome.",
+      "sourceUrl": "https://collagenadvocacynetwork.org/"
     },
     {
       "claimType": "advocacy_organization",
-      "claim": "The Ehlers-Danlos Society provides information and support for the Ehlers-Danlos syndromes, including vascular EDS, with resources and a support group directory.",
-      "sourceUrl": "https://www.ehlers-danlos.com/veds/"
-    },
-    {
-      "claimType": "advocacy_organization",
-      "claim": "BELOvEDS, A Nania Foundation Inc. is a volunteer-run 501(c)(3) non-profit organization committed to raising awareness and funds for research for vascular Ehlers-Danlos Syndrome.",
-      "sourceUrl": "https://belovedsfoundation.org/"
-    },
-    {
-      "claimType": "advocacy_organization",
-      "claim": "We Are vEDS provides resources and support for the vEDS community, curated by experts and those living with vascular Ehlers-Danlos Syndrome.",
+      "claim": "We Are vEDS describes resources and support for the vascular Ehlers-Danlos community.",
       "sourceUrl": "https://www.weareveds.com/"
     }
   ]

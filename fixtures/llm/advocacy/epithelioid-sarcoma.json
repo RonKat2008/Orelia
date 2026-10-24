@@ -2,50 +2,35 @@
   "records": [
     {
       "kind": "organization",
-      "id": "org:sarcoma-foundation-of-america",
-      "name": "Sarcoma Foundation of America (SFA)",
+      "id": "org:sarcoma-patient-advocacy-global-network-spagn",
+      "name": "Sarcoma Patient Advocacy Global Network (SPAGN)",
       "organizationKind": "advocacy",
-      "url": "https://curesarcoma.org/",
+      "url": "https://www.sarcoma-patients.org/",
       "evidenceRefs": [
-        "https://curesarcoma.org/"
+        "https://www.sarcoma-patients.org/"
       ]
     },
     {
       "kind": "organization",
-      "id": "org:sarcoma-alliance",
-      "name": "Sarcoma Alliance",
+      "id": "org:sarc-patient-advocacy-directory",
+      "name": "SARC Patient Advocacy Directory",
       "organizationKind": "advocacy",
-      "url": "https://sarcomaalliance.org/",
+      "url": "https://sarctrials.org/patient-resources/patient-advocacy-directory/",
       "evidenceRefs": [
-        "https://sarcomaalliance.org/"
-      ]
-    },
-    {
-      "kind": "organization",
-      "id": "org:sarcoma-coalition",
-      "name": "Sarcoma Coalition",
-      "organizationKind": "advocacy",
-      "url": "https://sarcomacoalition.us/",
-      "evidenceRefs": [
-        "https://sarcomacoalition.us/248-2/"
+        "https://sarctrials.org/patient-resources/patient-advocacy-directory/"
       ]
     }
   ],
   "evidence": [
     {
       "claimType": "advocacy_organization",
-      "claim": "Sarcoma Foundation of America is a nonprofit advocacy organization dedicated to improving outcomes for people diagnosed with sarcoma, including epithelioid sarcoma. SFA funds research, provides resources, advocates on behalf of the sarcoma community, and offers clinical trials assistance programs.",
-      "sourceUrl": "https://curesarcoma.org/"
+      "claim": "SPAGN's home page describes it as the global network of national sarcoma patient advocacy organizations.",
+      "sourceUrl": "https://www.sarcoma-patients.org/"
     },
     {
       "claimType": "advocacy_organization",
-      "claim": "Sarcoma Alliance provides guidance, education, and support for everyone affected by sarcoma, including epithelioid sarcoma. Its board includes a Vice President who is a parent of a child diagnosed with epithelioid sarcoma.",
-      "sourceUrl": "https://sarcomaalliance.org/"
-    },
-    {
-      "claimType": "advocacy_organization",
-      "claim": "Sarcoma Coalition is a membership-based patient advocacy organization for sarcoma patients and their advocates that brings influence to health policy decision-making to improve access to treatment and care.",
-      "sourceUrl": "https://sarcomacoalition.us/248-2/"
+      "claim": "SARC's Patient Advocacy Directory page lists sarcoma patient advocacy and support organizations.",
+      "sourceUrl": "https://sarctrials.org/patient-resources/patient-advocacy-directory/"
     }
   ]
 }

@@ -2,101 +2,47 @@
   "records": [
     {
       "kind": "institution",
-      "id": "inst:henry-ford-igg4-center",
-      "name": "IgG4 Related Disease Center",
+      "id": "inst:henry-ford-health-igg4-related-disease-center",
+      "name": "Henry Ford Health IgG4 Related Disease Center",
       "institutionKind": "rare_disease_center",
-      "city": "Detroit",
-      "state": "MI",
       "evidenceRefs": [
         "https://www.henryford.com/services/rheumatology/igg4-related-disease-center"
       ]
     },
     {
       "kind": "institution",
-      "id": "inst:mass-general-brigham-igg4",
-      "name": "IgG4-Related Systemic Disease Program",
+      "id": "inst:mass-general-brigham-igg4-related-systemic-disease-program",
+      "name": "Mass General Brigham IgG4-Related Systemic Disease Program",
       "institutionKind": "rare_disease_center",
-      "city": "Boston",
-      "state": "MA",
       "evidenceRefs": [
         "https://www.massgeneralbrigham.org/en/services/igg4-related-systemic-disease"
       ]
     },
     {
       "kind": "institution",
-      "id": "inst:uchicago-igg4-consortium",
-      "name": "UChicago Medicine IgG4-Related Disease Clinical Consortium (IGGCC)",
+      "id": "inst:uchicago-medicine-igg4-related-disease-clinical-consortium",
+      "name": "UChicago Medicine IgG4-Related Disease Clinical Consortium",
       "institutionKind": "rare_disease_center",
-      "city": "Chicago",
-      "state": "IL",
       "evidenceRefs": [
         "https://www.uchicagomedicine.org/conditions-services/gastroenterology/igg4-related-disease-igg4-rd"
-      ]
-    },
-    {
-      "kind": "institution",
-      "id": "inst:wustl-igg4-collaboration",
-      "name": "IgG4-Related Disease Multidisciplinary Collaboration+",
-      "institutionKind": "rare_disease_center",
-      "city": "St. Louis",
-      "state": "MO",
-      "evidenceRefs": [
-        "https://rheumatology.wustl.edu/patient-care/igg4-related-disease-multidisciplinary-collaboration/"
-      ]
-    },
-    {
-      "kind": "institution",
-      "id": "inst:stanford-immunology-rheumatology",
-      "name": "Immunology and Rheumatology Program",
-      "institutionKind": "rare_disease_center",
-      "city": "Stanford",
-      "state": "CA",
-      "evidenceRefs": [
-        "https://stanfordhealthcare.org/medical-clinics/immunology-rheumatology-clinic.html"
-      ]
-    },
-    {
-      "kind": "institution",
-      "id": "inst:emory-igg4-rheumatology",
-      "name": "Rheumatology Specialized Clinical Care",
-      "institutionKind": "rare_disease_center",
-      "city": "Atlanta",
-      "state": "GA",
-      "evidenceRefs": [
-        "https://med.emory.edu/departments/medicine/divisions/rheumatology/clinics.html"
       ]
     }
   ],
   "evidence": [
     {
       "claimType": "disease_program",
-      "claim": "Henry Ford Health is home to one of only a few centers in the country dedicated to treating immunoglobulin G4 (IgG4) related disease (IgG4-RD). Our program provides comprehensive care for patients with this complex condition.",
+      "claim": "Henry Ford Health lists an IgG4 Related Disease Center.",
       "sourceUrl": "https://www.henryford.com/services/rheumatology/igg4-related-disease-center"
     },
     {
       "claimType": "disease_program",
-      "claim": "The Mass General Brigham IgG4-Related Systemic Disease Program is a national leader in the areas of clinical care and research for this recently recognized condition.",
+      "claim": "Mass General Brigham lists an IgG4-Related Systemic Disease Program.",
       "sourceUrl": "https://www.massgeneralbrigham.org/en/services/igg4-related-systemic-disease"
     },
     {
       "claimType": "disease_program",
-      "claim": "UChicago Medicine is proud to offer the Midwest's only dedicated clinical consortium for IgG4-Related Disease (IgG4-RD), a rare but serious inflammatory condition that can affect nearly every organ system in the body.",
+      "claim": "UChicago Medicine lists an IgG4-Related Disease Clinical Consortium.",
       "sourceUrl": "https://www.uchicagomedicine.org/conditions-services/gastroenterology/igg4-related-disease-igg4-rd"
-    },
-    {
-      "claimType": "disease_program",
-      "claim": "WashU Medicine Division of Rheumatology offers a multidisciplinary program for IgG4-Related Disease (IgG4-RD), a rare condition in which the immune system causes inflammation and scarring in different parts of the body.",
-      "sourceUrl": "https://rheumatology.wustl.edu/patient-care/igg4-related-disease-multidisciplinary-collaboration/"
-    },
-    {
-      "claimType": "disease_program",
-      "claim": "At the Stanford Health Care Immunology and Rheumatology Program, we specialize in diagnosing and treating autoimmune and immune-mediated diseases, including IgG4-related disease.",
-      "sourceUrl": "https://stanfordhealthcare.org/medical-clinics/immunology-rheumatology-clinic.html"
-    },
-    {
-      "claimType": "disease_program",
-      "claim": "Emory School of Medicine Rheumatology Specialized Clinical Care includes IgG4-Related Disease care provided by Arezou Khosroshahi, MD.",
-      "sourceUrl": "https://med.emory.edu/departments/medicine/divisions/rheumatology/clinics.html"
     }
   ]
 }

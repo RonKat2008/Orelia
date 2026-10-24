@@ -2,89 +2,235 @@
   "records": [
     {
       "kind": "expert",
-      "id": "expert:akira-kawai",
-      "name": "Akira Kawai",
+      "id": "expert:david-parham",
+      "name": "David Parham",
       "npi": null,
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Akira&last_name=Kawai&limit=200"
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=David&last_name=Parham&state=CA&limit=10"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:bin-wang",
-      "name": "Bin Wang",
-      "npi": null,
+      "id": "npi:1265435838",
+      "name": "Sheri Spunt",
+      "npi": "1265435838",
+      "credentials": "MD",
+      "specialty": "Pediatrics, Pediatric Hematology-Oncology",
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Bin&last_name=Wang&limit=200"
+        "https://npiregistry.cms.hhs.gov/provider-view/1265435838"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:jie-liu",
-      "name": "Jie Liu",
-      "npi": null,
+      "id": "npi:1548246259",
+      "name": "Andrew Rosenberg",
+      "npi": "1548246259",
+      "credentials": "MD",
+      "specialty": "Pathology, Anatomic Pathology",
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Jie&last_name=Liu&limit=200"
+        "https://npiregistry.cms.hhs.gov/provider-view/1548246259"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:abitalis-mayengela",
-      "name": "Abitalis Mayengela",
+      "id": "expert:andrea-hayes-jordan",
+      "name": "Andrea Hayes-Jordan",
       "npi": null,
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Abitalis&last_name=Mayengela&limit=200"
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Andrea&last_name=Hayes-Jordan&state=NC&limit=10"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:adam-rensing",
-      "name": "Adam Rensing",
-      "npi": null,
+      "id": "npi:1174557664",
+      "name": "Paul Wakely",
+      "npi": "1174557664",
+      "credentials": "MD",
+      "specialty": "Pathology, Anatomic Pathology & Clinical Pathology",
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Adam&last_name=Rensing&state=OK&limit=200"
+        "https://npiregistry.cms.hhs.gov/provider-view/1174557664"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:adrian-lin",
-      "name": "Adrian Lin",
+      "id": "npi:1710975669",
+      "name": "Simon Kao",
+      "npi": "1710975669",
+      "credentials": "MD",
+      "specialty": "Radiology, Diagnostic Radiology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1710975669"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1447217658",
+      "name": "Steven Billings",
+      "npi": "1447217658",
+      "credentials": "M.D.",
+      "specialty": "Pathology, Anatomic Pathology & Clinical Pathology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1447217658"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:brielle-blanchard",
+      "name": "Brielle Blanchard",
       "npi": null,
       "evidenceRefs": [
-        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Adrian&last_name=Lin&state=CA&limit=200"
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Brielle&last_name=Blanchard&state=PA&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1194774810",
+      "name": "Edward McCarthy",
+      "npi": "1194774810",
+      "credentials": "M.D.",
+      "specialty": "Pathology, Anatomic Pathology & Clinical Pathology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1194774810"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:jaylou-velez-torres",
+      "name": "Jaylou Velez-Torres",
+      "npi": null,
+      "evidenceRefs": [
+        "fixture://nppes/epithelioid-sarcoma/velez-torres-jaylou.json"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1568608651",
+      "name": "Jerad Gardner",
+      "npi": "1568608651",
+      "credentials": "MD",
+      "specialty": "Pathology, Anatomic Pathology & Clinical Pathology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1568608651"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1275061376",
+      "name": "Julio Diaz-Perez",
+      "npi": "1275061376",
+      "credentials": "MD, PhD",
+      "specialty": "Pathology, Anatomic Pathology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1275061376"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1952050106",
+      "name": "Liping Li",
+      "npi": "1952050106",
+      "credentials": "MD,PhD",
+      "specialty": "Student in an Organized Health Care Education/Training Program",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1952050106"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1548793508",
+      "name": "Smiljana Spasic",
+      "npi": "1548793508",
+      "credentials": "M.D.",
+      "specialty": "Student in an Organized Health Care Education/Training Program",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1548793508"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:haijun-zhou",
+      "name": "Haijun Zhou",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Haijun&last_name=Zhou&state=TX&limit=10"
       ]
     }
   ],
   "evidence": [
     {
       "claimType": "identity_unverified",
-      "claim": "Akira Kawai: 0 exact name matches in NPI registry; identity not confirmed",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Akira&last_name=Kawai&limit=200"
+      "claim": "NPPES returned 2 exact name matches for David Parham (2 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=David&last_name=Parham&state=CA&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1265435838 is registered to SHERI SPUNT (Pediatrics, Pediatric Hematology-Oncology) in MEMPHIS, TN; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1265435838"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1548246259 is registered to ANDREW ROSENBERG (Pathology, Anatomic Pathology) in MIAMI, FL; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1548246259"
     },
     {
       "claimType": "identity_unverified",
-      "claim": "Bin Wang: 8 exact name matches in NPI registry but none with disease-relevant clinician taxonomy; identity not confirmed",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Bin&last_name=Wang&limit=200"
+      "claim": "NPPES returned 0 exact name matches for Andrea Hayes-Jordan (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Andrea&last_name=Hayes-Jordan&state=NC&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1174557664 is registered to PAUL WAKELY (Pathology, Anatomic Pathology & Clinical Pathology) in COLUMBUS, OH; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1174557664"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1710975669 is registered to SIMON KAO (Radiology, Diagnostic Radiology) in IOWA CITY, IA; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1710975669"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1447217658 is registered to STEVEN BILLINGS (Pathology, Anatomic Pathology & Clinical Pathology) in CLEVELAND, OH; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1447217658"
     },
     {
       "claimType": "identity_unverified",
-      "claim": "Jie Liu: 11 exact name matches in NPI registry but none with disease-relevant clinician taxonomy; identity not confirmed",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Jie&last_name=Liu&limit=200"
+      "claim": "NPPES returned 0 exact name matches for Brielle Blanchard (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Brielle&last_name=Blanchard&state=PA&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1194774810 is registered to EDWARD MCCARTHY (Pathology, Anatomic Pathology & Clinical Pathology) in BALTIMORE, MD; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1194774810"
     },
     {
       "claimType": "identity_unverified",
-      "claim": "Abitalis Mayengela: 0 exact name matches in NPI registry; identity not confirmed",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Abitalis&last_name=Mayengela&limit=200"
+      "claim": "NPPES returned 0 exact name matches for Jaylou Velez-Torres (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "fixture://nppes/epithelioid-sarcoma/velez-torres-jaylou.json"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1568608651 is registered to JERAD GARDNER (Pathology, Anatomic Pathology & Clinical Pathology) in DANVILLE, PA; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1568608651"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1275061376 is registered to JULIO DIAZ-PEREZ (Pathology, Anatomic Pathology) in MIAMI, FL; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1275061376"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1952050106 is registered to LIPING LI (Student in an Organized Health Care Education/Training Program) in DANVILLE, PA; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1952050106"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1548793508 is registered to SMILJANA SPASIC (Student in an Organized Health Care Education/Training Program) in MIAMI, FL; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1548793508"
     },
     {
       "claimType": "identity_unverified",
-      "claim": "Adam Rensing: 1 exact name match in NPI registry (NPI 1811283849, Urology, Oklahoma City OK) but no disease-relevant clinician taxonomy; identity not confirmed",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Adam&last_name=Rensing&state=OK&limit=200"
-    },
-    {
-      "claimType": "identity_unverified",
-      "claim": "Adrian Lin: 1 exact name match in NPI registry (NPI 1396683637, Student/trainee taxonomy, Los Angeles CA) but no disease-relevant clinician taxonomy; identity not confirmed",
-      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Adrian&last_name=Lin&state=CA&limit=200"
+      "claim": "NPPES returned 0 exact name matches for Haijun Zhou (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Haijun&last_name=Zhou&state=TX&limit=10"
     }
   ]
 }

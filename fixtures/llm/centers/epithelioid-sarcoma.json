@@ -2,7 +2,7 @@
   "records": [
     {
       "kind": "institution",
-      "id": "inst:mayo-clinic-cancer-center-phoenix",
+      "id": "inst:mayo-clinic-cancer-center",
       "name": "Mayo Clinic Cancer Center",
       "institutionKind": "cancer_center",
       "city": "Phoenix",
@@ -24,7 +24,7 @@
     },
     {
       "kind": "institution",
-      "id": "inst:university-of-new-mexico-cancer-research",
+      "id": "inst:university-of-new-mexico-cancer-research-and-treatment-center",
       "name": "University of New Mexico Cancer Research and Treatment Center",
       "institutionKind": "cancer_center",
       "city": "Albuquerque",
@@ -57,94 +57,106 @@
     },
     {
       "kind": "institution",
-      "id": "inst:ucla-jonsson-cancer-center",
-      "name": "UCLA Health Jonsson Comprehensive Cancer Center",
+      "id": "inst:chao-family-comprehensive-cancer-center",
+      "name": "Chao Family Comprehensive Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Orange",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucirvinechao"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:city-of-hope-comprehensive-cancer-center",
+      "name": "City of Hope Comprehensive Cancer Center",
+      "institutionKind": "cancer_center",
+      "city": "Duarte",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/beckmancityofhope"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:jonsson-comprehensive-cancer-center",
+      "name": "Jonsson Comprehensive Cancer Center",
       "institutionKind": "cancer_center",
       "city": "Los Angeles",
       "state": "CA",
       "evidenceRefs": [
-        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uclajonsson",
-        "https://www.uclahealth.org/cancer/cancer-services/orthopedic-oncology"
+        "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uclajonsson"
       ]
     },
     {
       "kind": "institution",
-      "id": "inst:cleveland-clinic-sarcoma-program",
-      "name": "Cleveland Clinic Cancer Center Sarcoma Program",
-      "institutionKind": "rare_disease_center",
+      "id": "inst:tampa-general-hospital-cancer-institute-sarcoma-center-of-excellence",
+      "name": "Tampa General Hospital Cancer Institute Sarcoma Center of Excellence",
+      "institutionKind": "cancer_center",
       "evidenceRefs": [
-        "https://my.clevelandclinic.org/departments/cancer/depts/sarcoma"
+        "https://www.tgh.org/institutes-and-services/cancer-institute/sarcoma-center-of-excellence"
       ]
     },
     {
       "kind": "institution",
-      "id": "inst:mayo-clinic-epithelioid-sarcoma",
-      "name": "Mayo Clinic",
-      "institutionKind": "rare_disease_center",
+      "id": "inst:duke-sarcoma-center",
+      "name": "Duke Sarcoma Center",
+      "institutionKind": "cancer_center",
       "evidenceRefs": [
-        "https://www.mayoclinic.org/diseases-conditions/epithelioid-sarcoma/doctors-departments/ddc-20577576"
-      ]
-    },
-    {
-      "kind": "institution",
-      "id": "inst:penn-medicine-epithelioid-sarcoma",
-      "name": "Penn Medicine",
-      "institutionKind": "rare_disease_center",
-      "evidenceRefs": [
-        "https://www.pennmedicine.org/conditions/epithelioid-sarcoma"
+        "https://www.dukecancerinstitute.org/center/duke-sarcoma-center"
       ]
     }
   ],
   "evidence": [
     {
       "claimType": "nci_designation",
-      "claim": "NCI-designated Comprehensive Cancer Center",
+      "claim": "The NCI lists Mayo Clinic Cancer Center in Phoenix, AZ as a Comprehensive Cancer Center.",
       "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/mayoclinic"
     },
     {
       "claimType": "nci_designation",
-      "claim": "NCI-designated Comprehensive Cancer Center",
+      "claim": "The NCI lists University of Arizona Cancer Center in Tucson, AZ as a Comprehensive Cancer Center.",
       "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/arizonacc"
     },
     {
       "claimType": "nci_designation",
-      "claim": "NCI-designated Comprehensive Cancer Center",
+      "claim": "The NCI lists University of New Mexico Cancer Research and Treatment Center in Albuquerque, NM as a Comprehensive Cancer Center.",
       "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/newmexicocrtc"
     },
     {
       "claimType": "nci_designation",
-      "claim": "NCI-designated Comprehensive Cancer Center",
+      "claim": "The NCI lists Huntsman Cancer Institute in Salt Lake City, UT as a Comprehensive Cancer Center.",
       "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/utahhuntsman"
     },
     {
       "claimType": "nci_designation",
-      "claim": "NCI-designated Comprehensive Cancer Center",
+      "claim": "The NCI lists University of Colorado Cancer Center in Aurora, CO as a Comprehensive Cancer Center.",
       "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucolorado"
     },
     {
       "claimType": "nci_designation",
-      "claim": "NCI-designated Comprehensive Cancer Center",
+      "claim": "The NCI lists Chao Family Comprehensive Cancer Center in Orange, CA as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/ucirvinechao"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists City of Hope Comprehensive Cancer Center in Duarte, CA as a Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/beckmancityofhope"
+    },
+    {
+      "claimType": "nci_designation",
+      "claim": "The NCI lists Jonsson Comprehensive Cancer Center in Los Angeles, CA as a Comprehensive Cancer Center.",
       "sourceUrl": "https://www.cancer.gov/research/infrastructure/cancer-centers/find/uclajonsson"
     },
     {
       "claimType": "disease_program",
-      "claim": "Sarcoma Program offering diagnosis and treatment of sarcoma, a national and international resource",
-      "sourceUrl": "https://my.clevelandclinic.org/departments/cancer/depts/sarcoma"
+      "claim": "A Tampa General Hospital Cancer Institute page describes a Sarcoma Center of Excellence that offers telehealth appointments.",
+      "sourceUrl": "https://www.tgh.org/institutes-and-services/cancer-institute/sarcoma-center-of-excellence"
     },
     {
       "claimType": "disease_program",
-      "claim": "Mayo Clinic has departments treating epithelioid sarcoma including Cancer Care, Orthopedic Oncology, and Pediatric Hematology/Oncology",
-      "sourceUrl": "https://www.mayoclinic.org/diseases-conditions/epithelioid-sarcoma/doctors-departments/ddc-20577576"
-    },
-    {
-      "claimType": "disease_program",
-      "claim": "Penn Medicine provides care for epithelioid sarcoma, a type of soft tissue sarcoma",
-      "sourceUrl": "https://www.pennmedicine.org/conditions/epithelioid-sarcoma"
-    },
-    {
-      "claimType": "disease_program",
-      "claim": "UCLA Health Orthopedic Oncology team is one of the highest-volume bone and soft tissue tumor treatment centers in the country",
-      "sourceUrl": "https://www.uclahealth.org/cancer/cancer-services/orthopedic-oncology"
+      "claim": "The Duke Cancer Institute lists the Duke Sarcoma Center and describes itself as an NCI-designated Comprehensive Cancer Center.",
+      "sourceUrl": "https://www.dukecancerinstitute.org/center/duke-sarcoma-center"
     }
   ]
 }

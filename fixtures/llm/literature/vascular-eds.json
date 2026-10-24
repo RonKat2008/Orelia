@@ -4,128 +4,318 @@
       "kind": "expert",
       "id": "expert:sherene-shalhub",
       "name": "Sherene Shalhub",
-      "specialty": "Vascular Ehlers-Danlos syndrome, vascular surgery, genetic aortopathy",
       "evidenceRefs": [
-        "lit:sherene-shalhub:42830757",
-        "lit:sherene-shalhub:41905459"
+        "lit:sherene-shalhub:40533124",
+        "lit:sherene-shalhub:35984436"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:tomoki-kosho",
-      "name": "Tomoki Kosho",
-      "specialty": "Ehlers-Danlos syndrome, genetic disorders, clinical outcomes",
+      "id": "expert:peter-byers",
+      "name": "Peter Byers",
       "evidenceRefs": [
-        "lit:tomoki-kosho:42124361",
-        "lit:tomoki-kosho:42092737"
+        "lit:peter-byers:28306228",
+        "lit:peter-byers:24922459"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:tomomi-yamaguchi",
-      "name": "Tomomi Yamaguchi",
-      "specialty": "Medical genetics, Ehlers-Danlos syndrome",
+      "id": "expert:dianna-milewicz",
+      "name": "Dianna Milewicz",
       "evidenceRefs": [
-        "lit:tomomi-yamaguchi:42124361",
-        "lit:tomomi-yamaguchi:42092737"
+        "lit:dianna-milewicz:40533124",
+        "lit:dianna-milewicz:16928994"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:apoorva-bhandari",
-      "name": "Apoorva Bhandari",
-      "specialty": "Vascular surgery, Ehlers-Danlos syndrome",
+      "id": "expert:shaine-morris",
+      "name": "Shaine Morris",
       "evidenceRefs": [
-        "lit:apoorva-bhandari:42502438",
-        "lit:apoorva-bhandari:41905459"
+        "lit:shaine-morris:40533124",
+        "lit:shaine-morris:35984436"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:tiffany-lian",
-      "name": "Tiffany Lian",
-      "specialty": "Vascular and endovascular surgery, Ehlers-Danlos syndrome",
+      "id": "expert:harry-dietz",
+      "name": "Harry Dietz",
       "evidenceRefs": [
-        "lit:tiffany-lian:42830757",
-        "lit:tiffany-lian:41905459"
+        "lit:harry-dietz:16928994",
+        "lit:harry-dietz:31639107"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:douglas-keene",
-      "name": "Douglas Keene",
-      "specialty": "Molecular and medical genetics, connective tissue disorders",
+      "id": "expert:melanie-pepin",
+      "name": "Melanie Pepin",
       "evidenceRefs": [
-        "lit:douglas-keene:42502438"
+        "lit:melanie-pepin:28306228",
+        "lit:melanie-pepin:24922459"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:reed-pyeritz",
+      "name": "Reed Pyeritz",
+      "evidenceRefs": [
+        "lit:reed-pyeritz:16928994",
+        "lit:reed-pyeritz:34529342"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:james-black",
+      "name": "James Black",
+      "evidenceRefs": [
+        "lit:james-black:28306228",
+        "lit:james-black:24650746"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:gustavo-oderich",
+      "name": "Gustavo Oderich",
+      "evidenceRefs": [
+        "lit:gustavo-oderich:17715121",
+        "lit:gustavo-oderich:31353273"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:kathryn-holmes",
+      "name": "Kathryn Holmes",
+      "evidenceRefs": [
+        "lit:kathryn-holmes:41616879",
+        "lit:kathryn-holmes:37330246"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:alan-braverman",
+      "name": "Alan Braverman",
+      "evidenceRefs": [
+        "lit:alan-braverman:40533124",
+        "lit:alan-braverman:16928994"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:bart-loeys",
+      "name": "Bart Loeys",
+      "evidenceRefs": [
+        "lit:bart-loeys:16928994",
+        "lit:bart-loeys:35779834"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:caitlin-bowen",
+      "name": "Caitlin Bowen",
+      "evidenceRefs": [
+        "lit:caitlin-bowen:31639107",
+        "lit:caitlin-bowen:38030331"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:melissa-russo",
+      "name": "Melissa Russo",
+      "evidenceRefs": [
+        "lit:melissa-russo:35984436",
+        "lit:melissa-russo:32115322"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:nazli-mcdonnell",
+      "name": "Nazli McDonnell",
+      "evidenceRefs": [
+        "lit:nazli-mcdonnell:24650746",
+        "lit:nazli-mcdonnell:24399159"
       ]
     }
   ],
   "evidence": [
     {
-      "id": "lit:sherene-shalhub:42830757",
+      "id": "lit:sherene-shalhub:40533124",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 6 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42830757.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42830757/"
+      "claim": "Sherene Shalhub is listed as an author of PMID 40533124. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Sherene Shalhub appears on 17 paper(s), 10 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/40533124/"
     },
     {
-      "id": "lit:sherene-shalhub:41905459",
+      "id": "lit:sherene-shalhub:35984436",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 6 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 41905459.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41905459/"
+      "claim": "Sherene Shalhub is listed as an author of PMID 35984436. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Sherene Shalhub appears on 17 paper(s), 10 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/35984436/"
     },
     {
-      "id": "lit:tomoki-kosho:42124361",
+      "id": "lit:peter-byers:28306228",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 4 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42124361.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42124361/"
+      "claim": "Peter Byers is listed as an author of PMID 28306228. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Peter Byers appears on 15 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28306228/"
     },
     {
-      "id": "lit:tomoki-kosho:42092737",
+      "id": "lit:peter-byers:24922459",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 4 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42092737.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42092737/"
+      "claim": "Peter Byers is listed as an author of PMID 24922459. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Peter Byers appears on 15 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24922459/"
     },
     {
-      "id": "lit:tomomi-yamaguchi:42124361",
+      "id": "lit:dianna-milewicz:40533124",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 4 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42124361.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42124361/"
+      "claim": "Dianna Milewicz is listed as an author of PMID 40533124. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Dianna Milewicz appears on 10 paper(s), 4 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/40533124/"
     },
     {
-      "id": "lit:tomomi-yamaguchi:42092737",
+      "id": "lit:dianna-milewicz:16928994",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 4 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42092737.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42092737/"
+      "claim": "Dianna Milewicz is listed as an author of PMID 16928994. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Dianna Milewicz appears on 10 paper(s), 4 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/16928994/"
     },
     {
-      "id": "lit:apoorva-bhandari:42502438",
+      "id": "lit:shaine-morris:40533124",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42502438.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42502438/"
+      "claim": "Shaine Morris is listed as an author of PMID 40533124. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Shaine Morris appears on 7 paper(s), 6 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/40533124/"
     },
     {
-      "id": "lit:apoorva-bhandari:41905459",
+      "id": "lit:shaine-morris:35984436",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 41905459.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41905459/"
+      "claim": "Shaine Morris is listed as an author of PMID 35984436. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Shaine Morris appears on 7 paper(s), 6 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/35984436/"
     },
     {
-      "id": "lit:tiffany-lian:42830757",
+      "id": "lit:harry-dietz:16928994",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42830757.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42830757/"
+      "claim": "Harry Dietz is listed as an author of PMID 16928994. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Harry Dietz appears on 7 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/16928994/"
     },
     {
-      "id": "lit:tiffany-lian:41905459",
+      "id": "lit:harry-dietz:31639107",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 41905459.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41905459/"
+      "claim": "Harry Dietz is listed as an author of PMID 31639107. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Harry Dietz appears on 7 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31639107/"
     },
     {
-      "id": "lit:douglas-keene:42502438",
+      "id": "lit:melanie-pepin:28306228",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 2 papers about vascular Ehlers-Danlos syndrome in the PubMed results retrieved; includes PMID 42502438.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42502438/"
+      "claim": "Melanie Pepin is listed as an author of PMID 28306228. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Melanie Pepin appears on 7 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28306228/"
+    },
+    {
+      "id": "lit:melanie-pepin:24922459",
+      "claimType": "disease_publications",
+      "claim": "Melanie Pepin is listed as an author of PMID 24922459. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Melanie Pepin appears on 7 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24922459/"
+    },
+    {
+      "id": "lit:reed-pyeritz:16928994",
+      "claimType": "disease_publications",
+      "claim": "Reed Pyeritz is listed as an author of PMID 16928994. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Reed Pyeritz appears on 6 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/16928994/"
+    },
+    {
+      "id": "lit:reed-pyeritz:34529342",
+      "claimType": "disease_publications",
+      "claim": "Reed Pyeritz is listed as an author of PMID 34529342. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Reed Pyeritz appears on 6 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/34529342/"
+    },
+    {
+      "id": "lit:james-black:28306228",
+      "claimType": "disease_publications",
+      "claim": "James Black is listed as an author of PMID 28306228. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, James Black appears on 6 paper(s), 2 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28306228/"
+    },
+    {
+      "id": "lit:james-black:24650746",
+      "claimType": "disease_publications",
+      "claim": "James Black is listed as an author of PMID 24650746. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, James Black appears on 6 paper(s), 2 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24650746/"
+    },
+    {
+      "id": "lit:gustavo-oderich:17715121",
+      "claimType": "disease_publications",
+      "claim": "Gustavo Oderich is listed as an author of PMID 17715121. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Gustavo Oderich appears on 5 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/17715121/"
+    },
+    {
+      "id": "lit:gustavo-oderich:31353273",
+      "claimType": "disease_publications",
+      "claim": "Gustavo Oderich is listed as an author of PMID 31353273. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Gustavo Oderich appears on 5 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31353273/"
+    },
+    {
+      "id": "lit:kathryn-holmes:41616879",
+      "claimType": "disease_publications",
+      "claim": "Kathryn Holmes is listed as an author of PMID 41616879. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Kathryn Holmes appears on 4 paper(s), 4 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/41616879/"
+    },
+    {
+      "id": "lit:kathryn-holmes:37330246",
+      "claimType": "disease_publications",
+      "claim": "Kathryn Holmes is listed as an author of PMID 37330246. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Kathryn Holmes appears on 4 paper(s), 4 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37330246/"
+    },
+    {
+      "id": "lit:alan-braverman:40533124",
+      "claimType": "disease_publications",
+      "claim": "Alan Braverman is listed as an author of PMID 40533124. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Alan Braverman appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/40533124/"
+    },
+    {
+      "id": "lit:alan-braverman:16928994",
+      "claimType": "disease_publications",
+      "claim": "Alan Braverman is listed as an author of PMID 16928994. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Alan Braverman appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/16928994/"
+    },
+    {
+      "id": "lit:bart-loeys:16928994",
+      "claimType": "disease_publications",
+      "claim": "Bart Loeys is listed as an author of PMID 16928994. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Bart Loeys appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/16928994/"
+    },
+    {
+      "id": "lit:bart-loeys:35779834",
+      "claimType": "disease_publications",
+      "claim": "Bart Loeys is listed as an author of PMID 35779834. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Bart Loeys appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/35779834/"
+    },
+    {
+      "id": "lit:caitlin-bowen:31639107",
+      "claimType": "disease_publications",
+      "claim": "Caitlin Bowen is listed as an author of PMID 31639107. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Caitlin Bowen appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31639107/"
+    },
+    {
+      "id": "lit:caitlin-bowen:38030331",
+      "claimType": "disease_publications",
+      "claim": "Caitlin Bowen is listed as an author of PMID 38030331. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Caitlin Bowen appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/38030331/"
+    },
+    {
+      "id": "lit:melissa-russo:35984436",
+      "claimType": "disease_publications",
+      "claim": "Melissa Russo is listed as an author of PMID 35984436. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Melissa Russo appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/35984436/"
+    },
+    {
+      "id": "lit:melissa-russo:32115322",
+      "claimType": "disease_publications",
+      "claim": "Melissa Russo is listed as an author of PMID 32115322. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Melissa Russo appears on 4 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/32115322/"
+    },
+    {
+      "id": "lit:nazli-mcdonnell:24650746",
+      "claimType": "disease_publications",
+      "claim": "Nazli McDonnell is listed as an author of PMID 24650746. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Nazli McDonnell appears on 4 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24650746/"
+    },
+    {
+      "id": "lit:nazli-mcdonnell:24399159",
+      "claimType": "disease_publications",
+      "claim": "Nazli McDonnell is listed as an author of PMID 24399159. In the PubMed results retrieved for Vascular Ehlers-Danlos syndrome, Nazli McDonnell appears on 4 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24399159/"
     }
   ]
 }

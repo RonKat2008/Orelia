@@ -2,95 +2,222 @@
   "records": [
     {
       "kind": "expert",
-      "id": "expert:kenichi-takano",
-      "name": "Kenichi Takano",
-      "specialty": "Otolaryngology-Head and Neck Surgery",
+      "id": "expert:john-stone",
+      "name": "John Stone",
       "evidenceRefs": [
-        "lit:kenichi-takano:igg4rd-publications"
+        "lit:john-stone:35983918",
+        "lit:john-stone:22316447"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:masaaki-uehara",
-      "name": "Masaaki Uehara",
-      "specialty": "Rheumatology, Allergy and Clinical Immunology",
+      "id": "expert:mollie-carruthers",
+      "name": "Mollie Carruthers",
       "evidenceRefs": [
-        "lit:masaaki-uehara:igg4rd-publications"
+        "lit:mollie-carruthers:34600619",
+        "lit:mollie-carruthers:25369435"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:motohisa-yamamoto",
-      "name": "Motohisa Yamamoto",
-      "specialty": "Rheumatology, Allergy and Clinical Immunology",
+      "id": "expert:vikram-deshpande",
+      "name": "Vikram Deshpande",
       "evidenceRefs": [
-        "lit:motohisa-yamamoto:igg4rd-publications"
+        "lit:vikram-deshpande:23068295",
+        "lit:vikram-deshpande:28506361"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:ryuta-kamekura",
-      "name": "Ryuta Kamekura",
-      "specialty": "Otolaryngology-Head and Neck Surgery",
+      "id": "expert:matthew-koster",
+      "name": "Matthew Koster",
       "evidenceRefs": [
-        "lit:ryuta-kamekura:igg4rd-publications"
+        "lit:matthew-koster:36749679",
+        "lit:matthew-koster:38608192"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:yuta-ichii",
-      "name": "Yuta Ichii",
-      "specialty": "Rheumatology, Allergy and Clinical Immunology",
+      "id": "expert:eunhee-yi",
+      "name": "Eunhee Yi",
       "evidenceRefs": [
-        "lit:yuta-ichii:igg4rd-publications"
+        "lit:eunhee-yi:22736240",
+        "lit:eunhee-yi:30585990"
       ]
     },
     {
       "kind": "expert",
-      "id": "expert:hua-ye",
-      "name": "Hua Ye",
-      "specialty": "Rheumatology and Immunology",
+      "id": "expert:hamid-mattoo",
+      "name": "Hamid Mattoo",
       "evidenceRefs": [
-        "lit:hua-ye:igg4rd-publications"
+        "lit:hamid-mattoo:28575535",
+        "lit:hamid-mattoo:24266692"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:shiv-pillai",
+      "name": "Shiv Pillai",
+      "evidenceRefs": [
+        "lit:shiv-pillai:28575535",
+        "lit:shiv-pillai:24266692"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:tomohiro-watanabe",
+      "name": "Tomohiro Watanabe",
+      "evidenceRefs": [
+        "lit:tomohiro-watanabe:30401468",
+        "lit:tomohiro-watanabe:30334477"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:vinay-mahajan",
+      "name": "Vinay Mahajan",
+      "evidenceRefs": [
+        "lit:vinay-mahajan:28575535",
+        "lit:vinay-mahajan:24266692"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:guy-katz",
+      "name": "Guy Katz",
+      "evidenceRefs": [
+        "lit:guy-katz:33159798"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:cory-perugino",
+      "name": "Cory Perugino",
+      "evidenceRefs": [
+        "lit:cory-perugino:28575535"
       ]
     }
   ],
   "evidence": [
     {
-      "id": "lit:kenichi-takano:igg4rd-publications",
+      "id": "lit:john-stone:35983918",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about IgG4-related disease in the PubMed results retrieved; includes PMIDs 42693941, 42539786, and 42538826.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42693941/"
+      "claim": "John Stone is listed as an author of PMID 35983918. In the PubMed results retrieved for IgG4-related disease, John Stone appears on 10 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/35983918/"
     },
     {
-      "id": "lit:masaaki-uehara:igg4rd-publications",
+      "id": "lit:john-stone:22316447",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about IgG4-related disease in the PubMed results retrieved; includes PMIDs 42693941, 42539786, and 42538826.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42693941/"
+      "claim": "John Stone is listed as an author of PMID 22316447. In the PubMed results retrieved for IgG4-related disease, John Stone appears on 10 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/22316447/"
     },
     {
-      "id": "lit:motohisa-yamamoto:igg4rd-publications",
+      "id": "lit:mollie-carruthers:34600619",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about IgG4-related disease in the PubMed results retrieved; includes PMIDs 42693941, 42539786, and 42538826.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42693941/"
+      "claim": "Mollie Carruthers is listed as an author of PMID 34600619. In the PubMed results retrieved for IgG4-related disease, Mollie Carruthers appears on 6 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/34600619/"
     },
     {
-      "id": "lit:ryuta-kamekura:igg4rd-publications",
+      "id": "lit:mollie-carruthers:25369435",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about IgG4-related disease in the PubMed results retrieved; includes PMIDs 42693941, 42539786, and 42538826.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42693941/"
+      "claim": "Mollie Carruthers is listed as an author of PMID 25369435. In the PubMed results retrieved for IgG4-related disease, Mollie Carruthers appears on 6 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/25369435/"
     },
     {
-      "id": "lit:yuta-ichii:igg4rd-publications",
+      "id": "lit:vikram-deshpande:23068295",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 3 papers about IgG4-related disease in the PubMed results retrieved; includes PMIDs 42693941, 42539786, and 42538826.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42693941/"
+      "claim": "Vikram Deshpande is listed as an author of PMID 23068295. In the PubMed results retrieved for IgG4-related disease, Vikram Deshpande appears on 5 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/23068295/"
     },
     {
-      "id": "lit:hua-ye:igg4rd-publications",
+      "id": "lit:vikram-deshpande:28506361",
       "claimType": "disease_publications",
-      "claim": "Appears as an author on 2 papers about IgG4-related disease in the PubMed results retrieved; includes PMIDs 42873693 and 42752315.",
-      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/42873693/"
+      "claim": "Vikram Deshpande is listed as an author of PMID 28506361. In the PubMed results retrieved for IgG4-related disease, Vikram Deshpande appears on 5 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28506361/"
+    },
+    {
+      "id": "lit:matthew-koster:36749679",
+      "claimType": "disease_publications",
+      "claim": "Matthew Koster is listed as an author of PMID 36749679. In the PubMed results retrieved for IgG4-related disease, Matthew Koster appears on 2 paper(s), 2 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/36749679/"
+    },
+    {
+      "id": "lit:matthew-koster:38608192",
+      "claimType": "disease_publications",
+      "claim": "Matthew Koster is listed as an author of PMID 38608192. In the PubMed results retrieved for IgG4-related disease, Matthew Koster appears on 2 paper(s), 2 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/38608192/"
+    },
+    {
+      "id": "lit:eunhee-yi:22736240",
+      "claimType": "disease_publications",
+      "claim": "Eunhee Yi is listed as an author of PMID 22736240. In the PubMed results retrieved for IgG4-related disease, Eunhee Yi appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/22736240/"
+    },
+    {
+      "id": "lit:eunhee-yi:30585990",
+      "claimType": "disease_publications",
+      "claim": "Eunhee Yi is listed as an author of PMID 30585990. In the PubMed results retrieved for IgG4-related disease, Eunhee Yi appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30585990/"
+    },
+    {
+      "id": "lit:hamid-mattoo:28575535",
+      "claimType": "disease_publications",
+      "claim": "Hamid Mattoo is listed as an author of PMID 28575535. In the PubMed results retrieved for IgG4-related disease, Hamid Mattoo appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28575535/"
+    },
+    {
+      "id": "lit:hamid-mattoo:24266692",
+      "claimType": "disease_publications",
+      "claim": "Hamid Mattoo is listed as an author of PMID 24266692. In the PubMed results retrieved for IgG4-related disease, Hamid Mattoo appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24266692/"
+    },
+    {
+      "id": "lit:shiv-pillai:28575535",
+      "claimType": "disease_publications",
+      "claim": "Shiv Pillai is listed as an author of PMID 28575535. In the PubMed results retrieved for IgG4-related disease, Shiv Pillai appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28575535/"
+    },
+    {
+      "id": "lit:shiv-pillai:24266692",
+      "claimType": "disease_publications",
+      "claim": "Shiv Pillai is listed as an author of PMID 24266692. In the PubMed results retrieved for IgG4-related disease, Shiv Pillai appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24266692/"
+    },
+    {
+      "id": "lit:tomohiro-watanabe:30401468",
+      "claimType": "disease_publications",
+      "claim": "Tomohiro Watanabe is listed as an author of PMID 30401468. In the PubMed results retrieved for IgG4-related disease, Tomohiro Watanabe appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30401468/"
+    },
+    {
+      "id": "lit:tomohiro-watanabe:30334477",
+      "claimType": "disease_publications",
+      "claim": "Tomohiro Watanabe is listed as an author of PMID 30334477. In the PubMed results retrieved for IgG4-related disease, Tomohiro Watanabe appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/30334477/"
+    },
+    {
+      "id": "lit:vinay-mahajan:28575535",
+      "claimType": "disease_publications",
+      "claim": "Vinay Mahajan is listed as an author of PMID 28575535. In the PubMed results retrieved for IgG4-related disease, Vinay Mahajan appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28575535/"
+    },
+    {
+      "id": "lit:vinay-mahajan:24266692",
+      "claimType": "disease_publications",
+      "claim": "Vinay Mahajan is listed as an author of PMID 24266692. In the PubMed results retrieved for IgG4-related disease, Vinay Mahajan appears on 2 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/24266692/"
+    },
+    {
+      "id": "lit:guy-katz:33159798",
+      "claimType": "disease_publications",
+      "claim": "Guy Katz is listed as an author of PMID 33159798. In the PubMed results retrieved for IgG4-related disease, Guy Katz appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/33159798/"
+    },
+    {
+      "id": "lit:cory-perugino:28575535",
+      "claimType": "disease_publications",
+      "claim": "Cory Perugino is listed as an author of PMID 28575535. In the PubMed results retrieved for IgG4-related disease, Cory Perugino appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/28575535/"
     }
   ]
 }

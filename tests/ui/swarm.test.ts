@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { SwarmConstellation } from "@/components/motion/swarm/SwarmConstellation";
 import { MotionPreference } from "@/lib/motion/MotionPreference";
 import {
+  connectionBadge,
   derivePhase,
   describeProgress,
   initialAgents,
@@ -103,5 +104,21 @@ describe("preview script and constellation", () => {
     expect(html).toContain('data-reduced="true"');
     expect(html).not.toContain("<li ");
     expect(html).not.toContain("aria-live");
+  });
+});
+
+describe("connectionBadge", () => {
+  it("shows live updates only while the run is going", () => {
+    expect(connectionBadge("live", "researching")).toMatchObject({ label: "Live updates", dot: true });
+    expect(connectionBadge("live")).toMatchObject({ label: "Live updates" });
+  });
+
+  it("settles to a finished state once the stream reports the run complete", () => {
+    expect(connectionBadge("live", "ready")).toEqual({ tone: "ok", label: "Run finished", dot: false });
+    expect(connectionBadge("live", "research_failed")).toMatchObject({ label: "Run stopped", dot: false });
+  });
+
+  it("falls back to connecting before the stream opens", () => {
+    expect(connectionBadge("connecting")).toMatchObject({ label: "Connecting…" });
   });
 });

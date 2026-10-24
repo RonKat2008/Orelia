@@ -11,7 +11,7 @@ import { SPRING } from "@/lib/ui/motion";
 import type { SwarmAgent } from "@/lib/motion/status";
 import { AgentCard } from "./AgentCard";
 import { SourceStrip } from "./SourceStrip";
-import { PHASES, derivePhase, describeProgress, narrate, swarmTotals, type AgentCardState } from "./stream";
+import { PHASES, connectionBadge, derivePhase, describeProgress, narrate, swarmTotals, type AgentCardState } from "./stream";
 import { useSwarmStream } from "./useSwarmStream";
 
 function toSwarmAgents(cards: AgentCardState[]): SwarmAgent[] {
@@ -22,7 +22,7 @@ function toSwarmAgents(cards: AgentCardState[]): SwarmAgent[] {
   }));
 }
 
-function ConnectionNote({ connection }: { connection: string }) {
+function ConnectionNote({ connection, caseStatus }: { connection: string; caseStatus?: string }) {
   if (connection === "preview") {
     return (
       <p className="m-0 rounded-md border border-gold bg-gold-soft px-4 py-3 text-small text-ink">
@@ -33,8 +33,12 @@ function ConnectionNote({ connection }: { connection: string }) {
   if (connection === "reconnecting") {
     return <Badge tone="warn" dot>Connection dropped. Reconnecting…</Badge>;
   }
-  if (connection === "live") return <Badge tone="teal" dot>Live updates</Badge>;
-  return <Badge tone="neutral">Connecting…</Badge>;
+  const badge = connectionBadge(connection, caseStatus);
+  return (
+    <Badge tone={badge.tone} dot={badge.dot}>
+      {badge.label}
+    </Badge>
+  );
 }
 
 export function SwarmView({ caseId }: { caseId: string }) {
@@ -77,7 +81,7 @@ export function SwarmView({ caseId }: { caseId: string }) {
           <SwarmConstellation agents={toSwarmAgents(cards)} announce={false} showLegend={false} caseLabel="Your case" />
           <div className="grid gap-7">
             <div className="grid gap-3">
-              <ConnectionNote connection={connection} />
+              <ConnectionNote connection={connection} caseStatus={caseStatus} />
               <p className="m-0 font-display text-h3 font-light text-ink display-soft text-balance">
                 {narrate(cards, caseStatus, lastActive)}
               </p>

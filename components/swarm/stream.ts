@@ -152,6 +152,19 @@ export const NARRATIVE: Record<AgentName, string> = {
   logistics: "Working out travel and logistics",
 };
 
+export type ConnectionBadge = { tone: "teal" | "ok" | "neutral"; label: string; dot: boolean };
+
+/**
+ * The status badge beside the narration. "Live updates" only while the stream is open and the run
+ * is still going; once the stream has reported the run complete the badge settles to a finished state.
+ */
+export function connectionBadge(connection: string, caseStatus?: string): ConnectionBadge {
+  if (caseStatus === "ready") return { tone: "ok", label: "Run finished", dot: false };
+  if (caseStatus === "research_failed") return { tone: "neutral", label: "Run stopped", dot: false };
+  if (connection === "live") return { tone: "teal", label: "Live updates", dot: true };
+  return { tone: "neutral", label: "Connecting…", dot: false };
+}
+
 /** One calm sentence about what is happening now. */
 export function narrate(cards: AgentCardState[], caseStatus: string | undefined, lastActive?: AgentName): string {
   if (caseStatus === "research_failed") return "The search stopped before it finished.";

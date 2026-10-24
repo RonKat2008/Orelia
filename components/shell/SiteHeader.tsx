@@ -60,7 +60,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
       <div className="page-container flex h-16 items-center gap-3 sm:h-18 sm:gap-6">
         <Wordmark compact={viewToggle} />
 
-        <nav aria-label="Main" className="ml-auto hidden items-center gap-1 md:flex">
+        <nav aria-label="Main" className={cn("ml-auto hidden items-center gap-1", viewToggle ? "xl:flex" : "md:flex")}>
           {nav.map((item) => {
             const active = isNavItemActive(pathname, item.href);
             return (
@@ -73,6 +73,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
                   "hover:text-ink focus-ring",
                   "after:absolute after:inset-x-3 after:bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-teal",
                   "after:transition-transform after:duration-300 after:ease-out-expo hover:after:scale-x-100",
+                  viewToggle && "whitespace-nowrap",
                   active && "text-ink after:scale-x-100",
                 )}
               >
@@ -82,7 +83,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
           })}
         </nav>
 
-        <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3 md:ml-0">
+        <div className={cn("ml-auto flex min-w-0 items-center gap-2 sm:gap-3", viewToggle ? "xl:ml-0" : "md:ml-0")}>
           {viewToggle ? <ViewToggle /> : null}
           <AccountMenu />
           <ThemeToggle className="hidden sm:inline-flex" />
@@ -91,7 +92,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
               <Link href={cta.href}>{cta.label}</Link>
             </Button>
           ) : null}
-          <div className="md:hidden">
+          <div className={viewToggle ? "xl:hidden" : "md:hidden"}>
             <MobileMenu nav={nav} cta={cta} pathname={pathname} />
           </div>
         </div>

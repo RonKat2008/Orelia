@@ -29,13 +29,20 @@ export function formatSourceDate(value: string | Date | null | undefined): strin
   return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
 }
 
-/** "Maria del Carmen Ortiz" -> "MO"; "prince" -> "P"; "" -> "?". */
+/** "Maria del Carmen Ortiz" -> "MO"; "Quinn (test)" -> "Q"; "prince" -> "P"; "" -> "?". Punctuation never leads. */
 export function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  const first = words[0][0] ?? "";
-  const last = words.length > 1 ? (words[words.length - 1][0] ?? "") : "";
-  return (first + last).toUpperCase();
+  const initialsOf = (value: string) =>
+    value
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.match(/\p{L}/u)?.[0] ?? "")
+      .filter(Boolean);
+  // A parenthetical is a note, not part of the name; use it only when nothing else is left.
+  const named = initialsOf(name.replace(/\([^)]*\)/g, " "));
+  const letters = named.length > 0 ? named : initialsOf(name);
+  if (letters.length === 0) return "?";
+  const last = letters.length > 1 ? letters[letters.length - 1] : "";
+  return (letters[0] + last).toUpperCase();
 }
 
 /** Deterministic index in [0, buckets) for a string, so an avatar keeps its tone. */

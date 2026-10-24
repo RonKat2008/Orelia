@@ -1,9 +1,15 @@
 import { CircleDashed, ExternalLink, ShieldCheck, ShieldAlert } from "lucide-react";
-import { Badge } from "@/components/ui";
 import type { ChainVerdict, ExpertTrace } from "@/lib/experts/contract";
+import { cn } from "@/lib/ui/cn";
 import { SourceLinks } from "./SourceLinks";
 import { safeHref, verdictView } from "./view-model";
 
+const TONE_TEXT = { ok: "text-ok", warn: "text-warn-ink", neutral: "text-ink-2" } as const;
+
+/**
+ * One finding about a person: a short plain-text verdict (icon and words, not a badge), what we found, and where
+ * it came from. Rows show at most one badge; the detail view shows these as text.
+ */
 export function VerdictChip({
   kind,
   verdict,
@@ -26,11 +32,15 @@ export function VerdictChip({
   const href = safeHref(url);
   return (
     <div className="grid min-w-0 gap-2">
-      <Badge tone={view.tone} className="h-auto min-h-6 whitespace-normal py-1 leading-tight">
-        <Icon aria-hidden />
+      <p className={cn("m-0 flex items-start gap-2 text-body font-semibold", TONE_TEXT[view.tone])}>
+        <Icon aria-hidden className="mt-1 size-4 shrink-0" />
         {view.label}
-      </Badge>
-      {verdict === "unknown" ? null : <p className="m-0 text-small text-ink-2 text-pretty">{text}</p>}
+      </p>
+      {verdict === "unknown" ? (
+        <p className="m-0 text-small text-ink-2 text-pretty">We could not find a source yet. That does not mean the answer is no.</p>
+      ) : (
+        <p className="m-0 text-small text-ink-2 text-pretty">{text}</p>
+      )}
       {href ? (
         <a
           href={href}

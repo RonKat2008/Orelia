@@ -1,4 +1,4 @@
-import type { ChainVerdict, ExpertTrace, ReachRoute, TraceEvidence } from "@/lib/experts/contract";
+import { chainPapers, type ChainVerdict, type ExpertChain, type ExpertTrace, type ReachRoute, type TraceEvidence } from "@/lib/experts/contract";
 
 /** Only http(s) links are ever rendered as anchors. */
 export function safeHref(url: string | null | undefined): string | null {
@@ -80,16 +80,23 @@ export function pubmedUrl(pmid: string): string {
   return `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
 }
 
-/** Connector stagger: chain index and connector index to a start delay in seconds (capped). */
-export function connectorDelay(chainIndex: number, connectorIndex: number): number {
-  return Math.min(chainIndex, 6) * 0.12 + connectorIndex * 0.18;
+/** The one dynamic fact a row shows: this person is documented as seeing patients. Anything else stays in the detail. */
+export function rowBadge(chain: Pick<ExpertChain, "seesPatients">): VerdictView | null {
+  return chain.seesPatients.verdict === "yes" ? verdictView("sees", "yes") : null;
+}
+
+/** Second line of a row: where they work, and how many papers connect them to your condition. */
+export function rowMeta(chain: ExpertChain): string {
+  const papers = chainPapers(chain).length;
+  const where = chain.institution.name ?? "Workplace not confirmed yet";
+  return `${where} · ${papers} ${papers === 1 ? "paper" : "papers"}`;
 }
 
 export function describeTrace(trace: ExpertTrace): string {
   const n = trace.chains.length;
   const when = new Date(trace.tracedAt);
   const date = Number.isNaN(when.getTime()) ? "" : ` on ${when.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
-  return `${n} ${n === 1 ? "chain" : "chains"} traced${date}.`;
+  return `${n} ${n === 1 ? "expert" : "experts"} found${date}.`;
 }
 
 /** Toast after a refresh: what was newly found, and that nobody was contacted. */

@@ -48,6 +48,12 @@ describe("getInitials", () => {
     expect(getInitials("prince")).toBe("P");
     expect(getInitials("   ")).toBe("?");
   });
+  it("never leads with punctuation (parenthetical notes are ignored)", () => {
+    expect(getInitials("Quinn (test)")).toBe("Q");
+    expect(getInitials("Quinn Adams (test)")).toBe("QA");
+    expect(getInitials("(test) Quinn")).toBe("Q");
+    expect(getInitials("(test)")).toBe("T");
+  });
 });
 
 describe("hashToBucket", () => {

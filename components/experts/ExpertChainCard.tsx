@@ -1,24 +1,17 @@
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import { chainPapers, type ExpertChain, type ExpertTrace } from "@/lib/experts/contract";
 import { formatCitation } from "@/lib/identity/paper-evidence";
-import { cn } from "@/lib/ui/cn";
-import { ChainConnector } from "./ChainConnector";
 import { SourceLinks } from "./SourceLinks";
 import { VerdictChip } from "./VerdictChip";
-import { CHAIN_NODES, channelLabel, connectorDelay, pubmedUrl, safeHref } from "./view-model";
+import { channelLabel, pubmedUrl, safeHref } from "./view-model";
 
-function Node({ title, children, index }: { title: string; children: ReactNode; index: number }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <li className="grid min-w-0 content-start gap-3 rounded-lg border border-line bg-card p-4 shadow-xs">
-      <p className="m-0 flex items-center gap-2 text-micro font-semibold uppercase text-ink-3">
-        <span aria-hidden className="grid size-5 place-items-center rounded-pill bg-teal-soft text-teal-ink dark:text-teal">
-          {index + 1}
-        </span>
-        {title}
-      </p>
+    <section className="grid min-w-0 gap-3">
+      <h4 className="m-0 font-sans text-body font-semibold text-ink">{title}</h4>
       {children}
-    </li>
+    </section>
   );
 }
 
@@ -38,86 +31,88 @@ function ExtLink({ href, children }: { href: string | null; children: ReactNode 
   );
 }
 
-export function ExpertChainCard({ chain, trace, index }: { chain: ExpertChain; trace: ExpertTrace; index: number }) {
+/**
+ * The detail view for one chain: who they are, the papers that connect them to your condition, where they work, and
+ * how to reach them. Every line keeps its source links. `showName` is false inside a sheet that already titles it.
+ */
+export function ExpertChainCard({
+  chain,
+  trace,
+  showName = true,
+}: {
+  chain: ExpertChain;
+  trace: ExpertTrace;
+  index?: number;
+  showName?: boolean;
+}) {
   const { author, institution, seesPatients, consultation, howToReach } = chain;
   const papers = chainPapers(chain);
-  const nodes = [
-    <Node key="paper" title={papers.length > 1 ? `${CHAIN_NODES[0].title}s` : CHAIN_NODES[0].title} index={0}>
-      <ul className="m-0 grid list-none gap-3 p-0" aria-label="Papers by this author">
-        {papers.map((paper) => (
-          <li key={paper.pmid} className="grid gap-1">
-            <h4 className="m-0 font-display text-body font-normal text-ink text-pretty">{formatCitation(paper)}</h4>
-            <p className="m-0 text-small text-ink-2">PMID {paper.pmid}</p>
-            <ExtLink href={safeHref(paper.url) ?? pubmedUrl(paper.pmid)}>PubMed record</ExtLink>
-            <SourceLinks trace={trace} ids={[paper.evidenceId]} />
-          </li>
-        ))}
-      </ul>
-    </Node>,
-    <Node key="author" title={CHAIN_NODES[1].title} index={1}>
-      <h4 className="m-0 font-display text-body font-normal text-ink">{author.name}</h4>
-      <p className="m-0 text-small text-ink-2">
-        {author.npi ? `NPI ${author.npi}` : "No registry number found yet"}
-      </p>
-      <SourceLinks trace={trace} ids={author.evidenceIds} />
-    </Node>,
-    <Node key="institution" title={CHAIN_NODES[2].title} index={2}>
-      {institution.name ? (
-        <h4 className="m-0 font-display text-body font-normal text-ink text-pretty">{institution.name}</h4>
+
+  return (
+    <article aria-label={`${author.name}, ${papers.length} ${papers.length === 1 ? "paper" : "papers"}`} className="grid min-w-0 gap-6">
+      {showName ? (
+        <header className="grid gap-1">
+          <h3 className="m-0 font-display text-h3 font-normal text-ink display-soft">{author.name}</h3>
+          <p className="m-0 text-small text-ink-2">{author.npi ? `NPI ${author.npi}` : "No registry number found yet"}</p>
+          <SourceLinks trace={trace} ids={author.evidenceIds} />
+        </header>
       ) : (
-        <p className="m-0 text-small text-ink-2">Not confirmed yet</p>
+        <div className="grid gap-1">
+          <p className="m-0 text-small text-ink-2">{author.npi ? `NPI ${author.npi}` : "No registry number found yet"}</p>
+          <SourceLinks trace={trace} ids={author.evidenceIds} />
+        </div>
       )}
-      <ExtLink href={safeHref(institution.pageUrl)}>Institution page</ExtLink>
-      <SourceLinks trace={trace} ids={institution.evidenceIds} />
-    </Node>,
-    <Node key="reach" title={CHAIN_NODES[3].title} index={3}>
-      <VerdictChip kind="sees" verdict={seesPatients.verdict} text={seesPatients.text} evidenceIds={seesPatients.evidenceIds} trace={trace} />
-      <VerdictChip
-        kind="consult"
-        verdict={consultation.verdict}
-        text={consultation.text}
-        evidenceIds={consultation.evidenceIds}
-        trace={trace}
-        url={consultation.url}
-        urlLabel="Consultation page"
-      />
-      {howToReach.length > 0 ? (
-        <ul className="m-0 grid list-none gap-3 p-0" aria-label="Ways to reach">
-          {howToReach.map((route) => (
-            <li key={`${route.channel}:${route.evidenceId}`} className="grid gap-1">
-              <p className="m-0 text-small text-ink">
-                <strong className="font-semibold">{channelLabel(route.channel)}:</strong> {route.label}
-              </p>
-              <p className="m-0 break-all text-small text-ink-2">{route.address}</p>
-              <SourceLinks trace={trace} ids={[route.evidenceId]} />
+
+      <Section title={papers.length > 1 ? "Their papers" : "Their paper"}>
+        <ul className="m-0 grid list-none gap-4 p-0" aria-label="Papers by this author">
+          {papers.map((paper) => (
+            <li key={paper.pmid} className="grid gap-1">
+              <p className="m-0 text-body text-ink text-pretty">{formatCitation(paper)}</p>
+              <p className="m-0 text-small text-ink-2">PMID {paper.pmid}</p>
+              <ExtLink href={safeHref(paper.url) ?? pubmedUrl(paper.pmid)}>PubMed record</ExtLink>
+              <SourceLinks trace={trace} ids={[paper.evidenceId]} />
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="m-0 text-small text-ink-2">No way to reach them confirmed yet.</p>
-      )}
-    </Node>,
-  ];
+      </Section>
 
-  return (
-    <article aria-label={`${author.name}, ${papers.length} ${papers.length === 1 ? "paper" : "papers"}`} className="min-w-0">
-      <ol
-        className={cn(
-          "m-0 grid list-none grid-cols-[minmax(0,1fr)] items-stretch gap-2 p-0",
-          "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1.25fr)]",
+      <Section title="Where they work">
+        {institution.name ? (
+          <p className="m-0 text-body text-ink text-pretty">{institution.name}</p>
+        ) : (
+          <p className="m-0 text-small text-ink-2">Not confirmed yet</p>
         )}
-      >
-        {nodes.map((node, i) => (
-          <Fragment key={node.key}>
-            {node}
-            {i < nodes.length - 1 ? (
-              <li aria-hidden className="grid list-none place-items-center">
-                <ChainConnector delay={connectorDelay(index, i)} />
+        <ExtLink href={safeHref(institution.pageUrl)}>Institution page</ExtLink>
+        <SourceLinks trace={trace} ids={institution.evidenceIds} />
+      </Section>
+
+      <Section title="How to reach them">
+        <VerdictChip kind="sees" verdict={seesPatients.verdict} text={seesPatients.text} evidenceIds={seesPatients.evidenceIds} trace={trace} />
+        <VerdictChip
+          kind="consult"
+          verdict={consultation.verdict}
+          text={consultation.text}
+          evidenceIds={consultation.evidenceIds}
+          trace={trace}
+          url={consultation.url}
+          urlLabel="Consultation page"
+        />
+        {howToReach.length > 0 ? (
+          <ul className="m-0 grid list-none gap-3 p-0" aria-label="Ways to reach">
+            {howToReach.map((route) => (
+              <li key={`${route.channel}:${route.evidenceId}`} className="grid gap-1">
+                <p className="m-0 text-small text-ink">
+                  <strong className="font-semibold">{channelLabel(route.channel)}:</strong> {route.label}
+                </p>
+                <p className="m-0 break-all text-small text-ink-2">{route.address}</p>
+                <SourceLinks trace={trace} ids={[route.evidenceId]} />
               </li>
-            ) : null}
-          </Fragment>
-        ))}
-      </ol>
+            ))}
+          </ul>
+        ) : (
+          <p className="m-0 text-small text-ink-2">No way to reach them confirmed yet.</p>
+        )}
+      </Section>
     </article>
   );
 }

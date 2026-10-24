@@ -24,16 +24,78 @@ const noteInputSchema = z.object({
 export type NoteInput = z.infer<typeof noteInputSchema>;
 
 export const KIND_LABELS: Record<string, string> = {
-  intake_report: "Intake report",
+  case_summary: "Facts from your case",
+  intake_report: "Your intake report",
   patient_note: "Notes you added",
   public_resource: "Public resource info",
   evidence: "Sources research found",
 };
 
-/** "disease_program" -> "Disease program". */
+/** Plain labels for the case fields the intake stores (docs/DESIGN-v2.md 7.12). Keys are the stored field names. */
+export const FIELD_LABELS: Record<string, string> = {
+  diseaseName: "Your condition",
+  subtype: "Your condition type",
+  stageSummary: "How far it has gone",
+  homeCity: "Your city",
+  homeState: "Your state",
+  insurer: "Your insurance",
+  planId: "Your insurance plan",
+  travelLimitMiles: "How far you can travel",
+  goals: "What you hope for",
+};
+
+/** "HomeCity" / "homeCity" / "home_city" -> lower-first camel key "homeCity" when it is a known field, else null. */
+function fieldKey(raw: string): string | null {
+  const compact = raw.trim().replace(/[\s_-]+(.)/g, (_, c: string) => c.toUpperCase());
+  const key = compact ? compact[0].toLowerCase() + compact.slice(1) : "";
+  return key in FIELD_LABELS ? key : null;
+}
+
+/** "disease_program" -> "Disease program"; "HomeCity" -> "Your city"; "experts.authorship" -> "Experts authorship". */
 export function humanizeTitle(title: string): string {
-  const spaced = title.replaceAll("_", " ").trim();
+  const key = fieldKey(title);
+  if (key) return FIELD_LABELS[key];
+  const spaced = title
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
   return spaced ? spaced[0].toUpperCase() + spaced.slice(1) : title;
+}
+
+/** The label a row shows: the field it shares when it is a case fact, else a plain version of its title. */
+export function documentLabel(document: Pick<CaseDocument, "title" | "sharedField">): string {
+  const key = document.sharedField ? fieldKey(document.sharedField) : null;
+  return key ? FIELD_LABELS[key] : humanizeTitle(document.title);
+}
+
+/** Same kind, same label and same shared field are one fact: the store can hold a copy per ingest. */
+export function dedupeDocuments(documents: readonly CaseDocument[]): CaseDocument[] {
+  const seen = new Map<string, CaseDocument>();
+  for (const document of documents) {
+    const key = [document.kind, documentLabel(document).toLowerCase(), (document.sharedField ?? "").toLowerCase()].join("|");
+    if (!seen.has(key)) seen.set(key, document);
+  }
+  return [...seen.values()];
+}
+
+/** Contacts a duplicate set was tied to ("Shared with: 1 contact"). Counts distinct contact ids across the copies. */
+export function sharedContactCount(documents: readonly CaseDocument[], document: CaseDocument): number {
+  const label = documentLabel(document).toLowerCase();
+  const ids = new Set<string>();
+  for (const other of documents) {
+    if (other.kind === document.kind && documentLabel(other).toLowerCase() === label && other.contactId) ids.add(other.contactId);
+  }
+  return ids.size;
+}
+
+/** One calm sentence for the row's second line. */
+export function plainSharingLine(document: Pick<CaseDocument, "kind" | "sharedField">): string {
+  const kind = sharingKind(document);
+  if (kind === "never") return "Never sent to anyone";
+  if (kind === "consented") return "Only shared when you say yes";
+  return "Public information";
 }
 
 export function kindLabel(kind: string): string {

@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { NotebookPen, Plus } from "lucide-react";
 import {
-  FileText,
-  Globe,
-  KeyRound,
-  Lock,
-  NotebookPen,
-  Plus,
-} from "lucide-react";
-import {
-  Badge,
   Button,
+  Details,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -20,45 +13,38 @@ import {
   DialogTitle,
   DialogTrigger,
   EmptyState,
+  ErrorSummary,
   Field,
   Input,
+  List,
+  ListRow,
+  LoadingState,
+  PageHeader,
   Skeleton,
   Textarea,
   toast,
 } from "@/components/ui";
 import {
   addPatientNote,
+  dedupeDocuments,
+  documentLabel,
   groupDocuments,
-  humanizeTitle,
   kindLabel,
   loadDocuments,
-  sharingKind,
-  sharingLine,
+  plainSharingLine,
+  sharedContactCount,
   type CaseDocument,
-  type SharingKind,
 } from "./data";
 
-const SHARING: Record<
-  SharingKind,
-  { tone: "danger" | "sage" | "teal"; Icon: typeof Lock }
-> = {
-  never: { tone: "danger", Icon: Lock },
-  public: { tone: "sage", Icon: Globe },
-  consented: { tone: "teal", Icon: KeyRound },
-};
+/** Reading order on this page; the long list of research sources goes last, inside a disclosure. */
+/** Heading level for the page title. h2 while the case shell still prints the h1 (lane A part 2 flips this). */
+const CASE_PAGE_HEADING = "h2" as const;
 
-function SharingBadge({ document }: { document: CaseDocument }) {
-  const { tone, Icon } = SHARING[sharingKind(document)];
-  return (
-    <Badge
-      tone={tone}
-      size="md"
-      className="h-auto min-h-7 whitespace-normal py-1 text-left leading-snug"
-    >
-      <Icon aria-hidden />
-      {sharingLine(document)}
-    </Badge>
-  );
+const GROUP_ORDER = ["case_summary", "patient_note", "public_resource", "intake_report", "evidence"];
+const DISCLOSED_KINDS = new Set(["evidence"]);
+
+function sharedWith(count: number): string | null {
+  return count > 0 ? `Shared with: ${count} ${count === 1 ? "contact" : "contacts"}` : null;
 }
 
 function formatWhen(value: string): string {
@@ -85,15 +71,21 @@ function AddNoteDialog({
   const [sharedField, setSharedField] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<{ fieldId: string; message: string } | null>(null);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim() || !text.trim()) {
-      setError("Add a title and the note text before saving.");
+      setInvalid(
+        !title.trim()
+          ? { fieldId: "note-title", message: "Add a title for your note" }
+          : { fieldId: "note-text", message: "Write your note" },
+      );
       return;
     }
     setSaving(true);
     setError(null);
+    setInvalid(null);
     const result = await addPatientNote(caseId, {
       title: title.trim(),
       text: text.trim(),
@@ -126,52 +118,62 @@ function AddNoteDialog({
           <DialogHeader>
             <DialogTitle>Add a note</DialogTitle>
             <DialogDescription>
-              Outreach can use this note only for the field you name. Leave the
-              field blank and it stays general public context, not part of the
-              intake report.
+              We only use a note for the detail you name. If you name none, it
+              stays general background and is not part of your intake report.
             </DialogDescription>
           </DialogHeader>
-          <Field label="Title" htmlFor="note-title">
+          {invalid ? <ErrorSummary errors={[invalid]} /> : null}
+          {error ? (
+            <p role="alert" className="m-0 text-small font-semibold text-danger">
+              {error}
+            </p>
+          ) : null}
+          <Field
+            label="Title"
+            htmlFor="note-title"
+            error={invalid?.fieldId === "note-title" ? invalid.message : undefined}
+          >
             <Input
               id="note-title"
               name="title"
+              autoComplete="off"
+              aria-invalid={invalid?.fieldId === "note-title" || undefined}
+              aria-describedby={invalid?.fieldId === "note-title" ? "note-title-error" : undefined}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
           </Field>
-          <Field label="Note" htmlFor="note-text">
+          <Field
+            label="Note"
+            htmlFor="note-text"
+            error={invalid?.fieldId === "note-text" ? invalid.message : undefined}
+          >
             <Textarea
               id="note-text"
               name="text"
+              aria-invalid={invalid?.fieldId === "note-text" || undefined}
+              aria-describedby={invalid?.fieldId === "note-text" ? "note-text-error" : undefined}
               value={text}
               onChange={(event) => setText(event.target.value)}
             />
           </Field>
           <Field
-            label="Field you consent to share"
+            label="Detail we may share it for"
             htmlFor="note-field"
-            hint="For example: condition name, home city."
+            hint="For example: your condition, your city."
             optional
           >
             <Input
               id="note-field"
               name="sharedField"
-              placeholder="condition name"
+              autoComplete="off"
               aria-describedby="note-field-hint"
               value={sharedField}
               onChange={(event) => setSharedField(event.target.value)}
             />
           </Field>
-          {error ? (
-            <p
-              role="alert"
-              className="m-0 text-small font-semibold text-danger"
-            >
-              {error}
-            </p>
-          ) : null}
           <DialogFooter>
-            <Button type="submit" loading={saving} loadingText="Saving">
+            <Button type="submit" size="lg" loading={saving} loadingText="Saving">
               Save note
             </Button>
           </DialogFooter>
@@ -179,6 +181,15 @@ function AddNoteDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function orderGroups(documents: CaseDocument[]) {
+  const groups = groupDocuments(documents);
+  const rank = (kind: string) => {
+    const at = GROUP_ORDER.indexOf(kind);
+    return at === -1 ? GROUP_ORDER.length : at;
+  };
+  return [...groups].sort((a, b) => rank(a.kind) - rank(b.kind));
 }
 
 export function DocumentsPanel({ caseId }: { caseId: string }) {
@@ -219,33 +230,48 @@ export function DocumentsPanel({ caseId }: { caseId: string }) {
     setPreview(isPreview);
   }
 
-  const groups = groupDocuments(documents);
+  const unique = dedupeDocuments(documents);
+  const groups = orderGroups(unique);
+
+  // The header action is the one primary; while loading or on error the page offers no action.
+  const header = (action?: ReactNode) => (
+    <PageHeader
+      as={CASE_PAGE_HEADING}
+      eyebrow="Documents"
+      title="What we can use"
+      lede="Facts and notes we may draw on. Your intake report is never sent."
+      action={action}
+    />
+  );
 
   if (status === "loading") {
     return (
-      <div role="status" aria-busy="true" className="grid gap-6">
-        <span className="sr-only">Loading documents</span>
-        {[0, 1].map((key) => (
-          <div key={key} className="grid gap-3">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-24 w-full rounded-lg" />
-          </div>
-        ))}
-      </div>
+      <>
+        {header()}
+        <LoadingState label="Loading your documents">
+          {[0, 1].map((key) => (
+            <div key={key} className="grid gap-3">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+            </div>
+          ))}
+        </LoadingState>
+      </>
     );
   }
 
   if (status === "error") {
     return (
-      <div
-        role="alert"
-        className="grid gap-3 rounded-lg border border-danger/30 bg-danger-soft p-6"
-      >
-        <h2 className="m-0 font-display text-h3 font-normal text-ink display-soft">
-          Documents could not be loaded
-        </h2>
-        <p className="m-0 text-body text-ink-2">{message}</p>
-        <div>
+      <>
+        {header()}
+        <div
+          role="alert"
+          className="grid justify-items-start gap-3 rounded-lg border border-line bg-paper-2/60 p-6"
+        >
+          <h2 className="m-0 font-display text-h3 font-normal text-ink display-soft">
+            We could not load your documents
+          </h2>
+          <p className="m-0 text-body text-ink-2">{message}</p>
           <Button
             variant="secondary"
             onClick={() => {
@@ -256,94 +282,60 @@ export function DocumentsPanel({ caseId }: { caseId: string }) {
             Try again
           </Button>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="grid gap-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {preview ? (
-          <p className="m-0 flex flex-wrap items-center gap-2 text-small text-ink-2">
-            <Badge tone="gold">Sample</Badge>
-            Preview of what outreach agents can draw on. The live list replaces
-            it when that service answers.
-          </p>
-        ) : (
-          <span />
-        )}
-        <AddNoteDialog caseId={caseId} onAdded={onAdded} />
-      </div>
+      {header(<AddNoteDialog caseId={caseId} onAdded={onAdded} />)}
+
+      {preview ? (
+        <p className="m-0 -mt-6 max-w-prose text-small text-ink-2">
+          Sample list. The real one replaces it when it is ready.
+        </p>
+      ) : null}
 
       {status === "empty" ? (
         <EmptyState
           icon={<NotebookPen />}
           title="No documents yet"
-          description="A note you add here is available to outreach only for the field you name. Your intake report is never sent."
+          description="A note you add is used only for the detail you name. Your intake report is never sent."
         />
       ) : null}
 
       {groups.map((group) => (
-        <DocumentGroup key={group.kind} kind={group.kind} items={group.items} />
+        <DocumentGroup key={group.kind} kind={group.kind} items={group.items} all={documents} />
       ))}
     </div>
   );
 }
 
-const COLLAPSED_COUNT = 6;
+const COLLAPSED_COUNT = 8;
 
-function DocumentGroup({
-  kind,
-  items,
-}: {
-  kind: string;
-  items: CaseDocument[];
-}) {
+function DocumentRows({ items, all }: { items: CaseDocument[]; all: CaseDocument[] }) {
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? items : items.slice(0, COLLAPSED_COUNT);
   return (
-    <section
-      aria-labelledby={`docs-${kind}`}
-      className="grid grid-cols-[minmax(0,1fr)] gap-4"
-    >
-      <h2
-        id={`docs-${kind}`}
-        className="m-0 max-w-none border-b border-line pb-3 font-display text-h3 font-normal text-ink display-soft"
-      >
-        {kindLabel(kind)}
-        <span className="ml-2 font-sans text-body font-normal text-ink-3">
-          ({items.length})
-        </span>
-      </h2>
-      <ul className="m-0 grid list-none gap-4 p-0 md:grid-cols-2">
-        {shown.map((document) => (
-          <li
-            key={document.id}
-            className="grid min-w-0 content-start gap-3 rounded-lg border border-line bg-card p-5 shadow-xs"
-          >
-            <div className="flex items-start gap-3">
-              <FileText
-                aria-hidden
-                className="mt-1 size-5 shrink-0 text-ink-3"
-              />
-              <div className="grid min-w-0 gap-0.5">
-                <h3 className="m-0 break-words font-sans text-h4 font-bold text-ink">
-                  {humanizeTitle(document.title)}
-                </h3>
-                <p className="m-0 text-small text-ink-3">
-                  {formatWhen(document.createdAt)}
-                </p>
-              </div>
-            </div>
-            <SharingBadge document={document} />
-          </li>
-        ))}
-      </ul>
+    <>
+      <List>
+        {shown.map((document) => {
+          const shared = sharedWith(sharedContactCount(all, document));
+          const when = formatWhen(document.createdAt);
+          return (
+            <ListRow
+              key={document.id}
+              title={documentLabel(document)}
+              meta={[plainSharingLine(document), when].filter(Boolean).join(" · ")}
+              trailing={shared}
+            />
+          );
+        })}
+      </List>
       {items.length > COLLAPSED_COUNT ? (
         <div>
           <Button
-            variant="secondary"
-            size="sm"
+            variant="link"
             onClick={() => setExpanded((value) => !value)}
             aria-expanded={expanded}
           >
@@ -351,6 +343,44 @@ function DocumentGroup({
           </Button>
         </div>
       ) : null}
+    </>
+  );
+}
+
+function DocumentGroup({
+  kind,
+  items,
+  all,
+}: {
+  kind: string;
+  items: CaseDocument[];
+  all: CaseDocument[];
+}) {
+  const label = `${kindLabel(kind)} (${items.length})`;
+  if (DISCLOSED_KINDS.has(kind)) {
+    return (
+      <section aria-label={kindLabel(kind)} className="grid grid-cols-[minmax(0,1fr)] gap-2">
+        <Details summary={label}>
+          <DocumentRows items={items} all={all} />
+        </Details>
+      </section>
+    );
+  }
+  return (
+    <section
+      aria-labelledby={`docs-${kind}`}
+      className="grid grid-cols-[minmax(0,1fr)] gap-3"
+    >
+      <h2
+        id={`docs-${kind}`}
+        className="m-0 max-w-none font-display text-h3 font-normal text-ink display-soft"
+      >
+        {kindLabel(kind)}
+        <span className="ml-2 font-sans text-body font-normal text-ink-3">
+          ({items.length})
+        </span>
+      </h2>
+      <DocumentRows items={items} all={all} />
     </section>
   );
 }

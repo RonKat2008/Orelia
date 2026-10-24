@@ -27,7 +27,9 @@ describe('ExpertChainCard', () => {
     expect(html.indexOf('Older paper (2021)')).toBeGreaterThan(html.indexOf('Newer paper'));
     expect(html).toContain('https://pubmed.ncbi.nlm.nih.gov/111/');
     expect(html).toContain('2 papers');
-    expect(html.match(/Ada Example<\/h4>/g)).toHaveLength(1);
+    expect(html.match(/Ada Example<\/h3>/g)).toHaveLength(1);
+    expect(html).toContain('Where they work');
+    expect(html).toContain('How to reach them');
   });
   it('still renders a trace saved before grouping (single paper, no papers array)', () => {
     const old = { ...chain, papers: undefined };

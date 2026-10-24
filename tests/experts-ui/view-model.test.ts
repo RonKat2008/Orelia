@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { connectorDelay, resolveSources, safeHref, verdictView, channelLabel, refreshMessage } from "@/components/experts/view-model";
+import { resolveSources, rowBadge, rowMeta, safeHref, verdictView, channelLabel, refreshMessage } from "@/components/experts/view-model";
 import { badgeViews, canVerifyByPhone, reasonText, resourceKeyOf, sharedFieldsFor, statusText, verifyQuestions } from "@/components/shortlist/verify-model";
 import type { ShortlistCard } from "@/components/shortlist/data";
 
@@ -27,10 +27,21 @@ describe("experts view model", () => {
     expect(verdictView("sees", "yes").tone).toBe("ok");
   });
 
-  it("staggers connectors and labels channels", () => {
-    expect(connectorDelay(1, 2)).toBeGreaterThan(connectorDelay(0, 2));
-    expect(connectorDelay(100, 0)).toBe(connectorDelay(6, 0));
+  it("labels channels", () => {
     expect(channelLabel("voice")).toBe("Phone");
+  });
+
+  it("shows at most one fact on a row: only a documented 'sees patients' earns a badge", () => {
+    const base = { seesPatients: { verdict: "unknown", text: "", evidenceIds: [] } };
+    expect(rowBadge(base as never)).toBeNull();
+    expect(rowBadge({ seesPatients: { ...base.seesPatients, verdict: "no" } } as never)).toBeNull();
+    expect(rowBadge({ seesPatients: { ...base.seesPatients, verdict: "yes" } } as never)?.tone).toBe("ok");
+  });
+
+  it("summarises a row as workplace and paper count", () => {
+    const chain = { institution: { name: "Northgate", pageUrl: null, evidenceIds: [] }, paper: { pmid: "1" }, papers: [{ pmid: "1" }, { pmid: "2" }] };
+    expect(rowMeta(chain as never)).toBe("Northgate · 2 papers");
+    expect(rowMeta({ ...chain, institution: { name: null } } as never)).toMatch(/not confirmed yet/);
   });
 });
 

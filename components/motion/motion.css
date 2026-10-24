@@ -16,21 +16,32 @@
 
 .wf-constellation {
   margin: 0;
+  container-type: inline-size;
+}
+
+.wf-constellation__layout {
   display: grid;
   gap: var(--wf-space-8);
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
 }
 
-@media (min-width: 860px) {
-  .wf-constellation {
+/* Side-by-side only when the component itself has room, whatever the page width. */
+@container (min-width: 1000px) {
+  .wf-constellation__layout {
     grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+  }
+}
+
+@container (min-width: 640px) and (max-width: 999px) {
+  .wf-constellation__map {
+    max-width: 30rem;
   }
 }
 
 .wf-constellation__map {
   position: relative;
-  max-width: 34rem;
+  max-width: 38rem;
   width: 100%;
   margin-inline: auto;
 }
@@ -170,7 +181,7 @@
 
 .wf-node__label {
   font-family: var(--wf-font-text);
-  font-size: 13px;
+  font-size: 15px;
   fill: var(--wf-ink-muted);
 }
 
@@ -327,6 +338,7 @@
 .wf-waypoints__count {
   font-size: 0.8125rem;
   color: var(--wf-ink-muted);
+  white-space: nowrap;
 }
 
 /* ---------- Stagger list ---------- */

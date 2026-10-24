@@ -29,6 +29,8 @@ type Props = {
 };
 
 const RINGS = [64, 112, CONSTELLATION_RADIUS];
+/** Horizontal room for the longest node labels on either side. */
+const LABEL_GUTTER = 56;
 const TICKS = 36;
 
 function changedAgent(prev: readonly SwarmAgent[], next: readonly SwarmAgent[]): SwarmAgent | undefined {
@@ -67,8 +69,13 @@ export function SwarmConstellation({ agents, caseLabel = "Your case", announce =
 
   return (
     <figure className={classes} data-reduced={reduced ? "true" : "false"}>
+      <div className="wf-constellation__layout">
       <div className="wf-constellation__map">
-        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby={titleId}>
+        <svg
+          viewBox={`${-LABEL_GUTTER} 0 ${width + LABEL_GUTTER * 2} ${height}`}
+          role="img"
+          aria-labelledby={titleId}
+        >
           <title id={titleId}>{summary}</title>
           <g className="wf-constellation__contours" aria-hidden="true">
             {RINGS.map((r) => (
@@ -120,6 +127,7 @@ export function SwarmConstellation({ agents, caseLabel = "Your case", announce =
           })}
         </ol>
       </figcaption>
+      </div>
       {announce ? (
         <p className="wf-visually-hidden" aria-live="polite" aria-atomic="true">
           {message}

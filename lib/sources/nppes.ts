@@ -27,9 +27,10 @@ export class NppesClient {
       providers.set(number,{...row,number});
     }
     const records = [...providers.values()];
+    const taxonomy = query.taxonomy;
     const matches = records.filter(r => r.enumeration_type === "NPI-1" && r.basic.status === "A" && norm(r.basic.first_name ?? "") === norm(query.firstName) && norm(r.basic.last_name ?? "") === norm(query.lastName)
       && (!query.state || r.addresses?.some(a => a.state?.toUpperCase() === query.state?.toUpperCase()))
-      && (!query.taxonomy || r.taxonomies?.some(t => t.code === query.taxonomy || norm(t.desc ?? "") === norm(query.taxonomy!)))
+      && (!taxonomy || r.taxonomies?.some(t => t.code === taxonomy || norm(t.desc ?? "") === norm(taxonomy)))
       && (!query.affiliation || norm(r.basic.organization_name ?? "") === norm(query.affiliation)));
     // Name alone, truncated results, or absent corroboration must never silently verify identity.
     const actualLimit = response.requestUrl ? Number(new URL(response.requestUrl).searchParams.get("limit") ?? limit) : limit;

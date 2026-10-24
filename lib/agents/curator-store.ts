@@ -155,7 +155,7 @@ function firstId(res: unknown): string | null {
   return typeof id === "string" ? id : null;
 }
 
-const g = globalThis as unknown as { __wayfinderCurations?: CurationStore };
+const g = globalThis as { __wayfinderCurations?: CurationStore };
 
 /** Postgres when DATABASE_URL is set (mirrors getServices); otherwise a process-local singleton. */
 export function getCurationStore(): CurationStore {

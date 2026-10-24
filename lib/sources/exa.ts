@@ -16,7 +16,7 @@ export class ExaClient {
   }
   private result(pages: ExaPage[], fetchedAt: string): SourceResult<ExaPage> {
     const records = [...new Map(pages.map(p => [p.url,p])).values()];
-    return {records,evidence:records.filter(p => p.text?.trim()).map(p => evidence("exa",p.url,fetchedAt,"page_excerpt",p.text!.trim().slice(0,1000)))};
+    return {records,evidence:records.flatMap(p => { const text = p.text?.trim(); return text ? [evidence("exa",p.url,fetchedAt,"page_excerpt",text.slice(0,1000))] : []; })};
   }
   async search(query: string, options: {key?: string; numResults?: number} = {}): Promise<SourceResult<ExaPage>> {
     if (!query.trim()) throw new SourceError("exa", "Empty search query");

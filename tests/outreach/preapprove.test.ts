@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryOwnerStore } from "../../lib/auth/ownership";
+import { signSession } from "../../lib/auth/session";
 import { MemoryFollowUpPlan, resolvePreapprovedSend } from "../../lib/outreach/follow-up-plan";
 import { assessPreapproved, canonicalFollowUp, type CaseSnapshot } from "../../lib/outreach/preapprove";
 import { GET, PUT } from "../../app/api/cases/[id]/follow-up-plan/route";
@@ -18,7 +20,27 @@ function planInput(over: Record<string, unknown> = {}) {
   };
 }
 
+const holder = globalThis as unknown as { __wayfinderOwnerStore?: MemoryOwnerStore };
+const OWNER = "preapprove-owner";
+const authed = (method: string, body?: unknown) => new Request("http://local/api", {
+  method,
+  headers: { cookie: `wf_session=${signSession(OWNER)}`, origin: "http://local" },
+  ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+});
+
 describe("pre-approved follow-ups", () => {
+  beforeEach(() => {
+    vi.stubEnv("WAYFINDER_SESSION_SECRET", "synthetic-preapprove-secret");
+    const store = new MemoryOwnerStore();
+    store.registerCase(CASE, OWNER);
+    store.registerContact(CONTACT, CASE);
+    holder.__wayfinderOwnerStore = store;
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    delete holder.__wayfinderOwnerStore;
+  });
+
   it("stores the canonical day-3 and day-7 bodies with approved_at", async () => {
     const plan = new MemoryFollowUpPlan();
     const rows = await plan.approve({ ...planInput(), approvedAt: new Date("2026-03-02T15:00:00.000Z") });
@@ -65,16 +87,16 @@ describe("pre-approved follow-ups", () => {
     const plan = new MemoryFollowUpPlan();
     setFollowUpPlanForTests(plan);
     const ctx = { params: Promise.resolve({ id: CASE }) };
-    const bad = await PUT(new Request("http://local", { method: "PUT", body: JSON.stringify({ notification: { patientEmail: "patient@example.com", optIn: true } }) }), ctx);
+    const bad = await PUT(authed("PUT", { notification: { patientEmail: "patient@example.com", optIn: true } }), ctx);
     expect(bad.status).toBe(400);
     process.env.OUTBOUND_ALLOWLIST = "patient@example.com";
-    const ok = await PUT(new Request("http://local", { method: "PUT", body: JSON.stringify({
+    const ok = await PUT(authed("PUT", {
       contactId: CONTACT, action: "approve", channel: "email", sharedFields: ["disease_name"],
       consentApprovedAt: "2026-03-01T00:00:00.000Z", snapshot,
       notification: { patientEmail: "Patient@Example.com", optIn: true },
-    }) }), ctx);
+    }), ctx);
     expect(ok.status).toBe(200);
-    const listed = await GET(new Request("http://local"), ctx);
+    const listed = await GET(authed("GET"), ctx);
     const json = await listed.json();
     expect(json.followUps).toHaveLength(2);
     expect(json.notification.patientEmail).toBe("patient@example.com");

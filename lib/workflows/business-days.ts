@@ -37,12 +37,12 @@ function localParts(date: Date, tz: string): LocalParts {
     if (p.type !== 'literal') out[p.type] = Number(p.value);
   }
   return {
-    year: out.year!,
-    month: out.month!,
-    day: out.day!,
-    hour: out.hour! % 24,
-    minute: out.minute!,
-    second: out.second!,
+    year: out.year,
+    month: out.month,
+    day: out.day,
+    hour: out.hour % 24,
+    minute: out.minute,
+    second: out.second,
   };
 }
 

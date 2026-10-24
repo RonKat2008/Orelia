@@ -14,6 +14,8 @@ import { addBusinessDays } from "@/lib/workflows/business-days";
 import { DryRunMail } from "@/scripts/demo/dry-run-mail";
 import { clearState } from "@/scripts/demo/state";
 
+const postRequest = () => new Request("http://localhost/api/demo", { method: "POST", headers: { origin: "http://localhost" } });
+
 const CASE = "case-inbox@dry-run.agentmail.invalid";
 
 describe("demo control API", () => {
@@ -44,13 +46,13 @@ describe("demo control API", () => {
 
   it("404s every demo route when WAYFINDER_DEMO is off", async () => {
     delete process.env.WAYFINDER_DEMO;
-    for (const res of [await statusGET(), await seedPOST(), await repliesPOST(), await advancePOST()]) {
+    for (const res of [await statusGET(), await seedPOST(postRequest()), await repliesPOST(postRequest()), await advancePOST(postRequest())]) {
       expect(res.status).toBe(404);
     }
   });
 
   it("seeds a dry-run case and lists fictional destinations", async () => {
-    const res = await seedPOST();
+    const res = await seedPOST(postRequest());
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.mode).toBe("dry-run");
@@ -65,7 +67,7 @@ describe("demo control API", () => {
   });
 
   it("replies only to the reply allowlist", async () => {
-    await seedPOST();
+    await seedPOST(postRequest());
     const status = await (await statusGET()).json();
     const slides = status.destinations.find((d: { key: string }) => d.key === "slides");
     const mail = new DryRunMail();
@@ -87,12 +89,12 @@ describe("demo control API", () => {
   });
 
   it("sends nothing when the reply allowlist is empty", async () => {
-    await seedPOST();
+    await seedPOST(postRequest());
     const status = await (await statusGET()).json();
     const slides = status.destinations.find((d: { key: string }) => d.key === "slides");
     const mail = new DryRunMail();
     await mail.deliver(slides.address, { from: CASE, subject: "Hello", text: "Synthetic." });
-    const res = await repliesPOST();
+    const res = await repliesPOST(postRequest());
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.replied).toBe(0);
@@ -100,13 +102,13 @@ describe("demo control API", () => {
   });
 
   it("advances simulated time by three business days", async () => {
-    const first = await advancePOST();
+    const first = await advancePOST(postRequest());
     const body = await first.json();
     const anchor = new Date(body.anchor);
     const step = addBusinessDays(anchor, 3).getTime() - anchor.getTime();
     expect(body.offsetMs).toBe(step);
     expect(body.day3FollowUpOpen).toBe(true);
-    const second = await (await advancePOST()).json();
+    const second = await (await advancePOST(postRequest())).json();
     expect(second.offsetMs).toBe(step * 2);
   });
 });

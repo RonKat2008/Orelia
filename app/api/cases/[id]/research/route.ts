@@ -16,49 +16,53 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Claim first; durable delivery when configured, in-process replay for the offline demo. */
 export async function POST(req: Request, { params }: Ctx) {
-  const id = parseId((await params).id);
-  if (!id) return jsonError(400, "Invalid case id");
-  const denied = await guardCase(req, id);
-  if (denied) return denied;
-  const services = getServices();
-  const found = await services.cases.get(id);
-  if (!found) return jsonError(404, "Case not found");
-  if (!RESEARCH_STARTABLE.some((status) => status === found.status)) {
-    return jsonError(409, `Case must be confirmed before research (status: ${found.status})`);
-  }
-
-  // Session is null only for demo-unowned cases; those share one bucket.
-  const limit = await checkRateLimit(getRateLimitStore(), RESEARCH_LIMITS(id, readSession(req) ?? "anonymous"), new Date());
-  if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
-
-  if (!await services.cases.compareAndSetStatus(id, RESEARCH_STARTABLE, "researching")) {
-    return jsonError(409, "Research is already running for this case");
-  }
-
-  if (!isOffline(process.env.WAYFINDER_OFFLINE) && process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY) {
-    try {
-      await inngest.send({ name: RESEARCH_EVENT, data: { caseId: id } });
-    } catch (e) {
-      await failResearch(id, services);
-      console.error(`[research ${id}] event delivery failed`, e instanceof Error ? e.message : e);
-      return jsonError(503, "Could not queue research; please retry");
+  try {
+    const id = parseId((await params).id);
+    if (!id) return jsonError(400, "Invalid case id");
+    const denied = await guardCase(req, id);
+    if (denied) return denied;
+    const services = getServices();
+    const found = await services.cases.get(id);
+    if (!found) return jsonError(404, "Case not found");
+    if (!RESEARCH_STARTABLE.some((status) => status === found.status)) {
+      return jsonError(409, `Case must be confirmed before research (status: ${found.status})`);
     }
-  } else {
-    after(async () => {
+
+    // Session is null only for demo-unowned cases; those share one bucket.
+    const limit = await checkRateLimit(getRateLimitStore(), RESEARCH_LIMITS(id, readSession(req) ?? "anonymous"), new Date());
+    if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
+
+    if (!await services.cases.compareAndSetStatus(id, RESEARCH_STARTABLE, "researching")) {
+      return jsonError(409, "Research is already running for this case");
+    }
+
+    if (!isOffline(process.env.WAYFINDER_OFFLINE) && process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY) {
       try {
-        const wiring = await getResearchWiring();
-        await executeResearch(id, {
-          store: services.runs,
-          persist: services.persist,
-          cases: services.cases,
-          ports: wiring.ports,
-          agents: wiring.agents,
-        }, { run: (_id, work) => work() });
+        await inngest.send({ name: RESEARCH_EVENT, data: { caseId: id } });
       } catch (e) {
         await failResearch(id, services);
-        console.error(`[research ${id}]`, e instanceof Error ? e.message : e);
+        console.error(`[research ${id}] event delivery failed`, e instanceof Error ? e.message : e);
+        return jsonError(503, "Could not queue research; please retry");
       }
-    });
+    } else {
+      after(async () => {
+        try {
+          const wiring = await getResearchWiring();
+          await executeResearch(id, {
+            store: services.runs,
+            persist: services.persist,
+            cases: services.cases,
+            ports: wiring.ports,
+            agents: wiring.agents,
+          }, { run: (_id, work) => work() });
+        } catch (e) {
+          await failResearch(id, services);
+          console.error(`[research ${id}]`, e instanceof Error ? e.message : e);
+        }
+      });
+    }
+    return NextResponse.json({ caseId: id, status: "researching" }, { status: 202 });
+  } catch (error) {
+    return jsonError(500, "Unable to process request", error);
   }
-  return NextResponse.json({ caseId: id, status: "researching" }, { status: 202 });
 }

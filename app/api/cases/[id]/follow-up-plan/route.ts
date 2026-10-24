@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getOwnerStore, guardCase, guardContact } from "@/lib/auth/ownership";
 import { jsonError, parseBody, parseId } from "../../_lib/http";
 import { getFollowUpPlan } from "@/lib/outreach/follow-up-plan";
 import type { CaseSnapshot } from "@/lib/outreach/preapprove";
@@ -44,25 +45,35 @@ function policy() {
   };
 }
 
-export async function GET(_req: Request, { params }: Ctx) {
-  const id = parseId((await params).id);
-  if (!id) return jsonError(400, "Invalid case id");
+export async function GET(req: Request, { params }: Ctx) {
   try {
+    const id = parseId((await params).id);
+    if (!id) return jsonError(400, "Invalid case id");
+    const denied = await guardCase(req, id);
+    if (denied) return denied;
     const plan = await getFollowUpPlan().list(id);
     return NextResponse.json(plan);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to load follow-up plan";
-    return jsonError(message === "Case not found" ? 404 : 500, message);
+    if (error instanceof Error && error.message === "Case not found") return jsonError(404, "Case not found");
+    return jsonError(500, "Unable to load follow-up plan", error);
   }
 }
 
 export async function PUT(req: Request, { params }: Ctx) {
-  const id = parseId((await params).id);
-  if (!id) return jsonError(400, "Invalid case id");
-  const body = await parseBody(req, putSchema);
-  if (!body.ok) return body.response;
-  const store = getFollowUpPlan();
   try {
+    const id = parseId((await params).id);
+    if (!id) return jsonError(400, "Invalid case id");
+    const denied = await guardCase(req, id);
+    if (denied) return denied;
+    const body = await parseBody(req, putSchema);
+    if (!body.ok) return body.response;
+    if (body.data.contactId) {
+      // The contact must belong to a case this session owns, and to this case.
+      const contactDenied = await guardContact(req, body.data.contactId);
+      if (contactDenied) return contactDenied;
+      if (await getOwnerStore().caseIdForContact(body.data.contactId) !== id) return jsonError(404, "Not found");
+    }
+    const store = getFollowUpPlan();
     if (body.data.notification) {
       await store.saveNotification(id, {
         patientEmail: body.data.notification.patientEmail ?? null,
@@ -103,8 +114,11 @@ export async function PUT(req: Request, { params }: Ctx) {
     }
     return NextResponse.json(await store.list(id));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to update follow-up plan";
-    const status = message.includes("ALLOWLIST") || message.includes("Invalid") || message.includes("Consent") ? 400 : 500;
-    return jsonError(status, message);
+    const message = error instanceof Error ? error.message : "";
+    // Only our own policy refusals are safe to echo; anything else may carry provider/storage detail.
+    if (message.includes("ALLOWLIST")) return jsonError(400, "Recipient is not on the outbound allowlist");
+    if (message.includes("Consent")) return jsonError(400, "Consent is required");
+    if (message.includes("Invalid")) return jsonError(400, "Invalid follow-up plan request");
+    return jsonError(500, "Unable to update follow-up plan", error);
   }
 }

@@ -36,8 +36,8 @@ const rad = (deg: number): number => (deg * Math.PI) / 180;
 export function stateDistanceMiles(a: string | undefined, b: string | undefined): number | undefined {
   const from = a ? CENTROIDS[a.toUpperCase()] : undefined;
   const to = b ? CENTROIDS[b.toUpperCase()] : undefined;
-  if (!from || !to) return undefined;
-  if (a!.toUpperCase() === b!.toUpperCase()) return 0;
+  if (!a || !b || !from || !to) return undefined;
+  if (a.toUpperCase() === b.toUpperCase()) return 0;
   const dLat = rad(to[0] - from[0]);
   const dLon = rad(to[1] - from[1]);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(from[0])) * Math.cos(rad(to[0])) * Math.sin(dLon / 2) ** 2;

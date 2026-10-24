@@ -118,7 +118,7 @@ export function verifyAgentCallSignature(rawBody: string, header: string | null,
   const m = /^sha256=([0-9a-fA-F]{64})$/.exec(header.trim());
   if (!m) return false;
   const expected = createHmac('sha256', secret).update(rawBody).digest();
-  const got = Buffer.from(m[1]!, 'hex');
+  const got = Buffer.from(m[1], 'hex');
   return got.length === expected.length && timingSafeEqual(got, expected);
 }
 

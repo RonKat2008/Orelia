@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ShortlistItem } from "@/lib/agents/persist";
 import type { StoredCuration } from "@/lib/agents/curator-store";
 
+// Ownership/CSRF are covered in tests/auth; these tests exercise the route body.
+const guard = vi.hoisted(() => ({ guardCase: vi.fn(async (...args: [Request, string]): Promise<Response | null> => (void args, null)) }));
+vi.mock("@/lib/auth/ownership", () => ({ guardCase: guard.guardCase }));
+
 const state = vi.hoisted(() => ({ items: [] as unknown[], curation: null as unknown }));
 
 vi.mock("@/app/api/cases/_lib/services", () => ({
@@ -24,6 +28,11 @@ const item = (kind: ShortlistItem["targetKind"], id: string, rank: number): Shor
 const call = async () => (await GET(new Request("http://x"), { params: Promise.resolve({ id: ID }) })).json();
 
 describe("GET shortlist with curation", () => {
+  it("calls the ownership guard", async () => {
+    await call();
+    expect(guard.guardCase).toHaveBeenCalledWith(expect.any(Request), ID);
+  });
+
   beforeEach(() => {
     state.items = Array.from({ length: 8 }, (_, i) => item("expert", `e${i}`, i + 1));
     state.curation = null;

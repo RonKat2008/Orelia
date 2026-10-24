@@ -29,6 +29,13 @@
       "when": 1792821247004,
       "tag": "0025_case_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792821401335,
+      "tag": "0028_case_owner_session",
+      "breakpoints": true
     }
   ]
 }

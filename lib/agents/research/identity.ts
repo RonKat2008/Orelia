@@ -1,4 +1,7 @@
+import { mentionStrength } from "@/lib/agents/relevance";
 import { z } from "zod";
+import { matchIdentity, type IdentityAssessment } from "@/lib/identity/match";
+import type { NppesProvider as RawProvider } from "@/lib/sources/nppes";
 import { HAIKU } from "@/lib/agents/models";
 import type { AgentTool } from "@/lib/agents/runtime";
 import { pubmedAuthorsTool } from "./pubmed-tool";
@@ -21,14 +24,13 @@ const inputSchema = z.object({
 });
 
 /**
- * NPPES lookup. An NPI is only ever "verified" (registered with the tracker) when exactly one provider matches
- * the first and last name exactly. Zero or several matches are reported as ambiguous and never guessed.
+ * NPPES lookup. Verification requires deterministic name, clinical taxonomy and affiliation corroboration.
  */
-function lookupNpiTool(nppes: NppesPort, tracker: ProvenanceTracker): AgentTool {
+function lookupNpiTool(nppes: NppesPort, tracker: ProvenanceTracker, assess: (first: string, last: string, providers: RawProvider[], truncated: boolean) => Promise<IdentityAssessment>): AgentTool {
   return trackedTool({
     name: "lookup_npi",
     description:
-      "Look up a person in the NPPES NPI Registry by name (and state). Reports how many providers match the name exactly. Only a single exact match counts as verified.",
+      "Look up a person in the NPPES NPI Registry by name (and state). Reports how many providers match the name exactly. Only a corroborated active clinician with a disease-relevant taxonomy and matching publication practice city/state counts as verified.",
     inputSchema,
     kind: "nppes",
     tracker,
@@ -37,15 +39,17 @@ function lookupNpiTool(nppes: NppesPort, tracker: ProvenanceTracker): AgentTool 
       const exact = result.providers.filter(
         (p) => firstToken(p.firstName) === firstToken(firstName) && normalize(p.lastName) === normalize(lastName),
       );
-      const verified = exact.length === 1;
-      if (verified && exact[0]) tracker.allowVerifiedNpi(exact[0].npi);
+      const assessment = await assess(firstName, lastName, result.providers.flatMap((p) => p.raw ? [p.raw] : []), result.truncated ?? true);
+      const verified = assessment.verified;
+      if (assessment.npi) tracker.allowVerifiedNpi(assessment.npi);
       return {
         query: { firstName, lastName, state },
         searchUrl: result.searchUrl,
         providersReturned: result.providers.length,
         exactNameMatches: exact.length,
+        ...assessment,
         verified,
-        matches: exact.slice(0, 5).map((p) => ({
+        matches: exact.filter((p) => !verified || p.npi === assessment.npi).slice(0, 5).map((p) => ({
           npi: p.npi,
           name: `${p.firstName} ${p.lastName}`,
           credential: p.credential,
@@ -63,35 +67,67 @@ const INSTRUCTIONS = `ROLE: Identity agent. For people who publish on the patien
 
 For each author you looked up, output one record of kind "expert": {"kind":"expert","id":...,"name":"First Last","npi":...,"credentials"?:...,"specialty"?:...,"evidenceRefs":[...]}.
 - If the lookup says verified=true: npi = that match's npi, id = "npi:<npi>", credentials and specialty only as returned (credential, taxonomy), evidence claimType "identity_verified" with sourceUrl = the match's sourceUrl. The claim names the NPI, taxonomy and city/state returned.
-- If verified=false (zero matches OR more than one exact match): NEVER guess. npi = null, id = "expert:<first>-<last lowercased>", no credentials. One evidence item, claimType "identity_unverified", sourceUrl = the lookup's searchUrl, claim saying how many exact name matches the registry returned and that identity was not confirmed.
+- If verified=false (including rejected taxonomies, missing affiliation corroboration, ambiguous names or incomplete results): NEVER guess. npi = null, id = "expert:<first>-<last lowercased>", no credentials. One evidence item, claimType "identity_unverified", sourceUrl = the lookup's searchUrl, claim saying how many exact name matches the registry returned and that identity was not confirmed.
 - Never combine two registry entries, never pick one of several, never use an NPI the tool did not mark verified.`;
 
 export const identityAgent: ResearchAgent = {
   name: "identity",
   model: HAIKU,
-  run: runResearch({
-    name: "identity",
-    instructions: INSTRUCTIONS,
-    rules: { allowedKinds: ["expert"], sourceKinds: ["nppes"] },
-    makeTools: (ports, tracker) => [
-      pubmedAuthorsTool(ports.pubmed, tracker),
-      lookupNpiTool(ports.nppes, tracker),
-    ],
-    seed: async (call, c) => {
-      const found = (await call("search_pubmed_authors", { disease: c.diseaseName, limit: SEED_AUTHORS })) as {
-        authors: Array<{ firstName: string; lastName: string; state?: string }>;
-      };
-      const lookups = [];
-      for (const a of found.authors) {
-        lookups.push(
-          await call("lookup_npi", {
-            firstName: a.firstName,
-            lastName: a.lastName,
-            ...(a.state ? { state: a.state } : {}),
-          }),
-        );
-      }
-      return { authors: found.authors.map((a) => `${a.firstName} ${a.lastName}`), lookups };
-    },
-  }),
+  run: async (c, ctx) => {
+    const assessments = new Map<string, { verdict: IdentityAssessment; provider?: RawProvider }>();
+    const key = (first: string, last: string) => `${firstToken(first)}|${normalize(last)}`;
+    const authors = await ctx.ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: 15 });
+    const assess = async (first: string, last: string, providers: RawProvider[], truncated: boolean) => {
+      const hits = authors.filter((a) => key(a.firstName, a.lastName) === key(first, last));
+      const author = hits.length === 1 ? hits[0] : undefined;
+      const verdict = matchIdentity(author ?? { firstName: first, lastName: last }, providers, c.diseaseName, { truncated: truncated || hits.length !== 1 });
+      assessments.set(key(first, last), { verdict, provider: providers.find((p) => String(p.number) === verdict.npi) });
+      return verdict;
+    };
+    const result = await runResearch({
+      name: "identity",
+      instructions: INSTRUCTIONS,
+      rules: { allowedKinds: ["expert"], sourceKinds: ["nppes"] },
+      makeTools: (ports, tracker) => [
+        pubmedAuthorsTool(ports.pubmed, tracker),
+        lookupNpiTool(ports.nppes, tracker, assess),
+      ],
+      seed: async (call, c) => {
+        const found = (await call("search_pubmed_authors", { disease: c.diseaseName, limit: SEED_AUTHORS })) as {
+          authors: Array<{ firstName: string; lastName: string; state?: string }>;
+        };
+        const lookups = [];
+        for (const a of found.authors) {
+          lookups.push(
+            await call("lookup_npi", {
+              firstName: a.firstName,
+              lastName: a.lastName,
+              ...(a.state ? { state: a.state } : {}),
+            }),
+          );
+        }
+        return { authors: found.authors.map((a) => `${a.firstName} ${a.lastName}`), lookups };
+      },
+    })(c, ctx);
+    if (result.status !== "ok") return result;
+    // Code replaces model identity prose and binds the selected NPI to the publication author.
+    const evidence: typeof result.evidence = [];
+    const records = result.records.map((r) => {
+      if (r.kind !== "expert") return r;
+      const parts = r.name.trim().split(/\s+/);
+      const item = assessments.get(key(parts[0] ?? "", parts.at(-1) ?? ""));
+      const verdict = item?.verdict;
+      const author = authors.find((a) => key(a.firstName, a.lastName) === key(parts[0] ?? "", parts.at(-1) ?? ""));
+      const papers = author?.papers.filter((p) => mentionStrength(p.title, c) === "exact") ?? [];
+      const profile = { ...r.profile, paperCount: new Set(papers.map((p) => p.pmid)).size, recentPaperCount: new Set(papers.filter((p) => p.year && p.year >= new Date().getFullYear() - 5).map((p) => p.pmid)).size };
+      const npi = verdict?.verified ? verdict.npi : null;
+      const refs = r.evidenceRefs.filter((ref) => result.evidence.some((e) => e.sourceUrl === ref || e.id === ref));
+      const source = result.evidence.find((e) => refs.includes(e.sourceUrl) || !!e.id && refs.includes(e.id));
+      if (!source) return { ...r, npi: null, verified: false, credentials: undefined, specialty: undefined };
+      const stamped = { ...source, id: undefined, claimType: npi ? "identity_verified" : "identity_unverified", claim: `${verdict?.summary ?? "NPI rejected: no corroborated author"}. ${(verdict?.reasons ?? []).join("; ")}`, sourceUrl: npi ? nppesProviderUrl(npi) : source.sourceUrl };
+      evidence.push(stamped);
+      return { ...r, name: author?.name ?? r.name, profile, npi, verified: !!npi, credentials: npi && typeof item?.provider?.basic.credential === "string" ? item.provider.basic.credential : undefined, specialty: npi ? item?.provider?.taxonomies?.find((t) => t.primary)?.desc ?? undefined : undefined, evidenceRefs: [stamped.sourceUrl] };
+    });
+    return { status: "ok", records, evidence };
+  },
 };

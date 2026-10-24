@@ -1,3 +1,4 @@
+import type { NppesProvider as RawNppesProvider } from "@/lib/sources/nppes";
 /**
  * Offline SourcePorts backed by the recorded API responses in fixtures/api and data/nci-centers.json. Used by
  * tests and scripts/build-llm-fixtures.ts until the real lib/sources wrappers are wired in. Node-only (fs).
@@ -70,7 +71,7 @@ function parseArticles(xml: string): Array<{
   pmid: string;
   title: string;
   year?: number;
-  authors: Array<{ first: string; last: string; affiliation?: string }>;
+  authors: Array<{ first: string; last: string; middleName?: string; affiliation?: string }>;
 }> {
   const blocks = xml.split(/<(?=PubmedArticle>|PubmedBookArticle>)/).slice(1);
   return blocks.flatMap((block) => {
@@ -88,7 +89,7 @@ function parseArticles(xml: string): Array<{
         const affiliation = /<Affiliation>([\s\S]*?)<\/Affiliation>/.exec(body)?.[1];
         const first = fore ? decode(fore).split(/\s+/)[0]?.replace(/\./g, "") : undefined;
         if (!last || !first || first.length < 2) return [];
-        return [{ first, last: decode(last), affiliation: affiliation ? decode(affiliation) : undefined }];
+        return [{ first, middleName: fore ? decode(fore).split(/\s+/).slice(1).join(" ") : undefined, last: decode(last), affiliation: affiliation ? decode(affiliation) : undefined }];
       });
     return [{ pmid, title: decode(articleTitle), year: year ? Number(year) : undefined, authors }];
   });
@@ -112,6 +113,7 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
           const hit: PubmedAuthorHit = byAuthor.get(key) ?? {
             name: `${a.first} ${a.last}`,
             firstName: a.first,
+            middleName: a.middleName,
             lastName: a.last,
             paperCount: 0,
             recentPaperCount: 0,
@@ -180,20 +182,15 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
       );
       if (!slug) throw new Error(`No NPPES fixture recorded for ${firstName} ${lastName}`);
       const rel = nppesFile(slug, firstName, lastName);
-      const body = reader.json<{
-        results: Array<{
-          number: string;
-          basic: { first_name?: string; last_name?: string; credential?: string };
-          addresses: Array<{ city?: string; state?: string; address_purpose?: string }>;
-          taxonomies?: Array<{ desc?: string; primary?: boolean }>;
-        }>;
-      }>(rel);
+      const body = reader.json<{ result_count: number; results: RawNppesProvider[] }>(rel);
       return {
         searchUrl: reader.manifestUrl(rel),
+        truncated: body.result_count >= Number(new URL(reader.manifestUrl(rel)).searchParams.get("limit") ?? 10),
         providers: body.results.map((r) => {
-          const location = r.addresses.find((a) => a.address_purpose === "LOCATION") ?? r.addresses[0];
+          const location = r.addresses?.find((a) => a.address_purpose === "LOCATION");
           return {
-            npi: r.number,
+            npi: String(r.number),
+            raw: { ...r, number: String(r.number) },
             firstName: r.basic.first_name ?? "",
             lastName: r.basic.last_name ?? "",
             credential: r.basic.credential,

@@ -2,12 +2,6 @@
 
 exports[`offline pipeline ranking > epithelioid sarcoma: off-target and pediatric trials never reach the shortlist (snapshot) 1`] = `
 [
-  "expert #1 Liping Li 25",
-  "expert #2 Jerad Gardner 25",
-  "expert #3 Ritu Nayar 20.5",
-  "expert #4 Richard Moore 20.5",
-  "expert #5 Brielle Blanchard 10",
-  "expert #6 Haijun Zhou 5.5",
   "institution #1 Duke Sarcoma Center 66",
   "institution #2 University of Arizona Cancer Center 63",
   "institution #3 Mayo Clinic Cancer Center 63",

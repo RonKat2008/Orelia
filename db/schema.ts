@@ -441,3 +441,19 @@ export const verificationRequests = pgTable("verification_requests", {
   uniqueIndex("verification_requests_call_id_unique").on(table.callId),
 ]);
 // --- end rd-experts: verification calls ---
+
+/** Rare-disease coordination records (referral checklists, specialist packets, doctors, consult requests). */
+export const coordinationRecords = pgTable("coordination_records", {
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  key: text("key").notNull(),
+  version: integer("version").notNull().default(1),
+  /** sha256 of a consult request's signed review token (never the token itself). */
+  tokenHash: text("token_hash"),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  ...timestamps,
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.caseId, table.kind, table.key] }),
+  uniqueIndex("coordination_records_token_hash_idx").on(table.tokenHash),
+]);

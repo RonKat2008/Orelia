@@ -3,6 +3,7 @@ import { activeContactCount, canFollowUp, MAX_ACTIVE_CONTACTS } from './caps';
 import { AI_DISCLOSURE_EMAIL, AI_DISCLOSURE_VOICE } from './disclosure';
 import { containsUnsharedField, minimize } from './minimize';
 import { flagMedicalAdvice } from './no-medical-advice';
+import { exemptsAdviceFilter, type PhysicianAuthoredExemption } from './physician-exemption';
 import type { CaseRecord, GateRefusal, SafetyConsent, SafetyContact, SafetyDraft, Timestamp } from './types';
 import { checkWebFormDraft } from './web-gate';
 export type { GateRefusal } from './types';
@@ -18,6 +19,11 @@ export interface OutboundInput {
   outboundAllowReal?: string;
   /** Parsed OUTBOUND_WEB_ALLOWLIST hosts (see parseWebAllowlist); only used for channel 'web_form'. */
   webAllowlist?: readonly string[];
+  /**
+   * Doctor-to-expert consult path only (minted by lib/safety/consult-gate.ts after verifying the physician approved
+   * this exact text). Skips ONLY the medical-advice phrase filter for that exact email; see physician-exemption.ts.
+   */
+  physicianAuthored?: PhysicianAuthoredExemption;
 }
 const gated: unique symbol = Symbol('GatedDraft');
 /** Only checkOutbound constructs this type. It is a snapshot of the approved content. */
@@ -96,7 +102,7 @@ export function checkOutbound(input: OutboundInput): OutboundResult {
     ? draft.body.trimStart().startsWith(AI_DISCLOSURE_VOICE)
     : draft.body.includes(AI_DISCLOSURE_EMAIL);
   if (!disclosed) refuse('missing_disclosure');
-  if (flagMedicalAdvice(text).flagged) refuse('medical_advice');
+  if (flagMedicalAdvice(text).flagged && !exemptsAdviceFilter(input.physicianAuthored, draft)) refuse('medical_advice');
   if (reasons.length || !address) return { ok: false, reasons };
 
   // Whitelist output keys: raw drafts cannot smuggle attachments or extra case data to adapters.

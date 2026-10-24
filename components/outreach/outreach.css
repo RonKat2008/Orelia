@@ -1,11 +1,6 @@
 .outreach {
-  --ink: #1c1915;
-  --muted: #5c564c;
-  --paper: #f6f1e8;
-  --card: #fffdf8;
-  --line: #ddd4c4;
-  --mark: #f3e2a8;
-  --focus: #1f4d3a;
+  --card: var(--paper-2);
+  --mark: color-mix(in srgb, var(--warn) 28%, var(--paper));
   max-width: 46rem;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
@@ -111,7 +106,7 @@
   border: 1px solid var(--line);
   border-radius: 0.4rem;
   padding: 0.6rem;
-  background: #fff;
+  background: var(--paper);
   color: inherit;
 }
 

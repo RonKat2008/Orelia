@@ -1,6 +1,5 @@
 import { OutboxList } from "@/components/outreach/OutboxList";
 import { OutreachNav } from "@/components/outreach/OutreachNav";
-import { PREVIEW_CASE, PREVIEW_DRAFTS } from "@/components/outreach/preview";
 
 export default async function OutboxPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -8,10 +7,11 @@ export default async function OutboxPage({ params }: { params: Promise<{ id: str
     <OutreachNav caseId={id} current="outbox">
       <h1>Approve drafts</h1>
       <p className="lede">
-        Each draft shows the AI-assistance disclosure and highlights case fields that consent allows. Approving
-        records a timestamp. Nothing is emailed or dialed from this page.
+        Drafts come from the server and include the AI-assistance disclosure. Approving sends only the draft id. The
+        draft is marked approved only after the server confirms. If the outbound gate refuses it, every reason is
+        shown and nothing is marked approved.
       </p>
-      <OutboxList caseId={id} caseRecord={PREVIEW_CASE} drafts={PREVIEW_DRAFTS} />
+      <OutboxList caseId={id} />
     </OutreachNav>
   );
 }

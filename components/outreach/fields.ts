@@ -5,9 +5,11 @@ export const SHAREABLE_FIELDS = [
   { key: "diseaseName", label: "Diagnosis", defaultShared: true },
   { key: "subtype", label: "Subtype", defaultShared: false },
   { key: "stageSummary", label: "Stage summary", defaultShared: false },
+  { key: "homeCity", label: "Home city", defaultShared: false },
   { key: "homeState", label: "Home state", defaultShared: false },
   { key: "insurer", label: "Insurer", defaultShared: false },
   { key: "planId", label: "Plan ID", defaultShared: false },
+  { key: "travelLimitMiles", label: "Travel limit (miles)", defaultShared: false },
   { key: "goals", label: "Goals", defaultShared: false },
 ] as const;
 
@@ -28,6 +30,9 @@ export function defaultSharedFields(): ShareableFieldKey[] {
 export function fieldValue(record: CaseInput, key: ShareableFieldKey): string {
   if (key === "goals") {
     return record.goals.map((goal) => GOAL_LABELS[goal]).join(", ");
+  }
+  if (key === "travelLimitMiles") {
+    return typeof record.travelLimitMiles === "number" ? String(record.travelLimitMiles) : "Not on file";
   }
   const value = record[key];
   return value && value.length > 0 ? value : "Not on file";

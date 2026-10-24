@@ -22,6 +22,8 @@ export interface OutreachStore {
    * exactly these shared fields. When present, draft() returns it instead of writing a duplicate.
    */
   pendingDraft?(contact: Contact, sharedFields: readonly string[]): Promise<Draft | undefined>;
+  /** Optional: the most recent first message already sent to this contact. draft() returns it once the contact left 'drafted'. */
+  sentDraft?(contact: Contact): Promise<Draft | undefined>;
   /**
    * Optional: replace the body of a draft that is still neither approved nor sent (compare-and-set). Used to attach a
    * patient-reviewed packet before approval. False when the draft was already approved/sent or does not belong to the contact.

@@ -166,6 +166,9 @@ describe('draft reuse (contact plan approval writes drafts before the outbox ope
       return [...this.drafts.values()].find(d => d.contactId === contact.id && !d.approvedAt && !d.sentAt
         && JSON.stringify(d.sharedFields) === JSON.stringify(sharedFields));
     }
+    async sentDraft(contact: Contact) {
+      return [...this.drafts.values()].filter(d => d.contactId === contact.id && d.sentAt).at(-1);
+    }
   }
   function reusing() {
     const store = new ReusingStore();
@@ -188,6 +191,23 @@ describe('draft reuse (contact plan approval writes drafts before the outbox ope
     const changed = await ctx.service.draft(contact.id);
     expect(changed.id).not.toBe(draft.id);
     expect(changed.sharedFields).toEqual(['diseaseName', 'homeState']);
+  });
+
+  it('returns the sent first message once the contact has been written to, instead of a new draft', async () => {
+    const ctx = reusing(); const { contact, draft } = await ready(ctx);
+    expect((await ctx.api.approve(req({ draftId: draft.id }), contact.id)).status).toBe(200);
+    const again = await ctx.service.draft(contact.id);
+    expect(again.id).toBe(draft.id);
+    expect(again.sentAt).toBeTruthy();
+    expect(ctx.store.drafts.size).toBe(1);
+  });
+
+  it('refuses a new first-message draft for a contact already written to when the store cannot return the sent one', async () => {
+    const ctx = setup(); const { contact, draft } = await ready(ctx);
+    expect((await ctx.api.approve(req({ draftId: draft.id }), contact.id)).status).toBe(200);
+    const before = ctx.store.drafts.size;
+    expect((await ctx.api.draft(req({}), contact.id)).status).toBe(409);
+    expect(ctx.store.drafts.size).toBe(before);
   });
 
   it('stores without pendingDraft keep the old behaviour', async () => {

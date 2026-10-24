@@ -143,6 +143,17 @@ describe('drafts', () => {
       expect((await store.pendingDraft(c, []))?.subject).toBe('Hi');
     });
   });
+  describe('sentDraft', () => {
+    const c = contact('intake@example.org', { id: 'c1', state: 'sent' });
+    it('is undefined when nothing was sent', async () => {
+      fakeDb.enqueue([]);
+      expect(await store.sentDraft(c)).toBeUndefined();
+    });
+    it('maps the latest sent row with ISO timestamps', async () => {
+      fakeDb.enqueue([{ id: 'm1', contactId: 'c1', sharedFields: ['a'], subject: null, body: 'x', approvedAt: new Date(APPROVED), sentAt: new Date(APPROVED) }]);
+      expect(await store.sentDraft(c)).toMatchObject({ id: 'm1', subject: undefined, address: 'intake@example.org', approvedAt: APPROVED, sentAt: APPROVED, channel: 'email' });
+    });
+  });
   describe('draft', () => {
     const c = contact('intake@example.org', { id: 'c1' });
     it('is undefined for an unknown draft', async () => {

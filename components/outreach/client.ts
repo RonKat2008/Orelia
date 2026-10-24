@@ -60,6 +60,7 @@ export const REFUSAL_LABELS: Record<string, string> = {
   consent_required: "Save what this contact may see before drafting or approving.",
   channel_unavailable: "No send channel is available.",
   already_approved: "This draft was already approved.",
+  already_contacted: "This contact was already written to, so no new first message was drafted.",
   already_approved_or_consent_changed: "Approval was already reserved, or consent changed.",
   invalid_request: "The request was rejected as invalid.",
   outreach_unavailable: "Outreach could not be saved. Nothing was sent.",

@@ -83,6 +83,12 @@ export class OutreachService {
     if (!consent?.approvedAt) throw new OutreachError(422, ['consent_required']);
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
+    if (contact.state !== 'drafted') {
+      // Already written to: show the message that went out; never mint a second first-message draft.
+      const sent = await this.store.sentDraft?.(contact);
+      if (sent) return sent;
+      throw new OutreachError(409, ['already_contacted']);
+    }
     const pending = await this.store.pendingDraft?.(contact, consent.sharedFields);
     if (pending) return pending;
     const docs = await search({ caseId: contact.caseId, contactId: contact.id, allowedFields: [], contactOnly: true, query: 'intake requirements hours referral process', k: 5 });

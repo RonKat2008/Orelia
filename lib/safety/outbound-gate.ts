@@ -24,6 +24,14 @@ export type GatedDraft = Readonly<SafetyDraft & {
   readonly sharedFields: readonly string[];
   readonly caseData: CaseRecord;
 }>;
+/** Every payload checkOutbound has produced. Membership, not shape, proves a draft is gated. */
+const issued = new WeakSet<object>();
+
+/** True only for objects minted by checkOutbound in this process; a look-alike frozen object is rejected. */
+export function isGatedDraft(value: unknown): value is GatedDraft {
+  return typeof value === 'object' && value !== null && issued.has(value);
+}
+
 export type OutboundResult = { ok: true; payload: GatedDraft } | { ok: false; reasons: GateRefusal[] };
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -77,5 +85,6 @@ export function checkOutbound(input: OutboundInput): OutboundResult {
     sharedFields: [...consent.sharedFields],
     caseData: minimize(caseRecord, consent.sharedFields),
   });
+  issued.add(payload);
   return { ok: true, payload };
 }

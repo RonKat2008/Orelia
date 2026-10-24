@@ -4,7 +4,7 @@ import { AgentCallChannel, parseAgentCallWebhook, transcriptToText, verifyAgentC
 import { ChannelError } from '../../lib/channels/types';
 import { AI_DISCLOSURE_VOICE } from '../../lib/safety/disclosure';
 import { checkOutbound } from '../../lib/safety/outbound-gate';
-import { allowlist, forged, gatedCall, guard, TEST_EMAIL, TEST_PHONE } from './helpers';
+import { allowlist, forged, forgedCall, gatedCall, guard, TEST_EMAIL, TEST_PHONE } from './helpers';
 
 const KEY = 'ac_live_SECRETKEY123';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -64,9 +64,13 @@ describe('AgentCallChannel.send', () => {
   });
 
   it('refuses a script without the disclosure', async () => {
+    const gate = checkOutbound({
+      draft: { channel: 'voice', address: TEST_PHONE, body: 'Hello there.', approvedAt: '2026-10-28T15:00:00Z' },
+      consent: { sharedFields: [] }, caseRecord: {}, contacts: [], allowlist, now: '2026-10-28T16:00:00Z', mode: 'demo',
+    } as Parameters<typeof checkOutbound>[0]);
+    expect(gate).toEqual({ ok: false, reasons: expect.arrayContaining(['missing_disclosure']) });
     const { ch, fetcher } = make();
-    const g = Object.freeze({ ...gatedCall(), body: 'Hello there.' }) as typeof gatedCall extends () => infer G ? G : never;
-    await expect(ch.send(g)).rejects.toThrow(/disclosure/);
+    await expect(ch.send(forgedCall())).rejects.toBeInstanceOf(ChannelError);
     expect(fetcher).not.toHaveBeenCalled();
   });
 

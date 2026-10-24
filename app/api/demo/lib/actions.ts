@@ -1,7 +1,7 @@
 import { isAllowed, parseAllowlist } from "@/lib/safety/allowlist";
+import { DemoSendRefused, guardDemoMail, replyPermitted } from "@/scripts/demo/reply-guard";
 import { createDemoMail } from "@/scripts/demo/agentmail-mail";
 import {
-  extractAddress,
   parseReplyAllowlist,
   parseTimeScale,
   planReplies,
@@ -74,46 +74,7 @@ export async function seedDemoCase(env: Record<string, string | undefined>) {
   };
 }
 
-/**
- * A reply may go only to an address the coordinator engine would accept
- * (DEMO_REPLY_ALLOWLIST, or OUTBOUND_ALLOWLIST minus the coordinators).
- */
-export function replyPermitted(
-  address: string,
-  env: Record<string, string | undefined>,
-  coordinatorAddresses: string[],
-): boolean {
-  const allow = parseReplyAllowlist(env, coordinatorAddresses);
-  if (allow.length === 0) return false;
-  const target = extractAddress(address);
-  return allow.some((entry) => entry === target);
-}
-
-function guardMail(mail: DemoMail, permit: (from: string) => boolean): DemoMail {
-  return {
-    mode: mail.mode,
-    createInbox: (input) => mail.createInbox(input),
-    listInboxes: () => mail.listInboxes(),
-    deleteInbox: (id) => mail.deleteInbox(id),
-    listReceived: (id) => mail.listReceived(id),
-    async reply(inboxId, messageId, text) {
-      const received = await mail.listReceived(inboxId);
-      const original = received.find((m) => m.messageId === messageId);
-      const target = original ? extractAddress(original.from) : "";
-      if (!original || !permit(target)) {
-        throw new DemoSendRefused(target || messageId);
-      }
-      return mail.reply(inboxId, messageId, text);
-    },
-  };
-}
-
-export class DemoSendRefused extends Error {
-  readonly status = 403;
-  constructor(address: string) {
-    super(`Refused: ${address || "unknown"} is outside DEMO_REPLY_ALLOWLIST and OUTBOUND_ALLOWLIST`);
-  }
-}
+export { DemoSendRefused, replyPermitted };
 
 export interface ReplyRun {
   replied: number;
@@ -138,7 +99,7 @@ export async function triggerScriptedReplies(
   const coordinators = state.coordinators as Coordinator[];
   const addresses = coordinators.map((c) => c.address);
   const permit = (from: string) => replyPermitted(from, env, addresses);
-  const mail = guardMail(opts.mail ?? createDemoMail({ dryRun: true, env }), permit);
+  const mail = guardDemoMail(opts.mail ?? createDemoMail({ dryRun: true, env }), env, addresses);
   const received = new Map<string, DemoMessage[]>();
   for (const c of coordinators) received.set(c.inboxId, await mail.listReceived(c.inboxId));
   const plan = planReplies({

@@ -73,12 +73,12 @@ describe('runtime classifier (offline replay)', () => {
 
 describe('runtime classifier (live path, fake client)', () => {
   beforeEach(() => { delete process.env.WAYFINDER_OFFLINE; process.env.ANTHROPIC_API_KEY = 'test-key'; });
-  it('passes no tools and classifies normally', async () => {
+  it('passes the scoped case-document tool and classifies normally', async () => {
     const { client, create } = fakeClient({ class: 'redirect', confidence: 0.9, rationale: 'Asked to contact another office.', redirect: { email: 'records@example.org' } });
     const r = await processInbound(event, deps(new MemoryRunStore(), client));
     expect(r.classification.class).toBe('redirect');
     const params = (create.mock.calls as unknown[][])[0][0] as Record<string, unknown>;
-    expect(params.tools).toBeUndefined();
+    expect(params.tools).toEqual([expect.objectContaining({ name: 'case_docs_search' })]);
     expect(params.model).toBe('claude-opus-5-5');
   });
   it('advice-like output falls back to unclear', async () => {

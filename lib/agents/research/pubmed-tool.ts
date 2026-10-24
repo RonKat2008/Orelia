@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { AgentTool } from "@/lib/agents/runtime";
 import type { PubmedPort } from "./source-ports";
+import { UNTRUSTED_NOTICE, cleanField } from "./untrusted";
 import { trackedTool, type ProvenanceTracker } from "./shared";
 
 export const pubmedUrl = (pmid: string): string => `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
@@ -33,15 +34,16 @@ export function pubmedAuthorsTool(pubmed: PubmedPort, tracker: ProvenanceTracker
         });
       }
       return {
+        notice: UNTRUSTED_NOTICE,
         authors: hits.map((h) => ({
           name: h.name,
           firstName: h.firstName,
           lastName: h.lastName,
-          affiliation: h.affiliation,
+          affiliation: cleanField(h.affiliation),
           state: h.state,
           paperCount: h.paperCount,
           recentPaperCount: h.recentPaperCount,
-          papers: h.papers.map((p) => ({ ...p, sourceUrl: pubmedUrl(p.pmid) })),
+          papers: h.papers.map((p) => ({ ...p, title: cleanField(p.title) ?? "", sourceUrl: pubmedUrl(p.pmid) })),
         })),
       };
     },

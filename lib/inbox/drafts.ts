@@ -4,6 +4,8 @@ import type { InboxClassification } from './schema';
 
 export interface Party { name: string; email?: string; address?: string }
 export interface DraftContext {
+  contextDocIds?: string[];
+  coordinatorQuestion?: string;
   contactId: string;
   caseId: string;
   resourceName: string;
@@ -16,6 +18,7 @@ export interface DraftContext {
 }
 export interface TaskLetter { to?: string; toName?: string; subject: string; body: string }
 export interface TaskDraft {
+  contextDocIds?: string[];
   contactId: string;
   caseId: string;
   kind: TaskKind;
@@ -52,7 +55,7 @@ function letter(ctx: DraftContext, to: Party | undefined, subject: string, lead:
 
 /** Drafts only; every task needs the patient's approval and nothing is sent from here. */
 export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft[] {
-  const base = { contactId: ctx.contactId, caseId: ctx.caseId, status: 'open', requiresApproval: true, approvedAt: null } as const;
+  const base = { contextDocIds: ctx.contextDocIds ?? [], contactId: ctx.contactId, caseId: ctx.caseId, status: 'open', requiresApproval: true, approvedAt: null } as const;
   const res = ctx.resourceName;
   const where = ctx.resourceAddress ? ` (${ctx.resourceAddress})` : '';
   let draft: TaskDraft;
@@ -96,6 +99,14 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
     default:
       draft = { ...base, kind: 'unclear', title: `Review the reply from ${res}`, draftBody: `We could not tell what ${res} is asking. Please read the reply and decide what to do.`, details: { quote: c.quote, rationale: c.rationale } };
   }
+  // Answer administrative questions only from the current consented record, never retrieved text.
+  if (/insurance|insurer|plan\b/i.test(ctx.coordinatorQuestion ?? '')) {
+    const shared = minimize(ctx.caseRecord, ctx.consent.sharedFields);
+    const answer = ['insurer', 'planId'].filter(key => shared[key] != null)
+      .map(key => `${humanize(key)}: ${show(shared[key])}`).join('\n') || "I'll have the patient follow up";
+    draft.draftBody = `${draft.draftBody ?? ''}\n\nCoordinator Q&A:\n${answer}`;
+  }
+  draft.details = { ...draft.details, contextDocIds: draft.contextDocIds };
   // The sender's verbatim quote is not our text, so only generated text is screened.
   const hits = flagMedicalAdvice([draft.title, draft.draftBody ?? '', draft.letter?.subject ?? '', draft.letter?.body ?? '', c.rationale].join('\n'));
   if (hits.flagged) throw new MedicalAdviceInDraft(hits.matches);

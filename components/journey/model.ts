@@ -46,6 +46,7 @@ export type JourneyPlan = {
   steps: JourneyStep[];
   nextLabel: string;
   nextHref: string;
+  documentsHref: string;
   notes: string[];
 };
 
@@ -93,6 +94,7 @@ export function resolveJourney(caseId: string, snapshot: JourneySnapshot): Journ
     })),
     nextLabel: next.label,
     nextHref: next.path(caseId),
+    documentsHref: `/cases/${caseId}/documents`,
     notes,
   };
 }

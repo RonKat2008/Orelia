@@ -15,6 +15,20 @@
       "when": 1792819415745,
       "tag": "0001_contact_follow_up_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792820643823,
+      "tag": "0002_case_candidate_tiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792821247004,
+      "tag": "0025_case_documents",
+      "breakpoints": true
     }
   ]
 }

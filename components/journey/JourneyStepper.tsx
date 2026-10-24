@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { JourneyPlan } from "./model";
 import "./journey.css";
 
@@ -14,6 +15,9 @@ export function JourneyStepper({ plan }: { plan: JourneyPlan }) {
           </li>
         ))}
       </ol>
+      <p className="journey-extra">
+        <Link href={plan.documentsHref}>Documents the outreach agents can use</Link>
+      </p>
       {plan.notes.length > 0 ? (
         <ul className="journey-notes">
           {plan.notes.map((note) => (

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- FakeStep mirrors loosely typed engine payloads */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   APPROVAL_TIMEOUT,
@@ -56,7 +57,7 @@ class FakeStep implements WorkflowStep {
 function setup(scale = 1) {
   const store = new Map<string, ContactContext>();
   store.set(CID, initialContext());
-  const send = vi.fn(async (_i: any) => ({ providerRef: 'ref' }));
+  const send = vi.fn(async (..._args: any[]) => ({ providerRef: 'ref' }));
   const draftFollowUp = vi.fn(async (i: any) => ({ messageId: `draft-${i.followUpNumber}` }));
   const deps: ConnectionDeps = {
     clock: { now: () => NOW, scale },

@@ -29,7 +29,7 @@ interface Base {
   contactId: string;
   caseId: string;
 }
-export interface ContactCreatedData extends Base {}
+export type ContactCreatedData = Base;
 export interface ContactApprovedData extends Base {
   messageId: string;
   /** ISO timestamp of the human approval. */
@@ -47,13 +47,14 @@ export interface FollowUpApprovedData extends Base {
   /** ISO timestamp of the human approval. */
   approvedAt: string;
 }
-export interface ContactStalledData extends Base {}
+export type ContactStalledData = Base;
 
 /** Engine-neutral function description; a thin adapter registers it with Inngest. */
 export type FunctionDefinition = {
   id: string;
   trigger: { event: string };
   handler: (ctx: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event payloads are validated by each handler
     event: { name: string; data: any };
     step: WorkflowStep;
   }) => Promise<unknown>;

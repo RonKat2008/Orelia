@@ -3,6 +3,7 @@
  * so the readability script can score it. Never mention scores, tiers, filters or phone checks here.
  */
 export const SHORTLIST_COPY = {
+  cardTitle: "Pick who we contact first",
   title: "Choose who we contact",
   lede: (found: number, limit: number, suggested: number) =>
     [`We found ${found}.`, `You can pick up to ${limit}.`, suggested > 0 ? `We suggest ${suggested === 1 ? "this 1" : `these ${suggested}`}.` : null]

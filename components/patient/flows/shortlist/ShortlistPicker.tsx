@@ -43,7 +43,9 @@ function PickRow({
   on,
   disabled,
   onToggle,
+  compact = false,
 }: {
+  compact?: boolean;
   card: ShortlistCard;
   suggested: string[];
   judge: JudgeResult | null;
@@ -67,7 +69,7 @@ function PickRow({
       maxBadges={1}
       leading={<Checkbox id={id} checked={on} disabled={disabled} onCheckedChange={onToggle} />}
     >
-      {why || sources > 0 ? (
+      {!compact && (why || sources > 0) ? (
         <Details summary={COPY.why} label={null}>
           <p className="m-0 text-body text-ink-2">{why}</p>
           {sources > 0 ? <CheckedMark sources={sources} /> : null}
@@ -138,6 +140,7 @@ export function ShortlistPicker({ caseId, layout, titleAs = "h1", detailsHref, o
                 on={on}
                 disabled={picker.busy || (!on && full)}
                 onToggle={() => picker.toggle(key)}
+                compact={layout === "card"}
               />
             );
           })}
@@ -166,8 +169,7 @@ export function ShortlistPicker({ caseId, layout, titleAs = "h1", detailsHref, o
     return (
       <ActionFrame
         kind={KIND}
-        title={COPY.title}
-        lede={lede}
+        title={COPY.cardTitle}
         detailsHref={detailsHref}
         action={action}
         reassurance={ready ? COPY.reassurance : undefined}

@@ -1,20 +1,14 @@
+/* Legacy names used across pages, mapped onto the design tokens in
+   app/styles/tokens.css. --ink, --paper, --paper-2, --line, --danger, --warn and --ok
+   are now Warm Paper tokens defined in app/styles/theme.css (do not redefine them here). */
 :root {
-  /* Legacy names used across pages, mapped onto the design tokens in
-     app/styles/tokens.css so every page follows the light/dark themes. */
-  --ink: var(--wf-ink);
   --ink-soft: var(--wf-ink);
   --muted: var(--wf-ink-muted);
-  --paper: var(--wf-paper);
-  --paper-2: var(--wf-paper-raised);
-  --line: var(--wf-rule);
   --green: var(--wf-route);
   --green-deep: var(--wf-ink);
   --banner-bg: var(--wf-paper-raised);
   --banner-ink: var(--wf-ink);
   --focus: var(--wf-focus);
-  --danger: var(--wf-failed);
-  --warn: var(--wf-pending);
-  --ok: var(--wf-verified);
   --shadow: var(--wf-shadow);
   --serif: var(--wf-font-display);
   --sans: var(--wf-font-text);
@@ -259,7 +253,7 @@ button:disabled {
 }
 
 .status.queued { color: var(--muted); }
-.status.running { color: var(--warn); border-color: currentColor; }
+.status.running { color: var(--warn-ink); border-color: currentColor; }
 .status.done { color: var(--ok); border-color: currentColor; }
 .status.failed { color: var(--danger); border-color: currentColor; }
 .status.not_implemented { color: var(--wf-neutral); }

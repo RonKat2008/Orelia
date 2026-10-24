@@ -65,9 +65,9 @@ export function CaseHome({ caseId }: { caseId: string }) {
           <span>Case {caseId.slice(0, 8)}</span>
           {summary?.status ? <Badge tone="teal">{summary.status.replaceAll("_", " ")}</Badge> : null}
         </p>
-        <h1 className="m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance">
-          {summary?.diseaseName ?? "Your case"}
-        </h1>
+        <h2 className="m-0 max-w-none font-display text-h2 font-light text-ink display-soft text-balance">
+          Where this case stands
+        </h2>
         <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
           Everything you confirmed, where research stands and what comes next. Wayfinder coordinates contact; it
           does not interpret your case or suggest care.

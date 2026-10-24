@@ -20,6 +20,7 @@ import {
   loadHomeState,
   loadShortlist,
   orderByPreview,
+  selectionKey,
   previewOrder,
   type OrderPreview,
   type ShortlistCard,
@@ -64,6 +65,7 @@ interface Loaded {
   items: ShortlistCard[];
   summary: string | null;
   preview: boolean;
+  error: string | null;
   homeState: string | null;
 }
 
@@ -91,15 +93,15 @@ function CardGroup({
     >
       {cards.map((card) => (
         <li
-          key={card.resource.id}
+          key={selectionKey(card)}
           className="min-w-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 ease-out-expo motion-reduce:animate-none"
         >
           <ResourceCard
             card={card}
             variant={variant}
-            selected={selected.includes(card.resource.id)}
+            selected={selected.includes(selectionKey(card))}
             atCap={selected.length >= limit}
-            onToggle={onToggle}
+            onToggle={() => onToggle(selectionKey(card))}
             scoreScale={scoreScale}
           />
         </li>
@@ -133,6 +135,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
           items: result.payload.items,
           summary: result.payload.curationSummary,
           preview: result.preview,
+          error: result.error,
           homeState,
         });
         setSelected(initialSelection(stored, result.payload.suggested, limit));
@@ -203,13 +206,19 @@ export function ShortlistView({ caseId }: { caseId: string }) {
     [items],
   );
   const chosen = selected.flatMap((id) =>
-    items.filter((card) => card.resource.id === id),
+    items.filter((card) => selectionKey(card) === id),
   );
 
   if (!loaded) return <ShortlistSkeleton />;
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-12 pb-28">
+      {loaded.error ? (
+        <p role="alert" className="m-0 rounded-md border border-line bg-card px-4 py-3 text-small text-ink">
+          {loaded.error}
+        </p>
+      ) : null}
+
       {loaded.preview ? (
         <p className="m-0 flex flex-wrap items-center gap-2 rounded-md border border-gold/70 bg-gold-soft px-4 py-3 text-small text-ink">
           <Badge tone="gold">Sample</Badge>

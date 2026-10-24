@@ -64,7 +64,7 @@ export function JourneyShell({ caseId, children }: { caseId: string; children: R
 
   return (
     <JourneyContext.Provider value={{ plan, data }}>
-      <AppShell nav={CASE_NAV} sidebar={sidebar}>
+      <AppShell nav={CASE_NAV} sidebar={sidebar} title={data?.summary?.diseaseName ?? "Your case"}>
         <div data-journey={plan.current} data-case-id={caseId}>
           {children}
         </div>

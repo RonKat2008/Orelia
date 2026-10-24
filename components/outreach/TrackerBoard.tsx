@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "@/components/threads/states";
 import { loadThreads } from "@/components/threads/load";
 import { contactLabel, outreachSnapshot, readStoredOutreach, subscribeOutreach, type ApiContact } from "./client";
+import { loadCaseContacts, loadCaseTasks } from "./case-activity";
 import { formatDay, titleCase } from "./format";
 import { TaskCard } from "./TaskCard";
 import { CONTACT_STATES, STATE_LABELS, type ContactState, type OutreachTask } from "./types";
@@ -59,10 +60,26 @@ function followUpNote(contact: ApiContact, state: ContactState): string {
 
 export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: OutreachTask[] }) {
   const raw = useSyncExternalStore(subscribeOutreach, () => outreachSnapshot(caseId), () => null);
-  const contacts: ApiContact[] = raw ? (readStoredOutreach(caseId)?.contacts ?? []) : [];
+  const stored: ApiContact[] = raw ? (readStoredOutreach(caseId)?.contacts ?? []) : [];
+  const [liveContacts, setLiveContacts] = useState<ApiContact[] | null>(null);
+  const [liveTasks, setLiveTasks] = useState<OutreachTask[]>([]);
   const [done, setDone] = useState<Record<string, OutreachTask["status"]>>({});
 
   const [threadTasks, setThreadTasks] = useState<OutreachTask[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void loadCaseContacts(caseId).then((rows) => {
+      if (!active || !rows) return;
+      setLiveContacts(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId]);
+
+  const contacts = liveContacts ?? stored;
+  const contactIds = contacts.map((contact) => contact.id).join("|");
 
   // Tasks live inside conversation threads. If that API is not connected yet, the list simply stays empty.
   useEffect(() => {
@@ -84,7 +101,21 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
     };
   }, [caseId]);
 
-  const allTasks = [...tasks, ...threadTasks.filter((task) => !tasks.some((known) => known.id === task.id))];
+  useEffect(() => {
+    let active = true;
+    const names = new Map(contacts.map((contact) => [contact.id, contactLabel(contact)]));
+    void loadCaseTasks(caseId, names).then((rows) => {
+      if (!active || !rows) return;
+      setLiveTasks(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId, contactIds, contacts]);
+
+  const allTasks = [...tasks, ...liveTasks, ...threadTasks].filter(
+    (task, index, all) => all.findIndex((known) => known.id === task.id) === index,
+  );
   const openTasks = allTasks.filter((task) => (done[task.id] ?? task.status) === "open");
   const waitingDrafts = contacts.filter((contact) => asState(contact.state) === "drafted");
   const nothingNow = openTasks.length === 0 && waitingDrafts.length === 0;

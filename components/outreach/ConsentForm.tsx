@@ -26,14 +26,18 @@ import {
 import {
   contactLabel,
   loadCase,
+  loadFollowUpPlan,
   readSelectedCandidateIds,
   readStoredOutreach,
   saveContactConsent,
+  saveFollowUpChoice,
   selectOutreach,
   writeStoredOutreach,
   type ApiContact,
+  type FollowUpMessage,
   type UnavailableContact,
 } from "./client";
+import { loadCaseContacts } from "./case-activity";
 import { buildLetterPreview } from "./letter";
 import { LetterSheet } from "./LetterSheet";
 
@@ -57,6 +61,8 @@ export function ConsentForm({ caseId }: { caseId: string }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [followUps, setFollowUps] = useState<FollowUpMessage[] | null>(null);
+  const [followUpNote, setFollowUpNote] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -65,15 +71,19 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       if (!active) return;
       setCaseRecord(record);
       const ids = readSelectedCandidateIds(caseId);
+      const plan = await loadFollowUpPlan(caseId);
+      if (active) setFollowUps(plan);
       if (ids.length === 0) {
         const stored = readStoredOutreach(caseId);
-        if (!stored || stored.contacts.length === 0) {
+        const live = await loadCaseContacts(caseId);
+        const people = live && live.length > 0 ? live : stored?.contacts ?? [];
+        if (people.length === 0) {
           setPhase({ kind: "nothing" });
           return;
         }
-        setContacts(stored.contacts);
-        setUnavailable(stored.unavailable);
-        setSharedByContact(Object.fromEntries(stored.contacts.map((contact) => [contact.id, defaultSharedFields()])));
+        setContacts(people);
+        setUnavailable(stored?.unavailable ?? []);
+        setSharedByContact(Object.fromEntries(people.map((contact) => [contact.id, defaultSharedFields()])));
         setPhase({ kind: "ready" });
         return;
       }
@@ -300,23 +310,77 @@ export function ConsentForm({ caseId }: { caseId: string }) {
         </Card>
       ))}
 
-      {/*
-        SLOT: "Follow-ups while you're away". The case-shell lane wires this to GET/PUT
-        /api/cases/[id]/follow-up-plan (pre-approved day-3 and day-7 texts per contact).
-        Intentionally inert until that API merges: do not call it from here yet.
-      */}
       <section
         data-slot="follow-up-plan"
         aria-labelledby="follow-up-heading"
-        className="grid gap-3 rounded-lg border border-dashed border-line-strong bg-paper-2/60 p-6 sm:p-9"
+        className="grid gap-4 rounded-lg border border-line bg-paper-2/60 p-6 sm:p-9"
       >
         <h3 id="follow-up-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
           Follow-ups while you&apos;re away
         </h3>
         <p className="m-0 max-w-prose text-body text-ink-2">
-          Soon you will be able to read and approve the exact follow-up messages for business days 3 and 7 here, so
-          nothing is sent that you have not seen. Until then, every follow-up waits for your approval in the outbox.
+          Business day 3 and day 7 messages are saved here only after you approve the exact text. Nothing in this
+          section is sent on its own.
         </p>
+        {followUps === null ? (
+          <p role="status" className="m-0 text-small text-ink-2">Follow-up messages could not be loaded.</p>
+        ) : followUps.length === 0 ? (
+          <p className="m-0 text-small text-ink-2">No follow-up text is approved yet.</p>
+        ) : (
+          <ul className="m-0 grid list-none gap-3 p-0">
+            {followUps.map((item) => (
+              <li key={item.messageId} className="grid gap-1 rounded-md border border-line bg-card p-4">
+                <span className="text-micro font-semibold uppercase text-ink-3">
+                  {item.classification.replaceAll("_", " ")} · {item.approvedAt ? "Approved" : "Not approved"}
+                </span>
+                <p className="m-0 whitespace-pre-wrap text-small text-ink">{item.body}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {contacts.length > 0 && caseRecord ? (
+          <div className="flex flex-wrap gap-3">
+            {contacts.map((contact) => (
+              <Button
+                key={contact.id}
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const shared = sharedByContact[contact.id] ?? [];
+                  void saveFollowUpChoice(caseId, {
+                    action: "approve",
+                    contactId: contact.id,
+                    channel: contact.channel,
+                    contactState: contact.state,
+                    sharedFields: shared,
+                    consentApprovedAt: new Date().toISOString(),
+                    snapshot: {
+                      diseaseName: caseRecord.diseaseName,
+                      subtype: caseRecord.subtype ?? null,
+                      stageSummary: caseRecord.stageSummary ?? null,
+                      homeCity: caseRecord.homeCity ?? null,
+                      homeState: caseRecord.homeState ?? null,
+                      insurer: caseRecord.insurer ?? null,
+                      travelLimitMiles: caseRecord.travelLimitMiles ?? null,
+                      goals: caseRecord.goals ?? [],
+                    },
+                  }).then((result) => {
+                    if (!result.ok) {
+                      setFollowUpNote(result.reasons.join(" "));
+                      return;
+                    }
+                    setFollowUps(result.followUps);
+                    setFollowUpNote("Follow-up text saved for this contact. It still waits for the send window.");
+                  });
+                }}
+              >
+                Approve day 3 and day 7 for {contactLabel(contact)}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        {followUpNote ? <p role="status" className="m-0 text-small text-ink-2">{followUpNote}</p> : null}
       </section>
 
       <section aria-labelledby="summary-heading" className="grid gap-5 rounded-lg border border-line bg-sage-soft/60 p-6 sm:p-9">

@@ -57,7 +57,10 @@ export async function loadJourney(caseId: string, fetchImpl: typeof fetch = fetc
       const body = await readJson(contactsResponse);
       contacts = readContacts(body);
       openTaskCount = readOpenTaskCount(body);
-      tasks = readTasks(body);
+    }
+    const tasksResponse = await fetchImpl(`/api/cases/${caseId}/tasks`).catch(() => null);
+    if (tasksResponse && tasksResponse.ok) {
+      tasks = readTasks(await readJson(tasksResponse));
     }
 
     return { summary, status, selectedCount, openTaskCount, contacts, tasks, missingCase: false };

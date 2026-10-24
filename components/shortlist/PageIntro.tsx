@@ -21,9 +21,9 @@ export function PageIntro({
         <p className="m-0 text-micro font-semibold uppercase text-ink-3">
           {eyebrow}
         </p>
-        <h1 className="m-0 max-w-none font-display text-h2 font-light text-ink display-soft text-balance">
+        <h2 className="m-0 max-w-none font-display text-h2 font-light text-ink display-soft text-balance">
           {title}
-        </h1>
+        </h2>
         <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">
           {lede}
         </p>

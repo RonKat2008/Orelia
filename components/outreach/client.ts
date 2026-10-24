@@ -12,6 +12,7 @@ export type ApiContact = {
   address: string;
   state: string;
   purpose?: string;
+  displayName?: string;
   /** Present once the connection workflow schedules a follow-up. */
   nextFollowUpAt?: string | null;
 };
@@ -268,6 +269,7 @@ export async function loadCase(caseId: string, fetchImpl: typeof fetch = fetch):
 }
 
 export function contactLabel(contact: ApiContact): string {
+  if (contact.displayName) return contact.displayName;
   const kind = contact.targetKind.replaceAll("_", " ");
   const purpose = contact.purpose ? contact.purpose.replaceAll("_", " ") : null;
   return purpose ? `${purpose} (${kind})` : kind;
@@ -322,5 +324,69 @@ export async function loadDocumentTitles(caseId: string, fetchImpl: typeof fetch
     return titles;
   } catch {
     return {};
+  }
+}
+
+export type FollowUpMessage = {
+  messageId: string;
+  contactId: string;
+  classification: string;
+  channel: "email" | "voice";
+  body: string;
+  subject: string | null;
+  approvedAt: string | null;
+  sentAt: string | null;
+};
+
+export async function loadFollowUpPlan(
+  caseId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<FollowUpMessage[] | null> {
+  try {
+    const response = await fetchImpl(`/api/cases/${encodeURIComponent(caseId)}/follow-up-plan`);
+    if (!response.ok) return null;
+    const data = await readJson(response);
+    const rows = Array.isArray(data.followUps) ? data.followUps : [];
+    return rows.flatMap((item): FollowUpMessage[] => {
+      if (!item || typeof item !== "object") return [];
+      const row = item as Record<string, unknown>;
+      if (typeof row.messageId !== "string" || typeof row.contactId !== "string" || typeof row.body !== "string") return [];
+      if (row.channel !== "email" && row.channel !== "voice") return [];
+      return [{
+        messageId: row.messageId,
+        contactId: row.contactId,
+        classification: typeof row.classification === "string" ? row.classification : "follow_up",
+        channel: row.channel,
+        body: row.body,
+        subject: typeof row.subject === "string" ? row.subject : null,
+        approvedAt: typeof row.approvedAt === "string" ? row.approvedAt : null,
+        sentAt: typeof row.sentAt === "string" ? row.sentAt : null,
+      }];
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function saveFollowUpChoice(
+  caseId: string,
+  body: Record<string, unknown>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ ok: true; followUps: FollowUpMessage[] } | { ok: false; reasons: string[] }> {
+  try {
+    const response = await fetchImpl(`/api/cases/${encodeURIComponent(caseId)}/follow-up-plan`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await readJson(response);
+    if (!response.ok) {
+      const message = typeof data.error === "string" ? data.error : "The follow-up plan was not saved.";
+      return { ok: false, reasons: [message] };
+    }
+    const followUps = await loadFollowUpPlan(caseId, async () => new Response(JSON.stringify(data), { status: 200 }));
+    return { ok: true, followUps: followUps ?? [] };
+  } catch {
+    return { ok: false, reasons: ["The follow-up plan was not saved."] };
   }
 }

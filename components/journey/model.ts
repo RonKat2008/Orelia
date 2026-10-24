@@ -189,7 +189,7 @@ export function readContacts(value: unknown): JourneyContact[] | null {
   return raw.map((item) => {
     const contact = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
     return {
-      name: typeof contact.name === "string" ? contact.name : null,
+      name: typeof contact.displayName === "string" ? contact.displayName : typeof contact.name === "string" ? contact.name : null,
       nextFollowUpAt: typeof contact.nextFollowUpAt === "string" ? contact.nextFollowUpAt : null,
       consented: typeof contact.consented === "boolean" ? contact.consented : null,
       approved: typeof contact.approved === "boolean" ? contact.approved : null,
@@ -216,7 +216,7 @@ export function readTasks(value: unknown): JourneyTask[] | null {
     const task = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
     return {
       id: typeof task.id === "string" ? task.id : `task-${index}`,
-      summary: typeof task.summary === "string" && task.summary ? task.summary : "A task needs a look",
+      summary: typeof task.title === "string" && task.title ? task.title : typeof task.summary === "string" && task.summary ? task.summary : "A task needs a look",
       contactName: typeof task.contactName === "string" ? task.contactName : null,
       status: typeof task.status === "string" ? task.status : "open",
     };

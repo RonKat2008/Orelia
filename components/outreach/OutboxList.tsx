@@ -34,6 +34,7 @@ import {
   type ApiContact,
   type ApiDraft,
 } from "./client";
+import { loadCaseContacts } from "./case-activity";
 import { formatWhen, titleCase } from "./format";
 import { LetterSheet, MessageBody } from "./LetterSheet";
 
@@ -65,17 +66,19 @@ export function OutboxList({ caseId }: { caseId: string }) {
     let active = true;
     void (async () => {
       const stored = readStoredOutreach(caseId);
+      const live = await loadCaseContacts(caseId);
       const [record, titles] = await Promise.all([loadCase(caseId), loadDocumentTitles(caseId)]);
       if (!active) return;
       setCaseRecord(record);
       setDocTitles(titles);
-      if (!stored || stored.contacts.length === 0) {
+      const people = live && live.length > 0 ? live : stored?.contacts ?? [];
+      if (people.length === 0) {
         setPhase("empty");
         return;
       }
       setPhase("ready");
-      setPending({ done: 0, total: stored.contacts.length });
-      for (const [index, contact] of stored.contacts.entries()) {
+      setPending({ done: 0, total: people.length });
+      for (const [index, contact] of people.entries()) {
         const created = await createContactDraft(contact.id);
         if (!active) return;
         const row: Row = {

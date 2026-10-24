@@ -24,7 +24,14 @@ export const shortlistCardSchema = z.object({
   tierReasons: z.array(tierReasonSchema).optional(),
 });
 
-export type ShortlistCard = z.infer<typeof shortlistCardSchema>;
+export type ShortlistCard = z.infer<typeof shortlistCardSchema> & {
+  /** Case candidate row id. Consent and outreach select this, not the resource id. */
+  caseCandidateId?: string | null;
+};
+
+export function selectionKey(card: ShortlistCard): string {
+  return card.caseCandidateId || card.resource.id;
+}
 
 const fetchedAt = "2026-10-23T12:00:00.000Z";
 
@@ -258,6 +265,9 @@ const apiItemSchema = z.object({
   evidence: z.array(z.unknown()),
   tier: tierSchema.optional(),
   tierReasons: z.array(tierReasonSchema).optional(),
+  caseCandidateId: z.string().nullable().optional(),
+  nctId: z.string().nullable().optional(),
+  organizationKind: z.enum(["advocacy", "financial_aid", "travel_aid"]).nullable().optional(),
 });
 
 const apiResponseSchema = z.object({
@@ -296,9 +306,8 @@ function resourceFromApiRow(
       name: row.name,
     });
   if (row.targetKind === "trial") {
-    const nct = evidence
-      .map((item) => /NCT\d{8}/i.exec(item.sourceUrl)?.[0])
-      .find(Boolean);
+    const nct = row.nctId
+      ?? evidence.map((item) => /NCT\d{8}/i.exec(item.sourceUrl)?.[0]).find(Boolean);
     return resourceSchema.parse({
       ...base,
       kind: "trial",
@@ -310,7 +319,7 @@ function resourceFromApiRow(
     ...base,
     kind: "organization",
     name: row.name,
-    organizationKind: organizationKindOf(evidence),
+    organizationKind: row.organizationKind ?? organizationKindOf(evidence),
   });
 }
 
@@ -334,16 +343,20 @@ function normalizeApiShortlist(value: unknown): ShortlistPayload | null {
           group: groupOf(resource),
           tier: row.tier,
           tierReasons: row.tierReasons,
+          caseCandidateId: row.caseCandidateId ?? null,
         });
       } catch {
         // A row that cannot be shown with a source is dropped, never guessed.
       }
     }
   }
-  const known = new Set(items.map((item) => item.resource.id));
+  const byTarget = new Map(items.map((item) => [item.resource.id, item]));
   const suggested = (parsed.data.suggested ?? [])
-    .map((pick) => pick.targetId)
-    .filter((id, index, all) => known.has(id) && all.indexOf(id) === index);
+    .flatMap((pick) => {
+      const card = byTarget.get(pick.targetId);
+      return card ? [selectionKey(card)] : [];
+    })
+    .filter((id, index, all) => all.indexOf(id) === index);
   return {
     items,
     curationSummary: parsed.data.curationSummary ?? null,
@@ -412,22 +425,34 @@ export function initialSelection(
     .slice(0, limit);
 }
 
+const emptyShortlist: ShortlistPayload = { items: [], curationSummary: null, suggested: [] };
+
+function offlinePreview(): boolean {
+  const raw = process.env.WAYFINDER_OFFLINE ?? process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "";
+  return ["1", "true"].includes(raw.trim().toLowerCase());
+}
+
 export async function loadShortlist(
   caseId: string,
-): Promise<{ payload: ShortlistPayload; preview: boolean }> {
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ payload: ShortlistPayload; preview: boolean; error: string | null }> {
   try {
-    const response = await fetch(`/api/cases/${caseId}/shortlist`);
+    const response = await fetchImpl(`/api/cases/${caseId}/shortlist`);
     if (response.ok) {
       const payload = normalizeShortlist(await response.json());
-      if (payload) return { payload, preview: false };
+      if (payload) return { payload, preview: false, error: null };
+      return { payload: emptyShortlist, preview: false, error: "The shortlist came back in an unexpected shape." };
     }
+    if (offlinePreview()) {
+      return { payload: { items: previewShortlist, curationSummary: null, suggested: [] }, preview: true, error: null };
+    }
+    return { payload: emptyShortlist, preview: false, error: "The shortlist could not be loaded." };
   } catch {
-    // Research API is owned by another task and may be absent.
+    if (offlinePreview()) {
+      return { payload: { items: previewShortlist, curationSummary: null, suggested: [] }, preview: true, error: null };
+    }
+    return { payload: emptyShortlist, preview: false, error: "The shortlist could not be loaded." };
   }
-  return {
-    payload: { items: previewShortlist, curationSummary: null, suggested: [] },
-    preview: true,
-  };
 }
 
 /** Home state from the case, used by the in-state filter. Absent or failed reads simply leave the filter unavailable. */

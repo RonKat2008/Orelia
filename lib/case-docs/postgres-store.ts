@@ -1,6 +1,7 @@
 import { and, eq, or, isNull, inArray, sql, cosineDistance, asc } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { caseDocuments } from '@/db/schema';
+import type { DocumentKind } from '@/lib/contracts/case-docs';
 import { consentFields, resultLimit, type DocumentStore, type NewDocument, type VectorSearch } from './store';
 
 export class PostgresDocumentStore implements DocumentStore {
@@ -8,6 +9,11 @@ export class PostgresDocumentStore implements DocumentStore {
   async insert(rows: NewDocument[]) {
     if (!rows.length) return [];
     return this.db.insert(caseDocuments).values(rows).returning();
+  }
+  async deleteByTitle(caseId: string, kind: DocumentKind, title: string) {
+    const t = caseDocuments;
+    const rows = await this.db.delete(t).where(and(eq(t.caseId, caseId), eq(t.kind, kind), eq(t.title, title))).returning({ id: t.id });
+    return rows.length;
   }
   async list(caseId: string) {
     const t = caseDocuments;

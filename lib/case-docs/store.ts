@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { SHARED_FIELDS } from '@/lib/outreach/draft';
 import type { DocumentKind } from '@/lib/contracts/case-docs';
+import { HISTORY_DOC_FIELD } from '@/lib/history/contract';
 
 export interface CaseDocument {
   id: string; caseId: string; contactId: string | null; kind: DocumentKind; title: string;
@@ -20,10 +21,14 @@ export interface DocumentStore {
   list(caseId: string): Promise<DocumentMetadata[]>;
   /** One document's text (chunks joined in order), scoped by case so another case's id returns undefined. */
   text(caseId: string, documentId: string): Promise<{ id: string; kind: DocumentKind; title: string; content: string } | undefined>;
+  /** Removes every chunk of the case's documents with this kind and title. Optional so older ports keep working. */
+  deleteByTitle?(caseId: string, kind: DocumentKind, title: string): Promise<number>;
 }
 export const PUBLIC_KINDS = ['resource_page', 'evidence'] as const;
 export function consentFields(fields: readonly string[]) {
-  return fields.filter(field => (SHARED_FIELDS as readonly string[]).includes(field));
+  // HISTORY_DOC_FIELD is never part of SHARED_FIELDS (outreach consent), so only a caller that passes it explicitly
+  // (the medical-history search) can retrieve medical_record chunks.
+  return fields.filter(field => field === HISTORY_DOC_FIELD || (SHARED_FIELDS as readonly string[]).includes(field));
 }
 export function resultLimit(k = 5) { return Number.isFinite(k) ? Math.max(1, Math.min(50, Math.trunc(k))) : 5; }
 export function metadata(row: CaseDocument): DocumentMetadata {
@@ -36,6 +41,11 @@ export class MemoryDocumentStore implements DocumentStore {
     const inserted = rows.map(row => ({ ...structuredClone(row), id: randomUUID(), createdAt: new Date() }));
     this.rows.push(...inserted);
     return structuredClone(inserted);
+  }
+  async deleteByTitle(caseId: string, kind: DocumentKind, title: string) {
+    const before = this.rows.length;
+    this.rows = this.rows.filter(r => !(r.caseId === caseId && r.kind === kind && r.title === title));
+    return before - this.rows.length;
   }
   async list(caseId: string) { return this.rows.filter(row => row.caseId === caseId).map(row => metadata(structuredClone(row))); }
   async text(caseId: string, documentId: string) {

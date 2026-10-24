@@ -57,6 +57,12 @@ describe('safety review: page must be on the institution host', () => {
     expect(pageMatchesInstitution(INST, { url: 'https://x.example.org/a', title: `${INST} Second Opinion` })).toBe(false);
     expect(pageMatchesInstitution(INST, { url: 'https://secondopinions.example.com/northgate', title: `${INST} second opinion` })).toBe(false);
   });
+  it('a registrable domain equal to the institution initials matches; a subdomain or path with them does not', () => {
+    expect(pageMatchesInstitution('Oregon Health & Science University', { url: 'https://www.ohsu.edu/knight-cancer-institute/appointments' })).toBe(true);
+    expect(pageMatchesInstitution('University of Alabama at Birmingham', { url: 'https://www.uab.edu/medicine/genetics' })).toBe(true);
+    expect(pageMatchesInstitution('Oregon Health & Science University', { url: 'https://ohsu.reviews.example.com/x' })).toBe(false);
+    expect(pageMatchesInstitution('Oregon Health & Science University', { url: 'https://example.com/ohsu' })).toBe(false);
+  });
   it('host tokens or a known domain match; title alone never does', () => {
     expect(pageMatchesInstitution(INST, { url: 'https://www.northgate.example.org/so', title: 'Second opinions' })).toBe(true);
     expect(pageMatchesInstitution('Johns Hopkins University', { url: 'https://www.hopkinsmedicine.org/second-opinion', title: 'Second Opinion' })).toBe(true);

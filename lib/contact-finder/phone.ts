@@ -10,25 +10,46 @@ const PHONE_RE = /(?:\+?1[\s.-]?)?(?:\(\s*[2-9]\d{2}\s*\)|\b[2-9]\d{2})[\s.-]?[2
 /** Words right before / after a number that mean it is not a practice intake line. */
 const NOT_INTAKE_BEFORE = /\b(?:fax|facsimile|cell|cellular|mobile|pager|beeper|text(?:ing)?|sms|personal|home|direct line)\b|\bDr\.?\s+[A-Z]/i;
 const NOT_INTAKE_AFTER = /^\s*[(\[-]?\s*(?:fax|cell|mobile|pager)\b/i;
-/** The number must sit right after new-patient / appointment / referral / intake wording. */
-const INTAKE_CONTEXT = /\b(?:new[- ]patients?|appointments?|referrals?|refer a patient|schedul\w*|intake)\b/i;
-const CONTEXT_BEFORE = 120;
+/** The number must sit right after (or just before) new-patient / appointment / referral / intake wording. */
+const INTAKE_CONTEXT = /\b(?:new[- ]patients?|appointments?|referrals?|referring|refer a patient|schedul\w*|intake)\b/i;
+const INTAKE_CONTEXT_ALL = new RegExp(INTAKE_CONTEXT.source, 'gi');
+const CONTEXT_BEFORE = 160;
+const CONTEXT_AFTER = 60;
 const GUARD_BEFORE = 30;
 
+export type IntakePhoneKind = 'new_patient_line' | 'referral_coordinator';
+export interface IntakePhone { phone: string; kind: IntakePhoneKind; excerpt: string }
+
+const lastMatch = (text: string): string | null => {
+  const all = [...text.matchAll(INTAKE_CONTEXT_ALL)];
+  return all.length ? all[all.length - 1]![0] : null;
+};
+
 /**
- * Practice / intake phone lines in one block of fetched page text: only numbers within a short window after
- * new-patient, appointment, referral or intake wording, and never fax, cell, mobile, pager or a named person's line.
+ * Practice / intake phone lines in fetched page text, block by block (a block's context includes the block before
+ * it, so "To make an appointment:" followed by a number on the next line counts). Never fax, cell, mobile, pager or
+ * a named person's line. `excerpt` is the intake wording found (a substring of the page text).
  */
-export function intakePhonesIn(block: string): string[] {
-  const out: string[] = [];
-  for (const m of block.matchAll(PHONE_RE)) {
-    const at = m.index ?? 0;
-    const before = block.slice(Math.max(0, at - GUARD_BEFORE), at);
-    const after = block.slice(at + m[0].length, at + m[0].length + 16);
-    if (NOT_INTAKE_BEFORE.test(before) || NOT_INTAKE_AFTER.test(after)) continue;
-    if (!INTAKE_CONTEXT.test(block.slice(Math.max(0, at - CONTEXT_BEFORE), at))) continue;
-    const e164 = usPhoneToE164(m[0]);
-    if (e164 && !out.includes(e164)) out.push(e164);
-  }
+export function intakePhonesInBlocks(blocks: readonly string[]): IntakePhone[] {
+  const out: IntakePhone[] = [];
+  blocks.forEach((block, i) => {
+    const prev = i > 0 ? blocks[i - 1]! : '';
+    for (const m of block.matchAll(PHONE_RE)) {
+      const at = m.index ?? 0;
+      const end = at + m[0].length;
+      if (NOT_INTAKE_BEFORE.test(block.slice(Math.max(0, at - GUARD_BEFORE), at)) || NOT_INTAKE_AFTER.test(block.slice(end, end + 16))) continue;
+      const before = `${prev}\n${block.slice(0, at)}`.slice(-CONTEXT_BEFORE);
+      const after = block.slice(end, end + CONTEXT_AFTER);
+      const excerpt = lastMatch(before) ?? (INTAKE_CONTEXT.exec(after)?.[0] ?? null);
+      const e164 = excerpt ? usPhoneToE164(m[0]) : null;
+      if (!e164 || out.some((o) => o.phone === e164)) continue;
+      out.push({ phone: e164, kind: /refer/i.test(excerpt!) ? 'referral_coordinator' : 'new_patient_line', excerpt: excerpt! });
+    }
+  });
   return out;
+}
+
+/** Intake phone numbers in one block of text (see intakePhonesInBlocks). */
+export function intakePhonesIn(block: string): string[] {
+  return intakePhonesInBlocks([block]).map((p) => p.phone);
 }

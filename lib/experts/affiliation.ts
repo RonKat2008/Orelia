@@ -53,15 +53,27 @@ const onDomain = (host: string, domain: string): boolean => host === domain || h
 
 /**
  * True only when the page HOST belongs to the institution: every distinctive token of the name appears in the host,
- * or the host is a known domain of that institution. The title is never enough on its own (anyone can title a page
+ * the registrable domain is the name's initials, or the host is a known domain of that institution. The title is never enough on its own (anyone can title a page
  * "<Institution> second opinion"). An institution with no distinctive token (e.g. "University Hospital") never matches.
  */
+const ACRONYM_STOP = new Set(['of', 'the', 'and', 'at', 'for', 'in', 'on']);
+
+/** Initials of the institution name ("Oregon Health & Science University" -> "ohsu"); null when shorter than 3. */
+export function institutionAcronym(name: string): string | null {
+  const words = name.normalize('NFKD').replace(/[^A-Za-z\s-]/g, ' ').split(/[\s-]+/).filter((w) => w && !ACRONYM_STOP.has(w.toLowerCase()));
+  const acronym = words.map((w) => w[0]!.toLowerCase()).join('');
+  return acronym.length >= 3 ? acronym : null;
+}
+
 export function pageMatchesInstitution(institution: string, page: { url: string; title?: string }): boolean {
   const tokens = institutionTokens(institution);
   const host = hostOf(page.url);
   if (tokens.length === 0 || !host) return false;
   const compactHost = host.normalize('NFKD').replace(/[.-]/g, '');
   if (tokens.every((t) => compactHost.includes(t))) return true;
+  // The registrable domain IS the institution's initials (ohsu.edu, uab.edu, chop.edu).
+  const acronym = institutionAcronym(institution);
+  if (acronym && host.split('.').at(-2) === acronym) return true;
   const have = new Set(tokens);
   return KNOWN_DOMAINS.some((k) => k.tokens.every((t) => have.has(t)) && k.domains.some((d) => onDomain(host, d)));
 }

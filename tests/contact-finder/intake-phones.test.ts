@@ -41,3 +41,18 @@ describe('intake-door phone numbers', () => {
     expect(parseContactPoints([row])).toHaveLength(1);
   });
 });
+
+describe('intake phones across lines of a fetched page', () => {
+  it('reads a number on the line after the appointment wording', () => {
+    const text = 'How to make an appointment\nCall us to schedule an appointment:\n- 503-494-5252 (Monday-Friday, 7 a.m.-6 p.m.)\nFax: 503-494-0000';
+    expect(phonesOf(text)).toEqual(['+15034945252']);
+  });
+  it('reads a number followed by intake wording, but not one faxed to', () => {
+    const text = 'If you are a referring provider, fill out the New Patient Referral Form and fax it to 503-346-6854\nPlease call 503-494-6176 to speak to our new patient intake team.';
+    expect(phonesOf(text)).toEqual(['+15034946176']);
+  });
+  it('tags referral lines as referral_coordinator doors', () => {
+    const doors = classifyIntakeDoors({ url, text: 'Physician referrals\n410-955-1234' });
+    expect(doors.find((d) => d.kind === 'referral_coordinator')?.phones).toEqual(['+14109551234']);
+  });
+});

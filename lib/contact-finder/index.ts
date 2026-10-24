@@ -1,5 +1,5 @@
 import type { ExaPage } from '../sources/exa';
-import { intakePhonesIn } from './phone';
+import { intakePhonesInBlocks } from './phone';
 export type IntakeDoorKind = 'new_patient_line' | 'referral_coordinator' | 'second_opinion_program' | 'pathology_consult' | 'nurse_navigator' | 'trial_contact' | 'org_contact';
 /** phones: E.164 practice / intake lines next to new-patient, appointment or referral wording (never fax / cell). */
 export interface IntakeDoor { kind: IntakeDoorKind; evidenceUrl: string; excerpt: string; emails: string[]; phones?: string[] }
@@ -12,8 +12,6 @@ const rules: [IntakeDoorKind, RegExp][] = [
   ['trial_contact', /\b(?:trial (?:contact|coordinator)|study (?:contact|coordinator))\b/i],
   ['org_contact', /\b(?:contact us|general inquiries|organization contact)\b/i],
 ];
-/** Door kinds whose block may carry a practice intake phone line (not trial or general contact lines). */
-const PHONE_DOORS: ReadonlySet<IntakeDoorKind> = new Set(['new_patient_line', 'referral_coordinator', 'second_opinion_program', 'pathology_consult', 'nurse_navigator']);
 /** Fail closed: only explicitly role-based mailbox names are candidates, never named people. */
 export function isRoleEmail(email: string): boolean {
   const parts = email.trim().toLowerCase().split('@');
@@ -32,8 +30,13 @@ export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
     if (!block) continue;
     const emails = [...new Set((block.match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? []).filter(isRoleEmail).map(s => s.toLowerCase()))];
     // Evidence excerpt is the matching phrase only, avoiding incidental personal addresses/medical prose.
-    const phones = PHONE_DOORS.has(kind) ? intakePhonesIn(block) : [];
-    found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)?.[0] ?? "", emails, ...(phones.length ? { phones } : {}) });
+    found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)?.[0] ?? "", emails });
+  }
+  // Practice intake phone lines anywhere on the page, attached to a new-patient or referral door.
+  for (const p of intakePhonesInBlocks(blocks)) {
+    const door = found.find(d => d.kind === p.kind);
+    if (door) door.phones = [...(door.phones ?? []), p.phone];
+    else found.push({ kind: p.kind, evidenceUrl: page.url, excerpt: p.excerpt, emails: [], phones: [p.phone] });
   }
   return found;
 }

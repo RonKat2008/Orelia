@@ -87,20 +87,27 @@ export function consultTimeline(c: Pick<ConsultRequest, 'status' | 'doctorApprov
 }
 
 const REFUSAL_COPY: Record<string, string> = {
-  not_doctor_approved: 'Your doctor has not approved this request yet.',
-  doctor_not_approved: 'Your doctor has not approved this request yet.',
+  // consult gate (lib/safety/consult-gate.ts)
+  no_doctor_approval: 'Your doctor has not approved this request yet.',
+  consult_not_ready: 'This request is not ready to send yet. Your doctor needs to approve it and you need to confirm.',
   no_patient_consent: 'You have not given your consent yet.',
-  patient_consent_missing: 'You have not given your consent yet.',
-  body_changed: 'The text changed after your doctor approved it, so it needs their approval again.',
-  text_changed: 'The text changed after your doctor approved it, so it needs their approval again.',
+  consent_before_doctor_approval: 'Your consent was recorded before your doctor approved, so please confirm again.',
+  text_changed_after_approval: 'The text changed after your doctor approved it, so it needs their approval again.',
   no_expert_address: 'We could not find a verified clinician address for this expert, so nothing can be sent.',
-  missing_address: 'We could not find a verified clinician address for this expert, so nothing can be sent.',
+  address_not_evidence_backed: 'We could not find a verified clinician address for this expert, so nothing can be sent.',
+  // outbound gate (lib/safety/outbound-gate.ts)
+  not_approved: 'This message has not been approved yet.',
   not_allowlisted: 'This address is not on the list of addresses allowed for this environment.',
-  expired: 'The doctor review link has expired. Email a new one.',
-  already_sent: 'This request was already sent.',
-  disclosure_missing: 'The AI-drafted notice is missing from the message.',
-  field_not_ticked: 'The message includes a detail you did not choose to share.',
-  fields_not_ticked: 'The message includes a detail you did not choose to share.',
+  contact_cap: 'You already have five active contacts. Close one before reaching out to another.',
+  follow_up_cadence: 'It is too soon to write to this contact again.',
+  unshared_field: 'The message includes a detail you did not choose to share.',
+  missing_disclosure: 'The AI-drafted notice is missing from the message.',
+  medical_advice: 'The message reads like medical advice, which Wayfinder cannot send.',
+  invalid_draft: 'The message or address is not valid.',
+  consent_mismatch: 'Your sharing choices changed, so please review the request again.',
+  inactive_contact: 'This contact is closed, so nothing can be sent.',
+  doctor_email_failed: 'The email to your doctor could not be sent. Try again.',
+  send_failed: 'The email could not be sent. It was not retried automatically, so nothing went out twice.',
 };
 
 /** Plain-language refusal reasons; unknown codes get a generic line (never raw codes). */
@@ -119,7 +126,7 @@ export function availableActions(status: ConsultStatus): PatientAction[] {
     case 'sent_to_doctor': return ['send_to_doctor', 'cancel'];
     case 'doctor_approved': return ['consent', 'cancel'];
     case 'ready': return ['send', 'cancel'];
-    case 'failed': return ['send', 'cancel'];
+    case 'failed': return ['cancel'];
     case 'doctor_declined': return ['cancel'];
     default: return [];
   }

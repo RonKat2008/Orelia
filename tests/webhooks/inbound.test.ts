@@ -2,9 +2,9 @@ import { createHmac } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BODY_TOO_LARGE_TEXT, handleAgentCallWebhook, handleAgentMailWebhook, type InboundDeps } from '../../app/api/webhooks/_lib/inbound';
+import { BODY_TOO_LARGE_TEXT, handleAgentCallWebhook, handleAgentMailWebhook, memoryIngestLedger, type InboundDeps } from '../../app/api/webhooks/_lib/inbound';
 import { isUniqueViolation } from '../../app/api/webhooks/_lib/postgres';
-import { createWebhookIngest } from '../../app/api/webhooks/_lib/ingest';
+import { createWebhookIngest, idempotentIngest } from '../../app/api/webhooks/_lib/ingest';
 import { FixtureClassifier } from '../../lib/inbox/classifier';
 import type { DraftContext } from '../../lib/inbox/drafts';
 import { MemoryTaskStore } from '../../lib/inbox/task-store';
@@ -43,6 +43,7 @@ function setup(secret: string | null = MAIL_SECRET) {
     storeInboundMessage: async m => { if (seen.has(m.providerMessageId)) return 'duplicate'; seen.add(m.providerMessageId); stored.push(m); return 'stored'; },
     storeCallEvent: async e => { callEvents.push(e); },
     sendEvents: send,
+    ingestLedger: memoryIngestLedger(),
     ingestInbound: async (event) => { ingested.push(event); return { class: 'unclear' }; },
   };
   return { deps, stored, callEvents, events, ingested };
@@ -84,6 +85,24 @@ describe('ingestInbound (real inbox ingest, in-memory deps)', () => {
   it('does not fail when the case document store fails', async () => {
     const { ingest } = build(async () => { throw new Error('store down'); });
     await expect(ingest(event)).resolves.toMatchObject({ contactId: OWNER.contactId });
+  });
+
+  it('stores the case document once (best-effort) and tells processInbound not to store it again', async () => {
+    let seenDeps: Record<string, unknown> | undefined;
+    const ingest = createWebhookIngest({
+      inbox: { classifier: new FixtureClassifier(), loadContext: () => ctx, tasks: new MemoryTaskStore() },
+      ingestTasks: (async (_e: unknown, d: Record<string, unknown>) => { seenDeps = d; return { contactId: OWNER.contactId }; }) as never,
+      storeDocument: (async () => undefined) as never,
+    });
+    await ingest(event);
+    expect(seenDeps?.skipDocumentIngest).toBe(true);
+  });
+
+  it('tags saved tasks with the event sourceId so a retried ingest can find them', async () => {
+    const { tasks, ingest } = build(async () => undefined);
+    await ingest({ ...event, sourceId: 'email:pm-1' });
+    expect((await tasks.tasksForSource('email:pm-1')).length).toBeGreaterThan(0);
+    expect(await tasks.tasksForSource('email:other')).toEqual([]);
   });
 
   it('stores voice transcripts as transcripts', async () => {
@@ -260,5 +279,110 @@ describe('contacts sharing one coordinator inbox (demo mode)', () => {
     expect((await handleAgentMailWebhook(post(replyA, svixHeaders(replyA, { id: 'msg_a' })), deps)).status).toBe(200);
     expect(stored.map(m => [m.contactId, m.body])).toEqual([['contact-b', 'Reply for B'], ['contact-a', 'Reply for A']]);
     expect(ingested.map(e => e.contactId)).toEqual(['contact-b', 'contact-a']);
+  });
+});
+
+describe('recoverable ingest (store happens before ingest)', () => {
+  const failOnce = (deps: InboundDeps, ingested: unknown[]) => {
+    let calls = 0;
+    deps.ingestInbound = async (event) => { calls++; if (calls === 1) throw new Error('classifier unavailable'); ingested.push(event); return {}; };
+  };
+
+  it('AgentMail: a retry after a failed ingest re-runs ingest instead of short-circuiting as a duplicate', async () => {
+    const { deps, stored, events, ingested } = setup();
+    failOnce(deps, ingested);
+    const body = mailBody();
+    const first = await handleAgentMailWebhook(post(body, svixHeaders(body)), deps);
+    expect(first.status).toBe(500);
+    expect(stored).toHaveLength(1);
+    expect(events).toHaveLength(0);
+    const retry = await handleAgentMailWebhook(post(body, svixHeaders(body, { id: 'msg_retry' })), deps);
+    expect(retry.status).toBe(200);
+    expect(await retry.json()).toEqual({ ok: true });
+    expect(stored).toHaveLength(1);
+    expect(ingested).toHaveLength(1);
+    expect(events).toHaveLength(1);
+    const again = await handleAgentMailWebhook(post(body, svixHeaders(body, { id: 'msg_again' })), deps);
+    expect(await again.json()).toEqual({ duplicate: true });
+    expect(ingested).toHaveLength(1); expect(events).toHaveLength(1);
+  });
+
+  it('AgentMail: a failed reply-event dispatch is also retried (ingest is not marked complete)', async () => {
+    const { deps, events, ingested } = setup();
+    let sends = 0;
+    const send = deps.sendEvents;
+    deps.sendEvents = async (e) => { sends++; if (sends === 1) throw new Error('db blip'); await send(e); };
+    const body = mailBody();
+    expect((await handleAgentMailWebhook(post(body, svixHeaders(body)), deps)).status).toBe(500);
+    expect((await handleAgentMailWebhook(post(body, svixHeaders(body, { id: 'msg_r' })), deps)).status).toBe(200);
+    expect(events).toHaveLength(1);
+    expect(ingested).toHaveLength(2); // the webhook re-runs ingest; idempotentIngest makes the task side a no-op
+  });
+
+  it('AgentMail: a delivery that arrives while another is still ingesting gets a retryable 503', async () => {
+    const { deps, ingested } = setup();
+    let release!: () => void;
+    deps.ingestInbound = async (event) => { ingested.push(event); await new Promise<void>(r => { release = r; }); return {}; };
+    const body = mailBody();
+    const firstP = handleAgentMailWebhook(post(body, svixHeaders(body)), deps);
+    await new Promise(r => setTimeout(r, 0));
+    const second = await handleAgentMailWebhook(post(body, svixHeaders(body, { id: 'msg_2' })), deps);
+    expect(second.status).toBe(503);
+    expect(await second.json()).toEqual({ reasons: ['ingest_in_progress'], retryable: true });
+    release();
+    expect((await firstP).status).toBe(200);
+    expect(ingested).toHaveLength(1);
+  });
+
+  it('AgentCall: a transcript whose ingest failed is re-ingested on redelivery, and only once after success', async () => {
+    const { deps, callEvents, events, ingested } = setup(CALL_SECRET);
+    failOnce(deps, ingested);
+    const body = JSON.stringify({ event: 'call.transcript', timestamp: '2026-10-01T12:00:00.000Z', data: {
+      callId: 'call-1', transcript: [{ role: 'human', text: 'Hi there' }] } });
+    expect((await handleAgentCallWebhook(post(body, callHeaders(body)), deps)).status).toBe(500);
+    expect((await handleAgentCallWebhook(post(body, callHeaders(body)), deps)).status).toBe(200);
+    expect(ingested).toHaveLength(1); expect(events).toHaveLength(1);
+    const again = await handleAgentCallWebhook(post(body, callHeaders(body)), deps);
+    expect(await again.json()).toEqual({ duplicate: true });
+    expect(ingested).toHaveLength(1); expect(events).toHaveLength(1);
+    expect(callEvents.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('idempotentIngest', () => {
+  const event = { channel: 'email' as const, contactId: 'c1', caseId: 'k1', providerId: 'pm-9', providerThreadId: 't', body: 'x' };
+
+  it('runs ingest when no task exists for the source yet', async () => {
+    const run = async () => ({ tasks: [{ id: 'new' }] });
+    const out = await idempotentIngest({ tasksForSource: async () => [] }, run)(event);
+    expect(out).toEqual({ tasks: [{ id: 'new' }] });
+  });
+
+  it('skips classification and task creation when a previous attempt already saved tasks for this source', async () => {
+    let ran = 0;
+    const seen: string[] = [];
+    const out = await idempotentIngest({ tasksForSource: async (id) => { seen.push(id); return [{ id: 't1' }] as never; } }, async () => { ran++; return {}; })(event);
+    expect(ran).toBe(0);
+    expect(seen).toEqual(['email:pm-9']);
+    expect(out).toEqual({ replayed: true, contactId: 'c1', tasks: [{ id: 't1' }] });
+  });
+
+  it('keys voice transcripts by call id', async () => {
+    const seen: string[] = [];
+    await idempotentIngest({ tasksForSource: async (id) => { seen.push(id); return []; } }, async () => ({}))({ ...event, channel: 'voice', providerId: 'call-7' });
+    expect(seen).toEqual(['voice:call-7']);
+  });
+});
+
+describe('memoryIngestLedger', () => {
+  it('claims once, reports busy while claimed, done after complete, and claimable again after release', async () => {
+    const l = memoryIngestLedger();
+    const k = { kind: 'email' as const, providerMessageId: 'pm-1' };
+    expect(await l.claim(k)).toBe('claimed');
+    expect(await l.claim(k)).toBe('busy');
+    await l.release(k);
+    expect(await l.claim(k)).toBe('claimed');
+    await l.complete(k);
+    expect(await l.claim(k)).toBe('done');
   });
 });

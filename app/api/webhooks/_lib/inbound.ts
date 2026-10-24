@@ -8,6 +8,42 @@ export const BODY_TOO_LARGE_TEXT = '[Reply body too large to receive automatical
 
 export interface Owner { contactId: string; caseId: string }
 
+/** What one ingest attempt is about: an inbound email (by provider message id) or a call transcript. */
+export type IngestKey =
+  | { kind: 'email'; providerMessageId: string }
+  | { kind: 'call'; providerCallId: string; contactId: string };
+
+/**
+ * Records whether a stored inbound message / transcript has been fully ingested (classified -> tasks, contact
+ * state). The message row is stored before ingest, so a provider retry after a failed ingest must re-run ingest
+ * rather than stop at the provider-id duplicate check.
+ * - claim: 'claimed' (this request runs ingest), 'done' (already ingested), 'busy' (another request holds a
+ *   live lease; the provider should retry later).
+ * - complete: marks the key ingested. release: drops the lease after a failure so a retry can claim it.
+ */
+export interface IngestLedger {
+  claim(key: IngestKey): Promise<'claimed' | 'done' | 'busy'>;
+  complete(key: IngestKey): Promise<void>;
+  release(key: IngestKey): Promise<void>;
+}
+
+/** In-process ledger for tests and the offline journey. */
+export function memoryIngestLedger(): IngestLedger {
+  const state = new Map<string, 'claimed' | 'done'>();
+  const id = (k: IngestKey) => (k.kind === 'email' ? `email:${k.providerMessageId}` : `call:${k.contactId}:${k.providerCallId}`);
+  return {
+    async claim(k) {
+      const cur = state.get(id(k));
+      if (cur === 'done') return 'done';
+      if (cur === 'claimed') return 'busy';
+      state.set(id(k), 'claimed');
+      return 'claimed';
+    },
+    async complete(k) { state.set(id(k), 'done'); },
+    async release(k) { if (state.get(id(k)) === 'claimed') state.delete(id(k)); },
+  };
+}
+
 export interface InboundDeps {
   secret: string | undefined;
   lookupThread(providerThreadId: string): Promise<Owner | undefined>;
@@ -18,7 +54,8 @@ export interface InboundDeps {
   }): Promise<'stored' | 'duplicate'>;
   storeCallEvent(e: { contactId: string; providerCallId: string; eventType: string; status?: string; transcript?: string; endedAt?: Date }): Promise<void>;
   sendEvents: SendEvents;
-  /** Called only after signature checks and provider-id dedupe. */
+  ingestLedger: IngestLedger;
+  /** Called only after signature checks and once this request holds the ingest claim. Must be idempotent. */
   ingestInbound(event: WebhookInboundEvent): Promise<unknown>;
   /** Optional: AI verification calls (lib/verification), which have no contact row. */
   verification?: VerificationInboundDeps;
@@ -47,14 +84,38 @@ function rawTranscript(rawBody: string): unknown {
 
 const json = (status: number, body: Record<string, unknown>) => Response.json(body, { status });
 
-function errorResponse(err: unknown): Response {
+function errorResponse(err: unknown, provider: 'agentmail' | 'agentcall'): Response {
   if (err instanceof ChannelError) {
     if (err.status === 401) return json(401, { reasons: ['invalid_signature'] });
     if (err.status === 400) return json(400, { reasons: ['malformed_payload'] });
     if (err.status === 404) return json(404, { reasons: ['unknown_thread'] });
     if (err.status === 422) return json(200, { ignored: true });
   }
+  // Name and a short, single-line message only (never the inbound body), so a 500 is diagnosable in the logs.
+  const name = err instanceof Error ? err.name : typeof err;
+  const message = err instanceof Error ? err.message.replace(/\s+/g, ' ').slice(0, 160) : '';
+  console.error(`[webhook:${provider}] ingest failed: ${name}: ${message}`);
   return json(500, { reasons: ['internal_error'] });
+}
+
+const inProgress = () => json(503, { reasons: ['ingest_in_progress'], retryable: true });
+
+/**
+ * Runs ingest + the reply event under the ledger claim. Only a fully successful run is marked complete; on any
+ * failure the lease is released and the error propagates (500), so the provider's retry re-runs both steps.
+ */
+async function ingestOnce(deps: InboundDeps, key: IngestKey, run: () => Promise<void>): Promise<Response> {
+  const claim = await deps.ingestLedger.claim(key);
+  if (claim === 'done') return json(200, { duplicate: true });
+  if (claim === 'busy') return inProgress();
+  try {
+    await run();
+  } catch (err) {
+    await deps.ingestLedger.release(key).catch(() => undefined);
+    throw err;
+  }
+  await deps.ingestLedger.complete(key);
+  return json(200, { ok: true });
 }
 
 /** True when AgentMail omitted the body (messages over 64 KiB come with body_url instead of text). */
@@ -79,26 +140,29 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
     if (!owner || !parsed.threadId || !parsed.messageId) return json(404, { reasons: ['unknown_thread'] });
     const tooLarge = bodyOmitted(raw);
     const receivedAt = new Date(parsed.receivedAt);
-    const result = await deps.storeInboundMessage({
+    // 'duplicate' only means the row exists; whether it was ingested is the ledger's call.
+    await deps.storeInboundMessage({
       contactId: owner.contactId, providerThreadId: parsed.threadId, providerMessageId: parsed.messageId,
       ...(parsed.from !== undefined ? { from: parsed.from } : {}),
       ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
       body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, receivedAt,
       ...(tooLarge ? { classification: 'body_too_large' } : {}),
     });
-    if (result === 'duplicate') return json(200, { duplicate: true });
-    await deps.ingestInbound({
-      channel: 'email', contactId: owner.contactId, caseId: owner.caseId,
-      body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: parsed.messageId, providerThreadId: parsed.threadId,
-      receivedAt: receivedAt.toISOString(),
-      ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
-      ...(parsed.from !== undefined ? { from: parsed.from } : {}),
+    const o = owner;
+    const { threadId, messageId } = parsed;
+    return await ingestOnce(deps, { kind: 'email', providerMessageId: messageId }, async () => {
+      await deps.ingestInbound({
+        channel: 'email', contactId: o.contactId, caseId: o.caseId,
+        body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: messageId, providerThreadId: threadId,
+        receivedAt: receivedAt.toISOString(),
+        ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
+        ...(parsed.from !== undefined ? { from: parsed.from } : {}),
+      });
+      await deps.sendEvents(contactReplyEvent({
+        contactId: o.contactId, caseId: o.caseId, dedupeKey: messageId, messageId, receivedAt: receivedAt.toISOString(),
+      }));
     });
-    await deps.sendEvents(contactReplyEvent({
-      contactId: owner.contactId, caseId: owner.caseId, dedupeKey: parsed.messageId, messageId: parsed.messageId, receivedAt: receivedAt.toISOString(),
-    }));
-    return json(200, { ok: true });
-  } catch (err) { return errorResponse(err); }
+  } catch (err) { return errorResponse(err, 'agentmail'); }
 }
 
 export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): Promise<Response> {
@@ -132,14 +196,17 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
         contactId: owner.contactId, providerCallId: parsed.callId, eventType: parsed.eventType,
         transcript: parsed.body, endedAt: receivedAt, ...(parsed.status ? { status: parsed.status } : {}),
       });
-      await deps.ingestInbound({
-        channel: 'voice', contactId: owner.contactId, caseId: owner.caseId,
-        body: parsed.body, providerId: parsed.callId, receivedAt: receivedAt.toISOString(),
+      const o = owner;
+      const callId = parsed.callId;
+      return await ingestOnce(deps, { kind: 'call', providerCallId: callId, contactId: o.contactId }, async () => {
+        await deps.ingestInbound({
+          channel: 'voice', contactId: o.contactId, caseId: o.caseId,
+          body: parsed.body, providerId: callId, receivedAt: receivedAt.toISOString(),
+        });
+        await deps.sendEvents(contactReplyEvent({
+          contactId: o.contactId, caseId: o.caseId, dedupeKey: `${callId}-transcript`, callId, receivedAt: receivedAt.toISOString(),
+        }));
       });
-      await deps.sendEvents(contactReplyEvent({
-        contactId: owner.contactId, caseId: owner.caseId, dedupeKey: `${parsed.callId}-transcript`, callId: parsed.callId, receivedAt: receivedAt.toISOString(),
-      }));
-      return json(200, { ok: true });
     }
     if (parsed.eventType === 'call.status') {
       await deps.storeCallEvent({
@@ -149,5 +216,5 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
       return json(200, { ok: true });
     }
     return json(200, { ignored: true });
-  } catch (err) { return errorResponse(err); }
+  } catch (err) { return errorResponse(err, 'agentcall'); }
 }

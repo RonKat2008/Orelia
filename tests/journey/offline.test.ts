@@ -23,7 +23,7 @@ import { MemoryInboundMessageStore } from '@/lib/inbox/inbound-store';
 import { FixtureClassifier } from '@/lib/inbox/classifier';
 import { ingestInbound } from '@/lib/inbox/ingest';
 import { inboxHandlers } from '@/lib/inbox/http';
-import { handleAgentMailWebhook, type InboundDeps } from '@/app/api/webhooks/_lib/inbound';
+import { handleAgentMailWebhook, memoryIngestLedger, type InboundDeps } from '@/app/api/webhooks/_lib/inbound';
 import { createConnectionWorkflow } from '@/lib/workflows/connection-workflow';
 import { InMemoryContactContextStore } from '@/lib/workflows/contact-store';
 import { initialContext, transition } from '@/lib/workflows/connection-machine';
@@ -121,7 +121,7 @@ describe.each(['epithelioid-sarcoma', 'vascular-eds', 'igg4-related-disease'])('
     const inboundMessages = new MemoryInboundMessageStore();
     const events: unknown[] = [];
     const inbound: InboundDeps = { secret, lookupThread: async id => id === mail.sent[0].ref.threadId ? { contactId: owner.id, caseId: created.id } : undefined, lookupCall: async () => undefined,
-      storeCallEvent: async () => {}, sendEvents: async event => { events.push(event); },
+      storeCallEvent: async () => {}, sendEvents: async event => { events.push(event); }, ingestLedger: memoryIngestLedger(),
       storeInboundMessage: async message => { inboundMessages.add({ id: message.providerMessageId, contactId: message.contactId, body: message.body }); return 'stored'; },
       ingestInbound: async event => ingestInbound({ ...event, receivedAt: event.receivedAt ?? new Date().toISOString() }, {
         tasks, classifier: new FixtureClassifier(), lookupThread: async () => owner.id,

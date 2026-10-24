@@ -33,6 +33,8 @@ export interface TaskDraft {
   draftBody?: string;
   letter?: TaskLetter;
   details?: Record<string, unknown>;
+  /** Inbound event that produced this task (tasks.source_id); lets a retried webhook ingest skip re-creating it. */
+  sourceId?: string;
 }
 
 export class MedicalAdviceInDraft extends Error {

@@ -11,6 +11,8 @@ export interface InboxDeps {
   documents?: DocumentStore;
   classifier: InboxClassifier;
   lookupThread: ThreadLookup;
+  /** The caller stores the case document itself (the webhook adapter does, best-effort). */
+  skipDocumentIngest?: boolean;
   loadContext(contactId: string): DraftContext | Promise<DraftContext>;
 }
 export interface InboxResult { contactId: string; classification: InboxClassification; tasks: TaskDraft[] }
@@ -19,9 +21,11 @@ export async function processInbound(event: InboxEvent, deps: InboxDeps): Promis
   const contactId = await assertWayfinderThread(event, deps.lookupThread);
   const ctx = await deps.loadContext(contactId);
   // Thread ownership is established before any document write or model access.
-  await ingestDocument(contactId, event.channel === 'voice' ? { transcript: event.body } : { body: event.body }, {
-    store: deps.documents, resolveContact: async () => ({ caseId: ctx.caseId }),
-  });
+  if (!deps.skipDocumentIngest) {
+    await ingestDocument(contactId, event.channel === 'voice' ? { transcript: event.body } : { body: event.body }, {
+      store: deps.documents, resolveContact: async () => ({ caseId: ctx.caseId }),
+    });
+  }
   const contextDocIds = new Set<string>();
   const tool = caseDocsTool(ctx.caseId, contactId, ctx.consent.sharedFields, deps.documents);
   const handler = tool.handler;

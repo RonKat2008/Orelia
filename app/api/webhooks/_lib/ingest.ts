@@ -1,7 +1,7 @@
 import type { InboxDeps } from '../../../../lib/agents/inbox';
 import { ingestInbound as ingestCaseDocument } from '../../../../lib/case-docs/hooks';
 import { ingestInbound as ingestInboxTasks } from '../../../../lib/inbox/ingest';
-import type { TaskStore } from '../../../../lib/inbox/task-store';
+import type { StoredTask, TaskStore } from '../../../../lib/inbox/task-store';
 import type { InboxEvent } from '../../../../lib/inbox/thread-guard';
 
 /** Verified, de-duplicated inbound message handed over by the webhook handlers. */
@@ -17,6 +17,8 @@ export interface WebhookInboundEvent {
   subject?: string;
   from?: string;
   receivedAt?: string;
+  /** Recorded on the tasks this event creates (tasks.source_id) so a retried ingest can detect them. */
+  sourceId?: string;
 }
 
 export interface WebhookIngestDeps {
@@ -36,6 +38,7 @@ export function toInboxEvent(e: WebhookInboundEvent, now: () => Date = () => new
     ...(e.subject !== undefined ? { subject: e.subject } : {}),
     body: e.body,
     receivedAt: e.receivedAt ?? now().toISOString(),
+    ...(e.sourceId !== undefined ? { sourceId: e.sourceId } : {}),
   };
 }
 
@@ -51,6 +54,8 @@ export function createWebhookIngest(deps: WebhookIngestDeps) {
     const known = event.providerCallId ?? event.providerThreadId;
     const result = await ingestTasks(event, {
       ...deps.inbox,
+      // The document is stored once, best-effort, below; processInbound must not store (and fail on) it again.
+      skipDocumentIngest: true,
       lookupThread: key => ((key.providerCallId ?? key.providerThreadId) === known ? e.contactId : undefined),
     });
     // The case document store is best-effort: a failure must never fail (and so re-trigger) the webhook.
@@ -60,5 +65,26 @@ export function createWebhookIngest(deps: WebhookIngestDeps) {
       (deps.onDocumentError ?? (x => console.error('Case document ingest failed:', x instanceof Error ? x.name : 'unknown')))(err);
     }
     return result;
+  };
+}
+
+/** Stable task source for one inbound event: the email's provider message id or the call id. */
+export function ingestSourceId(e: Pick<WebhookInboundEvent, 'channel' | 'providerId'>): string {
+  return `${e.channel}:${e.providerId}`;
+}
+
+/**
+ * Makes a webhook ingest safe to re-run after a partial failure (e.g. tasks saved, then the reply event failed):
+ * when tasks already exist for this event's source, classification and task creation are skipped.
+ */
+export function idempotentIngest<R>(
+  tasks: { tasksForSource(sourceId: string): Promise<StoredTask[]> },
+  run: (e: WebhookInboundEvent, sourceId: string) => Promise<R>,
+) {
+  return async (e: WebhookInboundEvent): Promise<R | { replayed: true; contactId: string; tasks: StoredTask[] }> => {
+    const sourceId = ingestSourceId(e);
+    const existing = await tasks.tasksForSource(sourceId);
+    if (existing.length) return { replayed: true, contactId: e.contactId, tasks: existing };
+    return run(e, sourceId);
   };
 }

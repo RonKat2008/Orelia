@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import * as s from '../../../../db/schema';
 import { createRuntimeClassifier, FixtureClassifier } from '../../../../lib/inbox/classifier';
@@ -6,9 +6,9 @@ import { PostgresTaskStore } from '../../../../lib/inbox/task-store';
 import { DbRunStore } from '../../../../lib/agents/run-store';
 import type { DraftContext } from '../../../../lib/inbox/drafts';
 import { isOffline } from '../../../../lib/env';
-import { createWebhookIngest } from './ingest';
+import { createWebhookIngest, idempotentIngest } from './ingest';
 import { workflowSendEvents } from '../../../../lib/workflows/inline-events';
-import type { InboundDeps, Owner } from './inbound';
+import type { IngestLedger, InboundDeps, Owner } from './inbound';
 
 /** Postgres unique_violation, including when the driver nests it on `cause`. */
 export function isUniqueViolation(err: unknown): boolean {
@@ -51,6 +51,59 @@ export async function loadDraftContext(contactId: string): Promise<DraftContext>
     ...(target.address ? { resourceAddress: target.address } : {}),
     consent: { sharedFields: consent?.sharedFields ?? [] },
     caseRecord: { diseaseName, diseaseCodes, subtype, stageSummary, homeCity, homeState, insurer, planId, travelLimitMiles, goals },
+  };
+}
+
+/** A claim older than this is treated as abandoned (the request died mid-ingest) and may be taken over. */
+export const INGEST_LEASE_MS = 5 * 60_000;
+
+/**
+ * Ingest ledger over messages.ingested_at / ingest_claimed_at and calls.transcript_ingested_at / _claimed_at.
+ * claim is a single conditional UPDATE, so two concurrent deliveries cannot both win.
+ */
+export function postgresIngestLedger(db: () => ReturnType<typeof getDb> = getDb): IngestLedger {
+  const staleBefore = () => new Date(Date.now() - INGEST_LEASE_MS);
+  return {
+    async claim(k) {
+      if (k.kind === 'email') {
+        const m = s.messages;
+        const match = and(eq(m.providerMessageId, k.providerMessageId), eq(m.direction, 'inbound'));
+        const won = await db().update(m).set({ ingestClaimedAt: sql`now()` })
+          .where(and(match, isNull(m.ingestedAt), or(isNull(m.ingestClaimedAt), lt(m.ingestClaimedAt, staleBefore()))))
+          .returning({ id: m.id });
+        if (won.length) return 'claimed';
+        const [row] = await db().select({ ingestedAt: m.ingestedAt }).from(m).where(match).limit(1);
+        if (!row) throw new Error('Inbound message row missing for ingest claim');
+        return row.ingestedAt ? 'done' : 'busy';
+      }
+      const c = s.calls;
+      const match = and(eq(c.providerCallId, k.providerCallId), eq(c.contactId, k.contactId));
+      const won = await db().update(c).set({ transcriptIngestClaimedAt: sql`now()` })
+        .where(and(match, isNull(c.transcriptIngestedAt), or(isNull(c.transcriptIngestClaimedAt), lt(c.transcriptIngestClaimedAt, staleBefore()))))
+        .returning({ id: c.id });
+      if (won.length) return 'claimed';
+      const [row] = await db().select({ ingestedAt: c.transcriptIngestedAt }).from(c).where(match).limit(1);
+      if (!row) throw new Error('Call row missing for ingest claim');
+      return row.ingestedAt ? 'done' : 'busy';
+    },
+    async complete(k) {
+      if (k.kind === 'email') {
+        await db().update(s.messages).set({ ingestedAt: sql`now()`, ingestClaimedAt: null })
+          .where(and(eq(s.messages.providerMessageId, k.providerMessageId), eq(s.messages.direction, 'inbound')));
+        return;
+      }
+      await db().update(s.calls).set({ transcriptIngestedAt: sql`now()`, transcriptIngestClaimedAt: null })
+        .where(and(eq(s.calls.providerCallId, k.providerCallId), eq(s.calls.contactId, k.contactId)));
+    },
+    async release(k) {
+      if (k.kind === 'email') {
+        await db().update(s.messages).set({ ingestClaimedAt: null })
+          .where(and(eq(s.messages.providerMessageId, k.providerMessageId), eq(s.messages.direction, 'inbound'), isNull(s.messages.ingestedAt)));
+        return;
+      }
+      await db().update(s.calls).set({ transcriptIngestClaimedAt: null })
+        .where(and(eq(s.calls.providerCallId, k.providerCallId), eq(s.calls.contactId, k.contactId), isNull(s.calls.transcriptIngestedAt)));
+    },
   };
 }
 
@@ -112,13 +165,18 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
       }).where(and(eq(s.calls.providerCallId, e.providerCallId), eq(s.calls.contactId, e.contactId)));
     },
     sendEvents: (events) => workflowSendEvents(env)(events),
+    ingestLedger: postgresIngestLedger(db),
     ...(provider === 'agentcall' ? { verification: verificationInboundDeps() } : {}),
-    ingestInbound: (event) => createWebhookIngest({
-      inbox: {
-        classifier: isOffline(env.WAYFINDER_OFFLINE) ? new FixtureClassifier() : createRuntimeClassifier({ store: new DbRunStore() }),
-        loadContext: contactId => loadDraftContext(contactId),
-        tasks: new PostgresTaskStore(),
-      },
-    })(event),
+    ingestInbound: (event) => {
+      const tasks = new PostgresTaskStore();
+      const ingest = createWebhookIngest({
+        inbox: {
+          classifier: isOffline(env.WAYFINDER_OFFLINE) ? new FixtureClassifier() : createRuntimeClassifier({ store: new DbRunStore() }),
+          loadContext: contactId => loadDraftContext(contactId),
+          tasks,
+        },
+      });
+      return idempotentIngest(tasks, (e, sourceId) => ingest({ ...e, sourceId }))(event);
+    },
   };
 }

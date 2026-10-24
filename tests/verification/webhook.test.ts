@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
-import { handleAgentCallWebhook, type InboundDeps } from '@/app/api/webhooks/_lib/inbound';
+import { handleAgentCallWebhook, memoryIngestLedger, type InboundDeps } from '@/app/api/webhooks/_lib/inbound';
 import { recordingSendEvents } from '@/lib/workflows/events';
 
 const SECRET = 'call-test-secret';
@@ -22,6 +22,7 @@ function setup() {
     lookupThread: async () => undefined,
     lookupCall: async id => (id === 'call-1' ? { contactId: 'contact-1', caseId: 'case-1' } : undefined),
     storeInboundMessage: async () => 'stored',
+    ingestLedger: memoryIngestLedger(),
     storeCallEvent,
     sendEvents: send,
     ingestInbound,

@@ -127,6 +127,13 @@
       "when": 1792822400000,
       "tag": "0039_case_delete_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792822500000,
+      "tag": "0040_inbound_ingest_ledger",
+      "breakpoints": true
     }
   ]
 }

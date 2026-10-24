@@ -14,6 +14,8 @@ export interface NextCandidate { id: string; name?: string; targetKind: string; 
 /** Persistence for inbox-generated tasks. Approving a task never sends anything; see approve.ts. */
 export interface TaskStore {
   saveTasks(drafts: TaskDraft[]): Promise<StoredTask[]>;
+  /** Tasks created from one inbound event (TaskDraft.sourceId), for idempotent re-ingest. */
+  tasksForSource(sourceId: string): Promise<StoredTask[]>;
   task(id: string): Promise<StoredTask | undefined>;
   /** Compare-and-set open -> approved. False if the task was not open. */
   markApproved(id: string, at: string): Promise<boolean>;
@@ -37,6 +39,7 @@ export class MemoryTaskStore implements TaskStore {
       return structuredClone(task);
     });
   }
+  async tasksForSource(sourceId: string) { return [...this.rows.values()].filter(r => r.sourceId === sourceId).map(r => structuredClone(r)); }
   async task(id: string) { const r = this.rows.get(id); return r ? structuredClone(r) : undefined; }
   async markApproved(id: string, at: string) {
     const r = this.rows.get(id);
@@ -66,6 +69,7 @@ export function taskToRow(d: TaskDraft): typeof s.tasks.$inferInsert {
   return {
     contactId: d.contactId, caseId: d.caseId, kind: d.kind, title: d.title, status: 'open',
     draftBody: d.draftBody ?? null, details: { letter: d.letter ?? null, details: d.details ?? null }, approvedAt: null,
+    ...(d.sourceId !== undefined ? { sourceId: d.sourceId } : {}),
   };
 }
 
@@ -81,6 +85,7 @@ export function rowToTask(row: TaskRow, now: () => string = () => new Date().toI
     approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
     draftBody: legacy ? legacy.text : (row.draftBody ?? undefined),
     letter: env.letter, details: env.details,
+    ...(row.sourceId ? { sourceId: row.sourceId } : {}),
   };
 }
 
@@ -89,6 +94,10 @@ export class PostgresTaskStore implements TaskStore {
   async saveTasks(drafts: TaskDraft[]) {
     if (!drafts.length) return [];
     const rows = await this.db.insert(s.tasks).values(drafts.map(taskToRow)).returning();
+    return rows.map(r => rowToTask(r));
+  }
+  async tasksForSource(sourceId: string) {
+    const rows = await this.db.select().from(s.tasks).where(eq(s.tasks.sourceId, sourceId));
     return rows.map(r => rowToTask(r));
   }
   async task(id: string) {

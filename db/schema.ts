@@ -262,6 +262,10 @@ export const messages = pgTable("messages", {
   receivedAt: timestamp("received_at", { withTimezone: true }),
   classification: text("classification"),
   approvalFingerprint: text("approval_fingerprint"),
+  /** Inbound only: set once classification -> tasks and the reply event both succeeded (webhook ingest ledger). */
+  ingestedAt: timestamp("ingested_at", { withTimezone: true }),
+  /** Inbound only: lease held by the webhook request currently ingesting this message. */
+  ingestClaimedAt: timestamp("ingest_claimed_at", { withTimezone: true }),
 });
 
 export const calls = pgTable("calls", {
@@ -277,6 +281,9 @@ export const calls = pgTable("calls", {
   endedAt: timestamp("ended_at", { withTimezone: true }),
   transcript: text("transcript"),
   outcome: text("outcome"),
+  /** Set once the transcript was ingested (tasks + reply event); see the webhook ingest ledger. */
+  transcriptIngestedAt: timestamp("transcript_ingested_at", { withTimezone: true }),
+  transcriptIngestClaimedAt: timestamp("transcript_ingest_claimed_at", { withTimezone: true }),
 });
 
 export const tasks = pgTable(
@@ -294,8 +301,10 @@ export const tasks = pgTable(
     details: jsonb("details").$type<Record<string, unknown>>(),
     caseId: uuid("case_id").references(() => cases.id, { onDelete: "cascade" }),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
+    /** Inbound event that produced the task ("email:<provider message id>" / "voice:<call id>"). */
+    sourceId: text("source_id"),
   },
-  (table) => [index("tasks_case_id_idx").on(table.caseId)],
+  (table) => [index("tasks_case_id_idx").on(table.caseId), index("tasks_source_id_idx").on(table.sourceId)],
 );
 
 export const reviews = pgTable("reviews", {

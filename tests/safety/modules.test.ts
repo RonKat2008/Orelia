@@ -62,21 +62,22 @@ describe('caps and UTC business-day cadence', () => {
     const anchor = new Date('2026-03-02T15:00:00.000Z');
     const real = addBusinessDays(anchor, 3);
     const minuteish = scaleDeadline(anchor, real, 1440);
+    const env = process.env as Record<string, string | undefined>;
     const prevScale = process.env.WAYFINDER_SIM_TIME_SCALE;
-    const prevNode = process.env.NODE_ENV;
+    const prevNode = env.NODE_ENV;
     process.env.WAYFINDER_SIM_TIME_SCALE = '1440';
-    process.env.NODE_ENV = 'test';
+    env.NODE_ENV = 'test';
     try {
       expect(canFollowUp(anchor, 0, new Date(minuteish.getTime() - 1))).toBe(false);
       expect(canFollowUp(anchor, 0, minuteish)).toBe(true);
-      process.env.NODE_ENV = 'production';
+      env.NODE_ENV = 'production';
       expect(canFollowUp(anchor, 0, minuteish)).toBe(false);
       expect(canFollowUp(anchor, 0, real)).toBe(true);
     } finally {
       if (prevScale === undefined) delete process.env.WAYFINDER_SIM_TIME_SCALE;
       else process.env.WAYFINDER_SIM_TIME_SCALE = prevScale;
-      if (prevNode === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = prevNode;
+      if (prevNode === undefined) delete env.NODE_ENV;
+      else env.NODE_ENV = prevNode;
     }
   });
   it('rejects exhausted, invalid, fractional and future schedules', () => {

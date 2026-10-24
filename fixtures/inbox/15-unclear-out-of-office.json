@@ -7,7 +7,8 @@
     "from": "d.moreau@bayshore-hospital.example.org",
     "subject": "Automatic reply: Patient inquiry",
     "body": "I am out of the office until November 9 with limited access to email. For urgent matters, contact the main desk at +1 202-555-0132. This is an automatic reply.",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "15-unclear-out-of-office"
   },
   "expected": {
     "class": "unclear",

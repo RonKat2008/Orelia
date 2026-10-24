@@ -3,7 +3,8 @@
 import type { Resource } from "@/lib/contracts";
 import { EvidenceReveal } from "@/components/motion/EvidenceReveal";
 import { ScoreBar } from "@/components/motion/ScoreBar";
-import type { ShortlistCard } from "./data";
+import { evidenceForReason, type ShortlistCard } from "./data";
+import { EvidenceList } from "./EvidenceList";
 
 const MAX_SELECTED = 5;
 
@@ -59,6 +60,34 @@ export function ResourceCard({
         <h3>{titleOf(card.resource)}</h3>
         <p className="meta">{detailOf(card.resource)}</p>
       </header>
+      {card.tier === "best" ? <p className="eyebrow">Best fit</p> : null}
+      {card.tier === "exclude" ? <p className="eyebrow">Not a fit</p> : null}
+      {card.tierReasons && card.tierReasons.length > 0 ? (
+        <ul className="tier-reasons">
+          {card.tierReasons.map((reason) => {
+            const cited = evidenceForReason(card, reason.evidenceIds);
+            return (
+              <li key={reason.text}>
+                <p>{reason.text}</p>
+                {cited.length > 0 ? (
+                  <>
+                    <p className="meta">
+                      {cited.map((item) => (
+                        <a key={item.id} href={`#evidence-${item.id}`}>
+                          Source: {item.claim}
+                        </a>
+                      ))}
+                    </p>
+                    <EvidenceList items={cited} />
+                  </>
+                ) : (
+                  <p className="meta">This reason has no attached source, so it is not shown as a claim.</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
       <ScoreBar items={card.breakdown} total={card.score} max={scoreScale} />
       <div className="resource-card__actions">
         <label className="check">

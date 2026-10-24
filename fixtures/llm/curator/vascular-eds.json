@@ -1,0 +1,182 @@
+{
+  "picks": [
+    {
+      "candidateId": "0d4ff11c-9144-5f32-aaea-80ffb6353d0e",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Appears on 15 retrieved PubMed papers on vascular Ehlers-Danlos syndrome, 3 in the last 5 years.",
+          "evidenceIds": [
+            "109b6875-714a-57fc-ab11-e8392257ba58",
+            "6fd31fd9-180d-5b3a-a459-856663bbb35a"
+          ]
+        },
+        {
+          "text": "Registered in NPPES as a medical geneticist in Seattle, WA, far from Ohio; no direct contact path was found.",
+          "evidenceIds": [
+            "3ff4dd7a-ac86-5739-a53a-f7b12957e2a2"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "1f30dadf-504c-5a2e-af64-a43025e5efcc",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Appears on 10 retrieved papers on vascular Ehlers-Danlos syndrome, 4 in the last 5 years.",
+          "evidenceIds": [
+            "c7a60e24-2903-5335-a96c-0ce8876a5c66",
+            "5899b1ff-84fe-56c5-a262-20bc20aff4ef"
+          ]
+        },
+        {
+          "text": "Registered in NPPES as a medical geneticist in Houston, TX; no direct contact path was found.",
+          "evidenceIds": [
+            "37c861c7-8fa3-573a-aa83-59f30f74e66f"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "1e691e1c-6516-5146-a48c-832243ca4264",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Appears on 7 retrieved papers on vascular Ehlers-Danlos syndrome, 3 in the last 5 years.",
+          "evidenceIds": [
+            "a8ee66a2-1c51-588b-a2c5-13fcb3a4ea98",
+            "ceff3c0c-41f1-56aa-aaca-b275ed943bca"
+          ]
+        },
+        {
+          "text": "Registered in NPPES as a medical geneticist in Baltimore, MD, the nearest of the three experts to Ohio.",
+          "evidenceIds": [
+            "56b91861-8f2c-5ab8-a29e-23e8bef5bab6"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "be8ce3df-b535-5f04-abbf-137a012b82c9",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "The Johns Hopkins Institute of Genetic Medicine lists a Cardiovascular Connective Tissue Disorder Clinic in Baltimore; the page does not name vascular Ehlers-Danlos syndrome.",
+          "evidenceIds": [
+            "d811a6eb-ce95-5f1b-a6a7-214cdaeb0583"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "9b50e05a-dc29-54a7-a82a-e654695b8c81",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Non-profit organization dedicated specifically to vascular Ehlers-Danlos syndrome; informational, with no explicit contact path found.",
+          "evidenceIds": [
+            "7afb83ff-1196-5ce2-a5d9-8d77577ae08e"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "52512354-6d28-57a8-acb6-80545c05ba39",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Describes resources and support for the vascular Ehlers-Danlos community.",
+          "evidenceIds": [
+            "8ad25e0e-8d85-5507-ad69-95ec2a2d4a96"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "5a9c0775-9b30-569d-a767-96f49dcedb42",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Provides advocacy, education and research for people living with genetically defined forms of Ehlers-Danlos syndrome.",
+          "evidenceIds": [
+            "c60af599-cfa6-536a-a734-6f92cfcf25a7"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "dc192541-954f-5a20-a603-7988ed4eb289",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "U.S. resource hub with a page on disability benefits, financial aid and grants.",
+          "evidenceIds": [
+            "43044115-653b-5101-ace2-ed6cd12dc422"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "164a4d74-93fe-53b9-ac46-b75d50db84e6",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Its VEDS Collaborative page describes a group of patients, family members, researchers and clinicians.",
+          "evidenceIds": [
+            "7808983d-7238-57e6-a7ee-fda245986b11"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "11ebbea6-479e-50b4-abef-f3dcc6bc5540",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "501(c)(3) charity for Ehlers-Danlos patients; mentions a Travel Grants and Assistance section, but does not name the vascular type.",
+          "evidenceIds": [
+            "b8c15547-8ca4-58ae-ab8b-19c3b06a39ba"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "ef06d8d0-0007-5279-a7cf-67ca4736fdca",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "General rare-disease assistance page that does not name vascular Ehlers-Danlos syndrome.",
+          "evidenceIds": [
+            "9b3d738d-bebc-507f-a476-825cf6bc1ea9"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "b3652210-c7a5-5e14-a591-a0b7ce6a2b04",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "ClinicalTrials.gov lists it as recruiting with one U.S. site, in Culver City, California; the ranking found vascular Ehlers-Danlos syndrome as its registered condition.",
+          "evidenceIds": [
+            "0e16badb-6753-556e-acca-c5d90c3bfeaf"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "94befde1-14a2-5ace-a86f-7f3dcf7f2edc",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "ClinicalTrials.gov lists it as recruiting at a U.S. site in Houston, Texas, about 1100 miles away; the ranking found vascular Ehlers-Danlos syndrome as its registered condition.",
+          "evidenceIds": [
+            "f6b4c029-27c7-5e90-a89b-11c06a869617"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": "There are few dedicated vEDS programs in the results, so the strongest fits are experts with many vEDS papers (Peter Byers in Seattle and Dianna Milewicz in Houston) and the vEDS-specific groups FIGHT vEDS and We Are vEDS. Two recruiting studies name vEDS as their condition, one in Texas and one in California. The Johns Hopkins connective tissue clinic in Baltimore is the nearest program to Ohio in this set, though its page does not name vEDS. None of the experts shows a direct contact path, so reaching them would start with each institution's main office or a clinic referral."
+}

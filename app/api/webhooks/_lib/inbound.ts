@@ -1,6 +1,7 @@
 import { parseAgentCallWebhook } from '../../../../lib/channels/agentcall';
 import { parseAgentMailWebhook } from '../../../../lib/channels/agentmail';
 import { ChannelError } from '../../../../lib/channels/types';
+import type { WebhookInboundEvent } from './ingest';
 import { contactReplyEvent, type SendEvents } from '../../../../lib/workflows/events';
 
 export const BODY_TOO_LARGE_TEXT = '[Reply body too large to receive automatically. Open it in AgentMail.]';
@@ -18,15 +19,7 @@ export interface InboundDeps {
   storeCallEvent(e: { contactId: string; providerCallId: string; eventType: string; status?: string; transcript?: string; endedAt?: Date }): Promise<void>;
   sendEvents: SendEvents;
   /** Called only after signature checks and provider-id dedupe. */
-  ingestInbound(event: {
-    channel: 'email' | 'voice';
-    contactId: string;
-    caseId: string;
-    body: string;
-    providerId: string;
-    subject?: string;
-    from?: string;
-  }): Promise<unknown>;
+  ingestInbound(event: WebhookInboundEvent): Promise<unknown>;
   now?: () => Date;
 }
 
@@ -74,7 +67,8 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
     if (result === 'duplicate') return json(200, { duplicate: true });
     await deps.ingestInbound({
       channel: 'email', contactId: owner.contactId, caseId: owner.caseId,
-      body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: parsed.messageId,
+      body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: parsed.messageId, providerThreadId: parsed.threadId,
+      receivedAt: receivedAt.toISOString(),
       ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
       ...(parsed.from !== undefined ? { from: parsed.from } : {}),
     });
@@ -104,7 +98,7 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
       });
       await deps.ingestInbound({
         channel: 'voice', contactId: owner.contactId, caseId: owner.caseId,
-        body: parsed.body, providerId: parsed.callId,
+        body: parsed.body, providerId: parsed.callId, receivedAt: receivedAt.toISOString(),
       });
       await deps.sendEvents(contactReplyEvent({
         contactId: owner.contactId, caseId: owner.caseId, dedupeKey: `${parsed.callId}-transcript`, callId: parsed.callId, receivedAt: receivedAt.toISOString(),

@@ -1,0 +1,13 @@
+{
+  "class": "call_to_schedule",
+  "confidence": 0.95,
+  "rationale": "The callee gave a scheduling line, its hours, and items to have on hand.",
+  "quote": "You can reach new patient scheduling at 202-555-0163.",
+  "phone": "202-555-0163",
+  "hours": "Weekdays from 9 to 5 Central",
+  "haveReady": [
+    "insurance card",
+    "photo ID",
+    "name of their referring doctor"
+  ]
+}

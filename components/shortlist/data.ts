@@ -1,12 +1,21 @@
 import { evidenceSchema, resourceSchema, scoreBreakdownItemSchema, type Evidence, type Resource } from "@/lib/contracts";
 import { z } from "zod";
 
+export const tierSchema = z.enum(["best", "good", "backup", "exclude"]);
+
+export const tierReasonSchema = z.object({
+  text: z.string().min(1),
+  evidenceIds: z.array(z.string()),
+});
+
 export const shortlistCardSchema = z.object({
   resource: resourceSchema,
   score: z.number(),
   breakdown: z.array(scoreBreakdownItemSchema),
   evidence: z.array(evidenceSchema),
   group: z.enum(["specialists", "trials", "advocacy", "aid"]),
+  tier: tierSchema.optional(),
+  tierReasons: z.array(tierReasonSchema).optional(),
 });
 
 export type ShortlistCard = z.infer<typeof shortlistCardSchema>;
@@ -208,32 +217,81 @@ export function groupOf(resource: Resource): ShortlistCard["group"] {
   return "aid";
 }
 
-export const shortlistResponseSchema = z.object({
-  items: z.array(
-    z.object({
-      resource: resourceSchema,
-      score: z.number(),
-      breakdown: z.array(scoreBreakdownItemSchema),
-      evidence: z.array(evidenceSchema),
-    }),
-  ),
+const shortlistRowSchema = z.object({
+  resource: resourceSchema,
+  score: z.number(),
+  breakdown: z.array(scoreBreakdownItemSchema),
+  evidence: z.array(evidenceSchema),
+  tier: tierSchema.optional(),
+  tierReasons: z.array(tierReasonSchema).optional(),
 });
 
-export function normalizeShortlist(value: unknown): ShortlistCard[] | null {
+export const shortlistResponseSchema = z.object({
+  items: z.array(shortlistRowSchema),
+  curationSummary: z.string().optional(),
+  suggested: z.array(z.string()).optional(),
+});
+
+export type ShortlistPayload = {
+  items: ShortlistCard[];
+  curationSummary: string | null;
+  suggested: string[];
+};
+
+export function normalizeShortlist(value: unknown): ShortlistPayload | null {
   const parsed = shortlistResponseSchema.safeParse(value);
   if (!parsed.success) return null;
-  return parsed.data.items.map((item) => ({ ...item, group: groupOf(item.resource) }));
+  const items = parsed.data.items.map((item) => ({ ...item, group: groupOf(item.resource) }));
+  const known = new Set(items.map((item) => item.resource.id));
+  return {
+    items,
+    curationSummary: parsed.data.curationSummary ?? null,
+    suggested: (parsed.data.suggested ?? []).filter((id, index, all) => known.has(id) && all.indexOf(id) === index),
+  };
 }
 
-export async function loadShortlist(caseId: string): Promise<{ items: ShortlistCard[]; preview: boolean }> {
+export type ShortlistBands = {
+  curated: boolean;
+  best: ShortlistCard[];
+  listed: ShortlistCard[];
+  excluded: ShortlistCard[];
+};
+
+/** Older shortlists have no tier. Those stay in one ranked list. */
+export function bandShortlist(cards: ShortlistCard[]): ShortlistBands {
+  const curated = cards.some((card) => card.tier !== undefined);
+  if (!curated) return { curated: false, best: [], listed: cards, excluded: [] };
+  return {
+    curated: true,
+    best: cards.filter((card) => card.tier === "best"),
+    listed: cards.filter((card) => card.tier !== "best" && card.tier !== "exclude"),
+    excluded: cards.filter((card) => card.tier === "exclude"),
+  };
+}
+
+export function evidenceForReason(card: ShortlistCard, evidenceIds: string[]): Evidence[] {
+  const wanted = new Set(evidenceIds);
+  return card.evidence.filter((item) => item.id !== undefined && wanted.has(item.id));
+}
+
+/** A saved choice wins. Otherwise pre-check the curator's suggestions, capped at the contact limit. */
+export function initialSelection(stored: string[] | null, suggested: string[], limit: number): string[] {
+  const source = stored ?? suggested;
+  return source.filter((id, index) => source.indexOf(id) === index).slice(0, limit);
+}
+
+export async function loadShortlist(caseId: string): Promise<{ payload: ShortlistPayload; preview: boolean }> {
   try {
     const response = await fetch(`/api/cases/${caseId}/shortlist`);
     if (response.ok) {
-      const items = normalizeShortlist(await response.json());
-      if (items) return { items, preview: false };
+      const payload = normalizeShortlist(await response.json());
+      if (payload) return { payload, preview: false };
     }
   } catch {
     // Research API is owned by another task and may be absent.
   }
-  return { items: previewShortlist, preview: true };
+  return {
+    payload: { items: previewShortlist, curationSummary: null, suggested: [] },
+    preview: true,
+  };
 }

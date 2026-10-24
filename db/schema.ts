@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  index,
+  vector,
   integer,
   jsonb,
   pgEnum,
@@ -186,6 +188,9 @@ export const caseCandidates = pgTable("case_candidates", {
     { factor: string; points: number; text: string; evidenceIds: string[] }[]
   >(),
   selected: boolean("selected").notNull().default(false),
+  // Curator tier beside the deterministic rank (task #26); reasons cite evidence ids.
+  tier: text("tier"),
+  tierReasons: jsonb("tier_reasons").$type<{ text: string; evidenceIds: string[] }[]>(),
 });
 
 export const contacts = pgTable("contacts", {
@@ -282,3 +287,25 @@ export const agentRuns = pgTable("agent_runs", {
   error: text("error"),
   outputSummary: text("output_summary"),
 });
+
+
+export const documentKindEnum = pgEnum("document_kind", [
+  "intake_report", "case_summary", "resource_page", "evidence", "inbound_message", "call_transcript", "patient_note",
+]);
+export const caseDocuments = pgTable("case_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  kind: documentKindEnum("kind").notNull(),
+  title: text("title").notNull(),
+  sourceUrl: text("source_url"),
+  sharedField: text("shared_field"),
+  chunkIndex: integer("chunk_index").notNull(),
+  content: text("content").notNull(),
+  embedding: vector("embedding", { dimensions: 1024 }).notNull(),
+  embedModel: text("embed_model").notNull(),
+  ...timestamps,
+}, table => [
+  index("case_documents_scope_idx").on(table.caseId, table.contactId),
+  index("case_documents_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+]);

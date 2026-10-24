@@ -19,8 +19,22 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1792820000000,
-      "tag": "0002_messages_provider_message_id_unique",
+      "when": 1792820643823,
+      "tag": "0002_case_candidate_tiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792821247004,
+      "tag": "0025_case_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792821300000,
+      "tag": "0026_messages_provider_message_id_unique",
       "breakpoints": true
     }
   ]

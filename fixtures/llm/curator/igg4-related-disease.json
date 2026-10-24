@@ -1,0 +1,133 @@
+{
+  "picks": [
+    {
+      "candidateId": "94fad7f4-6bdb-5b71-a876-500f68f7cb24",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Appears on 5 retrieved PubMed papers on IgG4-related disease, 1 in the last 5 years.",
+          "evidenceIds": [
+            "e455a5d7-ef29-505c-ad4b-79c26d1969fc",
+            "5f0615e4-e4ed-524e-a069-ba9fc11505eb"
+          ]
+        },
+        {
+          "text": "Registered in NPPES as a pathologist in Boston, MA; no direct contact path was found.",
+          "evidenceIds": [
+            "9a71555b-6bb9-562e-a9bf-9c741a08a58e"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "f04ee298-a251-5664-a992-e556e4462514",
+      "tier": "backup",
+      "reasons": [
+        {
+          "text": "Appears on 2 retrieved IgG4-related disease papers, none in the last 5 years.",
+          "evidenceIds": [
+            "22a896ef-61e0-5c32-af67-cd457e69d4a4",
+            "e769acc8-cd9c-56f8-aaca-a88d2f9e3b64"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "46047afa-f56a-502f-a3d6-2e250ef71179",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Henry Ford Health lists an IgG4 Related Disease Center, a dedicated program that names the disease.",
+          "evidenceIds": [
+            "0954d1a5-f326-5a80-a091-974c56e7293e"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "a1aaaf2e-7f47-56d6-aa8d-5d3f9cf4bd11",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "UChicago Medicine lists an IgG4-Related Disease Clinical Consortium, a dedicated program that names the disease.",
+          "evidenceIds": [
+            "78a846df-73a0-5329-ac94-b5a2135f90a4"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "6ca41871-1cad-5523-a9ba-b824906a5779",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Mass General Brigham lists an IgG4-Related Systemic Disease Program.",
+          "evidenceIds": [
+            "ee542264-f2d4-5779-a752-bf1b07ff651c"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "51bdd990-2d57-552d-a79e-9e8912cd8074",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "Provides advocacy, education and support for people living with IgG4-related disease.",
+          "evidenceIds": [
+            "235af56c-60d3-5519-a0ae-89078a649f23"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "7ea95968-03e5-5c63-a266-42188295ddbc",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "A press release describes a financial assistance program for people with IgG4-related disease covering out-of-pocket costs such as copays and insurance premiums.",
+          "evidenceIds": [
+            "ec5fbd3f-accf-5870-ab37-1f238dbc218b"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "ef06d8d0-0007-5279-a7cf-67ca4736fdca",
+      "tier": "good",
+      "reasons": [
+        {
+          "text": "Patient assistance page says NORD has helped patients struggling to afford medications and care; general rare-disease resource.",
+          "evidenceIds": [
+            "9b3d738d-bebc-507f-a476-825cf6bc1ea9"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "27375d59-9b71-51fc-a914-29d67367baf6",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "ClinicalTrials.gov lists it as recruiting at U.S. sites in Atlanta, Georgia and Boston, Massachusetts; the Atlanta site is the closest to North Carolina.",
+          "evidenceIds": [
+            "8615cc94-5f70-563d-a831-6640c2296500"
+          ]
+        }
+      ]
+    },
+    {
+      "candidateId": "5fee8cde-92a9-5722-a9b7-6383fbc9014a",
+      "tier": "best",
+      "reasons": [
+        {
+          "text": "ClinicalTrials.gov lists it as recruiting at multiple U.S. sites, and the ranking found a recruiting site in North Carolina.",
+          "evidenceIds": [
+            "4a9d441f-b8ba-52e3-a760-5cdd29b44d1a"
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": "The two dedicated IgG4-related disease programs found are the Henry Ford Health center and the UChicago Medicine consortium; both are out of state, and neither page shows an intake contact. Two studies are listed as recruiting, and one has a site in North Carolina. The IgG4ward! Foundation offers support and The Assistance Fund describes copay and premium help, so both are practical first calls. Contacting each program's main line to ask about new-patient intake is the next step."
+}

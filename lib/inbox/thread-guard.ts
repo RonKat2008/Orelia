@@ -6,6 +6,8 @@ export interface InboxEvent {
   subject?: string;
   body: string;
   receivedAt: string;
+  /** Fixture stem under fixtures/llm/inbox/ for offline replay. */
+  offlineKey?: string;
 }
 export type ThreadKey = Pick<InboxEvent, 'providerThreadId' | 'providerCallId'>;
 export type ThreadLookup = (key: ThreadKey) => string | undefined | Promise<string | undefined>;

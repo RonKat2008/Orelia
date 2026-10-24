@@ -1,0 +1,9 @@
+{
+  "class": "send_slides",
+  "confidence": 0.94,
+  "rationale": "The center asks for the original pathology slides from the named lab.",
+  "quote": "please arrange for the original pathology slides to be sent to us",
+  "lab": {
+    "name": "Harborview Diagnostic Laboratory"
+  }
+}

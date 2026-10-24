@@ -1,0 +1,10 @@
+{
+  "class": "declined",
+  "confidence": 0.88,
+  "rationale": "The sender declines and names another center for the patient to contact.",
+  "quote": "We are unable to take on this case at Westmoor.",
+  "redirect": {
+    "name": "Lakeview University Sarcoma Center",
+    "email": "lakeview-intake@example.org"
+  }
+}

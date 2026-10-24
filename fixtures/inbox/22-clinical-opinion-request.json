@@ -1,0 +1,19 @@
+{
+  "id": "22-clinical-opinion-request",
+  "description": "Reply asks the patient what treatment they would recommend; a clinical opinion request is never answered, so it is unclear.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_clinical_opinion_request",
+    "from": "intake@harborview-cancer.example.org",
+    "subject": "Re: New patient inquiry",
+    "body": "Hello,\n\nBefore we go further, what treatment would you recommend for this condition, and do you think surgery is the right option? Let us know.\n\nThanks,\nMarcus Bell\nPatient Liaison",
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "22-clinical-opinion-request"
+  },
+  "expected": {
+    "class": "unclear",
+    "confidence": 0.3,
+    "rationale": "The reply asks a clinical question, which needs your review.",
+    "quote": "what treatment would you recommend for this condition"
+  }
+}

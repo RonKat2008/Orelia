@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { createClaudeClient, hasClaudeCredentials } from "@/lib/ai/gateway";
 import { z, type ZodObject, type ZodRawShape, type ZodType } from "zod";
 import { isOffline } from "@/lib/env";
 import { flagMedicalAdvice } from "@/lib/safety/no-medical-advice";
@@ -41,7 +42,7 @@ export class MedicalAdviceError extends Error {
 }
 
 function replayOffline(): boolean {
-  return isOffline(process.env.WAYFINDER_OFFLINE) || !process.env.ANTHROPIC_API_KEY;
+  return isOffline(process.env.WAYFINDER_OFFLINE) || !hasClaudeCredentials();
 }
 
 function collectStrings(value: unknown, out: string[] = []): string[] {
@@ -92,7 +93,7 @@ export interface MessagesClient {
 
 let defaultClient: MessagesClient | undefined;
 function getDefaultClient(): MessagesClient {
-  defaultClient ??= new Anthropic();
+  defaultClient ??= createClaudeClient();
   return defaultClient;
 }
 

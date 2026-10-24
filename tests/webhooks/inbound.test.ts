@@ -1,8 +1,13 @@
 import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BODY_TOO_LARGE_TEXT, handleAgentCallWebhook, handleAgentMailWebhook, type InboundDeps } from '../../app/api/webhooks/_lib/inbound';
 import { isUniqueViolation } from '../../app/api/webhooks/_lib/postgres';
-import { ingestInbound } from '../../lib/inbox/ingest';
+import { createWebhookIngest } from '../../app/api/webhooks/_lib/ingest';
+import { FixtureClassifier } from '../../lib/inbox/classifier';
+import type { DraftContext } from '../../lib/inbox/drafts';
+import { MemoryTaskStore } from '../../lib/inbox/task-store';
 import { recordingSendEvents } from '../../lib/workflows/events';
 
 const MAIL_SECRET = `whsec_${Buffer.from('mail-test-secret-bytes').toString('base64')}`;
@@ -43,12 +48,49 @@ function setup(secret: string | null = MAIL_SECRET) {
   return { deps, stored, callEvents, events, ingested };
 }
 
-describe('ingestInbound', () => {
-  it('classifies a verified reply without sending', async () => {
-    const result = await ingestInbound({
-      channel: 'email', contactId: 'c', caseId: 'k', providerId: 'pm', body: 'never seen before',
+describe('ingestInbound (real inbox ingest, in-memory deps)', () => {
+  const fixture = JSON.parse(readFileSync(path.join(process.cwd(), 'fixtures', 'inbox', '01-needs-referral-basic.json'), 'utf8')) as { event: { body: string } };
+  const ctx: DraftContext = {
+    contactId: OWNER.contactId, caseId: OWNER.caseId, resourceName: 'Example Sarcoma Center',
+    currentPhysician: { name: 'Dr. Local', email: 'local@example.test' },
+    consent: { sharedFields: ['diagnosis'] }, caseRecord: { diagnosis: 'Synthetic rare sarcoma' },
+  };
+  const build = (storeDocument: (id: string, m: { body?: string; transcript?: string }) => Promise<unknown>) => {
+    const tasks = new MemoryTaskStore();
+    const ingest = createWebhookIngest({
+      inbox: { classifier: new FixtureClassifier(), loadContext: () => ctx, tasks },
+      storeDocument: storeDocument as never, onDocumentError: () => {},
     });
-    expect(result.class).toBe('unclear');
+    return { tasks, ingest };
+  };
+  const event = { channel: 'email' as const, contactId: OWNER.contactId, caseId: OWNER.caseId, providerId: 'pm-1', providerThreadId: 'thread-1', body: fixture.event.body };
+
+  it('classifies a verified reply, persists draft tasks that need approval, and stores the document', async () => {
+    const docs: unknown[][] = [];
+    const { tasks, ingest } = build(async (...a) => { docs.push(a); });
+    const result = await ingest(event);
+    expect(result.classification.class).toBe('needs_referral');
+    expect(result.tasks[0]).toMatchObject({ kind: 'referral', status: 'open', requiresApproval: true });
+    expect(await tasks.task(result.tasks[0]!.id)).toBeDefined();
+    expect(docs).toEqual([[OWNER.contactId, expect.objectContaining({ body: fixture.event.body })]]);
+  });
+
+  it('keeps unknown text as unclear', async () => {
+    const { ingest } = build(async () => undefined);
+    const result = await ingest({ ...event, body: 'never seen before' });
+    expect(result.classification.class).toBe('unclear');
+  });
+
+  it('does not fail when the case document store fails', async () => {
+    const { ingest } = build(async () => { throw new Error('store down'); });
+    await expect(ingest(event)).resolves.toMatchObject({ contactId: OWNER.contactId });
+  });
+
+  it('stores voice transcripts as transcripts', async () => {
+    const docs: unknown[][] = [];
+    const { ingest } = build(async (...a) => { docs.push(a); });
+    await ingest({ ...event, channel: 'voice', providerId: 'call-1', providerThreadId: undefined });
+    expect(docs[0]![1]).toEqual({ transcript: fixture.event.body });
   });
 });
 

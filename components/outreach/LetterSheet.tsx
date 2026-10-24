@@ -32,7 +32,7 @@ export function LetterSheet({
     >
       <figcaption className="grid gap-1 border-b border-line bg-paper-2/60 px-5 py-4 sm:px-7">
         <span className="flex items-center gap-2 text-micro font-semibold uppercase text-ink-3">
-          <Icon aria-hidden className="size-4" />
+          <Icon aria-hidden className={cn("size-4", channel === "email" ? "text-ch-email" : "text-ch-call")} />
           {label}
         </span>
         <span className="min-w-0 [overflow-wrap:anywhere] text-small text-ink-2">

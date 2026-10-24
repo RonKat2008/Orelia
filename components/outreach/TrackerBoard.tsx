@@ -26,6 +26,7 @@ import { loadCaseContacts, loadCaseTasks } from "./case-activity";
 import { formatDay, titleCase } from "./format";
 import { TaskCard } from "./TaskCard";
 import { CONTACT_STATES, STATE_LABELS, type ContactState, type OutreachTask } from "./types";
+import { cn } from "@/lib/ui/cn";
 
 /** The happy path. Declined and stalled are exits from it, not steps on it. */
 const JOURNEY: readonly ContactState[] = [
@@ -232,7 +233,7 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
                     <AvatarInitials name={name.replace(/[()]/g, "")} size="md" />
                     <div className="grid min-w-0 flex-1 gap-1">
                       <CardEyebrow className="flex items-center gap-1.5">
-                        <ChannelIcon aria-hidden className="size-3.5" /> {contact.channel === "email" ? "Email" : "Phone"}
+                        <ChannelIcon aria-hidden className={cn("size-3.5", contact.channel === "email" ? "text-ch-email" : "text-ch-call")} /> {contact.channel === "email" ? "Email" : "Phone"}
                       </CardEyebrow>
                       <CardTitle id={`journey-${contact.id}`} className="break-words text-h4">
                         {name}

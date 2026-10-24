@@ -57,6 +57,13 @@ const KIND_LABEL: Record<string, string> = {
   organization: "Organization",
 };
 
+const KIND_TONE: Record<string, string> = {
+  expert: "text-src-paper",
+  institution: "text-src-center",
+  trial: "text-src-trial",
+  organization: "text-src-aid",
+};
+
 const SHORTCUTS: [string, string][] = [
   ["J / K", "next, previous"],
   ["C / X", "correct, incorrect"],
@@ -211,7 +218,7 @@ export function ReviewCheckpoint({ caseId, resources, agreement = [], onSubmit }
               >
                 <header className="flex flex-wrap items-start justify-between gap-3">
                   <div className="grid min-w-0 gap-1">
-                    <p className="m-0 text-micro font-semibold uppercase text-ink-3">
+                    <p className={cn("m-0 text-micro font-semibold uppercase", KIND_TONE[resource.targetKind] ?? "text-ink-3")}>
                       {KIND_LABEL[resource.targetKind] ?? resource.targetKind}
                       {resource.rank != null ? ` · rank ${resource.rank}` : ""}
                       {resource.score != null ? ` · score ${resource.score}` : ""}

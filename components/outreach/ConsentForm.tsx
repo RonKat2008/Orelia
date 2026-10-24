@@ -41,6 +41,7 @@ import {
 import { loadCaseContacts, loadShortlistNames, withDisplayNames } from "./case-activity";
 import { buildLetterPreview } from "./letter";
 import { LetterSheet } from "./LetterSheet";
+import { cn } from "@/lib/ui/cn";
 
 type Phase =
   | { kind: "loading" }
@@ -229,7 +230,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
                   <h4 className="m-0 text-micro font-semibold uppercase text-ink-3">How we will reach them</h4>
                   <p className="m-0 flex flex-wrap items-center gap-3 rounded-md bg-paper-2 px-4 py-3 shadow-inset">
                     <span className="flex min-w-0 items-center gap-3">
-                      <ChannelIcon aria-hidden className="size-5 shrink-0 text-teal" />
+                      <ChannelIcon aria-hidden className={cn("size-5 shrink-0", contact.channel === "email" ? "text-ch-email" : "text-ch-call")} />
                       <span className="min-w-0 break-words text-body font-semibold text-ink">
                         {contact.channel === "email" ? "Email" : "Phone call"} · {contact.address}
                       </span>

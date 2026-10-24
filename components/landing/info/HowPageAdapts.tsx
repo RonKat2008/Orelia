@@ -4,9 +4,15 @@ import { CHANNEL_ICONS, ChannelCombo } from "../channels";
 import { CHANNELS, PLAN_EXAMPLES } from "../content";
 
 const SURFACES = {
-  call: "border-teal/25 bg-teal-soft",
-  email: "border-sage/50 bg-sage-soft",
-  web: "border-gold/50 bg-gold-soft",
+  call: "border-ch-call/25 bg-ch-call-soft",
+  email: "border-ch-email/25 bg-ch-email-soft",
+  web: "border-ch-apply/25 bg-ch-apply-soft",
+} as const;
+
+const CHANNEL_ICON_TONES = {
+  call: "text-ch-call",
+  email: "text-ch-email",
+  web: "text-ch-apply",
 } as const;
 
 /** Channels (call / email / apply online) and the example plan combos. */
@@ -27,8 +33,8 @@ export function HowPageAdapts() {
           const Icon = CHANNEL_ICONS[channel.id];
           return (
             <li key={channel.id} className={cn("grid min-w-0 content-start gap-3 rounded-lg border p-6", SURFACES[channel.id])}>
-              <span aria-hidden className="grid size-11 place-items-center rounded-md border border-line bg-card text-teal shadow-xs">
-                <Icon className="size-5" strokeWidth={1.75} />
+              <span aria-hidden className="grid size-11 place-items-center rounded-md border border-line bg-card shadow-xs">
+                <Icon className={cn("size-5", CHANNEL_ICON_TONES[channel.id])} strokeWidth={1.75} />
               </span>
               <h3 className="m-0 font-display text-h3 text-ink display-soft">{channel.label}</h3>
               <p className="m-0 text-body text-ink-2">{channel.body}</p>

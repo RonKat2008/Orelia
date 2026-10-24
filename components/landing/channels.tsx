@@ -10,9 +10,9 @@ export const CHANNEL_ICONS: Record<ChannelId, LucideIcon> = {
 };
 
 const CHANNEL_TONES = {
-  call: "teal",
-  email: "sage",
-  web: "gold",
+  call: "call",
+  email: "email",
+  web: "apply",
 } as const;
 
 export function channelLabel(id: ChannelId): string {

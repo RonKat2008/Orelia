@@ -1,0 +1,48 @@
+{
+  "records": [
+    {
+      "kind": "institution",
+      "id": "inst:henry-ford-health-igg4-related-disease-center",
+      "name": "Henry Ford Health IgG4 Related Disease Center",
+      "institutionKind": "rare_disease_center",
+      "evidenceRefs": [
+        "https://www.henryford.com/services/rheumatology/igg4-related-disease-center"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:mass-general-brigham-igg4-related-systemic-disease-program",
+      "name": "Mass General Brigham IgG4-Related Systemic Disease Program",
+      "institutionKind": "rare_disease_center",
+      "evidenceRefs": [
+        "https://www.massgeneralbrigham.org/en/services/igg4-related-systemic-disease"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:uchicago-medicine-igg4-related-disease-clinical-consortium",
+      "name": "UChicago Medicine IgG4-Related Disease Clinical Consortium",
+      "institutionKind": "rare_disease_center",
+      "evidenceRefs": [
+        "https://www.uchicagomedicine.org/conditions-services/gastroenterology/igg4-related-disease-igg4-rd"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "disease_program",
+      "claim": "Henry Ford Health lists an IgG4 Related Disease Center.",
+      "sourceUrl": "https://www.henryford.com/services/rheumatology/igg4-related-disease-center"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "Mass General Brigham lists an IgG4-Related Systemic Disease Program.",
+      "sourceUrl": "https://www.massgeneralbrigham.org/en/services/igg4-related-systemic-disease"
+    },
+    {
+      "claimType": "disease_program",
+      "claim": "UChicago Medicine lists an IgG4-Related Disease Clinical Consortium.",
+      "sourceUrl": "https://www.uchicagomedicine.org/conditions-services/gastroenterology/igg4-related-disease-igg4-rd"
+    }
+  ]
+}

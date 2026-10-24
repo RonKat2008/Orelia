@@ -1,0 +1,98 @@
+{
+  "records": [
+    {
+      "kind": "expert",
+      "id": "expert:brielle-blanchard",
+      "name": "Brielle Blanchard",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Brielle&last_name=Blanchard&state=PA&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1568608651",
+      "name": "Jerad Gardner",
+      "npi": "1568608651",
+      "credentials": "MD",
+      "specialty": "Pathology, Anatomic Pathology & Clinical Pathology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1568608651"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1952050106",
+      "name": "Liping Li",
+      "npi": "1952050106",
+      "credentials": "MD,PhD",
+      "specialty": "Student in an Organized Health Care Education/Training Program",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1952050106"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:haijun-zhou",
+      "name": "Haijun Zhou",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Haijun&last_name=Zhou&state=TX&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1124055447",
+      "name": "Richard Moore",
+      "npi": "1124055447",
+      "credentials": "M.D.",
+      "specialty": "Internal Medicine",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1124055447"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1780611632",
+      "name": "Ritu Nayar",
+      "npi": "1780611632",
+      "credentials": "MD",
+      "specialty": "Pathology, Cytopathology",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1780611632"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Brielle Blanchard (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Brielle&last_name=Blanchard&state=PA&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1568608651 is registered to JERAD GARDNER (Pathology, Anatomic Pathology & Clinical Pathology) in DANVILLE, PA; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1568608651"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1952050106 is registered to LIPING LI (Student in an Organized Health Care Education/Training Program) in DANVILLE, PA; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1952050106"
+    },
+    {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Haijun Zhou (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Haijun&last_name=Zhou&state=TX&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1124055447 is registered to RICHARD MOORE (Internal Medicine) in PROVIDENCE, RI; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1124055447"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1780611632 is registered to RITU NAYAR (Pathology, Cytopathology) in CHICAGO, IL; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1780611632"
+    }
+  ]
+}

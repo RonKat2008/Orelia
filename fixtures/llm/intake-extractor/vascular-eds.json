@@ -1,0 +1,18 @@
+{
+  "diseaseName": "Vascular Ehlers-Danlos syndrome",
+  "diseaseCodes": {
+    "mesh": "D004535",
+    "icd10": "Q79.6"
+  },
+  "subtype": "Vascular type (COL3A1 c.1834G>A, p.Gly612Ser)",
+  "stageSummary": "Genetically confirmed; one GI perforation, one vertebral artery dissection; no aortic root dilation",
+  "homeCity": "Columbus",
+  "homeState": "OH",
+  "insurer": "Meridian Shield Select HMO",
+  "planId": "MSS-2290-8815-OH",
+  "travelLimitMiles": 300,
+  "goals": [
+    "second_opinion",
+    "support"
+  ]
+}

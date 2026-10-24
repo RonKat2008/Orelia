@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:igg4ward-foundation",
+      "name": "IgG4ward! Foundation",
+      "organizationKind": "advocacy",
+      "url": "https://igg4ward.org/",
+      "evidenceRefs": [
+        "https://igg4ward.org/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "advocacy_organization",
+      "claim": "The IgG4ward! Foundation's site describes providing advocacy, education and support for people living with IgG4-related disease.",
+      "sourceUrl": "https://igg4ward.org/"
+    }
+  ]
+}

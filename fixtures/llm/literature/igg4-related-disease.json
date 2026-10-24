@@ -1,0 +1,102 @@
+{
+  "records": [
+    {
+      "kind": "expert",
+      "id": "expert:john-stone",
+      "name": "John Stone",
+      "evidenceRefs": [
+        "https://pubmed.ncbi.nlm.nih.gov/34669430/",
+        "https://pubmed.ncbi.nlm.nih.gov/40071397/"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:guy-katz",
+      "name": "Guy Katz",
+      "evidenceRefs": [
+        "https://pubmed.ncbi.nlm.nih.gov/34669430/",
+        "https://pubmed.ncbi.nlm.nih.gov/38574744/"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:cory-perugino",
+      "name": "Cory Perugino",
+      "evidenceRefs": [
+        "https://pubmed.ncbi.nlm.nih.gov/32939060/",
+        "https://pubmed.ncbi.nlm.nih.gov/38574744/"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:amita-sharma",
+      "name": "Amita Sharma",
+      "evidenceRefs": [
+        "https://pubmed.ncbi.nlm.nih.gov/38574746/"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:dinah-parums",
+      "name": "Dinah Parums",
+      "evidenceRefs": [
+        "https://pubmed.ncbi.nlm.nih.gov/40528331/"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:thomas-guy",
+      "name": "Thomas Guy",
+      "evidenceRefs": [
+        "https://pubmed.ncbi.nlm.nih.gov/38574744/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "disease_publications",
+      "claim": "John Stone is listed as an author of PMID 34669430. In the PubMed results retrieved for IgG4-related disease, John Stone appears on 6 paper(s), 4 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/34669430/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "John Stone is listed as an author of PMID 40071397. In the PubMed results retrieved for IgG4-related disease, John Stone appears on 6 paper(s), 4 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/40071397/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Guy Katz is listed as an author of PMID 34669430. In the PubMed results retrieved for IgG4-related disease, Guy Katz appears on 3 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/34669430/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Guy Katz is listed as an author of PMID 38574744. In the PubMed results retrieved for IgG4-related disease, Guy Katz appears on 3 paper(s), 3 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/38574744/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Cory Perugino is listed as an author of PMID 32939060. In the PubMed results retrieved for IgG4-related disease, Cory Perugino appears on 2 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/32939060/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Cory Perugino is listed as an author of PMID 38574744. In the PubMed results retrieved for IgG4-related disease, Cory Perugino appears on 2 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/38574744/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Amita Sharma is listed as an author of PMID 38574746. In the PubMed results retrieved for IgG4-related disease, Amita Sharma appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/38574746/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Dinah Parums is listed as an author of PMID 40528331. In the PubMed results retrieved for IgG4-related disease, Dinah Parums appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/40528331/"
+    },
+    {
+      "claimType": "disease_publications",
+      "claim": "Thomas Guy is listed as an author of PMID 38574744. In the PubMed results retrieved for IgG4-related disease, Thomas Guy appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/38574744/"
+    }
+  ]
+}

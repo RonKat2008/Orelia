@@ -1,0 +1,36 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:sarcoma-patient-advocacy-global-network-spagn",
+      "name": "Sarcoma Patient Advocacy Global Network (SPAGN)",
+      "organizationKind": "advocacy",
+      "url": "https://www.sarcoma-patients.org/",
+      "evidenceRefs": [
+        "https://www.sarcoma-patients.org/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:sarc-patient-advocacy-directory",
+      "name": "SARC Patient Advocacy Directory",
+      "organizationKind": "advocacy",
+      "url": "https://sarctrials.org/patient-resources/patient-advocacy-directory/",
+      "evidenceRefs": [
+        "https://sarctrials.org/patient-resources/patient-advocacy-directory/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "advocacy_organization",
+      "claim": "SPAGN's home page describes it as the global network of national sarcoma patient advocacy organizations.",
+      "sourceUrl": "https://www.sarcoma-patients.org/"
+    },
+    {
+      "claimType": "advocacy_organization",
+      "claim": "SARC's Patient Advocacy Directory page lists sarcoma patient advocacy and support organizations.",
+      "sourceUrl": "https://sarctrials.org/patient-resources/patient-advocacy-directory/"
+    }
+  ]
+}

@@ -40,6 +40,7 @@ export interface CtgovStudy {
   meshTerms?: string[];
   stdAges?: string[];
   minimumAge?: string;
+  maximumAge?: string;
   /** Overall official names (study leads), as listed. */
   investigators?: string[];
   /** True when the registry lists a central contact. */

@@ -8,6 +8,7 @@ export const taskKindSchema = z.enum([
   "redirect",
   "unclear",
   "declined",
+  "application",
 ]);
 
 export const taskStatusSchema = z.enum(["open", "approved", "done"]);

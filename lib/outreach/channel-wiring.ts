@@ -4,6 +4,11 @@ import { AgentCallChannel } from '../channels/agentcall';
 import { AgentMailChannel } from '../channels/agentmail';
 import { MockCaller } from '../channels/mock-caller';
 import { MockMailer } from '../channels/mock-mailer';
+import { defaultMockPages, MockBrowserProvider } from '../channels/mock-browser';
+import { KernelBrowserProvider } from '../channels/kernel-web';
+import { WebFormChannel, type LoadUpload } from '../channels/web-form';
+import type { BrowserProvider } from '../channels/browser-types';
+import { parseWebAllowlist } from '../safety/web-allowlist';
 import type { ChannelGuardOptions, ProviderName } from '../channels/types';
 import { parseAllowlist } from '../safety/allowlist';
 import { FOLLOW_UP_BUSINESS_DAYS } from '../safety/caps';
@@ -25,6 +30,7 @@ export function guardFromEnv(env: Env): ChannelGuardOptions {
     allowlist: parseAllowlist(env.OUTBOUND_ALLOWLIST ?? ''),
     mode: env.NODE_ENV === 'production' ? 'prod' : 'dev',
     outboundAllowReal: env.OUTBOUND_ALLOW_REAL,
+    webAllowlist: parseWebAllowlist(env.OUTBOUND_WEB_ALLOWLIST ?? ''),
   };
 }
 
@@ -60,6 +66,17 @@ export function selectChannels(env: Env = process.env, deps: { now?: () => Date;
   const key = `${providers.email}/${providers.voice}`;
   if (!loggedChoices.has(key)) { loggedChoices.add(key); console.info(`[outreach] channels: email=${providers.email} voice=${providers.voice}`); }
   return { channels: [email, voice], providers };
+}
+
+/**
+ * Web-form channel: offline => MockBrowserProvider with the demo pages; otherwise Kernel, which reports
+ * status 'unconfigured' (and never touches the network) when KERNEL_API_KEY is absent.
+ */
+export function selectWebChannel(env: Env = process.env, deps: { loadUpload?: LoadUpload; provider?: BrowserProvider } = {}): WebFormChannel {
+  const guard = guardFromEnv(env);
+  const apiKey = env.KERNEL_API_KEY?.trim();
+  const provider = deps.provider ?? (isOffline(env) ? new MockBrowserProvider(defaultMockPages) : new KernelBrowserProvider(apiKey ? { apiKey } : {}));
+  return new WebFormChannel({ provider, guard, ...(deps.loadUpload ? { loadUpload: deps.loadUpload } : {}) });
 }
 
 // ---------------------------------------------------------------------------

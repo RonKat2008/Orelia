@@ -56,9 +56,12 @@ export function deriveContext(row: ContactRowLike, outbound: OutboundMessageLike
 }
 
 export const FOLLOW_UP_SUBJECT = 'Re: Patient intake inquiry';
-/** Deliberately contains no case details, so a follow-up can never leak an unticked field. */
+/**
+ * Deliberately contains no case details, so a follow-up can never leak an unticked field. The same text is used for
+ * the business-day 3 and day 7 follow-ups, so a patient can review and pre-approve it once.
+ */
 export const FOLLOW_UP_BODY =
-  'Hello,\n\nI am following up on my earlier message about a patient inquiry. Could you let me know the next step, or the right person to contact?\n\nThank you.';
+  'Hello,\n\nI am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?\n\nThank you for your time.';
 
 export function followUpContent(channel: 'email' | 'voice'): { subject?: string; body: string } {
   return channel === 'email'

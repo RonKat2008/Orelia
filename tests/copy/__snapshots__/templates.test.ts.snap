@@ -1,0 +1,1489 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`outbound copy for epithelioid-sarcoma > matches the reviewed wording (snapshot) 1`] = `
+{
+  "callScript": {
+    "contextDocIds": [],
+    "disclosure": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.",
+    "facts": [
+      "Diagnosis: Epithelioid sarcoma",
+      "Home state: AZ",
+      "Can travel up to (miles): 600",
+    ],
+    "fallbacks": {
+      "medicalQuestion": "I can't answer medical questions. The patient will discuss those with their care team.",
+      "unsharedQuestion": "I'll have the patient follow up",
+    },
+    "purpose": "Do you see patients with Epithelioid sarcoma? If so, could you tell us how to request a new-patient appointment and what you need from us?",
+    "questions": [
+      "What is the first step?",
+      "Do you need a referral, records or any forms?",
+      "How and when is it easiest to reach your team?",
+    ],
+    "resourceContext": [],
+  },
+  "inboxTasks": {
+    "call_to_schedule": {
+      "draftBody": "Call Example Specialty Center at 555-0100
+Hours: Mon-Fri 9-5
+Have ready: referral",
+      "title": "Call Example Specialty Center to schedule",
+    },
+    "declined": {
+      "draftBody": "Example Specialty Center said they can't help with this request. Approving closes this contact. Next option on your list: Other Example Center",
+      "title": "Example Specialty Center is not able to help",
+    },
+    "needs_referral": {
+      "draftBody": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has said they need a referral before they can schedule the patient. Could you please send a referral to Example Specialty Center (1 Test Way)?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Request a referral to Example Specialty Center",
+    },
+    "redirect": {
+      "draftBody": "Hello New Patient Office,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center suggested we contact New Patient Office about the patient being seen. Could you tell us the next step, or the right person to contact?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Contact New Patient Office instead",
+    },
+    "send_records": {
+      "draftBody": "Records packet checklist for Example Specialty Center:
+[ ] Visit and clinic notes
+[ ] Imaging reports and discs
+[ ] Pathology reports
+[ ] Lab results
+[ ] insurance card
+
+Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for copies of the patient's records. Could you please send the items below to Example Specialty Center (1 Test Way)?
+
+- Visit and clinic notes
+- Imaging reports and discs
+- Pathology reports
+- Lab results
+- insurance card
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Send records to Example Specialty Center",
+    },
+    "send_slides": {
+      "draftBody": "Hello Example Lab,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for the patient's original pathology slides. Could you please release them to Example Specialty Center (1 Test Way)?
+
+Accession number: SYN-0001
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Request slides for Example Specialty Center",
+    },
+    "unclear": {
+      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.",
+      "title": "Review the reply from Example Specialty Center",
+    },
+  },
+  "outbound": {
+    "follow-up/email": {
+      "body": "Hello,
+
+I am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Re: Patient intake inquiry",
+    },
+    "follow-up/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+Hello,
+
+I am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?
+
+Thank you for your time.",
+      "subject": undefined,
+    },
+    "inbox-letter/needs_referral": {
+      "body": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has said they need a referral before they can schedule the patient. Could you please send a referral to Example Specialty Center (1 Test Way)?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Referral request for Example Specialty Center",
+    },
+    "inbox-letter/redirect": {
+      "body": "Hello New Patient Office,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center suggested we contact New Patient Office about the patient being seen. Could you tell us the next step, or the right person to contact?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Introduction on behalf of a patient (via Example Specialty Center)",
+    },
+    "inbox-letter/send_records": {
+      "body": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for copies of the patient's records. Could you please send the items below to Example Specialty Center (1 Test Way)?
+
+- Visit and clinic notes
+- Imaging reports and discs
+- Pathology reports
+- Lab results
+- insurance card
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Records release request for Example Specialty Center",
+    },
+    "inbox-letter/send_slides": {
+      "body": "Hello Example Lab,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for the patient's original pathology slides. Could you please release them to Example Specialty Center (1 Test Way)?
+
+Accession number: SYN-0001
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Pathology slide request for Example Specialty Center",
+    },
+    "initial/advocacy/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to connect with your organization. Could you tell us what resources and programs are available to patients, and how to get started?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/advocacy/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to connect with your organization. Could you tell us what resources and programs are available to patients, and how to get started?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/expert/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Do you see patients with Epithelioid sarcoma? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/expert/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: Do you see patients with Epithelioid sarcoma? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/financial-aid/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/financial-aid/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/institution/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Do you see patients with Epithelioid sarcoma? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/institution/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: Do you see patients with Epithelioid sarcoma? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/travel-aid/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/travel-aid/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/trial/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to ask about screening for your study. Could you tell us how the eligibility review works and who to contact?
+
+Details the patient chose to share:
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/trial/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to ask about screening for your study. Could you tell us how the eligibility review works and who to contact?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Epithelioid sarcoma
+- Home state: AZ
+- Can travel up to (miles): 600
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+  },
+}
+`;
+
+exports[`outbound copy for igg4-related-disease > matches the reviewed wording (snapshot) 1`] = `
+{
+  "callScript": {
+    "contextDocIds": [],
+    "disclosure": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.",
+    "facts": [
+      "Diagnosis: IgG4-related disease",
+      "Home state: NC",
+      "Can travel up to (miles): 150",
+    ],
+    "fallbacks": {
+      "medicalQuestion": "I can't answer medical questions. The patient will discuss those with their care team.",
+      "unsharedQuestion": "I'll have the patient follow up",
+    },
+    "purpose": "Do you see patients with IgG4-related disease? If so, could you tell us how to request a new-patient appointment and what you need from us?",
+    "questions": [
+      "What is the first step?",
+      "Do you need a referral, records or any forms?",
+      "How and when is it easiest to reach your team?",
+    ],
+    "resourceContext": [],
+  },
+  "inboxTasks": {
+    "call_to_schedule": {
+      "draftBody": "Call Example Specialty Center at 555-0100
+Hours: Mon-Fri 9-5
+Have ready: referral",
+      "title": "Call Example Specialty Center to schedule",
+    },
+    "declined": {
+      "draftBody": "Example Specialty Center said they can't help with this request. Approving closes this contact. Next option on your list: Other Example Center",
+      "title": "Example Specialty Center is not able to help",
+    },
+    "needs_referral": {
+      "draftBody": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has said they need a referral before they can schedule the patient. Could you please send a referral to Example Specialty Center (1 Test Way)?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Request a referral to Example Specialty Center",
+    },
+    "redirect": {
+      "draftBody": "Hello New Patient Office,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center suggested we contact New Patient Office about the patient being seen. Could you tell us the next step, or the right person to contact?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Contact New Patient Office instead",
+    },
+    "send_records": {
+      "draftBody": "Records packet checklist for Example Specialty Center:
+[ ] Visit and clinic notes
+[ ] Imaging reports and discs
+[ ] Pathology reports
+[ ] Lab results
+[ ] insurance card
+
+Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for copies of the patient's records. Could you please send the items below to Example Specialty Center (1 Test Way)?
+
+- Visit and clinic notes
+- Imaging reports and discs
+- Pathology reports
+- Lab results
+- insurance card
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Send records to Example Specialty Center",
+    },
+    "send_slides": {
+      "draftBody": "Hello Example Lab,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for the patient's original pathology slides. Could you please release them to Example Specialty Center (1 Test Way)?
+
+Accession number: SYN-0001
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Request slides for Example Specialty Center",
+    },
+    "unclear": {
+      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.",
+      "title": "Review the reply from Example Specialty Center",
+    },
+  },
+  "outbound": {
+    "follow-up/email": {
+      "body": "Hello,
+
+I am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Re: Patient intake inquiry",
+    },
+    "follow-up/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+Hello,
+
+I am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?
+
+Thank you for your time.",
+      "subject": undefined,
+    },
+    "inbox-letter/needs_referral": {
+      "body": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has said they need a referral before they can schedule the patient. Could you please send a referral to Example Specialty Center (1 Test Way)?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Referral request for Example Specialty Center",
+    },
+    "inbox-letter/redirect": {
+      "body": "Hello New Patient Office,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center suggested we contact New Patient Office about the patient being seen. Could you tell us the next step, or the right person to contact?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Introduction on behalf of a patient (via Example Specialty Center)",
+    },
+    "inbox-letter/send_records": {
+      "body": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for copies of the patient's records. Could you please send the items below to Example Specialty Center (1 Test Way)?
+
+- Visit and clinic notes
+- Imaging reports and discs
+- Pathology reports
+- Lab results
+- insurance card
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Records release request for Example Specialty Center",
+    },
+    "inbox-letter/send_slides": {
+      "body": "Hello Example Lab,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for the patient's original pathology slides. Could you please release them to Example Specialty Center (1 Test Way)?
+
+Accession number: SYN-0001
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Pathology slide request for Example Specialty Center",
+    },
+    "initial/advocacy/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to connect with your organization. Could you tell us what resources and programs are available to patients, and how to get started?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/advocacy/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to connect with your organization. Could you tell us what resources and programs are available to patients, and how to get started?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/expert/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Do you see patients with IgG4-related disease? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/expert/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: Do you see patients with IgG4-related disease? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/financial-aid/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/financial-aid/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/institution/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Do you see patients with IgG4-related disease? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/institution/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: Do you see patients with IgG4-related disease? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/travel-aid/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/travel-aid/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/trial/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to ask about screening for your study. Could you tell us how the eligibility review works and who to contact?
+
+Details the patient chose to share:
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/trial/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to ask about screening for your study. Could you tell us how the eligibility review works and who to contact?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: IgG4-related disease
+- Home state: NC
+- Can travel up to (miles): 150
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+  },
+}
+`;
+
+exports[`outbound copy for vascular-eds > matches the reviewed wording (snapshot) 1`] = `
+{
+  "callScript": {
+    "contextDocIds": [],
+    "disclosure": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.",
+    "facts": [
+      "Diagnosis: Vascular Ehlers-Danlos syndrome",
+      "Home state: OH",
+      "Can travel up to (miles): 300",
+    ],
+    "fallbacks": {
+      "medicalQuestion": "I can't answer medical questions. The patient will discuss those with their care team.",
+      "unsharedQuestion": "I'll have the patient follow up",
+    },
+    "purpose": "Do you see patients with Vascular Ehlers-Danlos syndrome? If so, could you tell us how to request a new-patient appointment and what you need from us?",
+    "questions": [
+      "What is the first step?",
+      "Do you need a referral, records or any forms?",
+      "How and when is it easiest to reach your team?",
+    ],
+    "resourceContext": [],
+  },
+  "inboxTasks": {
+    "call_to_schedule": {
+      "draftBody": "Call Example Specialty Center at 555-0100
+Hours: Mon-Fri 9-5
+Have ready: referral",
+      "title": "Call Example Specialty Center to schedule",
+    },
+    "declined": {
+      "draftBody": "Example Specialty Center said they can't help with this request. Approving closes this contact. Next option on your list: Other Example Center",
+      "title": "Example Specialty Center is not able to help",
+    },
+    "needs_referral": {
+      "draftBody": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has said they need a referral before they can schedule the patient. Could you please send a referral to Example Specialty Center (1 Test Way)?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Request a referral to Example Specialty Center",
+    },
+    "redirect": {
+      "draftBody": "Hello New Patient Office,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center suggested we contact New Patient Office about the patient being seen. Could you tell us the next step, or the right person to contact?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Contact New Patient Office instead",
+    },
+    "send_records": {
+      "draftBody": "Records packet checklist for Example Specialty Center:
+[ ] Visit and clinic notes
+[ ] Imaging reports and discs
+[ ] Pathology reports
+[ ] Lab results
+[ ] insurance card
+
+Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for copies of the patient's records. Could you please send the items below to Example Specialty Center (1 Test Way)?
+
+- Visit and clinic notes
+- Imaging reports and discs
+- Pathology reports
+- Lab results
+- insurance card
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Send records to Example Specialty Center",
+    },
+    "send_slides": {
+      "draftBody": "Hello Example Lab,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for the patient's original pathology slides. Could you please release them to Example Specialty Center (1 Test Way)?
+
+Accession number: SYN-0001
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "title": "Request slides for Example Specialty Center",
+    },
+    "unclear": {
+      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.",
+      "title": "Review the reply from Example Specialty Center",
+    },
+  },
+  "outbound": {
+    "follow-up/email": {
+      "body": "Hello,
+
+I am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Re: Patient intake inquiry",
+    },
+    "follow-up/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+Hello,
+
+I am following up on an earlier message sent on behalf of a patient who would like to connect with your team. Could you let us know the next step, or the right person to contact?
+
+Thank you for your time.",
+      "subject": undefined,
+    },
+    "inbox-letter/needs_referral": {
+      "body": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has said they need a referral before they can schedule the patient. Could you please send a referral to Example Specialty Center (1 Test Way)?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Referral request for Example Specialty Center",
+    },
+    "inbox-letter/redirect": {
+      "body": "Hello New Patient Office,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center suggested we contact New Patient Office about the patient being seen. Could you tell us the next step, or the right person to contact?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Introduction on behalf of a patient (via Example Specialty Center)",
+    },
+    "inbox-letter/send_records": {
+      "body": "Hello Dr. Example,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for copies of the patient's records. Could you please send the items below to Example Specialty Center (1 Test Way)?
+
+- Visit and clinic notes
+- Imaging reports and discs
+- Pathology reports
+- Lab results
+- insurance card
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Records release request for Example Specialty Center",
+    },
+    "inbox-letter/send_slides": {
+      "body": "Hello Example Lab,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Example Specialty Center has asked for the patient's original pathology slides. Could you please release them to Example Specialty Center (1 Test Way)?
+
+Accession number: SYN-0001
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+To respond, just reply to this email.
+
+Thank you for your help.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Pathology slide request for Example Specialty Center",
+    },
+    "initial/advocacy/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to connect with your organization. Could you tell us what resources and programs are available to patients, and how to get started?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/advocacy/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to connect with your organization. Could you tell us what resources and programs are available to patients, and how to get started?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/expert/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Do you see patients with Vascular Ehlers-Danlos syndrome? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/expert/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: Do you see patients with Vascular Ehlers-Danlos syndrome? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/financial-aid/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/financial-aid/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/institution/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+Do you see patients with Vascular Ehlers-Danlos syndrome? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/institution/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: Do you see patients with Vascular Ehlers-Danlos syndrome? If so, could you tell us how to request a new-patient appointment and what you need from us?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/travel-aid/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/travel-aid/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to apply for assistance. Could you tell us how to apply and what the application process involves?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+    "initial/trial/email": {
+      "body": "Hello,
+
+I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.
+
+The patient would like to ask about screening for your study. Could you tell us how the eligibility review works and who to contact?
+
+Details the patient chose to share:
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Nothing is attached. To respond, just reply to this email; if you need records or a referral, say so and the patient can arrange it.
+
+Thank you for your time.
+
+About this message: an AI assistant wrote it on behalf of the patient, and the patient reviewed and approved it before it was sent. Replies are read by the assistant and shared with the patient.",
+      "subject": "Patient intake inquiry",
+    },
+    "initial/trial/voice": {
+      "body": "This is an AI assistant, not a person, calling on behalf of a patient who approved this call.
+
+What we are asking: The patient would like to ask about screening for your study. Could you tell us how the eligibility review works and who to contact?
+
+Details the patient approved for sharing (share only these, and only if asked):
+- Diagnosis: Vascular Ehlers-Danlos syndrome
+- Home state: OH
+- Can travel up to (miles): 300
+
+Questions to ask:
+- What is the first step?
+- Do you need a referral, records or any forms?
+- How and when is it easiest to reach your team?
+
+If asked anything not in the approved details, say: "I'll have the patient follow up."
+
+If asked a medical or clinical question, say: "I can't answer medical questions. The patient will discuss those with their care team."
+
+Never give medical advice, make promises, or say how soon the patient needs to be seen.
+
+Close with: "Thank you for your time. The patient will follow up."",
+      "subject": undefined,
+    },
+  },
+}
+`;

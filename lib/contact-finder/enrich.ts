@@ -18,7 +18,8 @@ import { webFormEvidence } from '../plan/contact-points';
 
 export const MAX_ENRICHED_INSTITUTIONS = 8;
 export const MAX_ENRICHED_ORGANIZATIONS = 4;
-const MAX_ROWS_PER_TARGET = 4;
+/** Rows kept from one search; each search (phone, then form) has its own room so phones never crowd out the form. */
+const MAX_ROWS_PER_QUERY = 3;
 const RESULTS = 5;
 /** Registries and aggregators never count as the institution's own site. */
 const NOT_OWN_HOST = /(?:^|\.)(?:cancer\.gov|nih\.gov|clinicaltrials\.gov|wikipedia\.org|healthgrades\.com|vitals\.com|webmd\.com|yelp\.com|facebook\.com|linkedin\.com|zocdoc\.com|usnews\.com)$/;
@@ -127,11 +128,11 @@ export async function institutionContactRows(target: EnrichTarget, exa: ExaPort,
   const have = new Set(contactRoutesOf(target.evidence).map((r) => `${r.channel}:${r.address}`));
   const out: Array<Evidence & { id: string }> = [];
   const asked = new Set<string>();
-  for (let i = 0; i < MAX_QUERIES_PER_TARGET && out.length < MAX_ROWS_PER_TARGET; i++) {
+  for (let i = 0; i < MAX_QUERIES_PER_TARGET; i++) {
     const query = enrichmentQuery({ ...target, evidence: [...target.evidence, ...out] });
     if (!query || asked.has(query)) break;
     asked.add(query);
-    out.push(...await rowsForQuery(target, query, exa, fetchedAt, have, MAX_ROWS_PER_TARGET - out.length));
+    out.push(...await rowsForQuery(target, query, exa, fetchedAt, have, MAX_ROWS_PER_QUERY));
   }
   return out;
 }

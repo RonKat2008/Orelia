@@ -66,6 +66,18 @@ describe('institution contact enrichment', () => {
     expect(rows.map((r) => r.claimType)).toEqual(['contact_point.voice.new_patient_line', 'contact_point.web_form.intake_form']);
   });
 
+  it('still runs the form search when the phone search filled its rows', async () => {
+    // Arrange: a phone directory page with many intake lines.
+    const directoryPage: ExaResult = { url: 'https://my.clevelandclinic.org/about/contact/phone-directory', title: 'Phone Directory', text: 'New patient appointments: 216-444-5000\nNew patient appointments: 216-444-5001\nNew patient appointments: 216-444-5002\nNew patient appointments: 216-444-5003\nReferrals: 216-444-5004' };
+    const form: ExaResult = { url: 'https://my.clevelandclinic.org/webappointment', title: 'Request an Appointment', text: 'Request an appointment online. To fill out this form, enter the patient name, date of birth and reason for visit.' };
+    const search = vi.fn(async ({ query }: { query: string }) => (query === formQuery('Cleveland Clinic Genomic Medicine Institute') ? [form] : [directoryPage]));
+    // Act
+    const rows = await institutionContactRows(target(), { search } as ExaPort, AT);
+    // Assert
+    expect(rows.filter((r) => r.claimType.startsWith('contact_point.voice.')).length).toBeLessThanOrEqual(3);
+    expect(rows.some((r) => r.claimType === 'contact_point.web_form.intake_form')).toBe(true);
+  });
+
   it('searches for a form page when an institution has a phone but no email or online form, and stamps the form', async () => {
     // Arrange
     const phoneRow = { id: 'cp', claimType: 'contact_point.voice.new_patient_line', claim: '+12164445000', sourceUrl: page.url, sourceKind: 'exa' };

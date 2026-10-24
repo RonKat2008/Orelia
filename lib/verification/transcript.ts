@@ -269,7 +269,8 @@ export function checkLlmAnswer(
   if (a.value === 'unclear' || a.quote === null || a.turnIndex === null) return answer(a.key, 'unclear');
   const turn = prepared.turns[a.turnIndex];
   if (!turn || turn.speaker !== 'callee' || prepared.flagged.has(a.turnIndex)) return answer(a.key, 'unclear');
-  if (a.turnIndex <= asked.get(a.key)!.turnIndex) return answer(a.key, 'unclear');
+  // The cited turn must be a reply to THIS question: after it, before the agent speaks again.
+  if (!replyWindow(prepared.turns, asked.get(a.key)!.turnIndex).includes(a.turnIndex)) return answer(a.key, 'unclear');
   const quote = findVerbatim(turn.text, a.quote);
   if (!quote || quote.length > MAX_QUOTE) return answer(a.key, 'unclear');
   if (a.key === 'how_to_start') {
@@ -277,9 +278,9 @@ export function checkLlmAnswer(
     const detail = sanitizeDetail(quote);
     return detail ? answer(a.key, 'yes', quote, a.turnIndex, detail) : answer(a.key, 'unclear');
   }
-  // The quote itself must not say the opposite (or hedge) by the deterministic reading.
+  // The deterministic reading of the quote must exist and agree: a non-answer quote never carries the model's value.
   const c = classifyTurn(quote, a.key);
-  if (c && c.value !== a.value) return answer(a.key, 'unclear');
+  if (!c || c.value !== a.value) return answer(a.key, 'unclear');
   return answer(a.key, a.value, quote, a.turnIndex);
 }
 

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { MockCaller } from '@/lib/channels/mock-caller';
 import { evidenceSchema } from '@/lib/contracts/evidence';
@@ -7,7 +8,7 @@ import { badgesFor } from '@/lib/verification/badges';
 import { verificationRequestSchema, type VerificationRequest } from '@/lib/verification/contract';
 import { callRecordUrl, resultToEvidence } from '@/lib/verification/evidence';
 import { syntheticVerificationTranscript } from '@/lib/verification/mock-transcript';
-import { VerificationError, VerificationService, type VerificationResource } from '@/lib/verification/service';
+import { STALE_CALLING_MS, VerificationError, VerificationService, type VerificationResource } from '@/lib/verification/service';
 import { MemoryVerificationStore } from '@/lib/verification/store';
 import { phoneEvidence, PHONE, RECORD } from './fixtures';
 
@@ -16,19 +17,19 @@ const TARGET = '22222222-2222-4222-8222-222222222222';
 const KEY = `expert:${TARGET}`;
 const NOW = new Date('2026-10-24T15:00:00.000Z');
 
-function setup(over: { evidence?: VerificationResource['evidence']; contacts?: SafetyContact[]; allowlist?: string; simulate?: boolean } = {}) {
+function setup(over: { evidence?: VerificationResource['evidence']; contacts?: SafetyContact[]; allowlist?: string; simulate?: boolean; clock?: () => Date; extra?: VerificationResource[] } = {}) {
   const store = new MemoryVerificationStore();
   const voice = new MockCaller({ allowlist: [PHONE] }, () => NOW);
   const send = vi.spyOn(voice, 'send');
   const resource: VerificationResource = { name: 'Example Sarcoma Center', targetKind: 'expert', targetId: TARGET, evidence: over.evidence ?? [phoneEvidence()] };
   const service = new VerificationService({
     store,
-    loadResource: async (_c, key) => (key === KEY ? resource : null),
+    loadResource: async (_c, key) => (key === KEY ? resource : over.extra?.find(r => `${r.targetKind}:${r.targetId}` === key) ?? null),
     caseRecord: async id => (id === CASE ? RECORD : null),
     contacts: async () => over.contacts ?? [],
     voice,
     env: { OUTBOUND_ALLOWLIST: over.allowlist ?? PHONE, NODE_ENV: 'test' },
-    clock: () => NOW,
+    clock: over.clock ?? (() => NOW),
     appBaseUrl: 'https://app.example.org',
     ...(over.simulate ? { simulate: (r: VerificationRequest) => syntheticVerificationTranscript(r) } : {}),
   });
@@ -75,7 +76,8 @@ describe('VerificationService.approve', () => {
     const { service, send, voice } = setup();
     const { request } = await service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] });
     const placed = await service.approve(CASE, request.id);
-    expect(placed).toMatchObject({ status: 'calling', callId: 'mock-call-1', approvedAt: NOW.toISOString() });
+    expect(placed).toMatchObject({ status: 'calling', approvedAt: NOW.toISOString() });
+    expect(placed.callId).toMatch(/^mock-call-/);
     expect(send).toHaveBeenCalledTimes(1);
     expect(voice.calls[0]).toMatchObject({ to: PHONE, script: request.script, caseId: CASE });
     expect(await code(service.approve(CASE, request.id))).toMatchObject({ status: 409, code: 'already_approved' });
@@ -135,7 +137,7 @@ describe('VerificationService.ingest -> evidence and badges', () => {
     expect(done!.evidenceIds).toHaveLength(3);
     for (const row of store.evidence) {
       expect(evidenceSchema.safeParse(row).success).toBe(true);
-      expect(row).toMatchObject({ sourceKind: 'phone_call', sourceUrl: `https://app.example.org/cases/${CASE}/threads?call=mock-call-1` });
+      expect(row).toMatchObject({ sourceKind: 'phone_call', sourceUrl: `https://app.example.org/cases/${CASE}/threads?call=${placed.callId}` });
     }
     expect(store.evidence.map(e => e.claimType)).toEqual(['verification.new_adult_patients', 'verification.referral_required', 'verification.consultations']);
     expect(store.evidence[0].claim).toBe('Verified by phone on 2026-10-24: "Yes, we are." — accepts new adult patients.');
@@ -201,5 +203,55 @@ describe('badgesFor / resultToEvidence', () => {
     expect(req('a', '2026-10-20T10:00:00.000Z', 'yes').evidenceIds).toHaveLength(1);
     expect(() => callRecordUrl('http://app.example.org', CASE, 'c')).toThrow();
     expect(callRecordUrl('http://localhost:3000/', CASE, 'c 1')).toBe(`http://localhost:3000/cases/${CASE}/threads?call=c+1`);
+  });
+});
+
+describe('safety review: stale calls, pending call ids and an atomic contact cap', () => {
+  const OTHER = '33333333-3333-4333-8333-333333333333';
+  const MIN = 60_000;
+  const stuck = async (store: MemoryVerificationStore, template: VerificationRequest, approvedAt: Date, targetId = OTHER) =>
+    store.create({ ...template, id: randomUUID(), targetId, resourceKey: `expert:${targetId}`, status: 'calling', approvedAt: approvedAt.toISOString(), callId: null });
+
+  it('a calling request older than the timeout is failed on list/create and no longer blocks re-verification', async () => {
+    let now = NOW;
+    const { service, store } = setup({ clock: () => now });
+    const { request } = await service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] });
+    await store.update(request.id, 'awaiting_approval', { status: 'calling' });
+    expect(await code(service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] }))).toMatchObject({ status: 409, code: 'already_calling' });
+    now = new Date(NOW.getTime() + STALE_CALLING_MS + MIN);
+    expect((await service.list(CASE)).requests.find(r => r.id === request.id)).toMatchObject({ status: 'failed', blockedReasons: ['call_timeout'] });
+    expect((await service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] })).created).toBe(true);
+  });
+
+  it('a stale calling request no longer counts toward the contact cap', async () => {
+    const contacts: SafetyContact[] = Array.from({ length: 4 }, (_, i) => ({ id: `c${i}`, caseId: CASE, targetId: `other-${i}`, address: `+1617555020${i}`, state: 'sent' }));
+    const { service, store, send } = setup({ contacts });
+    const { request } = await service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] });
+    await stuck(store, request, new Date(NOW.getTime() - STALE_CALLING_MS - MIN));
+    expect(await service.approve(CASE, request.id)).toMatchObject({ status: 'calling' });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('hasPendingCall is true only for a recent calling request whose call id is not saved yet', async () => {
+    const { service, store } = setup();
+    const { request } = await service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] });
+    expect(await service.hasPendingCall()).toBe(false);
+    await stuck(store, request, new Date(NOW.getTime() - STALE_CALLING_MS - MIN));
+    expect(await service.hasPendingCall()).toBe(false);
+    await stuck(store, request, new Date(NOW.getTime() - MIN), '44444444-4444-4444-8444-444444444444');
+    expect(await service.hasPendingCall()).toBe(true);
+  });
+
+  it('two concurrent approvals at cap-1 for different resources place exactly one call', async () => {
+    const contacts: SafetyContact[] = Array.from({ length: 4 }, (_, i) => ({ id: `c${i}`, caseId: CASE, targetId: `other-${i}`, address: `+1617555020${i}`, state: 'sent' }));
+    const extra: VerificationResource = { name: 'Other Center', targetKind: 'expert', targetId: OTHER, evidence: [phoneEvidence()] };
+    const { service, send, store } = setup({ contacts, extra: [extra] });
+    const a = (await service.create(CASE, { resourceKey: KEY, sharedFields: ['diseaseName'] })).request;
+    const b = (await service.create(CASE, { resourceKey: `expert:${OTHER}`, sharedFields: ['diseaseName'] })).request;
+    const results = await Promise.all([code(service.approve(CASE, a.id)), code(service.approve(CASE, b.id))]);
+    expect(results.filter(r => r === null)).toHaveLength(1);
+    expect(results.find(r => r !== null)).toMatchObject({ status: 422, reasons: ['contact_cap'] });
+    expect(send).toHaveBeenCalledTimes(1);
+    expect((await store.list(CASE)).map(r => r.status).sort()).toEqual(['blocked', 'calling']);
   });
 });

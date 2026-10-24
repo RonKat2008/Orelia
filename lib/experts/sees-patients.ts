@@ -33,23 +33,53 @@ export function clinicalTaxonomy(p: NppesProvider): string | null {
 
 export type NppesAssessment =
   | { kind: 'yes'; provider: NppesProvider; taxonomy: string }
-  | { kind: 'unknown'; reason: 'no_match' | 'multiple' | 'non_clinical' | 'lookup_failed' };
+  | { kind: 'unknown'; reason: 'no_match' | 'multiple' | 'non_clinical' | 'location_mismatch' | 'lookup_failed' };
 
-/** 'yes' only for exactly one exact-name individual (NPI-1) match with a clinical taxonomy. Absence is never 'no'. */
-export function assessNppes(providers: readonly NppesProvider[], first: string, last: string): NppesAssessment {
+/** Where the paper affiliation places the author: two-letter US state and/or city. */
+export interface LocationAnchor { state?: string; city?: string }
+
+const locNorm = (s: string | undefined): string => (s ?? '').toLowerCase().normalize('NFKD').replace(/[^a-z]/g, '');
+
+/**
+ * The registry entry is the paper author only when its practice location matches the affiliation: the state when the
+ * affiliation names one, otherwise the city. No anchor (or no registry location) never confirms identity.
+ */
+function locationMatches(p: NppesProvider, anchor: LocationAnchor): boolean {
+  const addresses = p.raw?.addresses ?? [];
+  if (anchor.state) {
+    const want = anchor.state.trim().toUpperCase();
+    return [p.state, ...addresses.map((a) => a.state)].some((s) => !!s && s.trim().toUpperCase() === want);
+  }
+  const city = locNorm(anchor.city);
+  return !!city && [p.city, ...addresses.map((a) => a.city)].some((c) => locNorm(c) === city);
+}
+
+/**
+ * 'yes' only for exactly one exact-name individual (NPI-1) match with a clinical taxonomy whose practice location
+ * matches the paper affiliation. Absence is never 'no'.
+ */
+export function assessNppes(providers: readonly NppesProvider[], first: string, last: string, anchor: LocationAnchor): NppesAssessment {
   const exact = providers.filter((p) => norm(p.firstName) === norm(first) && norm(p.lastName) === norm(last)
     && /^\d{10}$/.test(p.npi) && p.raw?.enumeration_type !== 'NPI-2');
   if (exact.length === 0) return { kind: 'unknown', reason: 'no_match' };
   if (exact.length > 1) return { kind: 'unknown', reason: 'multiple' };
   const provider = exact[0]!;
+  if (!locationMatches(provider, anchor)) return { kind: 'unknown', reason: 'location_mismatch' };
   const taxonomy = clinicalTaxonomy(provider);
   return taxonomy ? { kind: 'yes', provider, taxonomy } : { kind: 'unknown', reason: 'non_clinical' };
 }
 
 const PATIENT_LANGUAGE = /\b(appointments?|new patients?|accepting patients|schedule a visit|patient care|make an appointment)\b/i;
 
-/** A clinic profile page counts only when it names the author (first and last) and uses patient language. */
+const fold = (s: string): string => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const hasWord = (body: string, word: string): boolean => {
+  const w = fold(word).trim();
+  return !!w && new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(w)}(?![\\p{L}\\p{N}])`, 'u').test(body);
+};
+
+/** A clinic profile page counts only when it names the author (first and last, whole words) and uses patient language. */
 export function pageShowsPatientCare(text: string | undefined, title: string | undefined, first: string, last: string): boolean {
-  const body = `${title ?? ''} ${text ?? ''}`.toLowerCase();
-  return body.includes(first.toLowerCase()) && body.includes(last.toLowerCase()) && PATIENT_LANGUAGE.test(body);
+  const body = fold(`${title ?? ''} ${text ?? ''}`);
+  return hasWord(body, first) && hasWord(body, last) && PATIENT_LANGUAGE.test(body);
 }

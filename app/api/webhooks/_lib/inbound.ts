@@ -30,6 +30,11 @@ export interface VerificationInboundDeps {
   /** The transcript is untrusted data; it is parsed, never followed. */
   ingest(providerCallId: string, transcript: unknown, receivedAt: string): Promise<unknown>;
   status(providerCallId: string, status: string | undefined): Promise<unknown>;
+  /**
+   * True while a just-approved verification call has no saved provider call id yet. An unknown call id then gets a
+   * retryable 503 (the provider redelivers) instead of a 404 that would drop the transcript.
+   */
+  hasPendingCall?(): Promise<boolean>;
 }
 
 /** Raw AgentCall turns from an already signature-verified body. */
@@ -101,10 +106,13 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
   const raw = await req.text();
   let owner: Owner | undefined;
   let verification = false;
+  let pending = false;
   try {
+    // Runs only after the signature check passed.
     const parsed = await parseAgentCallWebhook(raw, req.headers, deps.secret, async id => {
       owner = await deps.lookupCall(id);
       if (!owner && deps.verification && await deps.verification.isVerificationCall(id)) { verification = true; return 'verification'; }
+      if (!owner && deps.verification?.hasPendingCall && await deps.verification.hasPendingCall()) { pending = true; return 'pending'; }
       return owner?.contactId;
     });
     if (verification && deps.verification && parsed.callId) {
@@ -115,6 +123,7 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
       else return json(200, { ignored: true });
       return json(200, { ok: true });
     }
+    if (pending) return json(503, { reasons: ['call_pending'], retryable: true });
     if (!owner || !parsed.callId) return json(404, { reasons: ['unknown_call'] });
     const at = new Date(parsed.receivedAt);
     const receivedAt = Number.isNaN(at.getTime()) ? (deps.now ?? (() => new Date()))() : at;

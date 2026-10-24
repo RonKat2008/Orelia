@@ -62,3 +62,18 @@ describe('AgentCall webhook: verification calls', () => {
     expect((await handleAgentCallWebhook(post(u, sign(u)), deps)).status).toBe(404);
   });
 });
+
+describe('safety review: early transcript before the call id is saved', () => {
+  const turns = [{ role: 'ai', text: 'Are you accepting new adult patients?' }, { role: 'human', text: 'Yes we are.' }];
+  it('an unknown call id while a verification call is pending -> retryable 503; otherwise 404', async () => {
+    const { deps, verification } = setup();
+    const u = body('call.transcript', { callId: 'early-call', transcript: turns });
+    const pending = { ...deps, verification: { ...verification, hasPendingCall: vi.fn(async () => true) } };
+    const res = await handleAgentCallWebhook(post(u, sign(u)), pending);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ reasons: ['call_pending'], retryable: true });
+    expect(verification.ingest).not.toHaveBeenCalled();
+    const idle = { ...deps, verification: { ...verification, hasPendingCall: vi.fn(async () => false) } };
+    expect((await handleAgentCallWebhook(post(u, sign(u)), idle)).status).toBe(404);
+  });
+});

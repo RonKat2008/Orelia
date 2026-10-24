@@ -64,6 +64,7 @@ function verificationInboundDeps(): InboundDeps['verification'] {
     },
     ingest: async (callId, transcript, receivedAt) => (await service()).ingest(callId, transcript, receivedAt),
     status: async (callId, status) => (await service()).callStatus(callId, status),
+    hasPendingCall: async () => (await service()).hasPendingCall(),
   };
 }
 

@@ -6,7 +6,9 @@
  *
  * Contact cap (strict): a verification call is outbound contact with a third party. The gate's contact list is the
  * case's outreach contacts plus one synthetic active contact per other resource already called for verification, and
- * a call to a resource not yet among the active ones is refused once MAX_ACTIVE_CONTACTS resources are active.
+ * a call to a resource not yet among the active ones is refused once MAX_ACTIVE_CONTACTS resources are active. The
+ * final check runs atomically with the 'calling' reservation (store.reserveCall). A 'calling' request older than
+ * STALE_CALLING_MS is failed (call_timeout) on list/create/approve, so a lost call never blocks or counts forever.
  */
 import { randomUUID } from 'node:crypto';
 import { parseAllowlist } from '../safety/allowlist';
@@ -54,6 +56,11 @@ export interface VerificationServiceDeps {
   simulate?(request: VerificationRequest): unknown;
 }
 
+/** A 'calling' request older than this (from approval) is treated as failed: it no longer blocks or counts. */
+export const STALE_CALLING_MS = 30 * 60_000;
+/** Window after approval in which the provider may report a call before its id is saved (webhook answers 503). */
+export const CALL_ID_PENDING_MS = 5 * 60_000;
+
 const FAILED_CALL_STATUSES = new Set(['failed', 'no-answer', 'no_answer', 'busy', 'canceled', 'cancelled', 'voicemail', 'error']);
 
 export class VerificationService {
@@ -66,8 +73,26 @@ export class VerificationService {
 
   async list(caseId: string): Promise<{ requests: VerificationRequest[]; badges: Record<string, VerificationBadge[]> }> {
     if (!(await this.deps.caseRecord(caseId))) throw new VerificationError(404, 'case_not_found');
-    const requests = await this.deps.store.list(caseId);
+    const requests = await this.sweepStale(caseId);
     return { requests, badges: badgesFor(requests) };
+  }
+
+  /**
+   * Marks 'calling' requests approved more than STALE_CALLING_MS ago as failed (call_timeout) and returns the case's
+   * requests as they are afterwards. Compare-and-set, so a transcript that lands meanwhile wins.
+   */
+  async sweepStale(caseId: string): Promise<VerificationRequest[]> {
+    const cutoff = this.clock().getTime() - STALE_CALLING_MS;
+    const requests = await this.deps.store.list(caseId);
+    const stale = requests.filter(r => r.status === 'calling' && Date.parse(r.approvedAt ?? r.createdAt) < cutoff);
+    if (!stale.length) return requests;
+    for (const r of stale) await this.deps.store.update(r.id, 'calling', { status: 'failed', blockedReasons: ['call_timeout'] });
+    return this.deps.store.list(caseId);
+  }
+
+  /** A verification call was just approved but its provider call id is not saved yet (early webhooks retry). */
+  async hasPendingCall(): Promise<boolean> {
+    return this.deps.store.hasPendingCall(new Date(this.clock().getTime() - CALL_ID_PENDING_MS).toISOString());
   }
 
   /** Best code-stamped voice contact point (plan origin preference for the resource's family). */
@@ -83,7 +108,7 @@ export class VerificationService {
     const phone = this.pickPhone(resource);
     if (!phone) throw new VerificationError(422, 'no_phone');
     const sharedFields = [...body.sharedFields] as VerifySharedField[];
-    const open = (await this.deps.store.list(caseId)).filter(r => r.resourceKey === body.resourceKey);
+    const open = (await this.sweepStale(caseId)).filter(r => r.resourceKey === body.resourceKey);
     if (open.some(r => r.status === 'calling')) throw new VerificationError(409, 'already_calling');
     const pending = open.find(r => r.status === 'awaiting_approval' && r.phone === phone.address
       && [...r.sharedFields].sort().join() === [...sharedFields].sort().join());
@@ -131,6 +156,7 @@ export class VerificationService {
       .some(cp => cp.channel === 'voice' && cp.evidenceId === request.phoneEvidenceId && cp.address === request.phone);
     if (!stillVerified) return this.block(request, ['phone_not_verified']);
 
+    await this.sweepStale(caseId);
     const contacts = await this.gateContacts(request);
     const gate = checkOutbound({
       draft: { channel: 'voice', address: request.phone, body: request.script, caseId, approvedAt: now },
@@ -147,8 +173,11 @@ export class VerificationService {
     if (!gate.ok || reasons.length) return this.block(request, reasons);
     if (this.deps.voice.kind !== 'voice') return this.block(request, ['channel_unavailable']);
 
-    // Reserve before dialing; an ambiguous send is never retried automatically.
-    const calling = await this.deps.store.update(request.id, 'awaiting_approval', { status: 'calling' });
+    // Reserve before dialing, re-checking the cap atomically with the reservation (parallel approvals for different
+    // resources cannot both take the last slot). An ambiguous send is never retried automatically.
+    const outreachActive = [...activeTargetIds(await this.deps.contacts(caseId))];
+    const calling = await this.deps.store.reserveCall(request.id, { outreachActive, cap: MAX_ACTIVE_CONTACTS });
+    if (calling === 'contact_cap') return this.block(request, ['contact_cap']);
     if (!calling) throw new VerificationError(409, 'already_approved');
     let callId: string | undefined;
     try {

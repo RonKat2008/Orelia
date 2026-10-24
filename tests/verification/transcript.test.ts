@@ -125,10 +125,11 @@ describe('parseVerificationTranscript (LLM, re-checked by code)', () => {
   const llm = (answers: unknown[]): VerificationExtractor => vi.fn(async () => JSON.stringify({ answers }));
 
   it('accepts an answer whose quote is verbatim (case/whitespace-normalized) in the cited callee turn', async () => {
-    const extractor = llm([{ key: 'referral_required', value: 'no', quote: 'you can  SELF-REFER', turnIndex: 3 }]);
-    const { result } = await parseVerificationTranscript(raw, { ...base, extractor });
+    const hedged = turns([[Q.adults, 'Absolutely, happy to see new adults.'], [Q.referral, 'Let me check. No, a referral is not needed.']]);
+    const extractor = llm([{ key: 'referral_required', value: 'no', quote: 'no, a  REFERRAL is not needed.', turnIndex: 3 }]);
+    const { result } = await parseVerificationTranscript(hedged, { ...base, extractor });
     expect(result.parser).toBe('llm');
-    expect(result.answers.find(a => a.key === 'referral_required')).toMatchObject({ value: 'no', quote: 'You can self-refer', turnIndex: 3 });
+    expect(result.answers.find(a => a.key === 'referral_required')).toMatchObject({ value: 'no', quote: 'No, a referral is not needed.', turnIndex: 3 });
     // Deterministic answers survive when the model has nothing better.
     expect(result.answers.find(a => a.key === 'new_adult_patients')?.value).toBe('yes');
   });
@@ -165,5 +166,26 @@ describe('parseVerificationTranscript (LLM, re-checked by code)', () => {
     await parseVerificationTranscript(raw, { ...base, extractor: ok });
     const messages = (ok as unknown as { mock: { calls: [{ content: string }[]][] } }).mock.calls[0][0];
     expect(messages[1].content).toContain('untrusted');
+  });
+});
+
+describe('safety review: LLM answers need deterministic agreement and the right reply window', () => {
+  const llm = (answers: unknown[]): VerificationExtractor => vi.fn(async () => JSON.stringify({ answers }));
+
+  it('a quote the code cannot classify (non-answer) is unclear, not the model value', async () => {
+    const raw = turns([[Q.adults, 'The office opens at nine.']]);
+    const extractor = llm([{ key: 'new_adult_patients', value: 'yes', quote: 'The office opens at nine.', turnIndex: 1 }]);
+    const { result } = await parseVerificationTranscript(raw, { ...base, extractor });
+    expect(result.answers.find(a => a.key === 'new_adult_patients')?.value).toBe('unclear');
+    const selfRefer = turns([[Q.referral, 'You can self-refer, honestly.']]);
+    const r2 = await parseVerificationTranscript(selfRefer, { ...base, extractor: llm([{ key: 'referral_required', value: 'no', quote: 'You can self-refer', turnIndex: 1 }]) });
+    expect(r2.result.answers.find(a => a.key === 'referral_required')?.value).toBe('unclear');
+  });
+
+  it('a quote from another question\'s reply window is unclear', async () => {
+    const raw = turns([[Q.adults, 'Yes, we are.'], [Q.referral, 'No, not needed.']]);
+    const extractor = llm([{ key: 'new_adult_patients', value: 'no', quote: 'No, not needed.', turnIndex: 3 }]);
+    const { result } = await parseVerificationTranscript(raw, { ...base, extractor });
+    expect(result.answers.find(a => a.key === 'new_adult_patients')).toMatchObject({ value: 'yes', turnIndex: 1 });
   });
 });

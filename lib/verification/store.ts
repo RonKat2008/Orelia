@@ -1,5 +1,5 @@
 /** Verification request persistence: port, in-memory implementation (tests / offline) and Postgres. */
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, sql } from 'drizzle-orm';
 import { verificationRequestSchema, type VerificationRequest, type VerificationStatus } from './contract';
 import type { VerificationEvidence } from './evidence';
 
@@ -14,8 +14,32 @@ export interface VerificationStore {
   approve(caseId: string, id: string, approvedAt: string): Promise<VerificationRequest | null>;
   /** Compare-and-set on the current status; null when the status changed meanwhile. */
   update(id: string, expected: VerificationStatus, patch: VerificationPatch): Promise<VerificationRequest | null>;
+  /**
+   * Atomic cap + reservation: moves an awaiting_approval request to 'calling' only if, counting the case's other
+   * active verification calls (calling/completed) together with `admission.outreachActive`, the request's resource is
+   * already active or fewer than `admission.cap` resources are. 'contact_cap' when the cap refused it; null when the
+   * status changed meanwhile. The check and the write cannot interleave with another reservation for the case.
+   */
+  reserveCall(id: string, admission: CallAdmission): Promise<VerificationRequest | 'contact_cap' | null>;
+  /** True when some request is 'calling' without a saved call id and was approved at or after `sinceIso`. */
+  hasPendingCall(sinceIso: string): Promise<boolean>;
   /** Optional: also write the rows into the case `evidence` table (Postgres). */
   saveEvidence?(request: VerificationRequest, rows: readonly VerificationEvidence[]): Promise<void>;
+}
+
+export interface CallAdmission {
+  /** activeTargetIds() of the case's outreach contacts ("t:<targetId>" / "c:<id>"). */
+  outreachActive: readonly string[];
+  cap: number;
+}
+
+const ACTIVE_CALL_STATUSES: readonly VerificationStatus[] = ['calling', 'completed'];
+
+/** Pure cap rule shared by both stores. */
+export function admitsCall(request: Pick<VerificationRequest, 'id' | 'targetId'>, caseRows: readonly VerificationRequest[], admission: CallAdmission): boolean {
+  const active = new Set(admission.outreachActive);
+  for (const r of caseRows) if (r.id !== request.id && ACTIVE_CALL_STATUSES.includes(r.status)) active.add(`t:${r.targetId}`);
+  return active.has(`t:${request.targetId}`) || active.size < admission.cap;
 }
 
 const valid = (r: unknown): VerificationRequest | null => {
@@ -59,6 +83,19 @@ export class MemoryVerificationStore implements VerificationStore {
     const next = verificationRequestSchema.parse({ ...r, ...structuredClone(patch) });
     this.rows.set(id, next);
     return structuredClone(next);
+  }
+  /** Synchronous check-and-set (no await between reading the case rows and writing), so reservations cannot interleave. */
+  async reserveCall(id: string, admission: CallAdmission) {
+    const r = this.rows.get(id);
+    if (!r || r.status !== 'awaiting_approval') return null;
+    const caseRows = [...this.rows.values()].filter(x => x.caseId === r.caseId);
+    if (!admitsCall(r, caseRows, admission)) return 'contact_cap' as const;
+    const next = verificationRequestSchema.parse({ ...r, status: 'calling' });
+    this.rows.set(id, next);
+    return structuredClone(next);
+  }
+  async hasPendingCall(sinceIso: string) {
+    return [...this.rows.values()].some(r => r.status === 'calling' && r.callId === null && !!r.approvedAt && r.approvedAt >= sinceIso);
   }
   async saveEvidence(_request: VerificationRequest, rows: readonly VerificationEvidence[]) {
     for (const row of rows) if (!this.evidence.some(e => e.id === row.id)) this.evidence.push(structuredClone(row));
@@ -127,6 +164,39 @@ export class PostgresVerificationStore implements VerificationStore {
     };
     const [row] = await db.update(t).set(set).where(and(eq(t.id, id), eq(t.status, expected))).returning();
     return row ? this.toRequest(row) : null;
+  }
+  /**
+   * One non-interactive transaction (neon-http batch): a per-case advisory lock, then a conditional UPDATE whose
+   * WHERE clause counts the active resources. READ COMMITTED takes the UPDATE's snapshot after the lock is held, so
+   * a concurrent reservation for the same case is either fully visible or not yet started.
+   */
+  async reserveCall(id: string, admission: CallAdmission) {
+    if (!UUID.test(id)) return null;
+    const { db, t } = await this.ctx();
+    const [current] = await db.select().from(t).where(eq(t.id, id)).limit(1);
+    if (!current || current.status !== 'awaiting_approval') return null;
+    const caseId = current.caseId;
+    const outreach = JSON.stringify([...admission.outreachActive]);
+    const others = sql`SELECT 't:' || o.target_id FROM verification_requests o
+      WHERE o.case_id = ${caseId} AND o.id <> ${id} AND o.status IN ('calling', 'completed')`;
+    const admits = sql`(
+      ('t:' || ${t.targetId}) IN (SELECT jsonb_array_elements_text(${outreach}::jsonb) UNION ${others})
+      OR (SELECT count(*) FROM (SELECT jsonb_array_elements_text(${outreach}::jsonb) AS k UNION ${others}) u) < ${admission.cap}
+    )`;
+    const [, rows] = await db.batch([
+      db.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`verification-cap:${caseId}`}))`),
+      db.update(t).set({ status: 'calling' }).where(and(eq(t.id, id), eq(t.status, 'awaiting_approval'), admits)).returning(),
+    ]);
+    const [row] = rows;
+    if (row) return this.toRequest(row);
+    const [after] = await db.select({ status: t.status }).from(t).where(eq(t.id, id)).limit(1);
+    return after?.status === 'awaiting_approval' ? 'contact_cap' as const : null;
+  }
+  async hasPendingCall(sinceIso: string) {
+    const { db, t } = await this.ctx();
+    const [row] = await db.select({ id: t.id }).from(t)
+      .where(and(eq(t.status, 'calling'), isNull(t.callId), gte(t.approvedAt, new Date(sinceIso)))).limit(1);
+    return !!row;
   }
   /** Rows go into the case-scoped evidence table when the target id is a uuid (Postgres resources); idempotent. */
   async saveEvidence(request: VerificationRequest, rows: readonly VerificationEvidence[]) {

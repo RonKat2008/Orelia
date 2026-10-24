@@ -3,6 +3,7 @@ import type { ExaPort, NppesPort } from '@/lib/agents/research/source-ports';
 import { cleanField } from '@/lib/agents/research/untrusted';
 import { parsePlanContactPoints } from '@/lib/plan/contact-points';
 import { EXPERT_CLAIM_TYPES, expertTraceSchema, type ExpertChain, type ExpertTrace, type ReachRoute, type TraceEvidence } from './contract';
+import { stateFromAffiliation } from '@/lib/agents/research/geo';
 import { extractInstitution, pageMatchesInstitution, slugify } from './affiliation';
 import { assessNppes, nppesRegistryUrl, pageShowsPatientCare, type NppesAssessment } from './sees-patients';
 import { classifyInstitutionPages, consultationQuery, type AcceptedPage } from './consultation';
@@ -54,15 +55,35 @@ export function papersFor(expert: TraceExpert, evidence: readonly TraceInputEvid
   return [...seen.values()];
 }
 
+const AFFILIATIONS = /listed affiliations?: (.+)$/;
+
+/** The expert's affiliation text: the PubMed profile first, else the first pubmed row that lists one. */
 function affiliationFor(expert: TraceExpert, evidence: readonly TraceInputEvidence[]): string | undefined {
   if (expert.profile?.affiliation) return expert.profile.affiliation;
   for (const e of evidence) {
     if (e.targetKind !== 'expert' || e.targetId !== expert.id) continue;
-    const m = /listed affiliations?: (.+)$/.exec(e.claim);
+    const m = AFFILIATIONS.exec(e.claim);
     if (m?.[1]) return m[1];
   }
   return undefined;
 }
+
+/**
+ * The paper whose own evidence row lists this institution for the expert, if any. Only such a row may be cited as
+ * "PMID X lists NAME with affiliation INST"; a profile-level affiliation is not tied to one paper.
+ */
+function affiliationPaper(expert: TraceExpert, evidence: readonly TraceInputEvidence[], instName: string): { pmid: string; url: string } | null {
+  for (const e of evidence) {
+    if (e.targetKind !== 'expert' || e.targetId !== expert.id || e.sourceKind !== 'pubmed') continue;
+    const pmid = PUBMED_URL.exec(e.sourceUrl)?.[1];
+    const listed = AFFILIATIONS.exec(e.claim)?.[1];
+    if (!pmid || !listed) continue;
+    if (listed.split(/;\s+/).some((a) => extractInstitution(a) === instName)) return { pmid, url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` };
+  }
+  return null;
+}
+
+const pubmedAuthorSearchUrl = (name: string): string => `https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(`${name}[Author]`)}`;
 
 async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
   try { return await fn(); } catch { return null; }
@@ -74,6 +95,17 @@ async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) 
   const worker = async () => { while (next < items.length) { const i = next++; out[i] = await fn(items[i]!); } };
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   return out;
+}
+
+/** Paper-affiliation location: the US state it names, else the comma segment right after the institution (city). */
+function affiliationAnchor(affText: string | undefined, instName: string | null): { state?: string; city?: string } {
+  const text = cleanField(affText, 600) ?? '';
+  const state = text ? stateFromAffiliation(text) : undefined;
+  if (state) return { state };
+  const parts = text.split(/;\s+/)[0]?.split(',').map((p) => p.trim()) ?? [];
+  const at = instName ? parts.findIndex((p) => p.startsWith(instName)) : -1;
+  const city = at >= 0 ? parts[at + 1]?.replace(/[.\d]+$/g, '').trim() : undefined;
+  return city && /^[\p{L} .'-]{2,60}$/u.test(city) ? { city } : {};
 }
 
 const splitName = (name: string): { first: string; last: string } => {
@@ -111,7 +143,8 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
   const perAuthor = await mapLimit(candidates, CONCURRENCY, async ({ expert, papers }): Promise<ExpertChain[]> => {
     const slug = slugify(expert.name);
     const { first, last } = splitName(expert.name);
-    const instName = extractInstitution(affiliationFor(expert, input.evidence));
+    const affText = affiliationFor(expert, input.evidence);
+    const instName = extractInstitution(affText);
     const instSlug = instName ? slugify(instName) : null;
     const chosen = papers.slice(0, MAX_PAPERS_PER_AUTHOR);
     const mk = (id: string, claimType: string, claim: string, sourceUrl: string, sourceKind: Evidence['sourceKind'], kind: 'expert' | 'institution' = 'expert'): TraceEvidence => ({
@@ -121,7 +154,7 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
 
     // Sees patients is a per-author fact, shared by that author's chains.
     const nppesResult: NppesAssessment = await safe(() => ports.nppes.lookup({ firstName: first, lastName: last, ...(expert.profile?.state ? { state: expert.profile.state } : {}) }))
-      .then((r) => (r ? assessNppes(r.providers, first, last) : ({ kind: 'unknown', reason: 'lookup_failed' } as const)));
+      .then((r) => (r ? assessNppes(r.providers, first, last, affiliationAnchor(affText, instName)) : ({ kind: 'unknown', reason: 'lookup_failed' } as const)));
     const facts = instName ? await institutionFacts(instName) : { institutionPage: null, consultation: null };
 
     let seesRowId: string | null = null;
@@ -137,6 +170,7 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
     } else {
       if (nppesResult.reason === 'multiple') seesText = 'More than one registry entry has this exact name, so the right person could not be confirmed.';
       else if (nppesResult.reason === 'non_clinical') seesText = 'The registry entry does not show a patient-care taxonomy, so seeing patients could not be confirmed.';
+      else if (nppesResult.reason === 'location_mismatch') seesText = 'The registry entry with this name is not listed in the same state or city as the paper affiliation, so the right person could not be confirmed.';
       else if (nppesResult.reason === 'lookup_failed') seesText = 'The provider registry could not be reached, so seeing patients could not be confirmed.';
       if (instName) {
         const clinic = await safe(() => ports.exa.search({ query: `"${expert.name}" "${instName}" appointments patients`, numResults: 5 }));
@@ -166,13 +200,19 @@ export async function traceExperts(input: TraceInput, ports: TracePorts): Promis
         `${instName} has a page titled "${facts.consultation.title}" describing a second-opinion or e-consultation program.`, facts.consultation.url, 'exa', 'institution'));
     }
 
+    // Affiliation: cite the paper whose own row lists the institution; otherwise word it as PubMed results.
+    const affPaper = instName ? affiliationPaper(expert, input.evidence, instName) : null;
+    const affId = !instName ? null : affPaper
+      ? addRow(mk(`xp:${slug}:${affPaper.pmid}:affiliation`, EXPERT_CLAIM_TYPES.affiliation,
+        `PMID ${affPaper.pmid} lists ${expert.name} with the affiliation ${instName}.`, affPaper.url, 'pubmed'))
+      : addRow(mk(`xp:${slug}:affiliation`, EXPERT_CLAIM_TYPES.affiliation,
+        `PubMed results list ${expert.name} with the affiliation ${instName}.`, pubmedAuthorSearchUrl(expert.name), 'pubmed'));
+
     const reach = reachRoutes(expert, input.evidence, facts, consultId, instRowIds[0] ?? null, addRow, fetchedAt);
 
     return chosen.map((paper): ExpertChain => {
       const authorshipId = addRow(mk(`xp:${slug}:${paper.pmid}:authorship`, EXPERT_CLAIM_TYPES.authorship,
         `${expert.name} is listed as an author of PMID ${paper.pmid}.`, paper.url, 'pubmed'));
-      const affId = instName ? addRow(mk(`xp:${slug}:${paper.pmid}:affiliation`, EXPERT_CLAIM_TYPES.affiliation,
-        `PMID ${paper.pmid} lists ${expert.name} with the affiliation ${instName}.`, paper.url, 'pubmed')) : null;
       return {
         id: `${slug}:${paper.pmid}`,
         paper: { pmid: paper.pmid, title: paper.title, ...(paper.year ? { year: paper.year } : {}), url: paper.url, evidenceId: authorshipId },

@@ -1,6 +1,6 @@
 import { gatewayConfig } from '@/lib/ai/gateway';
 
-export const ROLES = ['orchestrator', 'intake', 'verifier', 'inbox', 'curator', 'research', 'embedding'] as const;
+export const ROLES = ['orchestrator', 'intake', 'verifier', 'inbox', 'curator', 'research', 'form', 'embedding'] as const;
 export type ModelRole = typeof ROLES[number];
 export type ModelId = string;
 export function modelFor(role: ModelRole): ModelId {

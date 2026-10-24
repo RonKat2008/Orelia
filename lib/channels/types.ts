@@ -1,10 +1,11 @@
 import { isGatedDraft } from '../safety/outbound-gate';
 import { isAllowed, normalizeAddress } from '../safety/allowlist';
+import { isWebAllowed } from '../safety/web-allowlist';
 import type { GatedDraft } from '../safety/outbound-gate';
 export type { GatedDraft } from '../safety/outbound-gate';
 
-export type ChannelKind = 'email' | 'voice';
-export type ProviderName = 'agentmail' | 'agentcall' | 'mock-mailer' | 'mock-caller';
+export type ChannelKind = 'email' | 'voice' | 'web_form';
+export type ProviderName = 'agentmail' | 'agentcall' | 'mock-mailer' | 'mock-caller' | 'kernel' | 'mock-browser';
 
 /** Provider ids stored on messages/calls rows; later replies and webhooks are matched against these. */
 export interface ProviderRef {
@@ -49,6 +50,8 @@ export interface ChannelGuardOptions {
   /** Only an explicit 'true' together with mode 'prod' lifts the allowlist, mirroring checkOutbound. */
   mode?: 'dev' | 'demo' | 'prod';
   outboundAllowReal?: string;
+  /** Host entries ("localhost:3000", "apply.example.org") a web_form URL must match; see OUTBOUND_WEB_ALLOWLIST. */
+  webAllowlist?: readonly string[];
 }
 
 /**
@@ -60,9 +63,18 @@ export function assertGated(gated: GatedDraft, kind: ChannelKind, provider: Prov
     throw new ChannelError(provider, 'Refusing payload that did not come from checkOutbound');
   }
   if (gated.channel !== kind) throw new ChannelError(provider, `Refusing ${gated.channel} payload on ${kind} channel`);
+  const real = guard.mode === 'prod' && guard.outboundAllowReal === 'true';
+  if (kind === 'web_form') {
+    let url: URL;
+    try { url = new URL(gated.address); } catch { throw new ChannelError(provider, 'Refusing invalid address'); }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new ChannelError(provider, 'Refusing invalid address');
+    if (!real && !isWebAllowed(gated.address, guard.webAllowlist ?? [])) {
+      throw new ChannelError(provider, 'Refusing host that is not on OUTBOUND_WEB_ALLOWLIST');
+    }
+    return gated.address;
+  }
   const address = normalizeAddress(gated.address);
   if (!address) throw new ChannelError(provider, 'Refusing invalid address');
-  const real = guard.mode === 'prod' && guard.outboundAllowReal === 'true';
   if (!real && !isAllowed(address, guard.allowlist)) throw new ChannelError(provider, 'Refusing address that is not on OUTBOUND_ALLOWLIST');
   return address;
 }

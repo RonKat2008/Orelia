@@ -14,6 +14,17 @@ export class PostgresDocumentStore implements DocumentStore {
     return this.db.select({ id: t.id, kind: t.kind, title: t.title, sharedField: t.sharedField, contactId: t.contactId, createdAt: t.createdAt })
       .from(t).where(eq(t.caseId, caseId));
   }
+  async text(caseId: string, documentId: string) {
+    const t = caseDocuments;
+    const [row] = await this.db.select({ id: t.id, kind: t.kind, title: t.title, contactId: t.contactId }).from(t)
+      .where(and(eq(t.caseId, caseId), eq(t.id, documentId))).limit(1);
+    if (!row) return undefined;
+    const chunks = await this.db.select({ content: t.content }).from(t).where(and(
+      eq(t.caseId, caseId), eq(t.kind, row.kind), eq(t.title, row.title),
+      row.contactId ? eq(t.contactId, row.contactId) : isNull(t.contactId),
+    )).orderBy(asc(t.chunkIndex));
+    return { id: row.id, kind: row.kind, title: row.title, content: chunks.map(c => c.content).join('\n') };
+  }
   async search(input: VectorSearch) {
     const t = caseDocuments;
     const allowed = consentFields(input.allowedFields);

@@ -72,6 +72,7 @@ export const taskKindEnum = pgEnum("task_kind", [
   "redirect",
   "unclear",
   "declined",
+  "application",
 ]);
 
 export const taskStatusEnum = pgEnum("task_status", ["open", "approved", "done"]);
@@ -360,3 +361,23 @@ export const contactPlans = pgTable("contact_plans", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
 });
+
+/** Drafts of online application forms filled by the web_form channel (task #58). Nothing is submitted without approved_at. */
+export const webApplications = pgTable("web_applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id),
+  contactId: uuid("contact_id").references(() => contacts.id),
+  taskId: uuid("task_id").references(() => tasks.id),
+  url: text("url").notNull(),
+  fields: jsonb("fields").$type<unknown[]>().notNull(),
+  missing: jsonb("missing").$type<unknown[]>().notNull(),
+  formFingerprint: text("form_fingerprint").notNull(),
+  screenshot: text("screenshot"),
+  sharedFields: text("shared_fields").array().notNull().default(sql`ARRAY[]::text[]`),
+  sharedDocIds: text("shared_doc_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  status: text("status").notNull().default("draft"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  result: jsonb("result").$type<Record<string, unknown>>(),
+  ...timestamps,
+}, (table) => [index("web_applications_case_idx").on(table.caseId)]);

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import type { Resource, ScoreBreakdownItem } from "@/lib/contracts";
-import { EvidenceList } from "./EvidenceList";
+import type { Resource } from "@/lib/contracts";
+import { EvidenceReveal } from "@/components/motion/EvidenceReveal";
+import { ScoreBar } from "@/components/motion/ScoreBar";
 import type { ShortlistCard } from "./data";
 
 const MAX_SELECTED = 5;
@@ -12,27 +12,29 @@ function titleOf(resource: Resource): string {
   return resource.name;
 }
 
-function detailOf(resource: Resource): string {
-  if (resource.kind === "expert") {
-    return [resource.credentials, resource.specialty].filter(Boolean).join(" · ");
-  }
-  if (resource.kind === "institution") {
-    return [resource.city, resource.state, resource.institutionKind].filter(Boolean).join(" · ");
-  }
-  if (resource.kind === "trial") return [resource.nctId, resource.status].filter(Boolean).join(" · ");
-  return resource.organizationKind ?? "Organization";
+const KIND_LABEL: Record<string, string> = {
+  cancer_center: "Cancer center",
+  rare_disease_center: "Rare disease center",
+  hospital: "Hospital",
+  advocacy: "Advocacy organization",
+  financial_aid: "Financial aid",
+  travel_aid: "Travel aid",
+};
+
+function humanize(value: string | undefined): string | undefined {
+  return value ? (KIND_LABEL[value] ?? value) : undefined;
 }
 
-function Breakdown({ items }: { items: ScoreBreakdownItem[] }) {
-  return (
-    <ul className="evidence">
-      {items.map((item) => (
-        <li key={item.factor + item.text}>
-          {item.text} <span className="meta">({item.points})</span>
-        </li>
-      ))}
-    </ul>
-  );
+function detailOf(resource: Resource): string {
+  if (resource.kind === "expert") {
+    return [resource.credentials, resource.specialty].filter(Boolean).join(", ");
+  }
+  if (resource.kind === "institution") {
+    const place = [resource.city, resource.state].filter(Boolean).join(", ");
+    return [humanize(resource.institutionKind), place].filter(Boolean).join(" in ");
+  }
+  if (resource.kind === "trial") return [resource.nctId, resource.status].filter(Boolean).join(", ");
+  return humanize(resource.organizationKind) ?? "Organization";
 }
 
 export function ResourceCard({
@@ -46,31 +48,32 @@ export function ResourceCard({
   atCap: boolean;
   onToggle: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const id = card.resource.id;
   const disabled = !selected && atCap;
   return (
-    <article className="panel stack">
-      <div className="card-head">
+    <article className="panel resource-card" data-selected={selected ? "true" : "false"}>
+      <header className="resource-card__head">
         <h3>{titleOf(card.resource)}</h3>
-        <span className="status done">{card.score}</span>
+        <p className="meta">{detailOf(card.resource)}</p>
+      </header>
+      <ScoreBar items={card.breakdown} total={card.score} />
+      <div className="resource-card__actions">
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={selected}
+            disabled={disabled}
+            onChange={() => onToggle(id)}
+          />
+          <span>{selected ? "Selected to contact" : "Select to contact"}</span>
+        </label>
+        {disabled ? <p className="meta">Five resources are already selected. Uncheck one to add another.</p> : null}
       </div>
-      <p className="meta">{detailOf(card.resource)}</p>
-      <Breakdown items={card.breakdown} />
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={selected}
-          disabled={disabled}
-          onChange={() => onToggle(id)}
-        />
-        <span>{selected ? "Selected to contact" : "Select to contact"}</span>
-      </label>
-      {disabled ? <p className="meta">Five resources are already selected. Uncheck one to add another.</p> : null}
-      <button type="button" className="secondary" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-        {open ? "Hide sources" : "Show sources"}
-      </button>
-      {open ? <EvidenceList items={card.evidence} /> : null}
+      {card.evidence.length > 0 ? (
+        <EvidenceReveal evidence={card.evidence} />
+      ) : (
+        <p className="meta">No source links were attached to this result.</p>
+      )}
     </article>
   );
 }

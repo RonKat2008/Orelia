@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { StaggerList } from "@/components/motion/StaggerList";
+import { WaypointRoute } from "@/components/motion/WaypointRoute";
 import { ResourceCard, selectionLimit } from "./ResourceCard";
 import { loadShortlist, type ShortlistCard } from "./data";
 
-const GROUPS: { id: ShortlistCard["group"]; title: string }[] = [
-  { id: "specialists", title: "Specialists and centers" },
-  { id: "trials", title: "Trials" },
-  { id: "advocacy", title: "Advocacy" },
-  { id: "aid", title: "Aid" },
+const GROUPS: { id: ShortlistCard["group"]; title: string; short: string }[] = [
+  { id: "specialists", title: "Specialists and centers", short: "Specialists" },
+  { id: "trials", title: "Trials", short: "Trials" },
+  { id: "advocacy", title: "Advocacy", short: "Advocacy" },
+  { id: "aid", title: "Aid", short: "Aid" },
 ];
 
 export function ShortlistView({ caseId }: { caseId: string }) {
@@ -52,8 +54,21 @@ export function ShortlistView({ caseId }: { caseId: string }) {
     });
   }
 
+  const presentGroups = GROUPS.filter((group) => items.some((item) => item.group === group.id));
+  const waypoints = presentGroups.map((group) => ({
+    id: group.id,
+    label: group.short,
+    count: items.filter((item) => item.group === group.id).length,
+  }));
+
   return (
     <div className="stack">
+      {waypoints.length > 0 ? (
+        <WaypointRoute
+          waypoints={waypoints}
+          label={`Your shortlist covers ${waypoints.length} kinds of help`}
+        />
+      ) : null}
       <p className="notice">
         {preview
           ? "Preview shortlist with source links. Live ranking replaces it when the research service answers."
@@ -66,15 +81,20 @@ export function ShortlistView({ caseId }: { caseId: string }) {
         return (
           <section key={group.id} className="stack" aria-labelledby={`group-${group.id}`}>
             <h2 id={`group-${group.id}`}>{group.title}</h2>
-            {cards.map((card) => (
-              <ResourceCard
-                key={card.resource.id}
-                card={card}
-                selected={selected.includes(card.resource.id)}
-                atCap={selected.length >= limit}
-                onToggle={toggle}
-              />
-            ))}
+            <StaggerList
+              as="ol"
+              items={cards}
+              getKey={(card) => card.resource.id}
+              aria-label={`${group.title}, ranked`}
+              renderItem={(card) => (
+                <ResourceCard
+                  card={card}
+                  selected={selected.includes(card.resource.id)}
+                  atCap={selected.length >= limit}
+                  onToggle={toggle}
+                />
+              )}
+            />
           </section>
         );
       })}

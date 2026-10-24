@@ -13,13 +13,28 @@ function values(value: unknown): string[] {
 /** Conservative literal-value scan, not a semantic or paraphrase detector. */
 export function containsUnsharedField(body: string, record: CaseRecord, sharedFields: readonly string[]): boolean {
   const text = canonical(body);
+  // Keep spans rather than deleting text: only matches wholly contained in an
+  // explicitly shared value are exempt, without joining previously separate words.
+  const sharedSpans: { start: number; end: number }[] = [];
+  for (const [key, value] of Object.entries(record)) {
+    if (!sharedFields.includes(key)) continue;
+    for (const raw of values(value)) {
+      const needle = canonical(raw);
+      let start = text.indexOf(needle);
+      while (start !== -1) {
+        sharedSpans.push({ start, end: start + needle.length });
+        start = text.indexOf(needle, start + 1);
+      }
+    }
+  }
   return Object.entries(record).some(([key, value]) => !sharedFields.includes(key) && values(value).some(raw => {
     const needle = canonical(raw);
     let offset = text.indexOf(needle);
     while (offset !== -1) {
       const before = text[offset - 1];
       const after = text[offset + needle.length];
-      if ((!before || !/[\p{L}\p{N}]/u.test(before)) && (!after || !/[\p{L}\p{N}]/u.test(after))) return true;
+      const withinSharedValue = sharedSpans.some(span => span.start <= offset && offset + needle.length <= span.end);
+      if (!withinSharedValue && (!before || !/[\p{L}\p{N}]/u.test(before)) && (!after || !/[\p{L}\p{N}]/u.test(after))) return true;
       offset = text.indexOf(needle, offset + 1);
     }
     return false;

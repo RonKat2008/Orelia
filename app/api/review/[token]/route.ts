@@ -17,8 +17,13 @@ type Ctx = { params: Promise<{ token: string }> };
 const MINUTE = 60_000;
 const notFound = () => NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
+/**
+ * The platform-provided client IP (security review #6): request.ip when the runtime sets it, else Vercel's
+ * x-real-ip (set by the edge, not the client). The client-controlled X-Forwarded-For is never used.
+ */
 function clientIp(req: Request): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip')?.trim() || 'unknown';
+  const platform = (req as Request & { ip?: string }).ip?.trim();
+  return (platform || req.headers.get('x-real-ip')?.trim() || 'unknown').slice(0, 64);
 }
 
 function rules(req: Request, method: 'get' | 'post'): RateRule[] {
@@ -27,15 +32,18 @@ function rules(req: Request, method: 'get' | 'post'): RateRule[] {
   ];
 }
 
-async function limited(req: Request, method: 'get' | 'post'): Promise<Response | null> {
-  const r = await checkRateLimit(getRateLimitStore(), rules(req, method));
+async function limited(rs: RateRule[]): Promise<Response | null> {
+  const r = await checkRateLimit(getRateLimitStore(), rs);
   return r.ok ? null : rateLimitedResponse(r.retryAfterSeconds);
 }
+
+/** Decision POSTs per signature-valid token (any IP): 5 per 10 minutes. */
+const POSTS_PER_TOKEN = 5;
 
 export async function GET(req: Request, { params }: Ctx) {
   const { token } = await params;
   try {
-    const slow = await limited(req, 'get');
+    const slow = await limited(rules(req, 'get'));
     if (slow) return slow;
     const review = await getConsultService().reviewView(token);
     return review ? NextResponse.json({ review }, { headers: { 'Cache-Control': 'no-store' } }) : notFound();
@@ -50,11 +58,17 @@ export async function POST(req: Request, { params }: Ctx) {
   if (csrf) return csrf;
   const { token } = await params;
   try {
-    const slow = await limited(req, 'post');
+    const slow = await limited(rules(req, 'post'));
     if (slow) return slow;
+    const service = getConsultService();
+    const tokenHash = service.signedTokenHash(token);
+    if (!tokenHash) return notFound();
+    const perToken = await limited([{ key: `review:post:token:${tokenHash}`, max: POSTS_PER_TOKEN, windowMs: 10 * MINUTE }]);
+    if (perToken) return perToken;
     const body = await parseBody(req, reviewDecisionBodySchema);
     if (!body.ok) return body.response;
-    const { review, footerAdded } = await getConsultService().reviewDecide(token, body.data);
+    const audit = { ip: clientIp(req), userAgent: (req.headers.get('user-agent') ?? '').slice(0, 512) };
+    const { review, footerAdded } = await service.reviewDecide(token, body.data, audit);
     return NextResponse.json({ review, ...(footerAdded ? { notice: 'The approval line and AI disclosure are always included, so they were added back.' } : {}) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     if (err instanceof ConsultError) {

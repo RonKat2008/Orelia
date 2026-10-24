@@ -15,7 +15,9 @@ const EVIDENCE = [
 ];
 const SUBJECT = 'Physician consultation request: Synthetic Rare Disease';
 // Clinician-to-clinician question that the patient-advice phrase filter would flag.
-const BODY = withDisclosure('Dear colleague,\nWould you recommend surgery or radiation for this patient with Synthetic Rare Disease?\nThe referring physician reviewed and approved this request.');
+const DOCTOR = { email: 'dr.lee@clinic.example.org', npi: '1234567893', verified: true };
+const BODY = withDisclosure(`Dear colleague,\nWould you recommend surgery or radiation for this patient with Synthetic Rare Disease?\nThe referring physician, Dr. Synthetic Lee (${DOCTOR.email}, NPI ${DOCTOR.npi}), reviewed and approved this request.`);
+const hash = (subject: string, body: string, to = ADDRESS) => consultTextHash({ to, subject, body });
 
 function input(over: Partial<ConsultGateInput['consult']> = {}, rest: Partial<Omit<ConsultGateInput, 'consult'>> = {}): ConsultGateInput {
   const subject = over.subject ?? SUBJECT;
@@ -24,7 +26,7 @@ function input(over: Partial<ConsultGateInput['consult']> = {}, rest: Partial<Om
     consult: {
       caseId: CASE, targetId: TARGET, status: 'ready', subject, body, sharedFields: ['diseaseName'],
       doctorApprovedAt: '2026-10-20T10:00:00.000Z', patientConsentAt: '2026-10-21T10:00:00.000Z',
-      approvedBodyHash: consultTextHash(SUBJECT, BODY), expertAddress: ADDRESS, addressEvidenceId: 'ev-cp',
+      approvedBodyHash: hash(SUBJECT, BODY), expertAddress: ADDRESS, addressEvidenceId: 'ev-cp', approver: DOCTOR,
       ...over,
     },
     evidence: EVIDENCE,
@@ -73,7 +75,7 @@ describe('checkConsultOutbound', () => {
   });
 
   it('refuses without an expert address, and when the address is not a code-stamped contact point', () => {
-    expect(reasons(input({ expertAddress: null, addressEvidenceId: null }))).toEqual(['no_expert_address']);
+    expect(reasons(input({ expertAddress: null, addressEvidenceId: null }))).toContain('no_expert_address');
     expect(reasons(input({ addressEvidenceId: 'ev-free' }))).toContain('address_not_evidence_backed');
     expect(reasons(input({ addressEvidenceId: null }))).toContain('address_not_evidence_backed');
     expect(reasons(input({ expertAddress: 'attacker@evil.example.net' }))).toContain('address_not_evidence_backed');
@@ -83,9 +85,9 @@ describe('checkConsultOutbound', () => {
   it('delegates to checkOutbound: allowlist, disclosure and unshared fields still apply', () => {
     expect(reasons(input({}, { allowlist: [] }))).toContain('not_allowlisted');
     const noDisclosure = BODY.replace(AI_DISCLOSURE_EMAIL, '');
-    expect(reasons(input({ body: noDisclosure, approvedBodyHash: consultTextHash(SUBJECT, noDisclosure) }))).toContain('missing_disclosure');
+    expect(reasons(input({ body: noDisclosure, approvedBodyHash: hash(SUBJECT, noDisclosure) }))).toContain('missing_disclosure');
     const leaky = `${BODY}\nInsurance: Fictional Health Co`;
-    expect(reasons(input({ body: leaky, approvedBodyHash: consultTextHash(SUBJECT, leaky) }))).toContain('unshared_field');
+    expect(reasons(input({ body: leaky, approvedBodyHash: hash(SUBJECT, leaky) }))).toContain('unshared_field');
   });
 
   it('counts the cap per resource: a 6th resource is refused, the same resource is not a new contact', () => {
@@ -98,6 +100,30 @@ describe('checkConsultOutbound', () => {
   it('a same-address contact that was already emailed keeps its follow-up cadence', () => {
     const contacts = [{ id: 'x', targetId: TARGET, address: ADDRESS, state: 'sent', lastSentAt: '2026-10-21T12:00:00.000Z', followUpsSent: 0 }];
     expect(reasons(input({}, { contacts }))).toContain('follow_up_cadence');
+  });
+});
+
+describe('physician exemption needs a verified approver (#1)', () => {
+  it('unverified, missing or free-mail approvers get the standard medical-advice filter', () => {
+    expect(reasons(input({ approver: { ...DOCTOR, verified: false } }))).toEqual(['medical_advice']);
+    expect(reasons(input({ approver: null }))).toEqual(['medical_advice']);
+    expect(reasons(input({ approver: { ...DOCTOR, npi: null } }))).toEqual(['medical_advice']);
+    const free = BODY.replace(DOCTOR.email, 'dr.lee@gmail.com');
+    expect(reasons(input({ approver: { ...DOCTOR, email: 'dr.lee@gmail.com' }, body: free, approvedBodyHash: hash(SUBJECT, free) }))).toEqual(['medical_advice']);
+  });
+
+  it('the exemption needs the message to name the approving doctor email and NPI', () => {
+    const anonymous = BODY.replace(` (${DOCTOR.email}, NPI ${DOCTOR.npi})`, '');
+    expect(reasons(input({ body: anonymous, approvedBodyHash: hash(SUBJECT, anonymous) }))).toEqual(['medical_advice']);
+  });
+
+  it('the approved hash covers the destination address (#3)', () => {
+    expect(reasons(input({ approvedBodyHash: hash(SUBJECT, BODY, 'other@expert-center.example.org') }))).toContain('text_changed_after_approval');
+  });
+
+  it('control characters in the subject are refused (#5)', () => {
+    const subject = 'Consult\r\nBcc: x@evil.example.net';
+    expect(reasons(input({ subject, approvedBodyHash: hash(subject, BODY) }))).toContain('control_characters');
   });
 });
 
@@ -139,5 +165,20 @@ describe('physician exemption is narrow', () => {
     for (const dir of ['lib', 'app', 'components', 'scripts']) { try { walk(join(root, dir)); } catch { /* missing dir */ } }
     const callers = files.filter(f => readFileSync(join(root, f), 'utf8').includes('mintPhysicianExemption'));
     expect(callers.sort()).toEqual(['lib/safety/consult-gate.ts', 'lib/safety/physician-exemption.ts']);
+  });
+
+  it('only lib/coordination/consult/service.ts imports checkConsultOutbound / consultTextHash (#4)', () => {
+    const root = join(__dirname, '..', '..');
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(ts|tsx)$/.test(name)) files.push(relative(root, p));
+      }
+    };
+    for (const dir of ['lib', 'app', 'components', 'scripts']) { try { walk(join(root, dir)); } catch { /* missing dir */ } }
+    const importers = files.filter(f => /\b(checkConsultOutbound|consultTextHash)\b/.test(readFileSync(join(root, f), 'utf8')));
+    expect(importers.sort()).toEqual(['lib/coordination/consult/service.ts', 'lib/safety/consult-gate.ts']);
   });
 });

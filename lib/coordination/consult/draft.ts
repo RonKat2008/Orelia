@@ -24,8 +24,14 @@ const ASK: Record<ConsultProcess['kind'], string> = {
   unknown: 'a physician-to-physician consultation about this patient',
 };
 
-export function physicianApprovalLine(doctor: Pick<Doctor, 'name'>): string {
-  return `The referring physician, ${doctor.name}, reviewed and approved this request before it was sent.`;
+/** The doctor fields the approval line names (so the expert can verify who approved; security review #1c). */
+export type ApprovingDoctor = Pick<Doctor, 'name' | 'email' | 'npi' | 'verified'>;
+
+export function physicianApprovalLine(doctor: ApprovingDoctor): string {
+  const id = doctor.npi
+    ? `${doctor.email}, NPI ${doctor.npi}${doctor.verified ? '' : ', NPI not verified by Wayfinder'}`
+    : `${doctor.email}, no NPI provided`;
+  return `The referring physician, ${oneLine(doctor.name)} (${id}), reviewed and approved this request before it was sent.`;
 }
 
 const CONTROL = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g;
@@ -48,7 +54,7 @@ export function sharedFieldLines(record: CaseRecord, sharedFields: readonly stri
 }
 
 /** Re-append the physician approval line and AI disclosure if an edit removed them. */
-export function ensureFooter(body: string, doctor: Pick<Doctor, 'name'>): { body: string; added: boolean } {
+export function ensureFooter(body: string, doctor: ApprovingDoctor): { body: string; added: boolean } {
   const line = physicianApprovalLine(doctor);
   let out = body.trimEnd();
   let added = false;
@@ -91,7 +97,7 @@ export function buildConsultDraft(input: ConsultDraftInput): { subject: string; 
 export type ConsultDraftProblem = 'medical_advice' | 'unshared_field' | 'missing_footer';
 
 /** Checks for text Wayfinder or the patient wrote (before the doctor approves it). */
-export function draftProblems(draft: { subject: string; body: string }, record: CaseRecord, sharedFields: readonly string[], doctor: Pick<Doctor, 'name'>): ConsultDraftProblem[] {
+export function draftProblems(draft: { subject: string; body: string }, record: CaseRecord, sharedFields: readonly string[], doctor: ApprovingDoctor): ConsultDraftProblem[] {
   const text = `${draft.subject}\n${draft.body}`;
   const out: ConsultDraftProblem[] = [];
   if (flagMedicalAdvice(text).flagged) out.push('medical_advice');
@@ -104,7 +110,7 @@ export function draftProblems(draft: { subject: string; body: string }, record: 
 export async function polishConsultDraft(
   draft: { subject: string; body: string },
   polisher: ((d: { subject: string; body: string }) => Promise<{ subject: string; body: string }>) | null,
-  ctx: { record: CaseRecord; sharedFields: readonly string[]; doctor: Pick<Doctor, 'name'> },
+  ctx: { record: CaseRecord; sharedFields: readonly string[]; doctor: ApprovingDoctor },
 ): Promise<{ subject: string; body: string; polished: boolean }> {
   if (!polisher) return { ...draft, polished: false };
   try {

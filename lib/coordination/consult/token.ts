@@ -68,3 +68,37 @@ export function appBaseUrl(env: Env = process.env): string {
 export function reviewUrl(base: string, token: string): string {
   return `${base.replace(/\/$/, '')}/review/${encodeURIComponent(token)}`;
 }
+
+// ---------------------------------------------------------------- approval MAC (security review #4)
+
+export const APPROVAL_MAC_PURPOSE = 'wayfinder.consult-approval.v1';
+
+export interface ApprovalFields {
+  consultId: string;
+  caseId: string;
+  reviewTokenHash: string | null;
+  doctorApprovedAt: string;
+  to: string | null;
+  subject: string;
+  body: string;
+  approvedBodyHash: string;
+  approvedBy: { email: string; npi: string | null; verified: boolean };
+  doctorApprovalAudit: string | null;
+}
+
+/** HMAC-SHA256 (review-link key, approval purpose) over the canonical JSON array of every approval field. */
+export function approvalMac(f: ApprovalFields, env: Env = process.env): string {
+  const payload = JSON.stringify([
+    APPROVAL_MAC_PURPOSE, f.consultId, f.caseId, f.reviewTokenHash, f.doctorApprovedAt, f.to, f.subject, f.body,
+    f.approvedBodyHash, f.approvedBy.email, f.approvedBy.npi, f.approvedBy.verified, f.doctorApprovalAudit,
+  ]);
+  return createHmac('sha256', reviewSecret(env)).update(payload, 'utf8').digest('base64url');
+}
+
+/** Constant-time check of a stored approval MAC. */
+export function verifyApprovalMac(mac: string | null | undefined, f: ApprovalFields, env: Env = process.env): boolean {
+  if (!mac) return false;
+  const expected = Buffer.from(approvalMac(f, env));
+  const given = Buffer.from(mac);
+  return given.length === expected.length && timingSafeEqual(given, expected);
+}

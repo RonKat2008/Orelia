@@ -5,7 +5,7 @@ import { AI_DISCLOSURE_EMAIL } from '@/lib/safety/disclosure';
 import { flagMedicalAdvice } from '@/lib/safety/no-medical-advice';
 import { EXPERT_ADDRESS, RECORD, resource } from './consult-fixture';
 
-const doctor = { id: '33333333-3333-4333-8333-333333333333', caseId: '11111111-1111-4111-8111-111111111111', name: 'Dr. Synthetic Lee', practice: 'Synthetic Family Practice', email: 'dr.lee@clinic.example.org', createdAt: '2026-10-01T00:00:00.000Z' };
+const doctor = { id: '33333333-3333-4333-8333-333333333333', caseId: '11111111-1111-4111-8111-111111111111', name: 'Dr. Synthetic Lee', practice: 'Synthetic Family Practice', email: 'dr.lee@clinic.example.org', npi: null, verified: false, verificationReason: null, createdAt: '2026-10-01T00:00:00.000Z' };
 const process = { kind: 'econsult' as const, detail: 'x', sourceUrl: 'https://expert-center.example.org/physicians', expertAddress: EXPERT_ADDRESS, addressEvidenceId: 'ev-cp' };
 
 describe('consult process discovery', () => {

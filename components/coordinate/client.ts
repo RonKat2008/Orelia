@@ -51,7 +51,7 @@ export const attachPacket = (c: string, resourceKey: string, contactId: string) 
 export const getBoard = (c: string) => call<Board>(`${base(c)}/board`, undefined, one('board'));
 
 export const getDoctors = (c: string) => call<Doctor[]>(`${base(c)}/doctors`, undefined, arr('doctors'));
-export const addDoctor = (c: string, d: { name: string; practice?: string; email: string }) => call<Doctor>(`${base(c)}/doctors`, send('POST', d), one('doctor'));
+export const addDoctor = (c: string, d: { name: string; practice?: string; email: string; npi?: string }) => call<Doctor>(`${base(c)}/doctors`, send('POST', d), one('doctor'));
 export const removeDoctor = (c: string, id: string) => call<true>(`${base(c)}/doctors/${encodeURIComponent(id)}`, send('DELETE'), () => true);
 
 export const getConsults = (c: string) => call<ConsultRequest[]>(`${base(c)}/consults`, undefined, arr('consults'));

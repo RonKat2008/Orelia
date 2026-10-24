@@ -97,6 +97,14 @@ export function ReviewForm({ token }: { token: string }) {
           <SourceLink url={r.processSourceUrl} label="Where this process is described" />
         </div>
         {r.processDetail ? <p className="m-0 text-body text-ink-2">{r.processDetail}</p> : null}
+        <dl className="m-0 grid gap-1 rounded-md border border-line bg-paper-2/60 px-4 py-3">
+          <dt className="text-small font-semibold text-ink">It will be sent to</dt>
+          <dd className="m-0 break-all text-body text-ink">{r.expertAddress ?? 'No verified address yet. It cannot be sent until one is found.'}</dd>
+          <dd className="m-0 text-small text-ink-2">Your approval covers this address as well as the text. The message names you, your email and NPI so the team can confirm it came from you.</dd>
+        </dl>
+        {r.doctorVerified ? null : (
+          <p className="m-0 text-small text-ink-2">Doctor not verified — request will be checked by the standard filter. Wayfinder could not match an NPI to your name with a practice email, so clinical recommendations in the text may stop it from being sent.</p>
+        )}
       </section>
 
       <form onSubmit={e => { e.preventDefault(); void decide('approve'); }} className="grid gap-4" aria-label="Edit and approve the request">

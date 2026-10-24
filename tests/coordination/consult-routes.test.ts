@@ -16,13 +16,15 @@ const holder = globalThis as unknown as { __wayfinderOwnerStore?: unknown };
 const saved: Record<string, string | undefined> = {};
 let h: Harness;
 
-const req = (path: string, o: { method?: string; who?: string | null; origin?: string | null; body?: unknown; ip?: string } = {}) => new Request(`${ORIGIN}${path}`, {
+const req = (path: string, o: { method?: string; who?: string | null; origin?: string | null; body?: unknown; ip?: string; xff?: string; ua?: string } = {}) => new Request(`${ORIGIN}${path}`, {
   method: o.method ?? 'GET',
   headers: {
     'content-type': 'application/json',
     ...(o.who === null ? {} : { cookie: `wf_session=${signSession(o.who ?? 'owner', { WAYFINDER_SESSION_SECRET: SECRET })}` }),
     ...(o.origin === null ? {} : o.method && o.method !== 'GET' ? { origin: o.origin ?? ORIGIN } : {}),
-    'x-forwarded-for': o.ip ?? '203.0.113.7',
+    'x-real-ip': o.ip ?? '203.0.113.7',
+    'x-forwarded-for': o.xff ?? o.ip ?? '203.0.113.7',
+    ...(o.ua ? { 'user-agent': o.ua } : {}),
   },
   ...(o.body === undefined ? {} : { body: JSON.stringify(o.body) }),
 });
@@ -107,7 +109,8 @@ describe('public review route', () => {
     expect(res.headers.get('cache-control')).toBe('no-store');
     const { review: v } = await res.json();
     expect(v.status).toBe('sent_to_doctor');
-    expect(JSON.stringify(v)).not.toMatch(/Fictional|Springfield|dr\.lee@|11111111-/);
+    expect(JSON.stringify({ ...v, body: '' })).not.toMatch(/Fictional|Springfield|dr\.lee@|11111111-/);
+    expect(v.expertAddress).toBe('referrals@expert-center.example.org');
   });
 
   it('unknown, forged and used tokens all get the same generic 404', async () => {
@@ -142,6 +145,35 @@ describe('public review route', () => {
     const json = await res.json();
     expect(json.review.status).toBe('doctor_approved');
     expect(json.notice).toMatch(/added back/);
+  });
+
+  it('rate limits on the platform IP (x-real-ip), not a rotated X-Forwarded-For (#6)', async () => {
+    let last = 200;
+    for (let i = 0; i < 31; i++) last = (await review.GET(req('/api/review/x', { who: null, ip: '198.51.100.20', xff: `10.0.0.${i}` }), rctx('x'))).status;
+    expect(last).toBe(429);
+  });
+
+  it('limits POSTs per token, whatever the IP (#6)', async () => {
+    const { token } = await linked();
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) statuses.push((await review.POST(req(`/api/review/${token}`, { method: 'POST', who: null, ip: `198.51.100.${30 + i}`, body: { decision: 'decline' } }), rctx(token))).status);
+    expect(statuses[0]).toBe(200);
+    expect(statuses.at(-1)).toBe(429);
+  });
+
+  it('stores an audit hash of ip + user agent with the approval (#1d)', async () => {
+    const { id, token } = await linked();
+    const v = (await (await review.GET(req(`/api/review/${token}`, { who: null }), rctx(token))).json()).review;
+    await review.POST(req(`/api/review/${token}`, { method: 'POST', who: null, ip: '198.51.100.77', ua: 'Synthetic UA', body: { decision: 'approve', subject: v.subject, body: v.body } }), rctx(token));
+    const c = (await h.store.get(CASE, 'consult', id))!;
+    const { createHash } = await import('node:crypto');
+    expect(c.doctorApprovalAudit).toBe(createHash('sha256').update(JSON.stringify(['198.51.100.77', 'Synthetic UA']), 'utf8').digest('hex'));
+  });
+
+  it('subject with CR/LF is a 400 at the route (#5)', async () => {
+    const { token } = await linked();
+    const res = await review.POST(req(`/api/review/${token}`, { method: 'POST', who: null, body: { decision: 'approve', subject: 'a\r\nBcc: x@evil.example.net', body: 'Dear colleagues.' } }), rctx(token));
+    expect(res.status).toBe(400);
   });
 
   it('rate limits by client IP', async () => {

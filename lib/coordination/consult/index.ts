@@ -1,11 +1,16 @@
+import { eq } from 'drizzle-orm';
 import { getServices } from '@/app/api/cases/_lib/services';
+import { getDb } from '@/db/client';
+import { cases } from '@/db/schema';
 import { isOffline } from '@/lib/env';
 import { selectChannels } from '@/lib/outreach/channel-wiring';
 import { loadPlanInputs } from '@/lib/plan/inputs';
 import type { CaseRecord } from '@/lib/safety/types';
 import { ExaClient } from '@/lib/sources/exa';
+import { NppesClient } from '@/lib/sources/nppes';
 import { FetchTransport } from '@/lib/sources/transport';
 import { getCoordinationStore } from '../store';
+import { NppesDoctorVerifier } from './doctor-verify';
 import { ConsultService, type ConsultDeps, type ConsultEmailChannel } from './service';
 import { MemoryConsultTracker, PostgresConsultTracker, type ConsultTracker } from './tracker';
 
@@ -19,6 +24,13 @@ async function caseRecord(caseId: string): Promise<CaseRecord | null> {
   const r = c as unknown as Record<string, unknown>;
   const keys = ['diseaseName', 'diseaseCodes', 'subtype', 'stageSummary', 'homeCity', 'homeState', 'insurer', 'planId', 'travelLimitMiles', 'goals'];
   return Object.fromEntries(keys.filter(k => r[k] !== undefined).map(k => [k, r[k]]));
+}
+
+/** cases.patient_email (the patient's notification address); never accepted as a doctor email. */
+async function patientEmail(caseId: string): Promise<string | null> {
+  if (!process.env.DATABASE_URL) return null;
+  const [row] = await getDb().select({ email: cases.patientEmail }).from(cases).where(eq(cases.id, caseId)).limit(1);
+  return row?.email ?? null;
 }
 
 const g = globalThis as typeof globalThis & { __wayfinderConsultDeps?: ConsultDeps; __wayfinderConsultTracker?: ConsultTracker; __wayfinderConsultEmail?: ConsultEmailChannel };
@@ -37,6 +49,9 @@ function defaultDeps(): ConsultDeps {
     exa: !isOffline(env.WAYFINDER_OFFLINE) && key ? new ExaClient(new FetchTransport(), key) : null,
     env,
     now: () => new Date(),
+    // NPPES (public registry, no key). Offline: no verifier, so every doctor stays unverified (standard filter).
+    verifier: isOffline(env.WAYFINDER_OFFLINE) ? null : new NppesDoctorVerifier(new NppesClient(new FetchTransport())),
+    patientEmail,
   };
 }
 

@@ -28,7 +28,7 @@ describe('MemoryCoordinationStore', () => {
   it('rejects invalid records and returns copies callers cannot mutate', async () => {
     const store = new MemoryCoordinationStore();
     expect(await store.save(caseId, 'doctor', 'x', { name: '' } as unknown as Doctor)).toBeNull();
-    const doctor: Doctor = { id: '22222222-2222-4222-8222-222222222222', caseId, name: 'Dr. Synthetic', practice: null, email: 'dr@example.test', createdAt: now };
+    const doctor: Doctor = { id: '22222222-2222-4222-8222-222222222222', caseId, name: 'Dr. Synthetic', practice: null, email: 'dr@example.test', npi: null, verified: false, verificationReason: null, createdAt: now };
     await store.save(caseId, 'doctor', doctor.id, doctor);
     const read = await store.get(caseId, 'doctor', doctor.id);
     read!.name = 'changed';

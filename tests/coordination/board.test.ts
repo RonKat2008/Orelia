@@ -20,14 +20,14 @@ const consult = (status: ConsultStatus, id = '44444444-4444-4444-8444-4444444444
   id, caseId: CASE, resourceKey: KEY, expertName: 'Dr. Expert', doctorId: DOCTOR,
   process: { kind: 'econsult', detail: '', sourceUrl: 'https://example.org/e', expertAddress: null, addressEvidenceId: null },
   subject: 'Request', body: 'Body', packetId: null, sharedFields: [], status, reviewTokenHash: null, reviewTokenExpiresAt: status === 'sent_to_doctor' ? day(5) : null,
-  sentToDoctorAt: null, doctorEdited: false, doctorApprovedAt: null, doctorDeclinedAt: null, doctorNote: null, approvedBodyHash: null, patientConsentAt: null,
+  sentToDoctorAt: null, doctorEdited: false, doctorApprovedAt: null, doctorDeclinedAt: null, doctorNote: null, approvedBodyHash: null, approvedBy: null, doctorApprovalAudit: null, approvalMac: null, packetSnapshot: null, patientConsentAt: null,
   sentAt: null, providerMessageId: null, failureReasons: [], version: 1, createdAt: NOW, updatedAt: NOW,
 });
 
 async function deps(over: Partial<BoardDeps> = {}, consults: ConsultRequest[] = [], withChecklist = true): Promise<BoardDeps> {
   const store = new MemoryCoordinationStore();
   if (withChecklist) await store.save(CASE, 'checklist', KEY, checklist);
-  await store.save(CASE, 'doctor', DOCTOR, { id: DOCTOR, caseId: CASE, name: 'Dr. Local', practice: null, email: 'local@example.org', createdAt: NOW });
+  await store.save(CASE, 'doctor', DOCTOR, { id: DOCTOR, caseId: CASE, name: 'Dr. Local', practice: null, email: 'local@example.org', npi: null, verified: false, verificationReason: null, createdAt: NOW });
   for (const c of consults) await store.save(CASE, 'consult', c.id, c);
   return { store, now: () => new Date(NOW), names: async () => ({ [KEY]: 'Synthetic Center' }), contacts: async () => [], tasks: async () => [], ...over };
 }

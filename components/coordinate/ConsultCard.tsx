@@ -5,7 +5,7 @@ import { Check, CircleDot, Circle, Send, X, Ban } from 'lucide-react';
 import { Badge, Button, Card, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, Input, Textarea, toast } from '@/components/ui';
 import { cn } from '@/lib/ui/cn';
 import { patchConsult } from './client';
-import { CONSULT_STATUS_LABELS, PROCESS_KIND_LABELS, availableActions, consultTimeline, refusalMessages, type PatientAction } from './model';
+import { CONSULT_STATUS_LABELS, PROCESS_KIND_LABELS, UNVERIFIED_DOCTOR_NOTE, availableActions, consultTimeline, refusalMessages, type PatientAction } from './model';
 import { SourceLink } from './shared';
 import type { ConsultRequest, Doctor } from './types';
 
@@ -126,6 +126,8 @@ export function ConsultCard({ caseId, consult, doctor, onUpdate, onMessage }: {
           <ul className="m-0 list-disc pl-5 text-small">{refusals.map(r => <li key={r}>{r}</li>)}</ul>
         </div>
       ) : null}
+
+      {doctor && !doctor.verified ? <p className="m-0 text-small font-semibold text-ink">{UNVERIFIED_DOCTOR_NOTE}</p> : null}
 
       <div className="flex flex-wrap gap-2">
         {actions.includes('send_to_doctor') ? (

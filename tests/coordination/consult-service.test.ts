@@ -3,10 +3,10 @@ import { ConsultError } from '@/lib/coordination/consult/service';
 import { hashReviewToken } from '@/lib/coordination/consult/token';
 import { consultTextHash } from '@/lib/safety/consult-gate';
 import { AI_DISCLOSURE_EMAIL } from '@/lib/safety/disclosure';
-import { CASE, DOCTOR_EMAIL, EXPERT_ADDRESS, harness, later, RESOURCE_KEY, resource, tokenFrom, TARGET, type Harness } from './consult-fixture';
+import { CASE, DOCTOR_EMAIL, DOCTOR_NPI, EXPERT_ADDRESS, harness, later, RESOURCE_KEY, resource, tokenFrom, TARGET, type Harness } from './consult-fixture';
 
 async function drafted(h: Harness, sharedFields = ['diseaseName']) {
-  const doctor = await h.svc.addDoctor(CASE, { name: 'Dr. Synthetic Lee', practice: 'Synthetic Family Practice', email: DOCTOR_EMAIL });
+  const doctor = await h.svc.addDoctor(CASE, { name: 'Dr. Synthetic Lee', practice: 'Synthetic Family Practice', email: DOCTOR_EMAIL, npi: DOCTOR_NPI });
   const consult = await h.svc.create(CASE, { resourceKey: RESOURCE_KEY, doctorId: doctor.id, sharedFields });
   return { doctor, consult };
 }
@@ -56,7 +56,7 @@ describe('consult service: happy path with the mock mailer', () => {
     expect(review.status).toBe('doctor_approved');
     const appr = (await h.store.get(CASE, 'consult', consult.id))!;
     expect(appr.doctorEdited).toBe(true);
-    expect(appr.approvedBodyHash).toBe(consultTextHash(appr.subject, appr.body));
+    expect(appr.approvedBodyHash).toBe(consultTextHash({ to: EXPERT_ADDRESS, subject: appr.subject, body: appr.body }));
 
     later(h, 30);
     const ready = await h.svc.patch(CASE, consult.id, { version: appr.version, action: 'consent' });
@@ -94,7 +94,8 @@ describe('consult service: refusals', () => {
     await h.store.save(CASE, 'consult', consult.id, { ...tampered, body: `${tampered.body}\nextra`, version: tampered.version + 1 }, tampered.version);
     const e = await reject(h.svc.patch(CASE, consult.id, { version: ready.version + 1, action: 'send' }));
     expect(e.status).toBe(422);
-    expect(e.reasons).toContain('text_changed_after_approval');
+    // Caught first by the approval HMAC (security review #4); the gate's hash check is the second line.
+    expect(e.reasons).toEqual(['approval_not_verified']);
     expect(h.mailer.sent).toHaveLength(1);
   });
 
@@ -182,9 +183,11 @@ describe('consult service: refusals', () => {
     const h = harness();
     const { token } = await sentToDoctor(h);
     const view = (await h.svc.reviewView(token))!;
-    expect(Object.keys(view).sort()).toEqual(['body', 'doctorName', 'expertName', 'expiresAt', 'packet', 'processDetail', 'processKind', 'processSourceUrl', 'status', 'subject']);
-    const json = JSON.stringify(view);
-    for (const secret of ['Fictional Health', 'Springfield', DOCTOR_EMAIL, CASE, 'reviewTokenHash', EXPERT_ADDRESS]) expect(json).not.toContain(secret);
+    expect(Object.keys(view).sort()).toEqual(['body', 'doctorName', 'doctorVerified', 'expertAddress', 'expertName', 'expiresAt', 'packet', 'processDetail', 'processKind', 'processSourceUrl', 'status', 'subject']);
+    // The doctor's own email appears only in the approval line of the body; the expert address is shown on purpose (#3).
+    const json = JSON.stringify({ ...view, body: view.body.replace(DOCTOR_EMAIL, '') });
+    for (const secret of ['Fictional Health', 'Springfield', DOCTOR_EMAIL, CASE, 'reviewTokenHash']) expect(json).not.toContain(secret);
+    expect(view.expertAddress).toBe(EXPERT_ADDRESS);
   });
 
   it('edits only while drafted, re-check advice and unshared fields; version conflicts are 409', async () => {

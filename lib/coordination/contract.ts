@@ -99,18 +99,32 @@ export const specialistPacketSchema = z.object({
 
 // ---------------------------------------------------------------- (c) doctors + consultation requests
 
+/** No links in text that goes into emails Wayfinder sends (review-link relay abuse, security review #2). */
+const LINKISH = /(https?:|ftp:|mailto:|\/\/|www\.|@|[a-z0-9-]\.(com|org|net|edu|gov|io|co|us|uk|info|biz|me|ly|app|xyz|site|online|link|click|health|md|ru|cn|top)\b)/i;
+export const MAX_DOCTOR_NAME = 120;
+export const doctorNameSchema = shortText(MAX_DOCTOR_NAME).refine(v => !LINKISH.test(v), 'Names cannot contain links or web addresses');
+export const doctorPracticeSchema = z.string().trim().max(200).refine(v => !LINKISH.test(v), 'Practice names cannot contain links or web addresses');
+export const npiSchema = z.string().regex(/^\d{10}$/, 'An NPI is 10 digits');
+
 export const doctorSchema = z.object({
   id: z.string().uuid(),
   caseId: z.string().uuid(),
   name: shortText(160),
   practice: z.string().trim().max(200).nullable(),
   email: z.email().max(254),
+  /** NPI the patient entered (10 digits), if any. */
+  npi: npiSchema.nullable().default(null),
+  /** True only when NPPES lists this NPI for this name AND the email is not on a free-mail domain (security review #1). */
+  verified: z.boolean().default(false),
+  /** verified | npi_missing | free_mail_domain | name_unparseable | npi_name_mismatch | registry_unavailable */
+  verificationReason: z.string().max(60).nullable().default(null),
   createdAt: isoSchema,
 });
 export const newDoctorBodySchema = z.object({
-  name: shortText(160),
-  practice: z.string().trim().max(200).optional(),
+  name: doctorNameSchema,
+  practice: doctorPracticeSchema.optional(),
   email: z.email().max(254),
+  npi: z.union([npiSchema, z.literal('')]).optional(),
 });
 
 export const consultProcessKindSchema = z.enum(['econsult', 'tumor_board', 'case_review', 'peer_to_peer', 'referral_only', 'unknown']);
@@ -160,8 +174,16 @@ export const consultRequestSchema = z.object({
   doctorDeclinedAt: isoSchema.nullable(),
   /** Optional reason the doctor gave (shown to the patient). */
   doctorNote: z.string().trim().max(1000).nullable(),
-  /** sha256(hex) of `${subject}\n${body}` exactly as the doctor approved it; send refuses on any later change. */
+  /** sha256(hex) of canonical JSON {body, subject, to} exactly as the doctor approved it; send refuses on any later change. */
   approvedBodyHash: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  /** The approving doctor as of the decision (email, NPI, verified), covered by approvalMac. */
+  approvedBy: z.object({ email: z.email().max(254), npi: npiSchema.nullable(), verified: z.boolean() }).nullable().default(null),
+  /** sha256(hex) of JSON [ip, user-agent] of the approving request (audit only; never the raw values). */
+  doctorApprovalAudit: z.string().regex(/^[0-9a-f]{64}$/).nullable().default(null),
+  /** HMAC (review-link key) over the approval, written at decision time and verified before the send gate. */
+  approvalMac: z.string().regex(/^[A-Za-z0-9_-]{43}$/).nullable().default(null),
+  /** Included packet sections exactly as rendered into the body at create time (what the doctor reviews). */
+  packetSnapshot: z.array(packetSectionSchema).nullable().default(null),
   patientConsentAt: isoSchema.nullable(),
   sentAt: isoSchema.nullable(),
   providerMessageId: z.string().max(400).nullable(),
@@ -178,6 +200,10 @@ export const reviewViewSchema = z.object({
   processDetail: z.string(),
   processSourceUrl: httpUrlSchema,
   doctorName: z.string(),
+  /** Whether Wayfinder verified the doctor (NPI + practice domain); unverified requests get the standard filter. */
+  doctorVerified: z.boolean(),
+  /** Where the request will be sent: the doctor approves this address too (security review #3). */
+  expertAddress: z.string().nullable(),
   subject: z.string(),
   body: z.string(),
   /** Rendered included packet sections, when attached. */
@@ -186,7 +212,12 @@ export const reviewViewSchema = z.object({
   expiresAt: isoSchema,
 });
 export const reviewDecisionBodySchema = z.discriminatedUnion('decision', [
-  z.object({ decision: z.literal('approve'), subject: shortText(200), body: shortText(8000), note: z.string().trim().max(1000).optional() }),
+  z.object({
+    decision: z.literal('approve'),
+    subject: shortText(200).refine(v => !/[\u0000-\u001F\u007F-\u009F]/.test(v), 'The subject cannot contain line breaks or control characters'),
+    body: shortText(8000).refine(v => !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/.test(v), 'The message cannot contain control characters'),
+    note: z.string().trim().max(1000).optional(),
+  }),
   z.object({ decision: z.literal('decline'), note: z.string().trim().max(1000).optional() }),
 ]);
 

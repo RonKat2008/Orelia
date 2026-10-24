@@ -1,18 +1,21 @@
-import { parseAllowlist } from '@/lib/safety/allowlist';
-import { checkConsultOutbound, consultTextHash } from '@/lib/safety/consult-gate';
+import { createHash } from 'node:crypto';
+import { normalizeAddress, parseAllowlist } from '@/lib/safety/allowlist';
+import { BODY_CONTROL, checkConsultOutbound, consultTextHash, SUBJECT_CONTROL } from '@/lib/safety/consult-gate';
+import { checkRateLimit, getRateLimitStore, type RateLimitStore, type RateRule } from '@/lib/rate-limit';
 import { containsUnsharedField } from '@/lib/safety/minimize';
 import { checkOutbound, type GatedDraft } from '@/lib/safety/outbound-gate';
 import type { CaseRecord } from '@/lib/safety/types';
 import type { PlanResourceInput } from '@/lib/plan/contract';
 import {
-  consultRequestSchema, doctorSchema,
+  consultRequestSchema, doctorNameSchema, doctorPracticeSchema, doctorSchema, npiSchema,
   type ConsultRequest, type CoordinationStore, type Doctor, type ReviewDecisionBody, type ReviewView, type TargetKind,
 } from '../contract';
 import { includedSections, renderPacketText } from '../packet/render';
 import type { ExaSearcher } from '../requirements/deps';
+import { doctorEmailRefused, verifyDoctor, type DoctorVerifier } from './doctor-verify';
 import { buildConsultDraft, doctorReviewEmail, draftProblems, ensureFooter, FIELD_LABELS } from './draft';
 import { discoverConsultProcess } from './process';
-import { appBaseUrl, mintReviewToken, reviewUrl, sameHash, verifyReviewToken } from './token';
+import { appBaseUrl, approvalMac, mintReviewToken, reviewUrl, sameHash, verifyApprovalMac, verifyReviewToken, type ApprovalFields } from './token';
 import type { ConsultTracker } from './tracker';
 
 type Env = Record<string, string | undefined>;
@@ -29,7 +32,26 @@ export interface ConsultDeps {
   exa: ExaSearcher | null;
   env: Env;
   now(): Date;
+  /** NPPES-backed doctor verifier; null (offline / unavailable) leaves every doctor unverified. */
+  verifier?: DoctorVerifier | null;
+  /** The patient's own notification email (cases.patient_email): never accepted as a doctor email. */
+  patientEmail?(caseId: string): Promise<string | null>;
+  /** Fixed-window counters (rate_limits table in prod). Defaults to the process-wide store. */
+  rateLimits?: RateLimitStore;
 }
+
+/** Audit context of the doctor's decision request: hashed, never stored raw. */
+export interface ReviewAudit { ip: string; userAgent: string }
+
+export const MAX_DOCTORS_PER_CASE = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Review-link emails: at most 3 per consult and 10 per case per day (security review #2). */
+export const SEND_TO_DOCTOR_LIMITS = (caseId: string, consultId: string): RateRule[] => [
+  { key: `consult:review-email:consult:${consultId}`, max: 3, windowMs: DAY_MS },
+  { key: `consult:review-email:case:${caseId}`, max: 10, windowMs: DAY_MS },
+];
+
+export const auditHash = (a: ReviewAudit): string => createHash('sha256').update(JSON.stringify([a.ip, a.userAgent]), 'utf8').digest('hex');
 
 /** status + generic message; reasons are refusal codes only (never case data). */
 export class ConsultError extends Error {
@@ -50,6 +72,7 @@ const targetOf = (resourceKey: string): { targetKind: TargetKind; targetId: stri
   return { targetKind: resourceKey.slice(0, i) as TargetKind, targetId: resourceKey.slice(i + 1) };
 };
 
+export interface NewDoctorInput { name: string; practice?: string; email: string; npi?: string }
 export interface NewConsultInput { resourceKey: string; doctorId: string; packetId?: string | null; sharedFields: string[] }
 export interface ConsultPatch { version: number; action: 'edit' | 'send_to_doctor' | 'consent' | 'send' | 'cancel'; subject?: string; body?: string }
 
@@ -64,8 +87,28 @@ export class ConsultService {
     return (await this.deps.store.list(caseId, 'doctor')).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
-  async addDoctor(caseId: string, body: { name: string; practice?: string; email: string }): Promise<Doctor> {
-    const doctor = doctorSchema.parse({ id: crypto.randomUUID(), caseId, name: body.name, practice: body.practice?.trim() || null, email: body.email.trim().toLowerCase(), createdAt: this.iso() });
+  private async emailRefused(caseId: string, email: string): Promise<boolean> {
+    const patientEmail = this.deps.patientEmail ? await this.deps.patientEmail(caseId) : null;
+    return doctorEmailRefused(email, { patientEmail, env: this.deps.env });
+  }
+
+  async addDoctor(caseId: string, body: NewDoctorInput): Promise<Doctor> {
+    const name = doctorNameSchema.safeParse(body.name);
+    const practice = body.practice?.trim() ? doctorPracticeSchema.safeParse(body.practice) : null;
+    const npiRaw = body.npi?.replace(/\s/g, '') ?? '';
+    const npi = npiRaw ? npiSchema.safeParse(npiRaw) : null;
+    if (!name.success || (practice && !practice.success) || (npi && !npi.success)) throw new ConsultError(400, 'Check the doctor\'s name, practice and NPI (no links; NPI is 10 digits)');
+    const email = body.email.trim().toLowerCase();
+    if (await this.emailRefused(caseId, email)) {
+      throw new ConsultError(422, 'Use your doctor\'s own practice email, not yours or a Wayfinder address', ['doctor_email_not_allowed']);
+    }
+    if ((await this.deps.store.list(caseId, 'doctor')).length >= MAX_DOCTORS_PER_CASE) throw new ConsultError(409, `You can add up to ${MAX_DOCTORS_PER_CASE} doctors`);
+    const npiValue = npi?.success ? npi.data : null;
+    const check = await verifyDoctor(this.deps.verifier ?? null, { name: name.data, npi: npiValue, email });
+    const doctor = doctorSchema.parse({
+      id: crypto.randomUUID(), caseId, name: name.data, practice: practice?.success ? practice.data : null, email,
+      npi: npiValue, verified: check.verified, verificationReason: check.reason, createdAt: this.iso(),
+    });
     const saved = await this.deps.store.save(caseId, 'doctor', doctor.id, doctor);
     if (!saved) throw new ConsultError(500, 'Unable to save the doctor');
     return saved;
@@ -96,10 +139,13 @@ export class ConsultService {
     const record = await this.deps.caseRecord(caseId);
     if (!record) throw new ConsultError(404, 'Case not found');
     let packetText: string | null = null;
+    let packetSnapshot: ConsultRequest['packetSnapshot'] = null;
     if (input.packetId) {
       const packet = await store.get(caseId, 'packet', input.resourceKey);
       if (!packet || packet.id !== input.packetId) throw new ConsultError(404, 'Packet not found');
-      packetText = includedSections(packet).length ? renderPacketText(packet) : null;
+      const sections = includedSections(packet);
+      packetText = sections.length ? renderPacketText(packet) : null;
+      packetSnapshot = sections.length ? structuredClone(sections) : null;
     }
     const process = await discoverConsultProcess(resource, { exa: this.deps.exa });
     if (!process) throw new ConsultError(422, 'No source page is available for this resource yet');
@@ -111,7 +157,7 @@ export class ConsultService {
       id: crypto.randomUUID(), caseId, resourceKey: input.resourceKey, expertName: resource.name.slice(0, 200), doctorId: doctor.id, process,
       subject: draft.subject, body: draft.body, packetId: input.packetId ?? null, sharedFields, status: 'drafted',
       reviewTokenHash: null, reviewTokenExpiresAt: null, sentToDoctorAt: null, doctorEdited: false, doctorApprovedAt: null, doctorDeclinedAt: null,
-      doctorNote: null, approvedBodyHash: null, patientConsentAt: null, sentAt: null, providerMessageId: null, failureReasons: [],
+      doctorNote: null, approvedBodyHash: null, approvedBy: null, doctorApprovalAudit: null, approvalMac: null, packetSnapshot, patientConsentAt: null, sentAt: null, providerMessageId: null, failureReasons: [],
       version: 1, createdAt: now, updatedAt: now,
     });
     const saved = await store.save(caseId, 'consult', consult.id, consult);
@@ -154,6 +200,7 @@ export class ConsultService {
     if (c.status !== 'drafted') throw new ConsultError(409, 'The request can only be edited before it goes to your doctor');
     const subject = patch.subject?.trim();
     if (!subject || !patch.body?.trim()) throw new ConsultError(400, 'Subject and message are required');
+    if (SUBJECT_CONTROL.test(subject) || BODY_CONTROL.test(patch.body)) throw new ConsultError(400, 'The subject cannot contain line breaks, and the message cannot contain control characters', ['control_characters']);
     const doctor = await this.doctorOf(c);
     const body = ensureFooter(patch.body, doctor).body;
     if (subject.length > 200 || body.length > 8000) throw new ConsultError(400, 'The message is too long');
@@ -166,8 +213,13 @@ export class ConsultService {
   private async sendToDoctor(c: ConsultRequest): Promise<ConsultRequest> {
     if (c.status !== 'drafted' && c.status !== 'sent_to_doctor') throw new ConsultError(409, 'The review link can only be sent before your doctor decides');
     const doctor = await this.doctorOf(c);
+    if (await this.emailRefused(c.caseId, doctor.email)) {
+      throw new ConsultError(422, 'Use your doctor\'s own practice email, not yours or a Wayfinder address', ['doctor_email_not_allowed']);
+    }
     const record = await this.recordOf(c.caseId);
     const now = this.deps.now();
+    const limit = await checkRateLimit(this.deps.rateLimits ?? getRateLimitStore(), SEND_TO_DOCTOR_LIMITS(c.caseId, c.id), now);
+    if (!limit.ok) throw new ConsultError(429, 'Too many review emails today; try again tomorrow', ['rate_limited']);
     const minted = mintReviewToken(now, this.deps.env);
     const mail = doctorReviewEmail({ doctor, expertName: c.expertName, url: reviewUrl(appBaseUrl(this.deps.env), minted.token), expiresAt: minted.expiresAt });
     // The patient's own doctor is not an outreach contact (no case data in this email): contact cap not applied here.
@@ -202,11 +254,16 @@ export class ConsultService {
     const { targetKind, targetId } = targetOf(c.resourceKey);
     const resource = (await this.deps.loadInputs(c.caseId)).find(r => `${r.targetKind}:${r.targetId}` === c.resourceKey);
     const now = this.deps.now();
+    const fields = this.approvalFields(c);
+    if (!fields || !verifyApprovalMac(c.approvalMac, fields, this.deps.env)) {
+      await this.deps.store.save(c.caseId, 'consult', c.id, { ...c, version: c.version + 1, updatedAt: this.iso(), failureReasons: ['approval_not_verified'] }, c.version);
+      throw new ConsultError(422, 'The request cannot be sent', ['approval_not_verified']);
+    }
     const gate = checkConsultOutbound({
       consult: {
         caseId: c.caseId, targetId, status: c.status, subject: c.subject, body: c.body, sharedFields: c.sharedFields,
         doctorApprovedAt: c.doctorApprovedAt, patientConsentAt: c.patientConsentAt, approvedBodyHash: c.approvedBodyHash,
-        expertAddress: c.process.expertAddress, addressEvidenceId: c.process.addressEvidenceId,
+        expertAddress: c.process.expertAddress, addressEvidenceId: c.process.addressEvidenceId, approver: c.approvedBy,
       },
       evidence: resource?.evidence ?? [],
       caseRecord: await this.recordOf(c.caseId),
@@ -229,13 +286,19 @@ export class ConsultService {
       await this.deps.store.save(c.caseId, 'consult', c.id, { ...reserved, status: 'failed', sentAt: null, version: reserved.version + 1, updatedAt: this.iso(), failureReasons: ['send_failed'] }, reserved.version);
       throw new ConsultError(502, 'The request could not be sent');
     }
-    const done = await this.save({ ...reserved, providerMessageId: ref.messageId?.slice(0, 400) ?? null }, reserved.version);
+    // The consult record and the tracker (contact + outbound message) commit together (security review #7).
+    const done: ConsultRequest = { ...reserved, providerMessageId: ref.messageId?.slice(0, 400) ?? null, version: reserved.version + 1, updatedAt: this.iso() };
     try {
-      await this.deps.tracker.recordSent({ consult: done, targetKind, targetId, address: gate.payload.address, sentAt, providerMessageId: ref.messageId ?? null, providerThreadId: ref.threadId ?? null });
+      const committed = await this.deps.tracker.recordSent(
+        { consult: done, targetKind, targetId, address: gate.payload.address, sentAt, providerMessageId: ref.messageId ?? null, providerThreadId: ref.threadId ?? null },
+        { store: this.deps.store, expectedVersion: reserved.version },
+      );
+      if (committed) return done;
+      console.error('[consult] tracker commit lost its version check (email was sent)');
     } catch (err) {
       console.error('[consult] tracker record failed (email was sent)', err instanceof Error ? err.name : 'error');
     }
-    return done;
+    return reserved;
   }
 
   private async cancel(c: ConsultRequest): Promise<ConsultRequest> {
@@ -244,6 +307,11 @@ export class ConsultService {
   }
 
   // ------------------------------------------------------------------ public review (the token is the capability)
+
+  /** sha256 of a signature-valid, unexpired token (no store lookup), for per-token rate limits; null otherwise. */
+  signedTokenHash(token: string): string | null {
+    return verifyReviewToken(token, this.deps.now(), this.deps.env)?.tokenHash ?? null;
+  }
 
   private async byToken(token: string): Promise<ConsultRequest | null> {
     const now = this.deps.now();
@@ -257,14 +325,13 @@ export class ConsultService {
 
   private async view(c: ConsultRequest): Promise<ReviewView> {
     const doctor = await this.deps.store.get(c.caseId, 'doctor', c.doctorId);
-    let packet: ReviewView['packet'] = null;
-    if (c.packetId) {
-      const p = await this.deps.store.get(c.caseId, 'packet', c.resourceKey);
-      packet = p && p.id === c.packetId ? includedSections(p) : null;
-    }
+    // The frozen snapshot that is in the message body, never the live packet (security review #8).
+    const packet: ReviewView['packet'] = c.packetId && c.packetSnapshot ? structuredClone(c.packetSnapshot) : null;
     return {
       expertName: c.expertName, processKind: c.process.kind, processDetail: c.process.detail, processSourceUrl: c.process.sourceUrl,
-      doctorName: doctor?.name ?? 'Referring physician', subject: c.subject, body: c.body, packet, status: c.status,
+      doctorName: doctor?.name ?? 'Referring physician', doctorVerified: c.approvedBy?.verified ?? doctor?.verified ?? false,
+      expertAddress: c.process.expertAddress ? normalizeAddress(c.process.expertAddress) : null,
+      subject: c.subject, body: c.body, packet, status: c.status,
       expiresAt: c.reviewTokenExpiresAt ?? this.iso(),
     };
   }
@@ -275,7 +342,17 @@ export class ConsultService {
     return c && c.status === 'sent_to_doctor' ? this.view(c) : null;
   }
 
-  async reviewDecide(token: string, decision: ReviewDecisionBody): Promise<{ review: ReviewView; footerAdded: boolean }> {
+  /** Everything the approval MAC covers; null when the consult has no complete approval. */
+  private approvalFields(c: ConsultRequest): ApprovalFields | null {
+    if (!c.doctorApprovedAt || !c.approvedBodyHash || !c.approvedBy) return null;
+    return {
+      consultId: c.id, caseId: c.caseId, reviewTokenHash: c.reviewTokenHash, doctorApprovedAt: c.doctorApprovedAt,
+      to: c.process.expertAddress ? normalizeAddress(c.process.expertAddress) : null, subject: c.subject, body: c.body,
+      approvedBodyHash: c.approvedBodyHash, approvedBy: c.approvedBy, doctorApprovalAudit: c.doctorApprovalAudit,
+    };
+  }
+
+  async reviewDecide(token: string, decision: ReviewDecisionBody, audit: ReviewAudit = { ip: 'unknown', userAgent: '' }): Promise<{ review: ReviewView; footerAdded: boolean }> {
     const c = await this.byToken(token);
     if (!c || c.status === 'cancelled') throw new ConsultError(404, 'Not found');
     if (c.status !== 'sent_to_doctor') throw new ConsultError(409, 'A decision was already recorded for this request');
@@ -287,16 +364,21 @@ export class ConsultService {
     }
     const doctor = await this.doctorOf(c);
     const subject = decision.subject.trim();
+    if (SUBJECT_CONTROL.test(subject) || BODY_CONTROL.test(decision.body)) throw new ConsultError(400, 'The subject cannot contain line breaks, and the message cannot contain control characters', ['control_characters']);
+    if (await this.emailRefused(c.caseId, doctor.email)) throw new ConsultError(422, 'This review link can no longer be used', ['doctor_email_not_allowed']);
     const { body, added } = ensureFooter(decision.body, doctor);
     if (body.length > 8000) throw new ConsultError(400, 'The message is too long');
     // Doctors may write clinical content to another clinician, but not patient details the patient did not share.
     if (containsUnsharedField(`${subject}\n${body}`, await this.recordOf(c.caseId), c.sharedFields)) {
       throw new ConsultError(422, 'The message includes patient details the patient did not choose to share', ['unshared_field']);
     }
-    const saved = await this.save({
+    const to = c.process.expertAddress ? normalizeAddress(c.process.expertAddress) : null;
+    const approved: ConsultRequest = {
       ...c, subject, body, status: 'doctor_approved', doctorEdited: subject !== c.subject || body !== c.body,
-      doctorApprovedAt: now, doctorNote: note, approvedBodyHash: consultTextHash(subject, body),
-    }, c.version);
+      doctorApprovedAt: now, doctorNote: note, approvedBodyHash: consultTextHash({ to, subject, body }),
+      approvedBy: { email: doctor.email, npi: doctor.npi, verified: doctor.verified }, doctorApprovalAudit: auditHash(audit),
+    };
+    const saved = await this.save({ ...approved, approvalMac: approvalMac(this.approvalFields(approved)!, this.deps.env) }, c.version);
     return { review: await this.view(saved), footerAdded: added };
   }
 }

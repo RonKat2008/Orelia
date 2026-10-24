@@ -86,6 +86,9 @@ export function consultTimeline(c: Pick<ConsultRequest, 'status' | 'doctorApprov
   });
 }
 
+/** Shown wherever an unverified doctor appears (security review #1). */
+export const UNVERIFIED_DOCTOR_NOTE = 'Doctor not verified — request will be checked by the standard filter.';
+
 const REFUSAL_COPY: Record<string, string> = {
   // consult gate (lib/safety/consult-gate.ts)
   no_doctor_approval: 'Your doctor has not approved this request yet.',
@@ -95,6 +98,10 @@ const REFUSAL_COPY: Record<string, string> = {
   text_changed_after_approval: 'The text changed after your doctor approved it, so it needs their approval again.',
   no_expert_address: 'We could not find a verified clinician address for this expert, so nothing can be sent.',
   address_not_evidence_backed: 'We could not find a verified clinician address for this expert, so nothing can be sent.',
+  control_characters: 'The subject or message contains characters that cannot be sent in an email.',
+  approval_not_verified: 'We could not confirm your doctor\'s approval of this exact request and address, so it needs their approval again.',
+  doctor_email_not_allowed: 'Use your doctor\'s own practice email, not yours or a Wayfinder address.',
+  rate_limited: 'Too many review emails were sent today. Try again tomorrow.',
   // outbound gate (lib/safety/outbound-gate.ts)
   not_approved: 'This message has not been approved yet.',
   not_allowlisted: 'This address is not on the list of addresses allowed for this environment.',

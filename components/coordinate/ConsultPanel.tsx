@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Stethoscope, Trash2, UserPlus } from 'lucide-react';
 import { Button, Card, Checkbox, ChoiceRow, Field, Input, Skeleton, toast } from '@/components/ui';
 import { addDoctor, getConsults, getDoctors, getPackets, removeDoctor, startConsult } from './client';
-import { SHARE_FIELD_OPTIONS } from './model';
+import { SHARE_FIELD_OPTIONS, UNVERIFIED_DOCTOR_NOTE } from './model';
 import { ConsultCard } from './ConsultCard';
 import { Live, PanelHeading, Reveal } from './shared';
 import type { ConsultRequest, Doctor, Resource, SpecialistPacket } from './types';
@@ -61,10 +61,20 @@ export function ConsultPanel({ caseId, resources }: { caseId: string; resources:
   );
 }
 
+const UNVERIFIED_NOTE = UNVERIFIED_DOCTOR_NOTE;
+
+/** Verified = NPI matched the name in the national registry and the email is a practice (not free-mail) address. */
+function DoctorVerification({ verified }: { verified: boolean }) {
+  return verified
+    ? <span className="block text-small text-teal">Verified in the NPI registry</span>
+    : <span className="block text-small font-semibold text-ink">{UNVERIFIED_NOTE}</span>;
+}
+
 function DoctorsSection({ caseId, doctors, onChange, onMessage }: { caseId: string; doctors: Doctor[]; onChange: (d: Doctor[]) => void; onMessage: (m: string) => void }) {
   const [name, setName] = useState('');
   const [practice, setPractice] = useState('');
   const [email, setEmail] = useState('');
+  const [npi, setNpi] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -72,12 +82,12 @@ function DoctorsSection({ caseId, doctors, onChange, onMessage }: { caseId: stri
     e.preventDefault();
     setBusy(true);
     setError('');
-    const res = await addDoctor(caseId, { name: name.trim(), email: email.trim(), ...(practice.trim() ? { practice: practice.trim() } : {}) });
+    const res = await addDoctor(caseId, { name: name.trim(), email: email.trim(), ...(practice.trim() ? { practice: practice.trim() } : {}), ...(npi.trim() ? { npi: npi.replace(/\s/g, '') } : {}) });
     setBusy(false);
     if (res.ok) {
       onChange([...doctors, res.data]);
-      setName(''); setPractice(''); setEmail('');
-      onMessage(`${res.data.name} added.`);
+      setName(''); setPractice(''); setEmail(''); setNpi('');
+      onMessage(res.data.verified ? `${res.data.name} added and verified.` : `${res.data.name} added. ${UNVERIFIED_NOTE}`);
     } else setError(res.message);
   };
   const remove = async (d: Doctor) => {
@@ -97,7 +107,8 @@ function DoctorsSection({ caseId, doctors, onChange, onMessage }: { caseId: stri
             <li key={d.id} className="flex items-center justify-between gap-3 rounded-md border border-line bg-paper-2/60 px-4 py-3">
               <span className="min-w-0 break-words">
                 <span className="font-semibold text-ink">{d.name}</span>
-                <span className="text-small text-ink-2">{d.practice ? `, ${d.practice}` : ''} · {d.email}</span>
+                <span className="text-small text-ink-2">{d.practice ? `, ${d.practice}` : ''} · {d.email}{d.npi ? ` · NPI ${d.npi}` : ''}</span>
+                <DoctorVerification verified={d.verified} />
               </span>
               <Button size="sm" variant="ghost" onClick={() => void remove(d)} aria-label={`Remove ${d.name}`}><Trash2 aria-hidden /> Remove</Button>
             </li>
@@ -108,12 +119,15 @@ function DoctorsSection({ caseId, doctors, onChange, onMessage }: { caseId: stri
       )}
       <form onSubmit={e => void submit(e)} className="grid gap-3 sm:grid-cols-2" aria-label="Add your doctor">
         <Field label="Doctor’s name" htmlFor="doc-name">
-          <Input id="doc-name" required maxLength={160} value={name} onChange={e => setName(e.target.value)} autoComplete="off" />
+          <Input id="doc-name" required maxLength={120} value={name} onChange={e => setName(e.target.value)} autoComplete="off" />
         </Field>
         <Field label="Practice" htmlFor="doc-practice" optional>
           <Input id="doc-practice" maxLength={200} value={practice} onChange={e => setPractice(e.target.value)} autoComplete="off" />
         </Field>
-        <Field label="Email" htmlFor="doc-email" error={error || undefined} className="sm:col-span-2">
+        <Field label="NPI (10 digits, lets us verify your doctor)" htmlFor="doc-npi" optional>
+          <Input id="doc-npi" inputMode="numeric" pattern="\\d{10}" maxLength={10} value={npi} onChange={e => setNpi(e.target.value)} autoComplete="off" />
+        </Field>
+        <Field label="Practice email" htmlFor="doc-email" error={error || undefined}>
           <Input id="doc-email" type="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} aria-invalid={error ? true : undefined} aria-describedby={error ? 'doc-email-error' : undefined} autoComplete="off" />
         </Field>
         <div className="sm:col-span-2">

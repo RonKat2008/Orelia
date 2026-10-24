@@ -1,24 +1,23 @@
 import { ProposedAppointmentsNotice } from "@/components/appointments/ProposedAppointmentsNotice";
-import { OutreachNav } from "@/components/outreach/OutreachNav";
+import { CasePage } from "@/components/outreach/CasePage";
 import { TrackerBoard } from "@/components/outreach/TrackerBoard";
 import { followUpScheduler } from "@/lib/workflows/scheduler";
 
-export default async function TrackerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TrackerPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ contact?: string | string[] }>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
+  const contact = typeof query.contact === "string" ? query.contact : null;
   return (
-    <OutreachNav
-      caseId={id}
-      current="tracker"
-      eyebrow="Where things stand"
-      title={
-        <>
-          Every <em className="emph">conversation</em>, one calm view
-        </>
-      }
-      lede="What needs you comes first. Below it, each contact's journey from first draft to a real connection."
-    >
+    <CasePage title="Replies and follow-ups" lede="See who answered, what they asked for, and when we follow up next." eyebrow="Tracker">
+      {/* LANE C SWITCH POINT: patient={<PatientTracker… />} ("Who we've contacted") */}
       <ProposedAppointmentsNotice caseId={id} />
-      <TrackerBoard caseId={id} tasks={[]} schedulingPaused={followUpScheduler() === "none"} />
-    </OutreachNav>
+      <TrackerBoard caseId={id} tasks={[]} schedulingPaused={followUpScheduler() === "none"} focusContactId={contact} />
+    </CasePage>
   );
 }

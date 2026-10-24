@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CircleCheck, ClipboardCheck, Copy, Download } from "lucide-react";
+import { CircleCheck, CircleDot, Copy, Download } from "lucide-react";
 import {
   Badge,
   Button,
@@ -18,6 +18,7 @@ import {
 import { approveTask, loadPreparedLetter, preparedLetterText, type PreparedLetter } from "./client";
 import { formatDay } from "./format";
 import { TASK_KIND_LABELS, type OutreachTask } from "./types";
+import { cn } from "@/lib/ui/cn";
 
 const PREPARED_KINDS = new Set<string>(["referral", "slides", "records"]);
 
@@ -41,15 +42,21 @@ function PreparedLetterPanel({ letter }: { letter: PreparedLetter }) {
     URL.revokeObjectURL(url);
   }
   return (
-    <section aria-label="Letter for you to pass on" className="grid gap-3 rounded-md border border-line bg-paper p-4">
+    <section aria-label="Letter for you to pass on" className="grid gap-2">
       <p className="m-0 whitespace-pre-line text-small text-ink-2">{letter.instructions}</p>
-      <pre className="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-line bg-card p-3 font-body text-small text-ink">{text}</pre>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" onClick={() => void copy()}>
+      <pre
+        tabIndex={0}
+        aria-label="Letter text"
+        className="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md bg-paper-2 p-4 font-body text-small text-ink focus-ring"
+      >
+        {text}
+      </pre>
+      <div className="flex flex-wrap items-center gap-4">
+        <Button variant="link" size="sm" onClick={() => void copy()}>
           <Copy aria-hidden /> Copy letter
         </Button>
-        <Button variant="secondary" size="sm" onClick={download}>
-          <Download aria-hidden /> Download
+        <Button variant="link" size="sm" onClick={download}>
+          <Download aria-hidden /> Download letter
         </Button>
       </div>
     </section>
@@ -64,15 +71,19 @@ export type TaskCardTask = Pick<OutreachTask, "id" | "kind" | "status" | "summar
 /**
  * One request a contact made of the patient. Approving goes through a confirm
  * dialog and only counts once the server confirms. It never sends anything itself.
+ * No box of its own: it sits inside the tracker's detail pane (docs/DESIGN-v2.md 4.4, no nested cards).
+ * `emphasis="primary"` makes its review button the view's one primary; every other request uses a link.
  */
 export function TaskCard({
   task,
   status,
   onStatus,
+  emphasis = "link",
 }: {
   task: TaskCardTask;
   status?: TaskCardTask["status"];
   onStatus?: (next: TaskCardTask["status"]) => void;
+  emphasis?: "primary" | "link";
 }) {
   const [localStatus, setLocalStatus] = useState(task.status);
   const current = status ?? localStatus;
@@ -112,13 +123,19 @@ export function TaskCard({
     <article
       data-task-status={current}
       aria-label={label}
-      className="grid gap-3 rounded-md border border-line bg-card p-4 shadow-xs sm:p-5"
+      className={cn("grid gap-2 border-l-2 pl-4", current === "open" ? "border-l-teal" : "border-l-line")}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={current === "open" ? "gold" : "ok"} dot={current === "open"}>
-          {current === "open" ? "Needs you" : current === "approved" ? "Approved" : "Done"}
-        </Badge>
+      <div className="flex flex-wrap items-center gap-3">
         <span className="font-semibold text-ink">{label}</span>
+        {current === "open" ? (
+          <Badge tone="teal">
+            <CircleDot aria-hidden /> Needs you
+          </Badge>
+        ) : (
+          <Badge tone="ok">
+            <CircleCheck aria-hidden /> {current === "approved" ? "Approved" : "Done"}
+          </Badge>
+        )}
       </div>
       <p className="m-0 max-w-prose break-words text-body text-ink-2">{task.summary}</p>
       {task.contactName || task.dueAt ? (
@@ -133,9 +150,11 @@ export function TaskCard({
         <Dialog open={open} onOpenChange={setOpen}>
           <div>
             <DialogTrigger asChild>
-              <Button variant="secondary" size="sm">
-                <ClipboardCheck aria-hidden /> Review and approve
-              </Button>
+              {emphasis === "primary" ? (
+                <Button>Review this request</Button>
+              ) : (
+                <Button variant="link">Review this request</Button>
+              )}
             </DialogTrigger>
           </div>
           <DialogContent>
@@ -148,10 +167,10 @@ export function TaskCard({
             <p className="m-0 text-body text-ink-2">
               {prepared
                 ? "Nothing is sent for this one. Approving marks it handled once you have passed the letter on yourself."
-                : "This lets the connection agent move on to the next step. It does not send anything by itself. Any message it prepares comes to your outbox, and you approve that separately."}
+                : "This lets us move on to the next step. It does not send anything by itself. Any message we write for it comes to your outbox, and you approve that separately."}
             </p>
             {problems.length > 0 ? (
-              <ul role="alert" className="m-0 grid gap-1 rounded-md border border-danger/30 bg-danger-soft p-3 text-small text-ink">
+              <ul role="alert" className="m-0 grid gap-1 rounded-md border border-danger/30 bg-danger-soft p-4 text-small text-ink">
                 {problems.map((problem) => (
                   <li key={problem}>{problem}</li>
                 ))}
@@ -170,9 +189,8 @@ export function TaskCard({
           </DialogContent>
         </Dialog>
       ) : (
-        <p role="status" className="m-0 flex items-center gap-2 text-small text-ok">
-          <CircleCheck aria-hidden className="size-4" /> The server confirmed this. Nothing is sent until you approve
-          the next message.
+        <p role="status" className="m-0 text-small text-ink-2">
+          Confirmed. Nothing is sent until you approve the next message.
         </p>
       )}
     </article>

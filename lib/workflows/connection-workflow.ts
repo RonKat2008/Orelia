@@ -11,12 +11,10 @@ import type { Clock } from './clock';
 import { scaleDeadline } from './clock';
 import {
   CONTACT_APPROVED,
-  CONTACT_CREATED,
   CONTACT_REPLY,
   CONTACT_STALLED,
   FOLLOW_UP_APPROVED,
   FOLLOW_UP_DRAFTED,
-  type ContactApprovedData,
   type FunctionDefinition,
 } from './engine';
 import {
@@ -46,8 +44,6 @@ export interface ConnectionDeps {
   }): Promise<{ messageId: string }>;
 }
 
-export const APPROVAL_TIMEOUT = '30d';
-
 type Phase = 'followUp1' | 'followUp2' | 'stall';
 const PHASES: Phase[] = ['followUp1', 'followUp2', 'stall'];
 
@@ -76,33 +72,29 @@ async function applyTransition(
 export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefinition {
   return {
     id: 'contact-connection',
-    trigger: { event: CONTACT_CREATED },
+    trigger: { event: CONTACT_APPROVED },
+    idempotency: 'event.data.contactId',
     async handler({ event, step }) {
-      const contactId: string = event.data.contactId;
-      const caseId: string = event.data.caseId;
+      const { contactId, caseId, messageId, approvedAt } = event.data ?? {};
       const ifExpr = matchContact(contactId);
-
-      // 1. Wait for the patient's approval of the first message.
-      const approval = await step.waitForEvent<{ data: ContactApprovedData }>(
-        'wait-approval',
-        { event: CONTACT_APPROVED, timeout: APPROVAL_TIMEOUT, if: ifExpr },
-      );
-      if (!approval) return { outcome: 'approval_timeout' };
-      if (!approval.data?.approvedAt) {
-        throw new Error('contact/approved without approvedAt; refusing to send');
+      if (
+        !approvedAt ||
+        typeof approvedAt !== 'string' ||
+        Number.isNaN(new Date(approvedAt).getTime())
+      ) {
+        throw new Error('contact/approved without valid approvedAt; refusing to proceed');
+      }
+      if (!contactId || !caseId || !messageId) {
+        throw new Error('contact/approved missing contactId, caseId or messageId');
       }
 
-      // 2. Send the initial message. Send only while 'drafted'; if a retried step
-      // finds 'sent' already, skip the send so it can never go out twice.
+      // 1. The approve route has normally already sent the initial message (state
+      // 'sent'). Send only while 'drafted' (live wiring refuses that); if 'sent'
+      // already, skip the send so it can never go out twice.
       const first = await step.run('send-initial', async () => {
         const ctx = await deps.loadContext(contactId);
         if (ctx.state === 'drafted') {
-          await deps.send({
-            contactId,
-            caseId,
-            messageId: approval.data.messageId,
-            kind: 'initial',
-          });
+          await deps.send({ contactId, caseId, messageId, kind: 'initial' });
           await applyTransition(deps, contactId, { type: 'APPROVED_SENT' }, deps.clock.now());
         } else if (ctx.state !== 'sent') {
           return { state: ctx.state as string, firstSentAt: null as string | null };
@@ -185,6 +177,7 @@ export function createFollowUpSendWorkflow(deps: ConnectionDeps): FunctionDefini
   return {
     id: 'contact-follow-up-send',
     trigger: { event: FOLLOW_UP_APPROVED },
+    idempotency: 'event.data.messageId',
     async handler({ event, step }) {
       const { contactId, caseId, messageId, approvedAt } = event.data ?? {};
       if (

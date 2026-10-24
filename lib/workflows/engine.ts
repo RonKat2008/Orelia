@@ -18,6 +18,7 @@ export interface WorkflowStep {
   ): Promise<unknown>;
 }
 
+/** @deprecated Retired: contact-connection is now triggered by CONTACT_APPROVED. Kept for compatibility. */
 export const CONTACT_CREATED = 'contact/created';
 export const CONTACT_APPROVED = 'contact/approved';
 export const CONTACT_REPLY = 'contact/reply';
@@ -53,6 +54,8 @@ export type ContactStalledData = Base;
 export type FunctionDefinition = {
   id: string;
   trigger: { event: string };
+  /** Inngest idempotency CEL expression, e.g. 'event.data.contactId'. */
+  idempotency?: string;
   handler: (ctx: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event payloads are validated by each handler
     event: { name: string; data: any };

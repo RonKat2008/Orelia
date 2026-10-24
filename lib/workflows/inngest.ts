@@ -14,7 +14,11 @@ export const inngest = new Inngest({ id: 'wayfinder' });
 
 export function toInngestFunction(def: FunctionDefinition) {
   return inngest.createFunction(
-    { id: def.id, triggers: { event: def.trigger.event } },
+    {
+      id: def.id,
+      triggers: { event: def.trigger.event },
+      ...(def.idempotency ? { idempotency: def.idempotency } : {}),
+    },
     async ({ event, step }) =>
       def.handler({ event, step: step as unknown as WorkflowStep }),
   );

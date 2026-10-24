@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- FakeStep mirrors loosely typed engine payloads */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  APPROVAL_TIMEOUT,
   CONTACT_APPROVED,
-  CONTACT_CREATED,
   CONTACT_REPLY,
   CONTACT_STALLED,
   FOLLOW_UP_APPROVED,
@@ -71,11 +69,11 @@ function setup(scale = 1) {
   return { store, send, draftFollowUp, deps };
 }
 
-const created = { name: CONTACT_CREATED, data: { contactId: CID, caseId: CASE } };
 const approved = {
   name: CONTACT_APPROVED,
   data: { contactId: CID, caseId: CASE, messageId: 'm-1', approvedAt: NOW.toISOString() },
 };
+const created = approved;
 const reply = { name: CONTACT_REPLY, data: { contactId: CID, caseId: CASE } };
 
 describe('connection workflow', () => {
@@ -84,30 +82,44 @@ describe('connection workflow', () => {
     ctx = setup();
   });
 
-  it('approval timeout sends nothing', async () => {
-    const step = new FakeStep({ 'wait-approval': null });
+  it('is triggered by contact/approved with contactId idempotency', () => {
     const wf = createConnectionWorkflow(ctx.deps);
     expect(wf.id).toBe('contact-connection');
-    expect(wf.trigger.event).toBe(CONTACT_CREATED);
-    const out = await wf.handler({ event: created, step });
-    expect(out).toEqual({ outcome: 'approval_timeout' });
-    expect(ctx.send).not.toHaveBeenCalled();
-    expect(step.waits[0].opts.timeout).toBe(APPROVAL_TIMEOUT);
-    expect(step.waits[0].opts.event).toBe(CONTACT_APPROVED);
+    expect(wf.trigger.event).toBe(CONTACT_APPROVED);
+    expect(wf.idempotency).toBe('event.data.contactId');
+    expect(createFollowUpSendWorkflow(ctx.deps).idempotency).toBe('event.data.messageId');
   });
 
-  it('refuses to send when approval lacks approvedAt', async () => {
-    const step = new FakeStep({
-      'wait-approval': { data: { contactId: CID, caseId: CASE, messageId: 'm-1' } },
-    });
+  it('refuses to proceed when approval lacks approvedAt', async () => {
+    const step = new FakeStep();
     await expect(
-      createConnectionWorkflow(ctx.deps).handler({ event: created, step }),
+      createConnectionWorkflow(ctx.deps).handler({
+        event: { name: CONTACT_APPROVED, data: { contactId: CID, caseId: CASE, messageId: 'm-1' } },
+        step,
+      }),
     ).rejects.toThrow(/approvedAt/);
     expect(ctx.send).not.toHaveBeenCalled();
   });
 
+  it('never waits for approval (no race with the approve route)', async () => {
+    const step = new FakeStep({ 'wait-reply-followUp1': reply });
+    await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
+    expect(step.waits.map((w) => w.id)).not.toContain('wait-approval');
+  });
+
+  it('skips the initial send when the approve route already sent (state sent)', async () => {
+    const sentAt = new Date('2026-03-02T14:00:00Z');
+    ctx.store.set(CID, { ...initialContext(), state: 'sent', firstSentAt: sentAt, lastOutboundAt: sentAt });
+    const step = new FakeStep({ 'wait-reply-followUp1': reply });
+    const out = await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
+    expect(out).toEqual({ outcome: 'replied' });
+    expect(ctx.send).not.toHaveBeenCalled();
+    const d = followUpDeadlines(sentAt);
+    expect(step.waits[0].opts.timeout.getTime()).toBe(d.followUp1.getTime());
+  });
+
   it('reply after initial send -> replied; initial sent once', async () => {
-    const step = new FakeStep({ 'wait-approval': approved, 'wait-reply-followUp1': reply });
+    const step = new FakeStep({ 'wait-reply-followUp1': reply });
     const out = await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
     expect(out).toEqual({ outcome: 'replied' });
     expect(ctx.send).toHaveBeenCalledTimes(1);
@@ -122,7 +134,7 @@ describe('connection workflow', () => {
   });
 
   it('no reply at all -> two follow-up drafts, one send, stalled', async () => {
-    const step = new FakeStep({ 'wait-approval': approved });
+    const step = new FakeStep();
     const out = await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
     expect(out).toEqual({ outcome: 'stalled' });
     expect(ctx.draftFollowUp.mock.calls.map((c) => c[0].followUpNumber)).toEqual([1, 2]);
@@ -136,7 +148,7 @@ describe('connection workflow', () => {
   });
 
   it('reply after the day-3 follow-up draft -> replied', async () => {
-    const step = new FakeStep({ 'wait-approval': approved, 'wait-reply-followUp2': reply });
+    const step = new FakeStep({ 'wait-reply-followUp2': reply });
     const out = await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
     expect(out).toEqual({ outcome: 'replied' });
     expect(ctx.draftFollowUp).toHaveBeenCalledTimes(1);
@@ -145,7 +157,7 @@ describe('connection workflow', () => {
   });
 
   it('timeouts equal the real deadlines at scale 1', async () => {
-    const step = new FakeStep({ 'wait-approval': approved });
+    const step = new FakeStep();
     await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
     const d = followUpDeadlines(NOW);
     const t = step.waits.filter((w) => w.id.startsWith('wait-reply-')).map((w) => w.opts.timeout);
@@ -158,7 +170,7 @@ describe('connection workflow', () => {
 
   it('timeouts are compressed at scale 1440 (exact ms)', async () => {
     const c = setup(1440);
-    const step = new FakeStep({ 'wait-approval': approved });
+    const step = new FakeStep();
     const out = await createConnectionWorkflow(c.deps).handler({ event: created, step });
     expect(out).toEqual({ outcome: 'stalled' }); // unscaled "now" used for transitions
     const d = followUpDeadlines(NOW);
@@ -173,13 +185,13 @@ describe('connection workflow', () => {
     const evil = 'a"b\\c';
     const c = setup();
     c.store.set(evil, initialContext());
-    const step = new FakeStep({ 'wait-approval': null });
+    const step = new FakeStep();
     await createConnectionWorkflow(c.deps).handler({
-      event: { name: CONTACT_CREATED, data: { contactId: evil, caseId: CASE } },
+      event: { name: CONTACT_APPROVED, data: { ...approved.data, contactId: evil } },
       step,
     });
     expect(step.waits[0].opts.if).toBe(`async.data.contactId == ${JSON.stringify(evil)}`);
-    const step2 = new FakeStep({ 'wait-approval': approved });
+    const step2 = new FakeStep();
     await createConnectionWorkflow(ctx.deps).handler({ event: created, step: step2 });
     for (const w of step2.waits) expect(w.opts.if).toBe(`async.data.contactId == "${CID}"`);
   });
@@ -189,7 +201,7 @@ describe('connection workflow', () => {
       ctx.store.set(CID, { ...ctx.store.get(CID)!, state: 'declined' });
       return { messageId: `draft-${i.followUpNumber}` };
     });
-    const step = new FakeStep({ 'wait-approval': approved });
+    const step = new FakeStep();
     const out = await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
     expect(out).toEqual({ outcome: 'declined' });
     expect(ctx.draftFollowUp).toHaveBeenCalledTimes(1);
@@ -198,11 +210,11 @@ describe('connection workflow', () => {
 
   it('does not re-send the initial message if already sent (retry safety)', async () => {
     const { deps, store, send } = ctx;
-    const step0 = new FakeStep({ 'wait-approval': approved, 'wait-reply-followUp1': reply });
+    const step0 = new FakeStep({ 'wait-reply-followUp1': reply });
     await createConnectionWorkflow(deps).handler({ event: created, step: step0 });
     // simulate replay with state already 'sent'
     store.set(CID, { ...store.get(CID)!, state: 'sent' });
-    const step1 = new FakeStep({ 'wait-approval': approved, 'wait-reply-followUp1': reply });
+    const step1 = new FakeStep({ 'wait-reply-followUp1': reply });
     await createConnectionWorkflow(deps).handler({ event: created, step: step1 });
     expect(send).toHaveBeenCalledTimes(1);
   });
@@ -234,7 +246,6 @@ describe('follow-up send workflow', () => {
     // pause (decline-free) by stopping at the follow-up 2 wait via a thrown sentinel.
     const stop = new Error('stop');
     const step = new FakeStep({
-      'wait-approval': approved,
       'wait-reply-followUp2': () => {
         throw stop;
       },

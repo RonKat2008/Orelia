@@ -65,6 +65,9 @@ export type JourneyPlan = {
   nextLabel: string;
   nextHref: string;
   documentsHref: string;
+  historyHref: string;
+  /** Per-case link to the research-to-care (experts) page. Not a journey stage. */
+  expertsHref: string;
   notes: string[];
 };
 
@@ -115,6 +118,8 @@ export function resolveJourney(caseId: string, snapshot: JourneySnapshot): Journ
     nextLabel: next.label,
     nextHref: next.path(caseId),
     documentsHref: `/cases/${caseId}/documents`,
+    historyHref: `/cases/${caseId}/history`,
+    expertsHref: `/cases/${caseId}/experts`,
     notes,
   };
 }

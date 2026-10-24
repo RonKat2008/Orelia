@@ -22,11 +22,22 @@ export const agentRunStatusSchema = z.enum([
   "not_implemented",
 ]);
 
+/** One documented sub-signal of a factor (e.g. disease papers within subtypeExpertise). */
+export const scoreComponentSchema = z.object({
+  key: z.string().min(1),
+  label: z.string(),
+  value: z.number().min(0).max(1),
+  points: z.number().optional(),
+  detail: z.string(),
+  evidenceIds: z.array(z.string()),
+});
+
 export const scoreBreakdownItemSchema = z.object({
   factor: z.string().min(1),
   points: z.number(),
   text: z.string(),
   evidenceIds: z.array(z.string()),
+  components: z.array(scoreComponentSchema).optional(),
 });
 
 export const researchResultSchema = z.discriminatedUnion("status", [
@@ -46,5 +57,6 @@ export const researchResultSchema = z.discriminatedUnion("status", [
 
 export type AgentName = z.infer<typeof agentNameSchema>;
 export type AgentRunStatus = z.infer<typeof agentRunStatusSchema>;
+export type ScoreComponent = z.infer<typeof scoreComponentSchema>;
 export type ScoreBreakdownItem = z.infer<typeof scoreBreakdownItemSchema>;
 export type ResearchResult = z.infer<typeof researchResultSchema>;

@@ -16,6 +16,13 @@ export async function defaultCreateDraft(contactId: string): Promise<{ id: strin
   return { id: draft.id };
 }
 
+/** Plan-created verification requests share the diagnosis name only; the patient approves each call separately. */
+export async function defaultCreateVerification(input: { caseId: string; resourceKey: string }): Promise<{ id: string }> {
+  const { getVerificationService } = await import('../verification/server');
+  const { request } = await (await getVerificationService()).create(input.caseId, { resourceKey: input.resourceKey, sharedFields: ['diseaseName'] });
+  return { id: request.id };
+}
+
 function defaultDeps(): MaterializeDeps {
   return {
     async contact(id) {
@@ -25,6 +32,7 @@ function defaultDeps(): MaterializeDeps {
     },
     createDraft: defaultCreateDraft,
     webForm: getWebFormChannel(),
+    createVerification: defaultCreateVerification,
   };
 }
 

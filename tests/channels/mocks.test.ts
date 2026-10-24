@@ -32,10 +32,16 @@ describe('MockCaller', () => {
   it('records a call and completes it with a transcript', async () => {
     const caller = new MockCaller(guard);
     const ref = await caller.send(gatedCall());
-    expect(ref).toMatchObject({ provider: 'mock-caller', channel: 'voice', callId: 'mock-call-1', status: 'queued' });
+    expect(ref).toMatchObject({ provider: 'mock-caller', channel: 'voice', status: 'queued' });
+    expect(ref.callId).toMatch(/^mock-call-[0-9a-f-]{36}$/);
     expect(caller.calls[0]!.to).toBe(TEST_PHONE);
-    expect(caller.complete('mock-call-1', 'Please fax the referral.')).toMatchObject({ status: 'completed', transcript: 'Please fax the referral.' });
+    expect(caller.complete(ref.callId!, 'Please fax the referral.')).toMatchObject({ status: 'completed', transcript: 'Please fax the referral.' });
     expect(() => caller.complete('nope', '')).toThrow(ChannelError);
+  });
+  it('call ids do not repeat across instances (process restarts vs the call_id unique index)', async () => {
+    const a = await new MockCaller(guard).send(gatedCall());
+    const b = await new MockCaller(guard).send(gatedCall());
+    expect(a.callId).not.toBe(b.callId);
   });
   it('refuses email payloads and non-allowlisted numbers', async () => {
     await expect(new MockCaller(guard).send(gatedEmail())).rejects.toThrow(/email payload on voice/);

@@ -20,3 +20,41 @@ describe('shared values containing unshared values', () => {
     expect(containsUnsharedField('MSS-2290-8815-OH private', { ...record, note: 'OH private' }, ['planId', 'homeState'])).toBe(true);
   });
 });
+
+describe('two-letter home-state codes vs English words', () => {
+  const record = (homeState: string) => ({ homeState, diseaseName: 'synthetic sarcoma' });
+
+  it.each([
+    ['IN', 'Please let me know in a few days; we are in touch and it is ok.'],
+    ['OR', 'Mail or call. Is this OK or not? Tell me.'],
+    ['ME', 'Please call me back. It is up to me.'],
+    ['OK', 'Is that ok with you? OK, thanks.'],
+    ['HI', 'Hi there, thanks for the help.'],
+    ['OH', 'Oh, I see. oh well.'],
+  ])('does not treat the English word as home state %s', (code, text) => {
+    expect(containsUnsharedField(text, record(code), [])).toBe(false);
+  });
+
+  it.each([
+    ['IN', 'Patient lives in Indianapolis, IN 46202.'],
+    ['IN', 'Based in IN and willing to travel.'],
+    ['IN', 'She is from Indiana.'],
+    ['OR', 'Located in Portland, OR.'],
+    ['OR', 'Portland OR 97201'],
+    ['ME', 'Travelling from ME for the visit.'],
+    ['OK', 'Tulsa, OK 74103'],
+    ['OK', 'State: OK'],
+  ])('still refuses a real %s state leak: %s', (code, text) => {
+    expect(containsUnsharedField(text, record(code), [])).toBe(true);
+  });
+
+  it('does not refuse when the state is explicitly shared', () => {
+    expect(containsUnsharedField('Patient lives in Indianapolis, IN 46202.', record('IN'), ['homeState'])).toBe(false);
+  });
+
+  it('exempts a state inside another shared value but not outside it', () => {
+    const rec = { homeState: 'IN', location: 'Indianapolis, IN 46202' };
+    expect(containsUnsharedField('Near Indianapolis, IN 46202.', rec, ['location'])).toBe(false);
+    expect(containsUnsharedField('Near Indianapolis, IN 46202. Also lives in IN.', rec, ['location'])).toBe(true);
+  });
+});

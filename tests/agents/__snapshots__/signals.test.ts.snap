@@ -2,9 +2,9 @@
 
 exports[`offline pipeline ranking > epithelioid sarcoma: off-target and pediatric trials never reach the shortlist (snapshot) 1`] = `
 [
-  "expert #1 David Parham 45",
-  "expert #2 Andrew Rosenberg 29",
-  "expert #3 Paul Wakely 25",
+  "expert #1 David Parham 40.5",
+  "expert #2 Andrew Rosenberg 26.5",
+  "expert #3 Paul Wakely 23",
   "institution #1 Duke Sarcoma Center 66",
   "institution #2 University of Arizona Cancer Center 63",
   "institution #3 Mayo Clinic Cancer Center 63",

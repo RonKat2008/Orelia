@@ -11,6 +11,7 @@ export const PURPOSE_LABELS: Record<StepPurpose, string> = {
   apply: 'Apply',
   follow_up: 'Follow up',
   confirm: 'Confirm',
+  verify: 'Verify by phone',
 };
 
 export const KIND_LABELS: Record<string, string> = {

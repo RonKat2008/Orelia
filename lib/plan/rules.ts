@@ -5,6 +5,7 @@
  */
 import {
   MAX_PLAN_RESOURCES,
+  MAX_STEPS_PER_RESOURCE,
   type ContactPlan,
   type PlanChannel,
   type PlanResourceInput,
@@ -57,6 +58,7 @@ const ORIGIN_LABEL: Record<PlanContactOrigin, string> = {
   org_contact: 'main office',
   nppes_location_phone: 'practice office listed in the national provider registry',
   ctgov_central_contact: 'central study contact listed on ClinicalTrials.gov',
+  demo_coordinator: 'Demo coordinator',
   application_form: 'online application form',
   referral_form: 'online referral form',
   intake_form: 'online intake form',
@@ -70,7 +72,8 @@ export function ruleFamily(r: Pick<PlanResourceInput, 'targetKind' | 'subKind'>)
 
 const resourceKeyOf = (r: Pick<PlanResourceInput, 'targetKind' | 'targetId'>) => `${r.targetKind}:${r.targetId}`;
 
-function best(points: readonly PlanContactPoint[], channel: PlanChannel, family: RuleFamily): PlanContactPoint | undefined {
+/** Most preferred contact point of a channel for a rule family (ties keep evidence row order). */
+export function best(points: readonly PlanContactPoint[], channel: PlanChannel, family: RuleFamily): PlanContactPoint | undefined {
   const pref = ORIGIN_PREFERENCE[family];
   const rank = (o: PlanContactOrigin) => { const i = pref.indexOf(o); return i === -1 ? pref.length : i; };
   return points
@@ -79,7 +82,7 @@ function best(points: readonly PlanContactPoint[], channel: PlanChannel, family:
     .sort((a, b) => rank(a.p.origin) - rank(b.p.origin) || a.i - b.i)[0]?.p;
 }
 
-interface StepDraft { cp: PlanContactPoint; purpose: StepPurpose; waitFor: WaitFor; reason: string }
+interface StepDraft { cp: PlanContactPoint; purpose: StepPurpose; waitFor: WaitFor; reason: string; enabled?: boolean }
 
 /** targetRef + evidence ids for a contact point (web forms are targeted by URL, the others by evidence id). */
 export function stepTarget(cp: PlanContactPoint): { targetRef: string; evidenceIds: string[] } {
@@ -95,7 +98,7 @@ export function toSteps(drafts: readonly StepDraft[]): PlanStep[] {
     ...stepTarget(d.cp),
     reason: d.reason,
     waitFor: d.waitFor,
-    enabled: true,
+    enabled: d.enabled ?? true,
   }));
 }
 
@@ -145,12 +148,25 @@ function directPlan(prefix: string, c: Chosen, n: number): { rule: string; draft
   ] };
 }
 
+export const VERIFY_REASON =
+  'A short AI call can confirm they see adults with your condition, take new patients and how to start, before anything else is sent. Only the diagnosis name is shared.';
+
+/** Specialists with a verified phone: an opt-in (disabled) verification call goes first. */
+function withVerify(plan: { rule: string; drafts: StepDraft[] }, voice: PlanContactPoint): { rule: string; drafts: StepDraft[] } {
+  if (plan.drafts.length >= MAX_STEPS_PER_RESOURCE) return plan;
+  return {
+    rule: `${plan.rule}_verify`,
+    drafts: [{ cp: voice, purpose: 'verify', waitFor: 'none', reason: VERIFY_REASON, enabled: false }, ...plan.drafts],
+  };
+}
+
 export function planResource(input: PlanResourceInput): ResourcePlan {
   const family = ruleFamily(input);
   const points = parsePlanContactPoints(input.evidence);
   const chosen: Chosen = { email: best(points, 'email', family), voice: best(points, 'voice', family), form: best(points, 'web_form', family) };
   const n = FOLLOW_UP_DAYS[family];
-  const { rule, drafts } = family === 'aid' ? aidPlan(chosen, n) : directPlan(family, chosen, n);
+  const base = family === 'aid' ? aidPlan(chosen, n) : directPlan(family, chosen, n);
+  const { rule, drafts } = family === 'specialist' && chosen.voice ? withVerify(base, chosen.voice) : base;
   return {
     resourceKey: resourceKeyOf(input),
     targetKind: input.targetKind,

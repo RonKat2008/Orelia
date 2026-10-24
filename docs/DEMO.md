@@ -101,7 +101,7 @@ npx tsx scripts/demo-coordinators.ts --live --once                            # 
 ```
 
 Borrowed inboxes are marked in the state file. `demo-reset` never deletes them, and the coordinators ignore mail
-that arrived before the seed. The reply lands in the sender inbox thread, the AgentMail webhook ingests it, and the
+that arrived more than 6 hours before the seed. The reply lands in the sender inbox thread, the AgentMail webhook ingests it, and the
 InboxAgent turns it into a tracker task.
 
 ## Dry-run mode

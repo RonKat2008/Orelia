@@ -6,6 +6,9 @@ import { cn } from "@/lib/ui/cn";
 import { evidenceForReason, type ShortlistCard } from "./data";
 import { EvidenceList } from "./EvidenceList";
 import { ScoreStack } from "./ScoreStack";
+import { VerifiedBadges } from "./VerifiedBadges";
+import { VerifyByPhone } from "./VerifyByPhone";
+import { canVerifyByPhone, resourceKeyOf, type BadgeView } from "./verify-model";
 import {
   contactDoorOf,
   eyebrowOf,
@@ -29,7 +32,16 @@ export function ResourceCard({
   atCap,
   onToggle,
   scoreScale,
+  caseId,
+  insurer = null,
+  badges = [],
+  onVerificationChanged,
 }: {
+  caseId?: string;
+  /** Insurer name on the case; enables the optional "Insurance" share on phone verification. */
+  insurer?: string | null;
+  badges?: BadgeView[];
+  onVerificationChanged?: () => void;
   card: ShortlistCard;
   variant?: CardVariant;
   /** Shared bar scale (the top score in the list) so bars compare across cards. */
@@ -183,6 +195,17 @@ export function ResourceCard({
             </span>
           </span>
         </p>
+
+        {caseId ? <VerifiedBadges caseId={caseId} badges={badges} /> : null}
+        {caseId && canVerifyByPhone(card) ? (
+          <VerifyByPhone
+            caseId={caseId}
+            resourceKey={resourceKeyOf(card)}
+            name={title}
+            insurer={insurer}
+            onChanged={onVerificationChanged ?? (() => undefined)}
+          />
+        ) : null}
 
         <ChoiceRow
           title={selected ? "Selected to contact" : "Select to contact"}

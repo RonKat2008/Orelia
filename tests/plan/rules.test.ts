@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { contactPlanSchema, MAX_PLAN_RESOURCES, type ResourcePlan } from '@/lib/plan/contract';
-import { buildContactPlan, buildDeterministicPlan, parsePlanContactPoints, webFormEvidence } from '@/lib/plan';
+import { buildContactPlan, buildDeterministicPlan, NO_CHANNEL_REASON, parsePlanContactPoints, validatePlanAgainstInputs, webFormEvidence } from '@/lib/plan';
+import { demoCoordinatorEvidence } from '@/lib/plan/contact-points';
 import { emailEv, formEv, NOW, phoneEv, plainEv, resource } from './planner-fixtures';
 
 const E = () => emailEv('org_contact', 'info@aid.example.org');
@@ -73,18 +74,21 @@ describe('specialist rules (expert / institution)', () => {
 
   it('email + phone: email intro, call only if no reply after 3 business days', () => {
     const r = only(resource('expert', 'e1', [refE, refP]));
-    expect(r.rule).toBe('specialist_email_then_call');
-    expect(shape(r)).toEqual(['email:intro:none', 'voice:follow_up:business_days:3']);
-    expect(r.steps.map(s => s.id)).toEqual(['s1', 's2']);
-    expect(r.steps.map(s => s.order)).toEqual([1, 2]);
-    expect(r.steps.every(s => s.enabled)).toBe(true);
+    expect(r.rule).toBe('specialist_email_then_call_verify');
+    expect(shape(r)).toEqual(['voice:verify:none', 'email:intro:none', 'voice:follow_up:business_days:3']);
+    expect(r.steps.map(s => s.id)).toEqual(['s1', 's2', 's3']);
+    expect(r.steps.map(s => s.order)).toEqual([1, 2, 3]);
+    // The verification call is opt-in; the other steps stay enabled.
+    expect(r.steps.map(s => s.enabled)).toEqual([false, true, true]);
+    expect(r.steps[0].targetRef).toBe(refP.id);
+    expect(r.steps[0].reason).toMatch(/Only the diagnosis name is shared/);
   });
 
   it('email only / phone only', () => {
     expect(only(resource('institution', 'i1', [refE])).rule).toBe('specialist_email_only');
     const call = only(resource('institution', 'i1', [refP], 'cancer_center'));
-    expect(call.rule).toBe('specialist_call_only');
-    expect(shape(call)).toEqual(['voice:intro:none']);
+    expect(call.rule).toBe('specialist_call_only_verify');
+    expect(shape(call)).toEqual(['voice:verify:none', 'voice:intro:none']);
   });
 
   it('prefers referral coordinator > second opinion > new patient line > navigator > org contact', () => {
@@ -97,19 +101,36 @@ describe('specialist rules (expert / institution)', () => {
       phoneEv('new_patient_line', '+16175550122'),
     ];
     const r = only(resource('institution', 'i1', ev));
-    expect(r.steps[0].targetRef).toBe(ev[3].id);
-    expect(r.steps[1].targetRef).toBe(ev[5].id);
+    expect(r.steps[0]).toMatchObject({ purpose: 'verify', targetRef: ev[5].id });
+    expect(r.steps[1].targetRef).toBe(ev[3].id);
+    expect(r.steps[2].targetRef).toBe(ev[5].id);
     const withRef = only(resource('institution', 'i1', [...ev, refE]));
-    expect(withRef.steps[0].targetRef).toBe(refE.id);
+    expect(withRef.steps[1].targetRef).toBe(refE.id);
   });
 
   it('a referral form is used only when there is no email (form, then call if no reply)', () => {
     const form = formEv('referral_form', 'https://center.example.org/refer');
-    expect(only(resource('institution', 'i1', [refE, form, refP])).rule).toBe('specialist_email_then_call');
+    expect(only(resource('institution', 'i1', [refE, form, refP])).rule).toBe('specialist_email_then_call_verify');
     const r = only(resource('institution', 'i1', [form, refP]));
-    expect(r.rule).toBe('specialist_form_then_call');
-    expect(shape(r)).toEqual(['web_form:apply:none', 'voice:follow_up:business_days:3']);
+    expect(r.rule).toBe('specialist_form_then_call_verify');
+    expect(shape(r)).toEqual(['voice:verify:none', 'web_form:apply:none', 'voice:follow_up:business_days:3']);
     expect(only(resource('institution', 'i1', [form])).rule).toBe('specialist_form_only');
+  });
+});
+
+describe('verify step', () => {
+  it('is only added for specialists with a verified phone, never for trials / aid / advocacy', () => {
+    const p = phoneEv('new_patient_line', '+16175550133');
+    expect(only(resource('expert', 'e9', [p])).steps.some(s => s.purpose === 'verify')).toBe(true);
+    expect(only(resource('expert', 'e9', [emailEv('referral_coordinator', 'referrals@center.example.org')])).steps.some(s => s.purpose === 'verify')).toBe(false);
+    expect(only(resource('trial', 't9', [phoneEv('ctgov_central_contact', '+16175550134')])).steps.some(s => s.purpose === 'verify')).toBe(false);
+    expect(only(resource('organization', 'o9', [P()], 'financial_aid')).steps.some(s => s.purpose === 'verify')).toBe(false);
+  });
+
+  it('a plan with a verify step is schema-valid and the summary ignores the disabled verify step', () => {
+    const plan = buildDeterministicPlan('case-1', [resource('expert', 'e1', [phoneEv('referral_coordinator', '+16175550111')])], { now: NOW });
+    expect(contactPlanSchema.safeParse(plan).success).toBe(true);
+    expect(plan.summary).toBe('1 resource: 1 call.');
   });
 });
 
@@ -186,5 +207,40 @@ describe('buildDeterministicPlan', () => {
   it('buildContactPlan without llm returns the deterministic plan', async () => {
     const input = [resource('organization', 'o1', [E()], 'advocacy')];
     expect(await buildContactPlan('c', input, { now: NOW })).toEqual(buildDeterministicPlan('c', input, { now: NOW }));
+  });
+});
+
+describe('demo coordinator mode', () => {
+  const demo = (address: string, contactId = 'contact-d1') => demoCoordinatorEvidence(contactId, address);
+  const envOn = () => {
+    vi.stubEnv('WAYFINDER_DEMO_COORDINATORS', '1');
+    vi.stubEnv('OUTBOUND_ALLOWLIST', 'demo-a@example.org');
+    vi.stubEnv('AGENTMAIL_SENDER_INBOX_ID', 'sender@example.org');
+  };
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('gives a doorless resource an email step to the demo coordinator, labelled "Demo coordinator"', () => {
+    envOn();
+    const rp = only(resource('organization', 'd1', [demo('demo-a@example.org')], 'advocacy'));
+    expect(shape(rp)).toEqual(['email:intro:none']);
+    expect(rp.steps[0].reason).toContain('Demo coordinator');
+    expect(rp.steps[0].evidenceIds).toEqual(['contact_point:demo_coordinator:contact-d1']);
+    expect(rp.unavailableReason).toBeNull();
+  });
+
+  it('never plans the real contact points of a demo-mapped resource, and the plan validates', () => {
+    envOn();
+    const input = resource('organization', 'd1', [E(), P(), F(), demo('demo-a@example.org')], 'advocacy');
+    const rp = only(input);
+    expect(rp.steps.map(s => s.channel)).toEqual(['email']);
+    const plan = buildDeterministicPlan('case-1', [input], { now: NOW });
+    expect(validatePlanAgainstInputs(plan, [input])).toEqual([]);
+  });
+
+  it('ignores the demo row when the mode is off or the address is not an allowlisted demo inbox', () => {
+    const ev = demo('demo-a@example.org');
+    expect(only(resource('organization', 'd1', [ev], 'advocacy')).unavailableReason).toBe(NO_CHANNEL_REASON);
+    envOn();
+    expect(only(resource('organization', 'd1', [demo('other@hospital.example')], 'advocacy')).unavailableReason).toBe(NO_CHANNEL_REASON);
   });
 });

@@ -1,7 +1,9 @@
 import type { CaseRecord } from './types';
+import { stateCodeOf, stateSpans } from './us-states';
 export function minimize(record: CaseRecord, sharedFields: readonly string[]): Record<string, unknown> {
   return Object.fromEntries(sharedFields.filter(key => Object.hasOwn(record, key)).map(key => [key, structuredClone(record[key])]));
 }
+const normalized = (text: string) => text.normalize('NFKC').replace(/\s+/g, ' ').trim();
 const canonical = (text: string) => text.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
 function values(value: unknown): string[] {
   if (typeof value === 'string') return value.trim() ? [value] : [];
@@ -27,7 +29,17 @@ export function containsUnsharedField(body: string, record: CaseRecord, sharedFi
       }
     }
   }
+  const cased = normalized(body);
+  // Two-letter state codes collide with English words (in, or, me, ok): match them only in a location context.
+  const stateLeak = (raw: string) => {
+    const code = stateCodeOf(raw);
+    if (!code) return null;
+    const exempt = cased.length === text.length ? sharedSpans : [];
+    return stateSpans(cased, code).some(s => !exempt.some(e => e.start <= s.start && s.end <= e.end));
+  };
   return Object.entries(record).some(([key, value]) => !sharedFields.includes(key) && values(value).some(raw => {
+    const state = stateLeak(raw);
+    if (state !== null) return state;
     const needle = canonical(raw);
     let offset = text.indexOf(needle);
     while (offset !== -1) {

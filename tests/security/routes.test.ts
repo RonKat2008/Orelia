@@ -25,6 +25,12 @@ vi.mock('../../app/api/cases/_lib/services', async () => {
     persist: { getShortlist: async () => [] },
   }) };
 });
+// Coordination records storage boundary (memory store, or a provider failure when state.fail).
+vi.mock('../../lib/coordination/store', async importOriginal => {
+  const actual = await importOriginal<typeof import('../../lib/coordination/store')>();
+  const memory = new actual.MemoryCoordinationStore();
+  return { ...actual, getCoordinationStore: () => { if (state.fail) throw new Error('provider_error_synthetic: SELECT * FROM coordination_records; DATABASE_URL\n    at provider (/private/server.ts:42:9)'); return memory; } };
+});
 vi.mock('../../lib/agents/intake-extractor', () => ({ extractCase: async () => { throw new Error('provider_error_synthetic: SELECT * FROM cases; DATABASE_URL ANTHROPIC_API_KEY\n    at provider (/private/server.ts:42:9)'); } }));
 vi.mock('../../scripts/seed-demo', () => ({ main: async () => { throw new Error('provider_error_synthetic: SELECT * FROM cases; DATABASE_URL ANTHROPIC_API_KEY\n    at provider (/private/server.ts:42:9)'); } }));
 vi.mock('../../scripts/demo/state', () => ({
@@ -41,6 +47,8 @@ vi.mock('next/server', async importOriginal => ({ ...await importOriginal<typeof
 import { MemoryOwnerStore } from '../../lib/auth/ownership';
 import { signSession } from '../../lib/auth/session';
 import { RESEARCH_LIMITS, resetMemoryRateLimitStore } from '../../lib/rate-limit';
+import { MemoryHistoryStore } from '../../lib/history/store';
+import { MemoryShareStore } from '../../lib/history/share';
 
 const inventory: { route: string; method: Method; handler: Handler }[] = [];
 for (const file of routeFiles()) {
@@ -50,7 +58,17 @@ for (const file of routeFiles()) {
   }
 }
 const cookie = (owner: string) => `wf_session=${signSession(owner, { WAYFINDER_SESSION_SECRET: SECRET })}`;
-const holder = globalThis as typeof globalThis & { __wayfinderOwnerStore?: MemoryOwnerStore };
+const holder = globalThis as typeof globalThis & { __wayfinderOwnerStore?: MemoryOwnerStore; __wayfinderHistoryStore?: unknown; __wayfinderShareStore?: unknown };
+// Memory-backed stores (used when DATABASE_URL is empty) are storage boundaries too: fail them on the error probe.
+const failingWhenAsked = <T extends object>(store: T): T => new Proxy(store, {
+  get(target, prop, receiver) {
+    const value = Reflect.get(target, prop, receiver);
+    return typeof value === 'function' ? (...args: unknown[]) => {
+      if (state.fail) throw new Error(FAILURE);
+      return value.apply(target, args);
+    } : value;
+  },
+});
 
 beforeEach(() => {
   vi.stubEnv('WAYFINDER_SESSION_SECRET', SECRET);
@@ -66,6 +84,8 @@ beforeEach(() => {
   vi.stubEnv('AGENTCALL_WEBHOOK_SECRET', 'synthetic-call-secret');
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error(FAILURE); }));
   vi.spyOn(console, 'error').mockImplementation(() => {});
+  holder.__wayfinderHistoryStore = failingWhenAsked(new MemoryHistoryStore());
+  holder.__wayfinderShareStore = failingWhenAsked(new MemoryShareStore());
   holder.__wayfinderOwnerStore = new MemoryOwnerStore();
   holder.__wayfinderOwnerStore.registerCase(CASE_ID, 'owner');
   holder.__wayfinderOwnerStore.registerContact(CONTACT_ID, CASE_ID);
@@ -75,6 +95,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete holder.__wayfinderOwnerStore;
+  delete holder.__wayfinderHistoryStore;
+  delete holder.__wayfinderShareStore;
   resetMemoryRateLimitStore();
   vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers();
 });
@@ -182,7 +204,7 @@ for (const { route, method, handler } of inventory) {
 // rather than silently escaping admission-control coverage.
 const limitedRoutes = routeFiles().filter(file => /checkRateLimit|rateLimitedResponse|withModelRateLimit/.test(readFileSync(file, 'utf8'))).map(routePath);
 it('has a route-level saturation probe for every directly rate-limited route', () => {
-  expect(limitedRoutes.sort()).toEqual(['/api/cases/[id]/research']);
+  expect(limitedRoutes.sort()).toEqual(['/api/cases/[id]/research', '/api/review/[token]']);
 });
 it('research accepts the configured case quota, then returns 429 with Retry-After', async () => {
   const entry = inventory.find(item => item.route === '/api/cases/[id]/research' && item.method === 'POST')!;
@@ -251,3 +273,19 @@ for (const provider of ['agentmail', 'agentcall'] as const) {
     await cleanBody(response);
   });
 }
+
+it('doctor review link accepts the per-client GET quota, then returns 429 with Retry-After', async () => {
+  const entry = inventory.find(item => item.route === '/api/review/[token]' && item.method === 'GET')!;
+  const call = () => entry.handler(requestFor(entry.route, entry.method), contextFor(entry.route));
+  let status = 0;
+  for (let count = 0; count < 200 && status !== 429; count++) {
+    const response = await call();
+    status = response.status;
+    if (status !== 429) expect(status).toBe(404);
+  }
+  expect(status).toBe(429);
+  const response = await call();
+  expect(response.status).toBe(429);
+  expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
+  await cleanBody(response);
+});

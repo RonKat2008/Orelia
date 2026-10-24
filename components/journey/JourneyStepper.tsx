@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, Route, ScrollText } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/feedback";
 import { Stepper, type StepperStep } from "@/components/ui/display";
@@ -62,11 +62,25 @@ export function JourneyStepper({ plan }: { plan: JourneyPlan }) {
         </Accordion>
       )}
       <Link
+        href={plan.expertsHref}
+        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+      >
+        <Route aria-hidden className="size-4" />
+        From research to care
+      </Link>
+      <Link
         href={plan.documentsHref}
         className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
       >
         <FileText aria-hidden className="size-4" />
         Documents agents can use
+      </Link>
+      <Link
+        href={plan.historyHref}
+        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+      >
+        <ScrollText aria-hidden className="size-4" />
+        Medical history
       </Link>
       {plan.notes.length > 0 ? (
         <ul className="m-0 grid list-none gap-1.5 p-0 text-small text-ink-2">

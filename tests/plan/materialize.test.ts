@@ -91,3 +91,33 @@ describe('materializeApprovedPlan', () => {
     expect(none[0]).toMatchObject({ status: 'not_available', detail: 'no browser' });
   });
 });
+
+describe('materializeApprovedPlan: verify steps', () => {
+  const verify = (extra = {}) => step('s1', 1, { channel: 'voice', purpose: 'verify', ...extra });
+
+  it('an opted-in verify step writes a verification request, never an outbox draft; the email still drafts', async () => {
+    const createVerification = vi.fn(async () => ({ id: 'ver-1' }));
+    const { d, createDraft } = deps({ createVerification });
+    const out = await materializeApprovedPlan(approved([resource('a', [verify(), step('s2', 2)])]), d);
+    expect(createVerification).toHaveBeenCalledWith({ caseId: 'case-1', resourceKey: 'expert:a' });
+    expect(out).toEqual([
+      { resourceKey: 'expert:a', stepId: 's1', channel: 'voice', status: 'verification_drafted', verificationId: 'ver-1' },
+      { resourceKey: 'expert:a', stepId: 's2', channel: 'email', status: 'drafted', draftId: 'draft-contact-a' },
+    ]);
+    expect(createDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it('a disabled verify step (the default) does nothing; without the dep it is not_available; refusals keep only a code', async () => {
+    const createVerification = vi.fn(async () => ({ id: 'ver-1' }));
+    const off = await materializeApprovedPlan(approved([resource('a', [verify({ enabled: false }), step('s2', 2)])]), deps({ createVerification }).d);
+    expect(createVerification).not.toHaveBeenCalled();
+    expect(off.map(o => o.stepId)).toEqual(['s2']);
+    const missing = await materializeApprovedPlan(approved([resource('a', [verify()])]), deps().d);
+    expect(missing[0]).toMatchObject({ status: 'not_available' });
+    const refused = await materializeApprovedPlan(approved([resource('a', [verify()])]), deps({
+      createVerification: async () => { throw Object.assign(new Error('secret +16175550100'), { code: 'no_phone' }); },
+    }).d);
+    expect(refused[0]).toMatchObject({ status: 'blocked', detail: 'no_phone' });
+    expect(JSON.stringify(refused)).not.toContain('secret');
+  });
+});

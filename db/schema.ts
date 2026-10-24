@@ -48,6 +48,7 @@ export const sourceKindEnum = pgEnum("source_kind", [
   "nppes",
   "nci",
   "exa",
+  "phone_call",
 ]);
 
 export const channelEnum = pgEnum("channel", ["email", "voice"]);
@@ -330,7 +331,7 @@ export const agentRuns = pgTable("agent_runs", {
 
 
 export const documentKindEnum = pgEnum("document_kind", [
-  "intake_report", "case_summary", "resource_page", "evidence", "inbound_message", "call_transcript", "patient_note",
+  "intake_report", "case_summary", "resource_page", "evidence", "inbound_message", "call_transcript", "patient_note", "medical_record",
 ]);
 export const caseDocuments = pgTable("case_documents", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -381,3 +382,78 @@ export const webApplications = pgTable("web_applications", {
   result: jsonb("result").$type<Record<string, unknown>>(),
   ...timestamps,
 }, (table) => [index("web_applications_case_idx").on(table.caseId)]);
+
+/** Medical history lane: patient-uploaded records (sanitized text) with their extracted timeline events. */
+export const historyDocuments = pgTable("history_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  docType: text("doc_type").notNull(),
+  text: text("text").notNull(),
+  extractedBy: text("extracted_by").notNull(),
+  events: jsonb("events").$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+  ...timestamps,
+}, table => [index("history_documents_case_idx").on(table.caseId)]);
+
+/** Revocable, expiring share links for the medical history summary. The token is HMAC-signed; only the id is stored. */
+export const historyShares = pgTable("history_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  sections: text("sections").array().notNull(),
+  label: text("label"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  ...timestamps,
+}, table => [index("history_shares_case_idx").on(table.caseId)]);
+
+// ---- research-to-care (rd-experts lane): expert_traces ----
+/** One row per tracer run; the full ExpertTrace (chains + code-stamped evidence) lives in `trace`. Latest by traced_at wins. */
+export const expertTraces = pgTable("expert_traces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  tracedAt: timestamp("traced_at", { withTimezone: true }).notNull().defaultNow(),
+  trace: jsonb("trace").$type<Record<string, unknown>>().notNull(),
+}, (table) => [index("expert_traces_case_idx").on(table.caseId)]);
+// ---- end research-to-care ----
+
+// --- rd-experts: verification calls (lib/verification) ---
+/** AI verification calls (six fixed questions). Nothing is dialed until approved_at is set and checkOutbound passes. */
+export const verificationRequests = pgTable("verification_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  resourceKey: text("resource_key").notNull(),
+  targetKind: targetKindEnum("target_kind").notNull(),
+  targetId: text("target_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  phoneEvidenceId: text("phone_evidence_id").notNull(),
+  sharedFields: jsonb("shared_fields").$type<string[]>().notNull(),
+  script: text("script").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  callId: text("call_id"),
+  result: jsonb("result").$type<Record<string, unknown>>(),
+  evidenceIds: jsonb("evidence_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  blockedReasons: jsonb("blocked_reasons").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+}, (table) => [
+  index("verification_requests_case_idx").on(table.caseId),
+  uniqueIndex("verification_requests_call_id_unique").on(table.callId),
+]);
+// --- end rd-experts: verification calls ---
+
+/** Rare-disease coordination records (referral checklists, specialist packets, doctors, consult requests). */
+export const coordinationRecords = pgTable("coordination_records", {
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  key: text("key").notNull(),
+  version: integer("version").notNull().default(1),
+  /** sha256 of a consult request's signed review token (never the token itself). */
+  tokenHash: text("token_hash"),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  ...timestamps,
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.caseId, table.kind, table.key] }),
+  uniqueIndex("coordination_records_token_hash_idx").on(table.tokenHash),
+]);

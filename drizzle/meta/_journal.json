@@ -78,6 +78,41 @@
       "when": 1792821700000,
       "tag": "0032_contact_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792821800000,
+      "tag": "0033_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792821900000,
+      "tag": "0034_experts",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792822000000,
+      "tag": "0035_source_kind_phone_call",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792822100000,
+      "tag": "0036_verification_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792822200000,
+      "tag": "0037_coordinate",
+      "breakpoints": true
     }
   ]
 }

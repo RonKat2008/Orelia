@@ -1,6 +1,6 @@
 "use client";
 
-import { DemoCoordinatorBadge } from "@/components/outreach/DemoCoordinators";
+import { DemoCoordinatorBadge, useIsDemoCoordinator } from "@/components/outreach/DemoCoordinators";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Lock, Mail, PhoneCall } from "lucide-react";
@@ -238,12 +238,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
                     <Badge tone="sage">Only route found</Badge>
                     <DemoCoordinatorBadge address={contact.address} />
                   </p>
-                  <p className="m-0 text-small text-ink-2">
-                    This is the intake {contact.channel === "email" ? "email" : "number"} listed on their public page.
-                    {contact.channel === "email"
-                      ? " We will not phone them."
-                      : " The call opens by saying an AI assistant is calling for you."}
-                  </p>
+                  <ReachedNote channel={contact.channel} address={contact.address} />
                 </section>
 
                 <fieldset className="m-0 grid min-w-0 gap-3 border-0 p-0">
@@ -453,5 +448,18 @@ export function ConsentForm({ caseId }: { caseId: string }) {
         </div>
       </section>
     </form>
+  );
+}
+
+/** Where the route came from. A demo coordinator is our own test inbox, never the resource's public contact. */
+function ReachedNote({ channel, address }: { channel: "email" | "voice"; address: string }) {
+  const demo = useIsDemoCoordinator(address);
+  return (
+    <p className="m-0 text-small text-ink-2">
+      {demo
+        ? "Demo mode: a synthetic intake coordinator (our own test inbox) stands in for this resource. Their real contact is not used."
+        : `This is the intake ${channel === "email" ? "email" : "number"} listed on their public page.`}
+      {channel === "email" ? " We will not phone them." : " The call opens by saying an AI assistant is calling for you."}
+    </p>
   );
 }

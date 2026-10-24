@@ -2,13 +2,15 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { caseCandidates, contacts, evidence, experts, institutions, organizations, trials } from '@/db/schema';
 import { getServices } from '@/app/api/cases/_lib/services';
+import { demoCoordinatorEvidence } from './contact-points';
+import { isDemoCoordinatorAddress } from '../outreach/demo-coordinators';
 import type { PlanEvidence, PlanResourceInput, PlanTargetKind } from './contract';
 
 export interface PlanInputLoader {
   load(caseId: string): Promise<PlanResourceInput[]>;
 }
 
-interface Target { targetKind: PlanTargetKind; targetId: string; contactId: string | null }
+interface Target { targetKind: PlanTargetKind; targetId: string; contactId: string | null; address?: string }
 const keyOf = (t: { targetKind: string; targetId: string }) => `${t.targetKind}:${t.targetId}`;
 
 /** Selected resources: contacts rows (created on selection) plus case_candidates.selected, deduped by target. */
@@ -17,13 +19,13 @@ export class PostgresPlanInputLoader implements PlanInputLoader {
 
   async load(caseId: string): Promise<PlanResourceInput[]> {
     const [contactRows, candidateRows] = await Promise.all([
-      this.db.select({ id: contacts.id, targetKind: contacts.targetKind, targetId: contacts.targetId })
+      this.db.select({ id: contacts.id, targetKind: contacts.targetKind, targetId: contacts.targetId, address: contacts.address })
         .from(contacts).where(eq(contacts.caseId, caseId)),
       this.db.select({ targetKind: caseCandidates.targetKind, targetId: caseCandidates.targetId, rank: caseCandidates.rank })
         .from(caseCandidates).where(and(eq(caseCandidates.caseId, caseId), eq(caseCandidates.selected, true))),
     ]);
     const byKey = new Map<string, Target>();
-    for (const c of contactRows) if (!byKey.has(keyOf(c))) byKey.set(keyOf(c), { targetKind: c.targetKind, targetId: c.targetId, contactId: c.id });
+    for (const c of contactRows) if (!byKey.has(keyOf(c))) byKey.set(keyOf(c), { targetKind: c.targetKind, targetId: c.targetId, contactId: c.id, address: c.address });
     for (const c of [...candidateRows].sort((a, b) => (a.rank ?? 1e9) - (b.rank ?? 1e9))) {
       if (!byKey.has(keyOf(c))) byKey.set(keyOf(c), { targetKind: c.targetKind, targetId: c.targetId, contactId: null });
     }
@@ -32,7 +34,10 @@ export class PostgresPlanInputLoader implements PlanInputLoader {
       const [meta, rows] = await Promise.all([this.meta(t), this.db.select().from(evidence)
         .where(and(eq(evidence.caseId, caseId), eq(evidence.targetKind, t.targetKind), eq(evidence.targetId, t.targetId)))]);
       const ev: PlanEvidence[] = rows.map(r => ({ id: r.id, claimType: r.claimType, claim: r.claim, sourceUrl: r.sourceUrl, sourceKind: r.sourceKind }));
-      return { ...t, name: meta.name ?? t.targetId, subKind: meta.subKind, evidence: ev };
+      // Demo coordinator mode: a contact mapped to a demo inbox gets a code-stamped email point for that inbox.
+      if (t.contactId && isDemoCoordinatorAddress(t.address, process.env)) ev.push(demoCoordinatorEvidence(t.contactId, t.address!.trim().toLowerCase()));
+      const { address: _address, ...target } = t;
+      return { ...target, name: meta.name ?? t.targetId, subKind: meta.subKind, evidence: ev };
     }));
   }
 

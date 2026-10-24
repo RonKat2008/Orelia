@@ -15,7 +15,8 @@ export const MAX_PLAN_RESOURCES = 5;
 export const MAX_STEPS_PER_RESOURCE = 6;
 
 export const planChannelSchema = z.enum(['email', 'voice', 'web_form']);
-export const stepPurposeSchema = z.enum(['intro', 'apply', 'follow_up', 'confirm']);
+/** 'verify' = an AI verification call (lib/verification): creates a request that waits for patient approval; never sends by itself. */
+export const stepPurposeSchema = z.enum(['intro', 'apply', 'follow_up', 'confirm', 'verify']);
 export const targetKindSchema = z.enum(['expert', 'institution', 'trial', 'organization']);
 
 /** 'none' = run right after the previous step; 'reply' = only if no reply yet, wait for one; business_days:N = no reply after N business days. */

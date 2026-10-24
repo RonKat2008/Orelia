@@ -1,0 +1,93 @@
+import type { ChainVerdict, ExpertTrace, ReachRoute, TraceEvidence } from "@/lib/experts/contract";
+
+/** Only http(s) links are ever rendered as anchors. */
+export function safeHref(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+export interface SourceLink {
+  id: string;
+  url: string;
+  claim: string;
+  fetchedAt: string;
+}
+
+/** Resolve evidence ids to rows of the trace. Ids with no row (or no safe URL) are dropped; callers show a gap note. */
+export function resolveSources(trace: Pick<ExpertTrace, "evidence">, ids: readonly string[]): { links: SourceLink[]; missing: number } {
+  const byId = new Map<string, TraceEvidence>(trace.evidence.map((row) => [row.id, row]));
+  const links: SourceLink[] = [];
+  const seen = new Set<string>();
+  let missing = 0;
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const row = byId.get(id);
+    const url = safeHref(row?.sourceUrl);
+    if (row && url) links.push({ id, url, claim: row.claim, fetchedAt: row.fetchedAt });
+    else missing += 1;
+  }
+  return { links, missing };
+}
+
+export interface VerdictView {
+  /** Short chip text. 'unknown' is neutral wording, never negative. */
+  label: string;
+  tone: "ok" | "neutral" | "warn";
+}
+
+export function verdictView(kind: "sees" | "consult", verdict: ChainVerdict): VerdictView {
+  if (verdict === "unknown") return { label: "Not confirmed yet", tone: "neutral" };
+  if (kind === "sees") {
+    return verdict === "yes"
+      ? { label: "Sees patients: documented", tone: "ok" }
+      : { label: "Sees patients: not documented", tone: "warn" };
+  }
+  return verdict === "yes"
+    ? { label: "Consultation route: documented", tone: "ok" }
+    : { label: "No consultation route found", tone: "warn" };
+}
+
+export interface ChainNode {
+  id: "paper" | "author" | "institution" | "reach";
+  title: string;
+}
+
+export const CHAIN_NODES: readonly ChainNode[] = [
+  { id: "paper", title: "Paper" },
+  { id: "author", title: "Author" },
+  { id: "institution", title: "Institution" },
+  { id: "reach", title: "How to reach" },
+];
+
+const CHANNEL_LABEL: Record<ReachRoute["channel"], string> = {
+  email: "Email",
+  voice: "Phone",
+  web_form: "Online form",
+  page: "Web page",
+};
+
+export function channelLabel(channel: ReachRoute["channel"]): string {
+  return CHANNEL_LABEL[channel];
+}
+
+export function pubmedUrl(pmid: string): string {
+  return `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
+}
+
+/** Connector stagger: chain index and connector index to a start delay in seconds (capped). */
+export function connectorDelay(chainIndex: number, connectorIndex: number): number {
+  return Math.min(chainIndex, 6) * 0.12 + connectorIndex * 0.18;
+}
+
+export function describeTrace(trace: ExpertTrace): string {
+  const n = trace.chains.length;
+  const when = new Date(trace.tracedAt);
+  const date = Number.isNaN(when.getTime()) ? "" : ` on ${when.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  return `${n} ${n === 1 ? "chain" : "chains"} traced${date}.`;
+}

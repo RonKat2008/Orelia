@@ -88,6 +88,13 @@ export class PostgresOutreachStore implements OutreachStore {
     const row = rows.find(r => same(r.sharedFields));
     return row ? { ...row, channel: contact.channel, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: null, sentAt: null } : undefined;
   }
+  async updateDraftBody(draftId: string, contactId: string, body: string): Promise<boolean> {
+    const rows = await this.db.update(s.messages).set({ body }).where(and(
+      eq(s.messages.id, draftId), eq(s.messages.contactId, contactId), eq(s.messages.direction, 'outbound'),
+      isNull(s.messages.approvedAt), isNull(s.messages.sentAt),
+    )).returning({ id: s.messages.id });
+    return rows.length === 1;
+  }
   async draft(id: string, contact: Contact): Promise<Draft | undefined> {
     const [row] = await this.db.select().from(s.messages).where(and(eq(s.messages.id, id), eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound')));
     return row ? { ...row, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: row.approvedAt?.toISOString(), sentAt: row.sentAt?.toISOString() } : undefined;

@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
 import { cn } from "@/lib/ui/cn";
 import { useHeroMotion } from "../HeroMotion";
 
-const FieldCanvas = dynamic(() => import("./FieldCanvas"), { ssr: false });
+type FieldCanvasComponent = ComponentType<{ isPaused: boolean; onReady: () => void }>;
 
 /** Waits for the page to settle (idle, or a short timeout) before pulling in WebGL. */
 const IDLE_TIMEOUT_MS = 1200;
@@ -18,19 +17,36 @@ const IDLE_TIMEOUT_MS = 1200;
 export function HeroField() {
   const reduced = useReducedMotionGate();
   const { isPaused } = useHeroMotion();
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [Canvas, setCanvas] = useState<FieldCanvasComponent | null>(null);
   const [isLive, setIsLive] = useState(false);
   const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (reduced) return;
-    const start = () => setShouldLoad(true);
+    let isCancelled = false;
+    // A plain dynamic import (not next/dynamic) so the ogl chunk is not preloaded in the
+    // initial HTML: it is fetched only once the page is idle.
+    const start = () => {
+      import("./FieldCanvas")
+        .then((mod) => {
+          if (!isCancelled) setCanvas(() => mod.default);
+        })
+        .catch(() => {
+          // The static poster stays as the hero art.
+        });
+    };
+    let cancelIdle: () => void;
     if ("requestIdleCallback" in window) {
       const id = window.requestIdleCallback(start, { timeout: IDLE_TIMEOUT_MS });
-      return () => window.cancelIdleCallback(id);
+      cancelIdle = () => window.cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(start, IDLE_TIMEOUT_MS / 2);
+      cancelIdle = () => clearTimeout(id);
     }
-    const id = setTimeout(start, IDLE_TIMEOUT_MS / 2);
-    return () => clearTimeout(id);
+    return () => {
+      isCancelled = true;
+      cancelIdle();
+    };
   }, [reduced]);
 
   const handleReady = useCallback(() => {
@@ -54,7 +70,7 @@ export function HeroField() {
         isLive && "opacity-100",
       )}
     >
-      {shouldLoad ? <FieldCanvas isPaused={isPaused} onReady={handleReady} /> : null}
+      {Canvas ? <Canvas isPaused={isPaused} onReady={handleReady} /> : null}
     </div>
   );
 }

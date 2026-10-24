@@ -14,6 +14,9 @@ import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
  *   [data-rail]            the How-it-works progress rail
  * Content is server-rendered visible; motion only starts once JS has loaded.
  */
+/** Upper bound on waiting for an idle moment before wiring scroll motion (keeps GSAP off first paint). */
+const CHOREOGRAPHY_IDLE_TIMEOUT_MS = 1500;
+
 export function LandingChoreography() {
   const reduced = useReducedMotionGate();
 
@@ -21,7 +24,7 @@ export function LandingChoreography() {
     let isCancelled = false;
     let cleanup: (() => void) | undefined;
 
-    (async () => {
+    const run = async () => {
       const [{ gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([
         import("gsap"),
         import("gsap/ScrollTrigger"),
@@ -113,12 +116,25 @@ export function LandingChoreography() {
         ctx.revert();
         splits.forEach((split) => split.revert());
       };
-    })().catch(() => {
-      // Motion is an enhancement: if the libraries fail to load, the page is already complete.
-    });
+    };
+
+    const start = () => {
+      run().catch(() => {
+        // Motion is an enhancement: if the libraries fail to load, the page is already complete.
+      });
+    };
+    let cancelIdle: () => void;
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(start, { timeout: CHOREOGRAPHY_IDLE_TIMEOUT_MS });
+      cancelIdle = () => window.cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(start, CHOREOGRAPHY_IDLE_TIMEOUT_MS / 2);
+      cancelIdle = () => clearTimeout(id);
+    }
 
     return () => {
       isCancelled = true;
+      cancelIdle();
       cleanup?.();
     };
   }, [reduced]);

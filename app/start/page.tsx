@@ -38,7 +38,10 @@ export default function StartPage() {
             ))}
           </ol>
         </div>
-        <IntakeFlow demos={demos} />
+        {/* Intake grids use auto tracks; pin them to the container so long report text cannot widen the page. */}
+        <div className="min-w-0 [&_.stack]:grid-cols-[minmax(0,1fr)] [&_input]:min-w-0 [&_input]:max-w-full [&_label]:min-w-0">
+          <IntakeFlow demos={demos} />
+        </div>
       </main>
       <SiteFooter />
     </div>

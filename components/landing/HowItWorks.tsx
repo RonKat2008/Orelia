@@ -38,7 +38,7 @@ export function HowItWorks() {
                   key={step.id}
                   data-step={i}
                   data-active={i === 0}
-                  className="group/step group/scene relative grid gap-5 border-t border-line py-10 first:border-t-0 lg:min-h-[68vh] lg:content-center lg:border-t-0 lg:py-0 lg:pl-16"
+                  className="group/step group/scene relative grid grid-cols-[minmax(0,1fr)] gap-5 border-t border-line py-10 first:border-t-0 lg:min-h-[68vh] lg:content-center lg:border-t-0 lg:py-0 lg:pl-16"
                 >
                   <span
                     aria-hidden

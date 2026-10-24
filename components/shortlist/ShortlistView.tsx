@@ -32,6 +32,7 @@ import { SelectionTray } from "./SelectionTray";
 import { loadInsurer, loadVerifications } from "./verify-client";
 import { badgeViews } from "./verify-model";
 import type { VerificationsResponse } from "@/lib/verification/contract";
+import { NeedsJudgeSection } from "@/components/judge/NeedsJudgeSection";
 import { ShortlistSkeleton } from "./ShortlistSkeleton";
 import {
   filtersToQuery,
@@ -281,6 +282,8 @@ export function ShortlistView({ caseId }: { caseId: string }) {
           </p>
         </section>
       ) : null}
+
+      <NeedsJudgeSection caseId={caseId} />
 
       {items.length === 0 ? (
         <EmptyState

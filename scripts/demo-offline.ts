@@ -1,5 +1,5 @@
 /**
- * Offline end-to-end: report -> extract -> research (9 agents) -> verify -> rank -> shortlist.
+ * Offline end-to-end: report -> extract -> needs analyst + research (9 agents) -> verify -> rank -> final judge -> shortlist.
  * Run: WAYFINDER_OFFLINE=1 npx tsx scripts/demo-offline.ts [--case <slug>|--all] [--top <n>]  (npm run demo:offline)
  * Cases: epithelioid-sarcoma (default), vascular-eds, igg4-related-disease. --top limits the printed shortlist per kind.
  */
@@ -47,6 +47,7 @@ async function runCase(slug: string, top: number): Promise<string[]> {
     console.log(`  ${run.agent.padEnd(15)} ${run.status.padEnd(16)} ${run.outputSummary ?? run.error ?? ""}`);
   }
   console.log(`\nVerifier: ${JSON.stringify(summary.verify)}`);
+  console.log(`Needs: ${summary.needs ? `${summary.needs.items} sourced needs from ${summary.needs.sources} sources${summary.needs.fromCache ? " (cached)" : ""}` : "none"}; judge: ${summary.curation.source}; timings ${JSON.stringify(summary.timings)}`);
   for (const d of summary.verified.dropped) {
     const r = d.record as { kind?: string; nctId?: string; title?: string; name?: string };
     console.log(`  dropped ${d.type} ${r.nctId ?? r.name ?? ""} ${(r.title ?? "").slice(0, 60)} -- ${d.reason}`);
@@ -74,6 +75,8 @@ async function runCase(slug: string, top: number): Promise<string[]> {
   const elapsed = Date.now() - started;
   console.log(`\nElapsed: ${(elapsed / 1000).toFixed(1)}s`);
   if (shortlist.length === 0) failures.push("empty shortlist");
+  if (!summary.needs || summary.needs.items === 0) failures.push("needs analyst produced no sourced needs");
+  if (summary.curation.source !== "model") failures.push("final judge fell back (no recorded verdicts)");
   if (elapsed > MAX_MS) failures.push(`took ${elapsed}ms (> ${MAX_MS}ms)`);
   return failures;
 }

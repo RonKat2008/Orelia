@@ -1,0 +1,280 @@
+{
+  "specialties": [
+    {
+      "id": "s1",
+      "specialty": "Rheumatology",
+      "subspecialty": "Systemic autoimmune and immune-mediated disease",
+      "why": "Experts on an international IgG4-RD panel included rheumatology, and the disease is described as a multi-organ immune-mediated condition.",
+      "plain": "A rheumatologist treats diseases where the immune system affects many organs. This fits IgG4-related disease.",
+      "evidenceIds": [
+        "pubmed:22596100",
+        "pubmed:25481618"
+      ],
+      "searchTerms": [
+        "IgG4-related disease clinic",
+        "rheumatology IgG4-RD"
+      ]
+    },
+    {
+      "id": "s2",
+      "specialty": "Pathology",
+      "subspecialty": "Histopathology of fibro-inflammatory disease",
+      "why": "Histopathology is described as key to diagnosis, and a consensus statement on IgG4-RD pathology exists.",
+      "plain": "A pathologist studies tissue samples under a microscope. Tissue findings are key to diagnosing this disease.",
+      "evidenceIds": [
+        "pubmed:25481618",
+        "pubmed:22596100"
+      ],
+      "searchTerms": [
+        "IgG4-RD pathology review"
+      ]
+    },
+    {
+      "id": "s3",
+      "specialty": "Multidisciplinary organ specialists",
+      "subspecialty": "Gastroenterology, nephrology, pulmonary medicine, ophthalmology, surgery",
+      "why": "The disease can affect nearly any organ, and the international expert group spanned these specialties.",
+      "plain": "Different organs can be affected, so you may need several kinds of specialists working together.",
+      "evidenceIds": [
+        "pubmed:22596100",
+        "pubmed:31791079"
+      ],
+      "searchTerms": [
+        "multidisciplinary IgG4-RD care"
+      ]
+    },
+    {
+      "id": "s4",
+      "specialty": "Allergy and immunology",
+      "subspecialty": "Immune-mediated disease",
+      "why": "Allergy and immunology were among the subspecialties represented in the international IgG4-RD expert group.",
+      "plain": "Allergy and immunology doctors study immune system diseases and may help with this condition.",
+      "evidenceIds": [
+        "pubmed:22596100"
+      ],
+      "searchTerms": []
+    }
+  ],
+  "centerCapabilities": [
+    {
+      "id": "c1",
+      "text": "Offers coordinated multidisciplinary work-up and follow-up, because nearly every organ system can be affected.",
+      "plain": "The center has several kinds of specialists who work together on your care.",
+      "evidenceIds": [
+        "pubmed:31791079"
+      ],
+      "searchTerms": [
+        "multidisciplinary IgG4-RD clinic"
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Has pathologists experienced in reading biopsies for IgG4-RD features such as storiform fibrosis, obliterative phlebitis and IgG4-positive plasma cells.",
+      "plain": "The center has pathologists who know how to read tissue samples for this disease.",
+      "evidenceIds": [
+        "pubmed:25481618",
+        "pubmed:28871762",
+        "pubmed:22596100"
+      ],
+      "searchTerms": [
+        "IgG4-RD histopathology expertise"
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Can distinguish IgG4-RD from malignant disease, infection and other autoimmune diseases, which can be challenging.",
+      "plain": "The center can tell this disease apart from cancer, infection and other immune diseases.",
+      "evidenceIds": [
+        "pubmed:31791079",
+        "pubmed:25481618"
+      ],
+      "searchTerms": [
+        "IgG4-RD diagnostic evaluation"
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Is familiar with the IgG4-RD Responder Index and the validated classification criteria used in international clinical studies.",
+      "plain": "The center knows the standard tools doctors use to measure and classify this disease.",
+      "evidenceIds": [
+        "pubmed:32939060",
+        "pubmed:42391875"
+      ],
+      "searchTerms": [
+        "IgG4-RD research center"
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Takes part in patient registries or research, such as the multicenter IgG4-RD registry study registered in Japan.",
+      "plain": "The center joins research or patient registries on this disease.",
+      "evidenceIds": [
+        "web:3886fde9",
+        "gard:12521-igg4-related-disease"
+      ],
+      "searchTerms": [
+        "IgG4-RD patient registry"
+      ]
+    }
+  ],
+  "redFlags": [
+    {
+      "id": "r1",
+      "text": "A service that does not involve tissue (biopsy) pathology review in diagnosis may be a poor fit, since histopathology is key to diagnosing IgG4-RD.",
+      "plain": "Be careful if a service ignores tissue test results, because they are key to diagnosis.",
+      "appliesTo": [
+        "institution",
+        "expert"
+      ],
+      "evidenceIds": [
+        "pubmed:25481618",
+        "pubmed:31791079"
+      ]
+    },
+    {
+      "id": "r2",
+      "text": "A single-specialty service with no access to other specialists may be a poor fit, as management needs multidisciplinary work-up.",
+      "plain": "Be careful if only one kind of doctor is involved and there is no team.",
+      "appliesTo": [
+        "institution",
+        "expert"
+      ],
+      "evidenceIds": [
+        "pubmed:31791079",
+        "pubmed:22596100"
+      ]
+    },
+    {
+      "id": "r3",
+      "text": "A service unfamiliar with IgG4-RD may be a poor fit, as the disease mimics malignant, infectious and inflammatory disorders and greater awareness is needed.",
+      "plain": "Be careful if a service has not heard of this disease, because it can look like other conditions.",
+      "appliesTo": [
+        "institution",
+        "expert"
+      ],
+      "evidenceIds": [
+        "pubmed:25481618"
+      ]
+    }
+  ],
+  "trialEligibility": [
+    {
+      "id": "e1",
+      "feature": "diagnosis_confirmation",
+      "text": "Listings may ask how IgG4-RD was confirmed, such as by the 2019 ACR/EULAR classification criteria or biopsy histopathology.",
+      "plain": "Studies may ask how your diagnosis was confirmed, such as with a biopsy or standard criteria.",
+      "evidenceIds": [
+        "pubmed:42391875",
+        "pubmed:25481618"
+      ]
+    },
+    {
+      "id": "e2",
+      "feature": "other",
+      "text": "Listings may ask about which organs are involved and whether the disease is the proliferative or the fibrotic type.",
+      "plain": "Studies may ask which organs are affected and what type of disease you have.",
+      "evidenceIds": [
+        "pubmed:38574746",
+        "pubmed:31791079"
+      ]
+    },
+    {
+      "id": "e3",
+      "feature": "prior_therapy_lines",
+      "text": "Listings may ask about relapsing or refractory disease and past treatment history, since recurrent or refractory cases are common.",
+      "plain": "Studies may ask if the disease came back and what care you already had.",
+      "evidenceIds": [
+        "pubmed:25481618",
+        "pubmed:23459998"
+      ]
+    },
+    {
+      "id": "e4",
+      "feature": "other",
+      "text": "Listings may use the IgG4-RD Responder Index to measure disease activity in clinical studies.",
+      "plain": "Studies may use a standard score to measure how active your disease is.",
+      "evidenceIds": [
+        "pubmed:32939060"
+      ]
+    }
+  ],
+  "supportNeeds": [
+    {
+      "id": "n1",
+      "kind": "other",
+      "text": "GARD offers an information line for rare disease questions, plus pages on research participation, community and the diagnostic journey for IgG4-RD.",
+      "plain": "GARD has an information line and pages about research, community and getting diagnosed.",
+      "organizations": [
+        "GARD"
+      ],
+      "evidenceIds": [
+        "gard:12521-igg4-related-disease"
+      ],
+      "searchTerms": [
+        "IgG4-related disease patient community"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "resourceKind": "institution",
+      "text": "Do you have a multidisciplinary team that coordinates care when IgG4-related disease affects several organs?",
+      "evidenceIds": [
+        "pubmed:31791079"
+      ]
+    },
+    {
+      "id": "q2",
+      "resourceKind": "institution",
+      "text": "Do your pathologists review biopsies for IgG4-related disease features, and can you review outside biopsy slides?",
+      "evidenceIds": [
+        "pubmed:25481618",
+        "pubmed:22596100"
+      ]
+    },
+    {
+      "id": "q3",
+      "resourceKind": "expert",
+      "text": "How many people with IgG4-related disease do you see, and which organ specialists do you work with?",
+      "evidenceIds": [
+        "pubmed:31791079",
+        "pubmed:22596100"
+      ]
+    },
+    {
+      "id": "q4",
+      "resourceKind": "expert",
+      "text": "Do you use the IgG4-RD Responder Index or the ACR/EULAR classification criteria in your practice?",
+      "evidenceIds": [
+        "pubmed:32939060",
+        "pubmed:42391875"
+      ]
+    },
+    {
+      "id": "q5",
+      "resourceKind": "trial",
+      "text": "What diagnostic criteria or biopsy findings does this study require to confirm IgG4-related disease?",
+      "evidenceIds": [
+        "pubmed:42391875",
+        "pubmed:25481618"
+      ]
+    },
+    {
+      "id": "q6",
+      "resourceKind": "trial",
+      "text": "Does this study limit enrollment to certain organ involvement or to a fibrotic or proliferative type of disease?",
+      "evidenceIds": [
+        "pubmed:38574746"
+      ]
+    },
+    {
+      "id": "q7",
+      "resourceKind": "organization",
+      "text": "Can you share information on IgG4-related disease research opportunities and patient communities?",
+      "evidenceIds": [
+        "gard:12521-igg4-related-disease"
+      ]
+    }
+  ]
+}

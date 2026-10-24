@@ -1,0 +1,325 @@
+{
+  "specialties": [
+    {
+      "id": "s1",
+      "specialty": "Medical genetics",
+      "subspecialty": "Connective tissue / COL3A1 testing",
+      "why": "Sources describe COL3A1 variant confirmation as central to diagnosis, and genetic testing as essential to confirming vEDS.",
+      "plain": "A genetics team can confirm and explain the COL3A1 gene result.",
+      "evidenceIds": [
+        "pubmed:28306228",
+        "pubmed:36977837"
+      ],
+      "searchTerms": [
+        "connective tissue genetics clinic",
+        "COL3A1 genetic counseling"
+      ]
+    },
+    {
+      "id": "s2",
+      "specialty": "Vascular surgery",
+      "subspecialty": "Connective tissue disease aortic and arterial program",
+      "why": "A source describes a multidisciplinary connective tissue disease aortic program at a high-volume center.",
+      "plain": "Look for blood vessel surgeons who work in a program for connective tissue conditions.",
+      "evidenceIds": [
+        "pubmed:42822608"
+      ],
+      "searchTerms": [
+        "connective tissue aortic program",
+        "vascular surgery connective tissue"
+      ]
+    },
+    {
+      "id": "s3",
+      "specialty": "Interventional radiology",
+      "subspecialty": "Joint work with vascular surgery",
+      "why": "A case report describes interventional radiology and vascular surgery working jointly on a vEDS patient.",
+      "plain": "Some centers have imaging-guided procedure doctors who team up with vascular surgeons.",
+      "evidenceIds": [
+        "pubmed:42830757"
+      ],
+      "searchTerms": [
+        "interventional radiology vascular team"
+      ]
+    },
+    {
+      "id": "s4",
+      "specialty": "Care team coordination",
+      "subspecialty": "Multispecialty vEDS care team",
+      "why": "A review says vEDS management is complex, needs multiple specialists, and recommends identifying and creating a care team.",
+      "plain": "vEDS care needs several kinds of doctors working together.",
+      "evidenceIds": [
+        "pubmed:28306228"
+      ],
+      "searchTerms": [
+        "vascular Ehlers-Danlos multidisciplinary clinic"
+      ]
+    }
+  ],
+  "centerCapabilities": [
+    {
+      "id": "c1",
+      "text": "A multidisciplinary connective tissue disease aortic program within a high-volume aortic center.",
+      "plain": "A program where many specialists treat connective tissue conditions together.",
+      "evidenceIds": [
+        "pubmed:42822608"
+      ],
+      "searchTerms": [
+        "connective tissue aortic program"
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Ability to provide an individual emergency care plan (a \"vascular EDS passport\") stating the diagnosis.",
+      "plain": "The center can give you an emergency card or plan that names your condition.",
+      "evidenceIds": [
+        "pubmed:28306228"
+      ],
+      "searchTerms": [
+        "vascular EDS emergency passport"
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Experience with many confirmed vEDS patients, such as a national diagnostic service reporting on 180 molecularly confirmed patients.",
+      "plain": "The center has seen many people with confirmed vEDS.",
+      "evidenceIds": [
+        "pubmed:36977837"
+      ],
+      "searchTerms": [
+        "national Ehlers-Danlos diagnostic service"
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Joint vascular surgery and interventional radiology teams working together on arterial problems in vEDS.",
+      "plain": "Surgeons and radiology doctors at the same center work together.",
+      "evidenceIds": [
+        "pubmed:42830757"
+      ],
+      "searchTerms": [
+        "vascular surgery interventional radiology team"
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Participation in vEDS or rare vascular disease registries, such as RaDiCo-SED-VASC or the VASCERN registries.",
+      "plain": "The center takes part in research registries for rare blood vessel diseases.",
+      "evidenceIds": [
+        "web:363a8c6e",
+        "web:54ea97a9"
+      ],
+      "searchTerms": [
+        "vascular Ehlers-Danlos registry"
+      ]
+    }
+  ],
+  "redFlags": [
+    {
+      "id": "r1",
+      "text": "A resource that offers care by a single clinician with no access to a wider specialist team is a poor fit, since sources describe vEDS care as multispecialty.",
+      "plain": "Be cautious if only one doctor is involved and there is no team.",
+      "appliesTo": [
+        "expert",
+        "institution"
+      ],
+      "evidenceIds": [
+        "pubmed:28306228"
+      ]
+    },
+    {
+      "id": "r2",
+      "text": "A center that does not provide or support an individual emergency care plan or vEDS passport.",
+      "plain": "Be cautious if the center cannot give you an emergency care plan.",
+      "appliesTo": [
+        "institution"
+      ],
+      "evidenceIds": [
+        "pubmed:28306228"
+      ]
+    },
+    {
+      "id": "r3",
+      "text": "A genetics service that considers only sequencing, without copy-number analysis when sequencing is negative but suspicion persists, may miss some COL3A1 variants.",
+      "plain": "Be cautious if a genetic lab will not look for large missing gene pieces.",
+      "appliesTo": [
+        "institution",
+        "expert"
+      ],
+      "evidenceIds": [
+        "pubmed:42830875"
+      ]
+    },
+    {
+      "id": "r4",
+      "text": "A registry or study with limited geographic coverage, such as one listed as national, may not accept people from other countries.",
+      "plain": "Check whether a study or registry takes people from where you live.",
+      "appliesTo": [
+        "trial",
+        "organization"
+      ],
+      "evidenceIds": [
+        "web:363a8c6e"
+      ]
+    }
+  ],
+  "trialEligibility": [
+    {
+      "id": "e1",
+      "feature": "diagnosis_confirmation",
+      "text": "Listings often ask for a molecularly confirmed vEDS diagnosis with a pathogenic COL3A1 variant.",
+      "plain": "Studies often want a gene test that confirms vEDS.",
+      "evidenceIds": [
+        "pubmed:28306228",
+        "pubmed:32127191",
+        "pubmed:36977837"
+      ]
+    },
+    {
+      "id": "e2",
+      "feature": "genetic_variant",
+      "text": "Listings may specify the type of COL3A1 variant; reported variants include sequence changes and whole-exon deletions.",
+      "plain": "Studies may ask which exact gene change you have.",
+      "evidenceIds": [
+        "pubmed:42830875",
+        "pubmed:36977837"
+      ]
+    },
+    {
+      "id": "e3",
+      "feature": "other",
+      "text": "Registry and cohort listings state recruiting status and geographic coverage, for example RaDiCo-SED-VASC, listed as national and recruiting.",
+      "plain": "Studies list whether they are enrolling and which area they cover.",
+      "evidenceIds": [
+        "web:363a8c6e"
+      ]
+    }
+  ],
+  "supportNeeds": [
+    {
+      "id": "n1",
+      "kind": "advocacy",
+      "text": "Patient-led vEDS organizations may offer a helpline and community input into research, such as Annabelle's Challenge.",
+      "plain": "A patient group can offer a helpline and a voice in research.",
+      "organizations": [
+        "Annabelle's Challenge"
+      ],
+      "evidenceIds": [
+        "web:c811a1f0"
+      ],
+      "searchTerms": [
+        "vascular EDS patient organization"
+      ]
+    },
+    {
+      "id": "n2",
+      "kind": "other",
+      "text": "Help preparing an emergency care plan or vEDS passport that states the diagnosis.",
+      "plain": "You may need help making an emergency card that names your condition.",
+      "organizations": [],
+      "evidenceIds": [
+        "pubmed:28306228"
+      ],
+      "searchTerms": [
+        "vascular EDS emergency letter"
+      ]
+    },
+    {
+      "id": "n3",
+      "kind": "travel_lodging",
+      "text": "Specialist vEDS services described in sources are national centers (such as Sheffield and Paris), so travel and lodging help may be needed.",
+      "plain": "Specialist centers may be far away, so you may need travel help.",
+      "organizations": [],
+      "evidenceIds": [
+        "pubmed:36977837",
+        "web:363a8c6e"
+      ],
+      "searchTerms": [
+        "rare disease travel assistance"
+      ]
+    },
+    {
+      "id": "n4",
+      "kind": "genetic_counseling_cost",
+      "text": "vEDS is autosomal dominant and family history matters, so relatives may seek genetic counseling and testing.",
+      "plain": "Family members may want genetic counseling, which can cost money.",
+      "organizations": [],
+      "evidenceIds": [
+        "pubmed:42633375",
+        "pubmed:28306228"
+      ],
+      "searchTerms": [
+        "genetic counseling family testing"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "resourceKind": "expert",
+      "text": "Do you have experience caring for people with vEDS and COL3A1 variants?",
+      "evidenceIds": [
+        "pubmed:28306228",
+        "pubmed:36977837"
+      ]
+    },
+    {
+      "id": "q2",
+      "resourceKind": "expert",
+      "text": "Can you work with my other specialists as part of a coordinated care team?",
+      "evidenceIds": [
+        "pubmed:28306228"
+      ]
+    },
+    {
+      "id": "q3",
+      "resourceKind": "institution",
+      "text": "Do you provide an individual emergency care plan or vEDS passport?",
+      "evidenceIds": [
+        "pubmed:28306228"
+      ]
+    },
+    {
+      "id": "q4",
+      "resourceKind": "institution",
+      "text": "Do you have a multidisciplinary connective tissue program that includes vascular surgery?",
+      "evidenceIds": [
+        "pubmed:42822608"
+      ]
+    },
+    {
+      "id": "q5",
+      "resourceKind": "trial",
+      "text": "Does this study require a confirmed COL3A1 variant, and does it accept my specific variant?",
+      "evidenceIds": [
+        "pubmed:28306228",
+        "pubmed:42830875"
+      ]
+    },
+    {
+      "id": "q6",
+      "resourceKind": "trial",
+      "text": "Is this study or registry currently recruiting, and does it accept participants from my country?",
+      "evidenceIds": [
+        "web:363a8c6e"
+      ]
+    },
+    {
+      "id": "q7",
+      "resourceKind": "organization",
+      "text": "Do you offer a helpline or help finding vEDS specialists?",
+      "evidenceIds": [
+        "web:c811a1f0"
+      ]
+    },
+    {
+      "id": "q8",
+      "resourceKind": "organization",
+      "text": "Do you connect patients with research studies or registries for vEDS?",
+      "evidenceIds": [
+        "web:c811a1f0",
+        "web:54ea97a9"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "judgements": [
+    {
+      "candidateId": "94fad7f4-6bdb-5b71-a876-500f68f7cb24",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Pathologist with 5 IgG4-RD papers · NPI-listed phone at MGH Boston · about 467 mi past travel limit",
+      "plain": "This doctor studies tissue samples for your condition but works far away in Boston.",
+      "evidenceIds": [
+        "9a71555b-6bb9-562e-a9bf-9c741a08a58e",
+        "50bba396-465a-5e60-a551-d908e654988a",
+        "e455a5d7-ef29-505c-ad4b-79c26d1969fc",
+        "553ee57e-b135-5370-a517-eaf412be39ef",
+        "871e8759-d130-5dab-afe9-eca15aac45dc"
+      ],
+      "needsMet": [
+        "spec-2",
+        "cap-2"
+      ],
+      "needsMissed": [
+        "spec-1",
+        "cap-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "f04ee298-a251-5664-a992-e556e4462514",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "Pathologist on IgG4-RD nomenclature paper · 0 papers in last 5 years · about 920 mi past travel limit",
+      "plain": "This doctor has written about your condition but works very far away in Minnesota.",
+      "evidenceIds": [
+        "212e8270-1dd8-5cf3-a6e1-d1b18ad0bb07",
+        "765f4c44-abab-5437-ab34-2197e986d4cd",
+        "22a896ef-61e0-5c32-af67-cd457e69d4a4",
+        "3a741a30-2918-5cab-ab0c-18cc05b1045c",
+        "a2741230-defe-5522-aed9-11539a1ae5be"
+      ],
+      "needsMet": [
+        "spec-2",
+        "cap-2"
+      ],
+      "needsMissed": [
+        "spec-1",
+        "cap-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "a1aaaf2e-7f47-56d6-aa8d-5d3f9cf4bd11",
+      "verdict": "maybe",
+      "tier": "best",
+      "reason": "Lists an IgG4-RD clinical consortium · referral coordinator line found · distance from NC and team specialties not shown",
+      "plain": "This center has a group for your condition and a phone line for referrals.",
+      "evidenceIds": [
+        "78a846df-73a0-5329-ac94-b5a2135f90a4",
+        "dd1569e3-261d-5920-a174-db598d65e47d"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "cap-1",
+        "cap-2",
+        "spec-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "46047afa-f56a-502f-a3d6-2e250ef71179",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Lists an IgG4 Related Disease Center · no intake line found · distance from NC and team specialties not shown",
+      "plain": "This center has a program for your condition, but no phone number was found.",
+      "evidenceIds": [
+        "0954d1a5-f326-5a80-a091-974c56e7293e"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "cap-1",
+        "cap-2",
+        "spec-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "6ca41871-1cad-5523-a9ba-b824906a5779",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Lists an IgG4-related disease program · team of specialists not confirmed · no intake line or location found",
+      "plain": "This hospital has a program for your condition. Check how to reach it.",
+      "evidenceIds": [
+        "ee542264-f2d4-5779-a752-bf1b07ff651c"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "cap-1",
+        "cap-2",
+        "spec-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "27375d59-9b71-51fc-a914-29d67367baf6",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Recruiting IgG4-RD study (NCT07061938) · central phone contact listed · sites about 154 mi past travel limit",
+      "plain": "This study is for your condition, but its sites are farther than you want to go.",
+      "evidenceIds": [
+        "8615cc94-5f70-563d-a831-6640c2296500",
+        "0db40f66-f843-55f9-ac6b-e9d9c0c8692b"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "elig-1",
+        "elig-2",
+        "elig-3"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "5fee8cde-92a9-5722-a9b7-6383fbc9014a",
+      "verdict": "keep",
+      "tier": "best",
+      "reason": "Recruiting Phase 3 IgG4-RD study in adults · registry notes a site in NC · central contact phone listed",
+      "plain": "This study is looking for adults with IgG4-related disease and has a phone line.",
+      "evidenceIds": [
+        "4a9d441f-b8ba-52e3-a760-5cdd29b44d1a",
+        "6b349d07-448d-546a-a99a-9c71a2729796"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "elig-1",
+        "elig-2",
+        "elig-3"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "51bdd990-2d57-552d-a79e-9e8912cd8074",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "IgG4-RD-specific advocacy, education and support · no concrete aid program found · no contact path found",
+      "plain": "This group gives support and information to people with IgG4-related disease.",
+      "evidenceIds": [
+        "235af56c-60d3-5519-a0ae-89078a649f23"
+      ],
+      "needsMet": [],
+      "needsMissed": [],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "7ea95968-03e5-5c63-a266-42188295ddbc",
+      "verdict": "keep",
+      "tier": "best",
+      "reason": "Aid program named for IgG4-related disease · covers copays and premiums · no direct contact path found",
+      "plain": "This group may help pay copays and insurance costs for people with IgG4-related disease.",
+      "evidenceIds": [
+        "ec5fbd3f-accf-5870-ab37-1f238dbc218b"
+      ],
+      "needsMet": [],
+      "needsMissed": [],
+      "confidence": "high"
+    },
+    {
+      "candidateId": "ef06d8d0-0007-5279-a7cf-67ca4736fdca",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "General patient aid for medication and care costs · IgG4-RD not named · no direct contact path found",
+      "plain": "This group helps some people pay for medicine and care, but may not cover your condition.",
+      "evidenceIds": [
+        "9b3d738d-bebc-507f-a476-825cf6bc1ea9"
+      ],
+      "needsMet": [],
+      "needsMissed": [],
+      "confidence": "medium"
+    }
+  ],
+  "summary": ""
+}

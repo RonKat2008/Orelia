@@ -2,11 +2,16 @@ import { z } from "zod";
 import { HAIKU } from "@/lib/agents/models";
 import type { AgentTool } from "@/lib/agents/runtime";
 import { exaSearchTool } from "./exa-tool";
-import { runResearch, trackedTool, type ProvenanceTracker } from "./shared";
+import { runResearch, trackedTool, withNeedsQuery, type ProvenanceTracker } from "./shared";
 import type { CentersPort } from "./source-ports";
 import type { ResearchAgent } from "./types";
 
 const MAX_CENTERS = 12;
+
+/** Needs-driven centers query: the disease plus up to two sourced capability terms. */
+export function centersNeedsQuery(diseaseName: string, terms: readonly string[]): string {
+  return `${diseaseName} ${terms.slice(0, 2).join(" ")} clinic program United States`;
+}
 
 const inputSchema = z.object({
   diseaseName: z.string().min(1),
@@ -41,15 +46,17 @@ export const centersAgent: ResearchAgent = {
     instructions: INSTRUCTIONS,
     rules: { allowedKinds: ["institution"], sourceKinds: ["nci", "exa"] },
     makeTools: (ports, tracker) => [nciCentersTool(ports.centers, tracker), exaSearchTool(ports.exa, tracker)],
-    seed: async (call, c) => ({
+    seed: async (call, c, extras) => ({
       nci: await call("match_nci_centers", {
         diseaseName: c.diseaseName,
         ...(c.homeState ? { homeState: c.homeState } : {}),
         ...(c.travelLimitMiles !== undefined ? { travelLimitMiles: c.travelLimitMiles } : {}),
       }),
-      web: await call("search_web", {
-        query: `${c.diseaseName} specialty center clinic program United States`,
-      }),
+      web: await withNeedsQuery(
+        call("search_web", { query: `${c.diseaseName} specialty center clinic program United States` }),
+        extras,
+        (t) => (t.centers.length ? () => call("search_web", { query: centersNeedsQuery(c.diseaseName, t.centers) }) : undefined),
+      ),
     }),
   }),
 };

@@ -114,6 +114,7 @@ describe("patientStatus: searching", () => {
     ["verifier", /checking every name/i],
     ["ranker", /sorting/i],
     ["curator", /picking a few/i],
+    ["judge", /against what you need/i],
   ])("words the %s phase once every source is read", (agent, pattern) => {
     const all: PatientRun[] = [...runs(9, null), { agent, status: "running" }];
     const result = status(snapshot({ caseStatus: "researching", runs: all, shortlist: null }));

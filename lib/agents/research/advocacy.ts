@@ -1,6 +1,6 @@
 import { HAIKU } from "@/lib/agents/models";
 import { exaSearchTool } from "./exa-tool";
-import { runResearch } from "./shared";
+import { runResearch, withNeedsQuery } from "./shared";
 import type { ResearchAgent } from "./types";
 
 const INSTRUCTIONS = `ROLE: Advocacy agent. Find U.S.-reachable patient advocacy organizations, foundations and support groups for the patient's disease, using web search results from tools.
@@ -10,6 +10,11 @@ Output records of kind "organization" with organizationKind "advocacy": {"kind":
 - One evidence item per organization, claimType "advocacy_organization", sourceUrl = a result url exactly as returned. The claim says only what the returned title/excerpt states (what the organization is and who it serves).
 - At most 6 organizations. No medical advice or treatment information.`;
 
+/** Needs-driven advocacy query: organizations a reference source names for this condition. */
+export function advocacyNeedsQuery(diseaseName: string, terms: readonly string[]): string {
+  return `${terms.slice(0, 2).join(" ")} ${diseaseName} patient advocacy`;
+}
+
 export const advocacyAgent: ResearchAgent = {
   name: "advocacy",
   model: HAIKU,
@@ -18,7 +23,9 @@ export const advocacyAgent: ResearchAgent = {
     instructions: INSTRUCTIONS,
     rules: { allowedKinds: ["organization"], organizationKinds: ["advocacy"] },
     makeTools: (ports, tracker) => [exaSearchTool(ports.exa, tracker)],
-    seed: (call, c) =>
-      call("search_web", { query: `${c.diseaseName} patient advocacy foundation support group` }),
+    seed: (call, c, extras) =>
+      withNeedsQuery(call("search_web", { query: `${c.diseaseName} patient advocacy foundation support group` }), extras, (t) =>
+        t.advocacy.length ? () => call("search_web", { query: advocacyNeedsQuery(c.diseaseName, t.advocacy) }) : undefined,
+      ),
   }),
 };

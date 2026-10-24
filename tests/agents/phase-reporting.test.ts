@@ -18,25 +18,25 @@ const literature: ResearchAgent = {
 };
 
 describe("post-search phase reporting", () => {
-  it("records verifier, ranker and curator rows in order, each finished, one row per phase", async () => {
+  it("records needs, verifier, ranker and judge rows in order, each finished, one row per phase", async () => {
     const cases = new MemoryCaseStore();
     const store = new MemoryRunStore();
     const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
     const seen: string[] = [];
     const wrapped = { ...store, create: store.create.bind(store), update: async (id: string, p: Parameters<MemoryRunStore["update"]>[1]) => {
       const run = (await store.listByCase(c.id)).find((r) => r.id === id);
-      if (run && ["verifier", "ranker", "curator"].includes(run.agent) && p.status === "running") seen.push(run.agent);
+      if (run && ["verifier", "ranker", "judge"].includes(run.agent) && p.status === "running") seen.push(run.agent);
       return store.update(id, p);
     }, listByCase: store.listByCase.bind(store), deleteByCase: store.deleteByCase.bind(store) };
     await runResearch(c.id, { store: wrapped, persist: new MemoryPersist(), cases, ports: {} as SourcePorts, agents: [literature] });
     const runs = await store.listByCase(c.id);
-    for (const agent of ["verifier", "ranker", "curator"]) {
+    for (const agent of ["verifier", "ranker", "judge"]) {
       const rows = runs.filter((r) => r.agent === agent);
       expect(rows, agent).toHaveLength(1);
       expect(rows[0]!.status, agent).toBe("done");
       expect(rows[0]!.finishedAt, agent).toBeInstanceOf(Date);
     }
-    expect(seen).toEqual(["verifier", "ranker"]); // nothing eligible to curate here, so the curator row settles without running
+    expect(seen).toEqual(["verifier", "ranker", "judge"]);
     expect(runs.every((r) => ["done", "failed", "not_implemented"].includes(r.status))).toBe(true);
     expect((await cases.get(c.id))?.status).toBe("ready");
   });

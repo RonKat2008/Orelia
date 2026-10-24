@@ -11,7 +11,7 @@ import { SPRING } from "@/lib/ui/motion";
 import type { SwarmAgent } from "@/lib/motion/status";
 import { AgentCard } from "./AgentCard";
 import { SourceStrip } from "./SourceStrip";
-import { PHASES, activePhaseTimer, connectionBadge, derivePhase, describeProgress, formatElapsed, narrate, swarmTotals, type AgentCardState } from "./stream";
+import { PHASES, activePhaseTimer, connectionBadge, derivePhase, describeProgress, formatElapsed, narrate, needsLine, swarmTotals, type AgentCardState, type PhaseRuns } from "./stream";
 import { useSwarmStream } from "./useSwarmStream";
 
 function toSwarmAgents(cards: AgentCardState[]): SwarmAgent[] {
@@ -42,7 +42,7 @@ function ConnectionNote({ connection, caseStatus }: { connection: string; caseSt
 }
 
 /** "Ranking what fits… 0:34 · usually about a minute" while the post-search stages run. */
-function PhaseTimerLine({ label, startedAtMs, clockOffsetMs }: { label: string; startedAtMs: number | null; clockOffsetMs: number }) {
+function PhaseTimerLine({ label, startedAtMs, clockOffsetMs, detail }: { label: string; startedAtMs: number | null; clockOffsetMs: number; detail?: string }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -54,8 +54,46 @@ function PhaseTimerLine({ label, startedAtMs, clockOffsetMs }: { label: string; 
       <span>
         {label}…{elapsed ? <span className="ml-2 font-semibold tabular-nums text-ink">{elapsed}</span> : null}
       </span>
+      {detail ? <span className="font-semibold text-ink" data-testid="phase-progress">{detail}</span> : null}
       <span>Finishing up usually takes about a minute.</span>
     </p>
+  );
+}
+
+const NEEDS_TONE: Record<string, string> = {
+  waiting: "bg-ink-3/40",
+  running: "bg-teal animate-pulse motion-reduce:animate-none",
+  done: "bg-ok",
+  unavailable: "bg-ink-3/40",
+};
+
+/** "Understanding your condition": runs alongside the searches, with a timer while running and its summary after. */
+function NeedsPhaseLine({ phases, clockOffsetMs }: { phases: PhaseRuns; clockOffsetMs: number }) {
+  const line = needsLine(phases);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (line.state !== "running") return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [line.state]);
+  const elapsed =
+    line.state === "running" && line.startedAtMs !== null
+      ? formatElapsed(now + clockOffsetMs - line.startedAtMs)
+      : line.state === "done" && line.startedAtMs !== null && line.finishedAtMs !== null
+        ? formatElapsed(line.finishedAtMs - line.startedAtMs)
+        : null;
+  return (
+    <div className="grid gap-1 rounded-md border border-line bg-paper/70 px-4 py-3" data-testid="needs-phase" data-state={line.state}>
+      <p className="m-0 flex flex-wrap items-center gap-x-2 text-small font-semibold text-ink">
+        <span aria-hidden="true" className={`inline-block size-2 rounded-full ${NEEDS_TONE[line.state]}`} />
+        <span>{line.label}</span>
+        <span className="font-normal text-ink-2">
+          {line.state === "done" ? "· done" : line.state === "running" ? "· in progress" : line.state === "waiting" ? "· queued" : "· skipped"}
+        </span>
+        {elapsed ? <span className="ml-auto font-semibold tabular-nums text-ink">{elapsed}</span> : null}
+      </p>
+      {line.detail ? <p className="m-0 text-small text-ink-2 [overflow-wrap:anywhere]">{line.detail}</p> : null}
+    </div>
   );
 }
 
@@ -104,8 +142,9 @@ export function SwarmView({ caseId }: { caseId: string }) {
               <p className="m-0 font-display text-h3 font-light text-ink display-soft text-balance">
                 {narrate(cards, caseStatus, lastActive, phases)}
               </p>
-              {timer ? <PhaseTimerLine label={timer.label} startedAtMs={timer.startedAtMs} clockOffsetMs={clockOffsetMs} /> : null}
+              {timer ? <PhaseTimerLine label={timer.label} startedAtMs={timer.startedAtMs} clockOffsetMs={clockOffsetMs} detail={timer.detail} /> : null}
             </div>
+            <NeedsPhaseLine phases={phases} clockOffsetMs={clockOffsetMs} />
             <Progress
               label="Searches finished"
               valueText={`${totals.settled} of ${totals.total}`}

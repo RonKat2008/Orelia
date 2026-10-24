@@ -1,0 +1,368 @@
+{
+  "judgements": [
+    {
+      "candidateId": "d129b6fb-671d-5866-a143-2ab725ecd891",
+      "verdict": "keep",
+      "tier": "best",
+      "reason": "NPI-verified pathologist, LA CA · 4 epithelioid sarcoma papers · ~481 mi, within travel limit; pediatric-group focus",
+      "plain": "This doctor studies tissue samples and has written about epithelioid sarcoma.",
+      "evidenceIds": [
+        "584948e5-108a-5203-afbc-f5c2706c0496",
+        "1a2aef33-b2e7-5e71-a4e5-244d2226541c",
+        "9f4b0869-a2b3-50dc-acbc-5c17c780f9e3",
+        "c9517b4f-2389-5f9f-a1bc-90fa90424a5b",
+        "2c06209d-5fd4-5913-a036-d74ba2548099"
+      ],
+      "needsMet": [
+        "spec-3"
+      ],
+      "needsMissed": [
+        "cap-1",
+        "spec-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "ac7e7b2a-7834-5c7b-a14b-fe080aaf1db3",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "NPI-verified pathologist, Miami FL · 2 epithelioid sarcoma papers · ~1,165 mi beyond travel limit",
+      "plain": "This doctor studies tissue samples and has written about this tumor, but is far away.",
+      "evidenceIds": [
+        "ad3f468f-6352-5680-acb6-adcf93c36bc4",
+        "6f0625a1-f13c-5974-a842-d2928645f7c7",
+        "a582f969-3c82-544d-ac91-2f6509df5f43",
+        "c15643ca-6db3-5786-a1d5-34b02e345afc"
+      ],
+      "needsMet": [
+        "spec-3"
+      ],
+      "needsMissed": [
+        "cap-1",
+        "spec-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "7c0d8d46-32b2-5732-a4fb-c5ace9364203",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "NPI-verified pathologist · 2 epithelioid sarcoma papers, none recent · Ohio, past 600-mile limit",
+      "plain": "This doctor studies tissue samples and has written about your tumor type.",
+      "evidenceIds": [
+        "0fa61aec-1135-5242-a62b-402420c69e08",
+        "a655f0de-7a2a-5a6f-a7e5-35edcf36679f",
+        "d3676451-1420-500e-a53a-9602050b34a9"
+      ],
+      "needsMet": [
+        "spec-3"
+      ],
+      "needsMissed": [
+        "cap-1",
+        "elig-3"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "74c19219-9ef7-5147-af51-ce263ca6c0ce",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Has a named sarcoma center · NCI Comprehensive Cancer Center · epithelioid sarcoma care and travel distance unconfirmed",
+      "plain": "This cancer center has a sarcoma team, but we could not confirm it treats your type.",
+      "evidenceIds": [
+        "56e668f9-34f0-5031-a1fa-3374f2db6aff"
+      ],
+      "needsMet": [
+        "spec-1"
+      ],
+      "needsMissed": [
+        "cap-2",
+        "cap-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "121650f6-f6ad-50d8-a3cf-be2da24b67ab",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center in AZ · no sarcoma program or pathology page found · no intake line found",
+      "plain": "This is a large cancer center in Arizona, but a sarcoma team was not confirmed.",
+      "evidenceIds": [
+        "1052fe45-43e5-50d6-a508-471908d0875d"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-2",
+        "cap-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "86459e66-cb59-5292-a240-39374d27cbfc",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center in Phoenix, AZ · no sarcoma program or pathology page found · no intake line found",
+      "plain": "This is a large cancer center in Phoenix, but a sarcoma team was not confirmed.",
+      "evidenceIds": [
+        "f8d4a54f-5598-5e97-ab4a-3cd5abe25bc8"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-2",
+        "cap-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "01d467b7-2988-5a31-ad4c-81485af655ca",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center · within 600-mile limit (~319 mi) · no sarcoma program or intake line found",
+      "plain": "This is a large cancer center in New Mexico, but we did not find a sarcoma team page.",
+      "evidenceIds": [
+        "96360f4a-f6a4-526c-afb9-5a71f44a7e04"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-2",
+        "cap-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "f612047a-8038-5144-af07-13052ff00ef4",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "NCI Comprehensive Cancer Center · within 600-mile limit (~345 mi) · no sarcoma program or intake line found",
+      "plain": "This is a large cancer center in Utah, but we did not find a sarcoma team page.",
+      "evidenceIds": [
+        "abbf7270-75da-505c-a6a5-84545f9847b1"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-2",
+        "cap-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "85de2f3f-ee7f-5b83-a896-46d746ae2d03",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center · no sarcoma program or pathology page found · no intake line found",
+      "plain": "This is a large cancer center, but we could not confirm a sarcoma team.",
+      "evidenceIds": [
+        "6a05facd-c459-5ffe-aeb5-1865e8cc30cc"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-1",
+        "cap-2"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "203a4420-3ff6-5cd6-a7a1-14f5011920c1",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center · no sarcoma program or pathology page found · no intake line found",
+      "plain": "This is a large cancer center, but we could not confirm a sarcoma team.",
+      "evidenceIds": [
+        "397e1cae-18ec-52fe-a69b-2408452a7d77"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-1",
+        "cap-2"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "3a2582ae-97c5-5540-a326-972038cfb47a",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center · no sarcoma program or pathology page found · no intake line found",
+      "plain": "This is a large cancer center in California, but we did not find a sarcoma team page.",
+      "evidenceIds": [
+        "2c9bba15-2c5b-510f-af11-5b644b2c835d"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-1",
+        "cap-2"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "aa3929f3-77b7-58e6-a3ca-3ce0a1b99af6",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "NCI Comprehensive Cancer Center · no sarcoma program or pathology page found · no intake line found",
+      "plain": "This is a large cancer center in Los Angeles, but we did not find a sarcoma team page.",
+      "evidenceIds": [
+        "76704ac9-b5c8-5f0b-a4c5-d0810fbf116e"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "spec-1",
+        "cap-1",
+        "cap-2"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "b5f3ae0c-dfe3-58b3-ab5e-0dd9679c5205",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Recruiting Phase 2 for ultra-rare sarcomas · epithelioid sarcoma only in keywords · about 1,426 mi past travel limit",
+      "plain": "This study for rare sarcomas is taking people, but its sites are far from Arizona.",
+      "evidenceIds": [
+        "b38023e3-a0a1-58d0-a185-32f92b88ff39",
+        "d7efbf41-dc53-56b4-a047-8afa1c9d0f31",
+        "91b83541-26cf-5a94-a2ab-eb6b4c261f89"
+      ],
+      "needsMet": [
+        "spec-1"
+      ],
+      "needsMissed": [
+        "elig-3",
+        "elig-2"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "e9e173aa-59fb-5c1a-a90f-0ad57e50c1ad",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "Has a Sarcoma Center of Excellence · offers telehealth visits · no epithelioid sarcoma or pathology detail found",
+      "plain": "This sarcoma center offers video visits, which may help you get a second opinion.",
+      "evidenceIds": [
+        "e082ddf0-c949-575c-a9af-cbe5e4685957"
+      ],
+      "needsMet": [
+        "spec-1"
+      ],
+      "needsMissed": [
+        "cap-1",
+        "flag-2"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "d6ccef3d-7f7d-5add-a7cc-705734278ebf",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "Lists epithelioid sarcoma among 42 conditions · recruiting with central contact · nearest site ~1629 mi, beyond 600-mi limit",
+      "plain": "This study is open for your type of tumor, but its sites are far from Arizona.",
+      "evidenceIds": [
+        "e67e86d6-9cec-5e69-a2f9-64f2c4813e0d",
+        "dd0fd3e3-64f5-51f6-ab70-46541aa0e6e1"
+      ],
+      "needsMet": [
+        "elig-1"
+      ],
+      "needsMissed": [
+        "elig-3"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "162d6ef7-0a20-5745-a788-b839becab1a4",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Travel grant application for reaching a distant sarcoma center · sarcoma-wide, not specific to epithelioid sarcoma",
+      "plain": "This group has a travel grant you can apply for to reach a sarcoma center.",
+      "evidenceIds": [
+        "164b1d4e-efb1-576d-a495-838f066f7d10"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "support-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "5adff9bb-5d2d-5335-a531-226213ebedc4",
+      "verdict": "keep",
+      "tier": "best",
+      "reason": "Fund pays toward a sarcoma second opinion, a stated goal · sarcoma-wide, not ES-specific · no contact path found",
+      "plain": "This group may help pay for a second opinion from a sarcoma doctor.",
+      "evidenceIds": [
+        "a815984f-6267-54b6-aa09-bb69e496f4d2"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "support-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "candidateId": "169fe99f-83e7-5d72-a2be-14674d45bc53",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Lists groups offering grants, copay, travel and lodging help · sarcoma-wide, not ES-specific · no contact path found",
+      "plain": "This group lists places that may help with costs, travel and lodging.",
+      "evidenceIds": [
+        "f7a74ff4-b8cd-5c26-a2b1-175a2fe82357"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "support-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "af99599f-4709-5ace-a63c-e681e72f9719",
+      "verdict": "maybe",
+      "tier": "good",
+      "reason": "Lists sarcoma patient funds · one covers trial out-of-pocket costs · no explicit contact path found",
+      "plain": "This group lists money help for sarcoma patients, including people in trials.",
+      "evidenceIds": [
+        "4652b0bb-9b94-5223-a1f5-ea5f917cc10e"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "support-1"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "candidateId": "2abd43b0-0a80-5de8-a498-a166eefdc092",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "Global network of sarcoma advocacy groups · not specific to epithelioid sarcoma · no concrete program or contact found",
+      "plain": "This is a worldwide network of groups that support people with sarcoma.",
+      "evidenceIds": [
+        "46ae8609-756d-55af-a8d2-d61b7318b4fa"
+      ],
+      "needsMet": [],
+      "needsMissed": [
+        "support-1"
+      ],
+      "confidence": "low"
+    },
+    {
+      "candidateId": "c14085ed-34fe-5762-a971-9268bdaf6816",
+      "verdict": "maybe",
+      "tier": "backup",
+      "reason": "Lists sarcoma advocacy and support groups · not specific to epithelioid sarcoma · no direct contact path found",
+      "plain": "This web page lists groups that help people with sarcoma find support.",
+      "evidenceIds": [
+        "5adb06c3-4345-5787-aa77-a692f6347842"
+      ],
+      "needsMet": [
+        "support-1"
+      ],
+      "needsMissed": [],
+      "confidence": "low"
+    }
+  ],
+  "summary": ""
+}

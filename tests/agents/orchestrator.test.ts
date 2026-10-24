@@ -40,8 +40,8 @@ describe("runResearch", () => {
       // network/advocacy/aid/contact_finder missing from registry entirely
     ]);
 
-    // One card per research agent, plus the verifier/ranker/curator phase rows.
-    expect(runs).toHaveLength(agentNameSchema.options.length + 3);
+    // One card per research agent, plus the needs/verifier/ranker/judge phase rows.
+    expect(runs).toHaveLength(agentNameSchema.options.length + 4);
     expect(status("literature")).toBe("done");
     expect(status("centers")).toBe("done");
     expect(status("trials")).toBe("failed");
@@ -74,7 +74,7 @@ describe("runResearch", () => {
         }),
       ],
     });
-    expect(seenAtStart).toBe(9);
+    expect(seenAtStart).toBe(10); // nine agents + the needs phase row, all created before any search starts
   });
 
   it("a hung agent is cut off by the timeout and marked failed", async () => {

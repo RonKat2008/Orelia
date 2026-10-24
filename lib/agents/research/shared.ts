@@ -9,6 +9,7 @@ import {
   type CaseInput,
   type Evidence,
   type ExpertProfile,
+  type NeedsSearchTerms,
   type Resource,
   type TrialRegistry,
   type ResearchResult,
@@ -429,7 +430,25 @@ export interface ResearchAgentSpec {
   rules: FinalizeRules;
   makeTools(ports: SourcePorts, tracker: ProvenanceTracker): AgentTool[];
   /** Deterministic first pass through the same tracked tools, so provenance exists even when the model is replayed. */
-  seed(call: ToolCaller, c: CaseInput): Promise<unknown>;
+  seed(call: ToolCaller, c: CaseInput, extras: SeedExtras): Promise<unknown>;
+}
+
+export interface SeedExtras {
+  needsTerms: () => Promise<NeedsSearchTerms | undefined>;
+}
+
+/** Base query now, plus one needs-driven query once (and only if) needs terms arrive. Never fails the seed. */
+export async function withNeedsQuery(
+  base: Promise<unknown>,
+  extras: SeedExtras,
+  build: (terms: NeedsSearchTerms) => (() => Promise<unknown>) | undefined,
+): Promise<unknown> {
+  const extra = extras
+    .needsTerms()
+    .then((terms) => (terms ? build(terms)?.() : undefined))
+    .catch(() => undefined);
+  const [first, needsDriven] = await Promise.all([base, extra]);
+  return needsDriven === undefined ? first : { base: first, needsDriven };
 }
 
 const MAX_SEED_CHARS = 24_000;
@@ -444,7 +463,8 @@ export function runResearch(spec: ResearchAgentSpec) {
         if (!tool) throw new Error(`Unknown tool ${name}`);
         return tool.handler(tool.inputSchema.parse(input) as never);
       };
-      const seeded = JSON.stringify(await spec.seed(call, c)).slice(0, MAX_SEED_CHARS);
+      const needsTerms = ctx.needsTerms ?? (async () => undefined);
+      const seeded = JSON.stringify(await spec.seed(call, c, { needsTerms })).slice(0, MAX_SEED_CHARS);
       const prompt = [
         `Case: ${JSON.stringify(caseBrief(c))}`,
         ...(ctx.medicalHistory ? [ctx.medicalHistory] : []),

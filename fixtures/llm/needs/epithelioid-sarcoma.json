@@ -1,0 +1,239 @@
+{
+  "specialties": [
+    {
+      "id": "s1",
+      "specialty": "Medical oncology",
+      "subspecialty": "Sarcoma",
+      "why": "Epithelioid sarcoma is a rare soft tissue sarcoma with proximal and distal types, so a sarcoma-focused oncology team is a relevant kind of service.",
+      "plain": "Look for cancer doctors who focus on sarcoma, since this is a rare soft tissue cancer.",
+      "evidenceIds": [
+        "pubmed:32751241",
+        "gard:10181-epithelioid-sarcoma"
+      ],
+      "searchTerms": [
+        "sarcoma medical oncology clinic",
+        "rare sarcoma center"
+      ]
+    },
+    {
+      "id": "s2",
+      "specialty": "Surgical oncology / orthopaedic oncology",
+      "subspecialty": "Soft tissue sarcoma",
+      "why": "Reports describe epithelioid sarcoma patients being referred to and managed at tertiary orthopaedic sarcoma units.",
+      "plain": "Look for surgeons at sarcoma units that see this tumor.",
+      "evidenceIds": [
+        "pubmed:42748586",
+        "pubmed:32751241"
+      ],
+      "searchTerms": [
+        "orthopaedic sarcoma unit",
+        "sarcoma surgical oncology"
+      ]
+    },
+    {
+      "id": "s3",
+      "specialty": "Pathology",
+      "subspecialty": "Soft tissue / sarcoma pathology",
+      "why": "Diagnosis relies on immunostains such as loss of INI1/SMARCB1, and the tumor can be confused with other epithelioid tumors.",
+      "plain": "A pathologist who knows sarcoma can check the tissue tests, because this tumor can look like other conditions.",
+      "evidenceIds": [
+        "pubmed:42713918",
+        "pubmed:30576238",
+        "pubmed:32751241"
+      ],
+      "searchTerms": [
+        "sarcoma pathology second opinion"
+      ]
+    }
+  ],
+  "centerCapabilities": [
+    {
+      "id": "c1",
+      "text": "Pathology review that includes INI1/SMARCB1 immunostaining, since loss of this protein is a defining feature of epithelioid sarcoma.",
+      "plain": "The center can test tissue for loss of INI1/SMARCB1.",
+      "evidenceIds": [
+        "pubmed:32751241",
+        "pubmed:42713918"
+      ],
+      "searchTerms": [
+        "sarcoma pathology second opinion"
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "A dedicated tertiary sarcoma unit that treats epithelioid sarcoma and tracks outcomes in a maintained database.",
+      "plain": "A sarcoma unit that sees many cases and keeps careful records.",
+      "evidenceIds": [
+        "pubmed:42748586"
+      ],
+      "searchTerms": [
+        "tertiary sarcoma unit",
+        "rare sarcoma center"
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Familiarity with this tumor's recognised potential for lymph node involvement and repeated local recurrence.",
+      "plain": "The team knows this tumor can spread to lymph nodes and come back locally.",
+      "evidenceIds": [
+        "pubmed:42612459",
+        "pubmed:42748586",
+        "pubmed:32751241"
+      ],
+      "searchTerms": [
+        "sarcoma center lymph node evaluation"
+      ]
+    }
+  ],
+  "redFlags": [
+    {
+      "id": "r1",
+      "text": "A service that has no sarcoma pathology input, since this tumor can look like other lesions, including cysts, abscesses and other SMARCB1-deficient or vascular tumors.",
+      "plain": "Be careful if no sarcoma pathologist checks the tissue. This tumor can look like other things.",
+      "appliesTo": [
+        "institution",
+        "expert"
+      ],
+      "evidenceIds": [
+        "pubmed:42713918",
+        "pubmed:30576238",
+        "pubmed:42391872"
+      ]
+    },
+    {
+      "id": "r2",
+      "text": "A service with little or no experience with epithelioid sarcoma, which sources describe as rare and lacking a defined optimal long-term management strategy.",
+      "plain": "Be careful with places that rarely see this tumor.",
+      "appliesTo": [
+        "institution",
+        "expert"
+      ],
+      "evidenceIds": [
+        "pubmed:32751241",
+        "gard:10181-epithelioid-sarcoma"
+      ]
+    }
+  ],
+  "trialEligibility": [
+    {
+      "id": "e1",
+      "feature": "diagnosis_confirmation",
+      "text": "Listings typically ask for confirmed epithelioid sarcoma diagnosis, which depends on pathology findings such as complete loss of INI1/SMARCB1.",
+      "plain": "Trials often need a confirmed diagnosis from tissue tests.",
+      "evidenceIds": [
+        "pubmed:42713918",
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "e2",
+      "feature": "genetic_variant",
+      "text": "Listings may ask about loss of SMARCB1/INI1 or other SWI/SNF complex proteins, which characterizes epithelioid sarcoma.",
+      "plain": "Some trials may ask about SMARCB1/INI1 results.",
+      "evidenceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "e3",
+      "feature": "other",
+      "text": "Listings may specify proximal or distal type, which sources describe as having different biology.",
+      "plain": "Trials may say whether they accept proximal or distal type.",
+      "evidenceIds": [
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "e4",
+      "feature": "disease_stage",
+      "text": "Listings may distinguish localized disease from advanced or metastatic disease, and may ask about lymph node involvement.",
+      "plain": "Trials often ask whether the cancer is local or has spread.",
+      "evidenceIds": [
+        "pubmed:32751241",
+        "pubmed:42612459",
+        "pubmed:42748586"
+      ]
+    }
+  ],
+  "supportNeeds": [
+    {
+      "id": "n1",
+      "kind": "advocacy",
+      "text": "GARD, the NIH rare disease information service, lists epithelioid sarcoma and offers a rare disease information line at 1-888-205-2311.",
+      "plain": "GARD has a phone line for rare disease questions: 1-888-205-2311.",
+      "organizations": [
+        "GARD"
+      ],
+      "evidenceIds": [
+        "gard:10181-epithelioid-sarcoma"
+      ],
+      "searchTerms": [
+        "epithelioid sarcoma patient community"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "resourceKind": "expert",
+      "text": "How many patients with epithelioid sarcoma have you or your team treated?",
+      "evidenceIds": [
+        "pubmed:42748586",
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "q2",
+      "resourceKind": "expert",
+      "text": "Can you review my pathology, including INI1/SMARCB1 results, and tell me if outside slides need a second review?",
+      "evidenceIds": [
+        "pubmed:42713918",
+        "pubmed:32751241"
+      ]
+    },
+    {
+      "id": "q3",
+      "resourceKind": "institution",
+      "text": "Do you have a dedicated sarcoma unit and a pathologist who reviews epithelioid sarcoma cases?",
+      "evidenceIds": [
+        "pubmed:42748586",
+        "pubmed:42713918"
+      ]
+    },
+    {
+      "id": "q4",
+      "resourceKind": "institution",
+      "text": "Can your center confirm whether my tumor is proximal-type or distal-type?",
+      "evidenceIds": [
+        "pubmed:32751241",
+        "pubmed:42713918"
+      ]
+    },
+    {
+      "id": "q5",
+      "resourceKind": "trial",
+      "text": "Does this trial require documented loss of SMARCB1/INI1 and a specific epithelioid sarcoma type?",
+      "evidenceIds": [
+        "pubmed:32751241",
+        "pubmed:42713918"
+      ]
+    },
+    {
+      "id": "q6",
+      "resourceKind": "trial",
+      "text": "Which disease stage or lymph node findings does this trial accept?",
+      "evidenceIds": [
+        "pubmed:42612459",
+        "pubmed:42748586"
+      ]
+    },
+    {
+      "id": "q7",
+      "resourceKind": "organization",
+      "text": "What information or community resources do you have for people with epithelioid sarcoma?",
+      "evidenceIds": [
+        "gard:10181-epithelioid-sarcoma"
+      ]
+    }
+  ]
+}

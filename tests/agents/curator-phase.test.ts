@@ -59,11 +59,11 @@ async function run(opts: { curate?: Parameters<typeof runResearch>[1]["curate"];
 }
 
 describe("curate phase", () => {
-  it("runs queue -> run-agents -> verify -> rank -> curate -> persist", async () => {
+  it("runs queue -> run-agents -> verify -> rank -> judge -> persist", async () => {
     const ids: string[] = [];
     const step: ResearchStep = { run: async (id, work) => (ids.push(id), work()) };
     await run({ step, curate: async (_c, _r, ranked) => bestOf(ranked) });
-    expect(ids).toEqual(["queue", "run-agents", "verify", "contacts", "rank", "curate", "persist"]);
+    expect(ids).toEqual(["queue", "run-agents", "verify", "contacts", "rank", "judge", "persist"]);
   });
 
   it("does not change ranking; saves curation; summary reports it", async () => {
@@ -82,7 +82,7 @@ describe("curate phase", () => {
 
   it("curation step output is JSON-serializable", async () => {
     const outputs: unknown[] = [];
-    const step: ResearchStep = { run: async (id, work) => { const v = await work(); if (id === "curate") outputs.push(v); return v; } };
+    const step: ResearchStep = { run: async (id, work) => { const v = await work(); if (id === "judge") outputs.push(v); return v; } };
     await run({ step, curate: async (_c, _r, ranked) => bestOf(ranked) });
     expect(JSON.parse(JSON.stringify(outputs[0]))).toEqual(outputs[0]);
   });

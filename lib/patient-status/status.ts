@@ -35,6 +35,7 @@ const PHASE_WORDS: Record<string, string> = {
   verifier: "Checking every name against its public source…",
   ranker: "Sorting the best matches for you…",
   curator: "Picking a few to suggest…",
+  judge: "Checking each match against what you need…",
 };
 
 /** Only the research agents' rows are "sources"; phase and heartbeat rows are not counted. */

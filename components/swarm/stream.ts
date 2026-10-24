@@ -28,11 +28,12 @@ export type AgentCardState = {
 };
 
 /** Post-search pipeline stages, reported by their own agent_runs rows. */
-export type PipelinePhase = "verify" | "rank" | "curate";
-export type PhaseRun = { status: AgentRunStatus; startedAt?: string; finishedAt?: string };
+export type PipelinePhase = "needs" | "verify" | "rank" | "judge";
+export type PhaseRun = { status: AgentRunStatus; startedAt?: string; finishedAt?: string; summary?: string; error?: string };
 export type PhaseRuns = Partial<Record<PipelinePhase, PhaseRun>>;
 
-const PHASE_BY_AGENT: Record<string, PipelinePhase> = { verifier: "verify", ranker: "rank", curator: "curate" };
+/** "curator" rows come from runs before the final judge replaced the curator; a "judge" row wins when both exist. */
+const PHASE_BY_AGENT: Record<string, PipelinePhase> = { needs: "needs", verifier: "verify", ranker: "rank", judge: "judge", curator: "judge" };
 
 export function initialAgents(): AgentCardState[] {
   return AGENT_NAMES.map((agent) => ({ agent, status: "queued" }));
@@ -87,7 +88,14 @@ export function parseRunsSnapshot(data: string, previous: AgentCardState[] = ini
   const phases: PhaseRuns = {};
   for (const run of parsed.data.runs) {
     const phase = PHASE_BY_AGENT[run.agent];
-    if (phase) phases[phase] = { status: run.status, startedAt: run.startedAt ?? undefined, finishedAt: run.finishedAt ?? undefined };
+    if (!phase || (run.agent === "curator" && parsed.data.runs.some((r) => r.agent === "judge"))) continue;
+    phases[phase] = {
+      status: run.status,
+      startedAt: run.startedAt ?? undefined,
+      finishedAt: run.finishedAt ?? undefined,
+      summary: run.outputSummary ?? undefined,
+      error: run.error ?? undefined,
+    };
   }
   return { caseStatus: parsed.data.caseStatus, cards, phases, serverTime: parsed.data.serverTime };
 }
@@ -137,7 +145,7 @@ export const PHASES = [
   { id: "search", label: "Search", description: "Nine researchers look in parallel" },
   { id: "verify", label: "Verify", description: "Every claim needs a source link" },
   { id: "rank", label: "Rank", description: "Fit to your case, with reasons" },
-  { id: "curate", label: "Curate", description: "The best matches rise to the top" },
+  { id: "judge", label: "Final judge", description: "Keeps what meets your needs, with a reason for each" },
 ] as const;
 
 export type PhaseIndex = 0 | 1 | 2 | 3 | 4;
@@ -157,24 +165,49 @@ export function derivePhase(cards: AgentCardState[], caseStatus?: string, phases
 }
 
 export const PHASE_ACTIVE_LABEL: Record<PipelinePhase, string> = {
+  needs: "Understanding your condition",
   verify: "Checking every claim has a source",
   rank: "Ranking what fits",
-  curate: "Picking the best matches",
+  judge: "Final judge checking each match against your needs",
 };
 
-export type PhaseTimer = { phase: PipelinePhase; label: string; startedAtMs: number | null };
+export type PhaseTimer = { phase: PipelinePhase; label: string; startedAtMs: number | null; detail?: string };
 
 /** Which timer to show, or null while searching / after the run. startedAtMs (server time) is null until known. */
 export function activePhaseTimer(cards: AgentCardState[], caseStatus: string | undefined, phases: PhaseRuns): PhaseTimer | null {
   if (caseStatus === "ready" || caseStatus === "research_failed") return null;
   if (!cards.every((card) => isSettled(card.status))) return null;
   const index = derivePhase(cards, caseStatus, phases);
-  const phase: PipelinePhase = index === 1 ? "verify" : index === 2 ? "rank" : "curate";
+  const phase: PipelinePhase = index === 1 ? "verify" : index === 2 ? "rank" : "judge";
   const toMs = (iso?: string) => (iso && !Number.isNaN(Date.parse(iso)) ? Date.parse(iso) : null);
   // A phase that has not logged its start yet began when the stage before it finished.
   const settledAt = Math.max(0, ...cards.map((card) => toMs(card.finishedAt) ?? 0)) || null;
   const before = phase === "verify" ? settledAt : toMs(phases[phase === "rank" ? "verify" : "rank"]?.finishedAt);
-  return { phase, label: PHASE_ACTIVE_LABEL[phase], startedAtMs: toMs(phases[phase]?.startedAt) ?? before };
+  const run = phases[phase];
+  const detail = run?.status === "running" && run.summary ? run.summary : undefined;
+  return { phase, label: PHASE_ACTIVE_LABEL[phase], startedAtMs: toMs(run?.startedAt) ?? before, ...(detail ? { detail } : {}) };
+}
+
+export type NeedsLine = {
+  state: "waiting" | "running" | "done" | "unavailable";
+  label: string;
+  detail?: string;
+  startedAtMs: number | null;
+  finishedAtMs: number | null;
+};
+
+/**
+ * "Understanding your condition": the needs analyst runs alongside the searches. Shown as its own line with a timer
+ * while running and its summary (e.g. "4 specialties, ... 10 sources in 24.7s") when done.
+ */
+export function needsLine(phases: PhaseRuns): NeedsLine {
+  const run = phases.needs;
+  const toMs = (iso?: string) => (iso && !Number.isNaN(Date.parse(iso)) ? Date.parse(iso) : null);
+  const base = { label: PHASE_ACTIVE_LABEL.needs, startedAtMs: toMs(run?.startedAt), finishedAtMs: toMs(run?.finishedAt) };
+  if (!run || run.status === "queued") return { ...base, state: "waiting", detail: "Starting with the searches" };
+  if (run.status === "running") return { ...base, state: "running", detail: "Reading reference sources on what specialists and centers should offer" };
+  if (run.status === "done") return { ...base, state: "done", detail: run.summary ?? "Needs profile ready" };
+  return { ...base, state: "unavailable", detail: "Not available for this condition; the searches ran without it" };
 }
 
 export function formatElapsed(ms: number): string {
@@ -229,7 +262,7 @@ export function narrate(cards: AgentCardState[], caseStatus: string | undefined,
   if (cards.every((card) => isSettled(card.status))) {
     const timer = activePhaseTimer(cards, caseStatus, phases);
     if (timer?.phase === "rank") return "Ranking what fits your case, with reasons.";
-    if (timer?.phase === "curate") return "Picking the best matches and writing why.";
+    if (timer?.phase === "judge") return "The final judge is checking each match against what you need, and writing why.";
     return "Checking that every claim has a source, then ranking what fits.";
   }
   return "Getting the researchers ready…";

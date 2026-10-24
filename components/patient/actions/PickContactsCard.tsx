@@ -8,6 +8,9 @@ import { selectOutreach, writeStoredOutreach } from "@/components/outreach/clien
 import { loadCaseContacts, loadShortlistNames, withDisplayNames } from "@/components/outreach/case-activity";
 import { resourceKindLabel } from "@/lib/patient-status/plain";
 import { cn } from "@/lib/ui/cn";
+import { loadNeedsJudge } from "@/components/judge/client";
+import { plainSentenceFor } from "@/components/judge/match";
+import type { JudgeResult } from "@/lib/contracts/judge";
 import { ActionError, ActionFrame, type ActionProps } from "./ActionFrame";
 
 const LIMIT = 5;
@@ -43,8 +46,10 @@ function placeOf(card: ShortlistCard): string | null {
   return place || null;
 }
 
-function reasonOf(card: ShortlistCard): string | null {
-  return card.tierReasons?.[0]?.text ?? card.breakdown[0]?.text ?? null;
+/** The final judge's one plain sentence when there is one; otherwise the first evidence-cited reason. */
+function reasonOf(card: ShortlistCard, judge: JudgeResult | null): string | null {
+  const plain = plainSentenceFor(judge, card.resource as Parameters<typeof plainSentenceFor>[1]);
+  return plain ?? card.tierReasons?.[0]?.text ?? card.breakdown[0]?.text ?? null;
 }
 
 type Loaded = { cards: ShortlistCard[]; suggested: string[]; error: string | null };
@@ -56,6 +61,17 @@ export function PickContactsCard({ caseId, onDone, detailsHref, headline }: Acti
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [judge, setJudge] = useState<JudgeResult | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void loadNeedsJudge(caseId).then((r) => {
+      if (active && r.ok) setJudge(r.judge);
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId]);
 
   useEffect(() => {
     let active = true;
@@ -134,7 +150,7 @@ export function PickContactsCard({ caseId, onDone, detailsHref, headline }: Acti
               const key = selectionKey(card);
               const on = selected.includes(key);
               const full = !on && selected.length >= LIMIT;
-              const reason = reasonOf(card);
+              const reason = reasonOf(card, judge);
               const place = placeOf(card);
               const name = nameOf(card);
               return (

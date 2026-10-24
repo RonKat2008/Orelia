@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryCaseStore } from "@/lib/agents/case-store";
 import { isReachable } from "@/lib/outreach/reachability";
-import { fallbackCuration, validateCuration } from "@/lib/agents/curator";
+import { fallbackCuration, runCurator, validateCuration } from "@/lib/agents/curator";
+import { caseSlug } from "@/lib/agents/research/shared";
 import { MemoryCurationStore } from "@/lib/agents/curator-store";
 import { extractCase } from "@/lib/agents/intake-extractor";
 import { runResearch } from "@/lib/agents/orchestrator";
@@ -28,7 +29,10 @@ async function run(slug: string, withCurator: boolean) {
     ports: createFixturePorts(),
     agents: researchAgents,
     curations: new MemoryCurationStore(),
-    ...(withCurator ? {} : { curate: async (_id, _c, ranked) => fallbackCuration(ranked, "curate phase disabled") }),
+    // The final judge replaces the curator by default; the legacy curator path stays covered via `curate`.
+    curate: withCurator
+      ? (id, c, ranked) => runCurator(id, c, ranked, { store: new MemoryRunStore(), offlineKey: caseSlug(c) })
+      : async (_id, _c, ranked) => fallbackCuration(ranked, "curate phase disabled"),
   });
   return { summary, ranked: summary.ranked };
 }

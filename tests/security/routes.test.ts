@@ -31,6 +31,12 @@ vi.mock('../../lib/coordination/store', async importOriginal => {
   const memory = new actual.MemoryCoordinationStore();
   return { ...actual, getCoordinationStore: () => { if (state.fail) throw new Error('provider_error_synthetic: SELECT * FROM coordination_records; DATABASE_URL\n    at provider (/private/server.ts:42:9)'); return memory; } };
 });
+// Needs + judge storage boundary (memory store, or a provider failure when state.fail).
+vi.mock('../../lib/agents/needs/store', async importOriginal => {
+  const actual = await importOriginal<typeof import('../../lib/agents/needs/store')>();
+  const memory = new actual.MemoryNeedsStore();
+  return { ...actual, getNeedsStore: () => { if (state.fail) throw new Error('provider_error_synthetic: SELECT * FROM coordination_records; DATABASE_URL\n    at provider (/private/server.ts:42:9)'); return memory; } };
+});
 vi.mock('../../lib/agents/intake-extractor', () => ({ extractCase: async () => { throw new Error('provider_error_synthetic: SELECT * FROM cases; DATABASE_URL ANTHROPIC_API_KEY\n    at provider (/private/server.ts:42:9)'); } }));
 vi.mock('../../scripts/seed-demo', () => ({ main: async () => { throw new Error('provider_error_synthetic: SELECT * FROM cases; DATABASE_URL ANTHROPIC_API_KEY\n    at provider (/private/server.ts:42:9)'); } }));
 vi.mock('../../scripts/demo/state', () => ({

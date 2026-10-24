@@ -1,5 +1,5 @@
 import { expertEligibility } from "@/lib/identity/eligibility";
-import { agentNameSchema, type CaseInput, type ResearchResult } from "@/lib/contracts";
+import { agentNameSchema, type CareNeeds, type CaseInput, type ResearchResult } from "@/lib/contracts";
 import type { CaseStore } from "./case-store";
 import type { Persist, RankedEntry } from "./persist";
 import { rank as defaultRank } from "@/lib/ranking/rank";
@@ -8,8 +8,8 @@ import type { ResearchAgent, ResearchContext } from "./research/types";
 import type { SourcePorts } from "./research/source-ports";
 import { toCandidate, type RankFn } from "./signals";
 import { getCurationStore, type CurationStore } from "./curator-store";
-import { runCurator, type ValidatedCuration } from "./curator";
-import { caseSlug } from "./research/shared";
+import type { ValidatedCuration } from "./curator";
+import { boundedTerms, defaultNeeds, makeDefaultJudge, NEEDS_WAIT_MS, type JudgeFn, type NeedsFn } from "./needs-judge-phase";
 import { verifyWithProposals, type Proposer, type VerifyOutput } from "./verifier";
 import { enrichVerified } from "./contact-enrichment";
 import { ATTEMPT_AGENT, PHASE_AGENT, beginPhase, ensureRun, failOpenRuns, settlePhase } from "./phase-runs";
@@ -30,8 +30,14 @@ export interface OrchestratorDeps {
   step?: ResearchStep;
   /** Shared durable deadline; prevents late persistence from publishing a timed-out run. */
   deadline?: number;
-  /** Curator phase (tiers + reasons over the ranked list). Defaults to runCurator; never reorders ranked. */
+  /** Legacy curator override (tests). When set it replaces the judge phase. */
   curate?: (caseId: string, caseRecord: CaseInput, ranked: RankedEntry[]) => Promise<ValidatedCuration>;
+  /** Needs analyst (runs in parallel with the searches). Defaults to runNeedsAnalyst; never throws. */
+  needs?: NeedsFn;
+  /** How long the searches that use needs terms may wait for them, from the start of the fan-out. */
+  needsWaitMs?: number;
+  /** Final judge (replaces the curator). Defaults to runJudge + saving the judge result. */
+  judge?: JudgeFn;
   /** Where curation results are saved. Defaults to getCurationStore(). */
   curations?: CurationStore;
   /**
@@ -48,6 +54,9 @@ export interface ResearchSummary {
   verified: VerifyOutput;
   ranked: RankedEntry[];
   curation: { source: ValidatedCuration["source"]; best: number; suggested: string[] };
+  /** Latency of the new phases (ms). needsWaitMs is how long the needs-driven searches waited for terms. */
+  timings: { needsMs: number | null; needsWaitMs: number | null; judgeMs: number; fanoutMs: number };
+  needs?: { fromCache: boolean; items: number; sources: number };
 }
 
 export interface ResearchStep {
@@ -162,8 +171,21 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
 
   const fanout = await step.run("run-agents", async () => {
     const agentStore = new AdoptingStore(deps.store, runIds);
+    const fanoutStarted = Date.now();
+    // "Understanding your condition" runs alongside the searches; it never throws.
+    let needsMs: number | null = null;
+    const needsStore = new AdoptingStore(deps.store, new Map([[PHASE_AGENT.needs, await ensureRun(deps.store, caseId, PHASE_AGENT.needs)]]));
+    const needsPromise = (deps.needs ?? defaultNeeds)(caseId, caseRecord, needsStore)
+      .catch((): CareNeeds | undefined => undefined)
+      .finally(() => {
+        needsMs = Date.now() - fanoutStarted;
+      });
+    let needsWaitMs: number | null = null;
+    const terms = boundedTerms(needsPromise, fanoutStarted, deps.needsWaitMs ?? NEEDS_WAIT_MS).finally(() => {
+      needsWaitMs = Date.now() - fanoutStarted;
+    });
     const medicalHistory = await (deps.medicalHistory ?? caseLibraryContext)(caseId, caseRecord).catch(() => '');
-    const ctx: ResearchContext = { ports: deps.ports, store: agentStore, caseId, ...(medicalHistory ? { medicalHistory } : {}) };
+    const ctx: ResearchContext = { ports: deps.ports, store: agentStore, caseId, needsTerms: () => terms, ...(medicalHistory ? { medicalHistory } : {}) };
     const timeoutMs = deps.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
 
     // 2. Fan out. allSettled: one failing agent never sinks the rest.
@@ -187,7 +209,9 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     );
 
     const results = settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
-    return { results, runStatuses };
+    const needs = (await needsPromise) ?? null;
+    const timings = { needsMs, needsWaitMs: needsWaitMs as number | null, fanoutMs: Date.now() - fanoutStarted };
+    return { results, runStatuses, needs, timings };
   });
   // Every source failed: an empty shortlist would look like success. End as failed so the patient can retry.
   const outcomes = Object.values(fanout.runStatuses);
@@ -201,7 +225,7 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     });
     throw new Error(message);
   }
-  return finalizeCase(caseId, caseRecord, fanout.results, fanout.runStatuses, deps, step);
+  return finalizeCase(caseId, caseRecord, fanout.results, fanout.runStatuses, deps, step, fanout.needs ?? undefined, fanout.timings);
 }
 
 async function finalizeCase(
@@ -211,6 +235,8 @@ async function finalizeCase(
   runStatuses: Record<string, string>,
   deps: OrchestratorDeps,
   step: ResearchStep,
+  needs: CareNeeds | undefined,
+  timings: { needsMs: number | null; needsWaitMs: number | null; fanoutMs: number },
 ): Promise<ResearchSummary> {
   // Post-search phases are recorded as agent_runs rows so the stream can show verify -> rank -> curate live.
   const checked = await step.run("verify", async () => {
@@ -235,18 +261,21 @@ async function finalizeCase(
     await settlePhase(deps.store, caseId, PHASE_AGENT.rank, `${ranked.length} ranked`);
     return ranked;
   });
-  const curate =
-    deps.curate ??
-    (async (id: string, c: CaseInput, r: RankedEntry[]) => {
-      // Adopt one curator row so a step retry never stacks a second card.
-      const adopting = new AdoptingStore(deps.store, new Map([[PHASE_AGENT.curate, await ensureRun(deps.store, id, PHASE_AGENT.curate)]]));
-      return runCurator(id, c, r, { store: adopting, offlineKey: caseSlug(c) });
-    });
-  const curation = await step.run("curate", async () => {
-    const out = await curate(caseId, caseRecord, ranked);
-    await settlePhase(deps.store, caseId, PHASE_AGENT.curate, "curation complete"); // no-op when the curator settled itself
-    return out;
+  // "Final judge" replaces the curator. Adopt one judge row so a step retry never stacks a second card.
+  const judged = await step.run("judge", async () => {
+    const started = Date.now();
+    const judgeRun = await ensureRun(deps.store, caseId, PHASE_AGENT.judge);
+    const adopting = new AdoptingStore(deps.store, new Map([[PHASE_AGENT.judge, judgeRun]]));
+    await deps.store.update(judgeRun, { status: "running", startedAt: new Date() });
+    const out = deps.curate
+      ? await deps.curate(caseId, caseRecord, ranked)
+      : await (deps.judge ?? makeDefaultJudge())(caseId, caseRecord, ranked, needs, adopting);
+    const kept = out.tiers.filter((t) => t.tier !== "exclude").length;
+    // No-op when the judge already settled its row with its own timing summary.
+    await settlePhase(deps.store, caseId, PHASE_AGENT.judge, `${kept} kept, ${out.tiers.length - kept} dropped${out.source === "fallback" ? " (judge unavailable: scored order kept)" : ""}`);
+    return { curation: out, judgeMs: Date.now() - started };
   });
+  const curation = judged.curation;
   await step.run("persist", async () => {
     // Below-threshold experts stay research: saved for the read-only Experts trace, never as candidates.
     const research = verified.kept.filter((k) => k.resource.kind === "expert" && k.shortlistEligibility?.eligible !== true);
@@ -278,5 +307,15 @@ async function finalizeCase(
       best: curation.tiers.filter((t) => t.tier === "best").length,
       suggested: curation.suggested,
     },
+    timings: { ...timings, judgeMs: judged.judgeMs },
+    ...(needs
+      ? {
+          needs: {
+            fromCache: needs.fromCache,
+            items: needs.specialties.length + needs.centerCapabilities.length + needs.redFlags.length + needs.trialEligibility.length + needs.supportNeeds.length,
+            sources: needs.sources.length,
+          },
+        }
+      : {}),
   };
 }

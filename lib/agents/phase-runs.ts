@@ -1,7 +1,7 @@
 import type { RunRecord, RunStore } from "./run-store";
 
 /** agent_runs rows that report the post-search pipeline. The nine research agents keep their own rows. */
-export const PHASE_AGENT = { verify: "verifier", rank: "ranker", curate: "curator" } as const;
+export const PHASE_AGENT = { needs: "needs", verify: "verifier", rank: "ranker", judge: "judge" } as const;
 /** Heartbeat row created when a research attempt is claimed; lets the watchdog date an attempt that never started. */
 export const ATTEMPT_AGENT = "research";
 

@@ -3,6 +3,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { createClaudeClient, hasClaudeCredentials } from "@/lib/ai/gateway";
 import { z, type ZodObject, type ZodRawShape, type ZodType } from "zod";
 import { isOffline } from "@/lib/env";
+import { acceptsTemperature } from "@/config/models";
 import { flagMedicalAdvice } from "@/lib/safety/no-medical-advice";
 import { loadFixture, saveFixture } from "./replay";
 import type { RunStore } from "./run-store";
@@ -30,6 +31,15 @@ export interface RunAgentOptions<T> {
   maxTurns?: number;
   /** Injectable Messages client for tests. */
   client?: MessagesClient;
+  /** Sampling temperature (e.g. 0 for the judge so verdicts are stable). Omitted -> provider default. */
+  temperature?: number;
+  /**
+   * Skip the whole-output medical-advice assertion. Only for agents whose validator filters every shown string
+   * item by item with flagMedicalAdvice (needs, judge), so one flagged item drops that item, not the run.
+   */
+  perItemAdviceFilter?: boolean;
+  /** Record a fixture in WAYFINDER_RECORD_LLM mode (default true). Chunked callers record the merged output instead. */
+  record?: boolean;
 }
 
 const DEFAULT_MAX_TURNS = 12;
@@ -132,6 +142,7 @@ async function queryOnce(opts: RunAgentOptions<unknown>, prompt: string): Promis
     const response = await client.messages.create({
       model: opts.model,
       max_tokens: MAX_TOKENS,
+      ...(opts.temperature !== undefined && acceptsTemperature(opts.model) ? { temperature: opts.temperature } : {}),
       system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
       ...(apiTools.length > 0 ? { tools: apiTools } : {}),
       messages,
@@ -196,8 +207,8 @@ export async function runAgent<T>(opts: RunAgentOptions<T>): Promise<T> {
             await opts.store.update(runId, { status: "running", ...usage });
           },
         }, () => runLive(opts));
-    assertNoMedicalAdvice(output);
-    if (!offline && process.env.WAYFINDER_RECORD_LLM === "1") {
+    if (!opts.perItemAdviceFilter) assertNoMedicalAdvice(output);
+    if (!offline && opts.record !== false && process.env.WAYFINDER_RECORD_LLM === "1") {
       await saveFixture(opts.name, opts.offlineKey, output);
     }
     const { counts, summary } = summarize(output);

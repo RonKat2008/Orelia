@@ -11,7 +11,7 @@ import { groupAppointments, type ApptView } from "./model";
 import { ProposedAppointmentCard } from "./ProposedAppointmentCard";
 import { useNow } from "./use-now";
 
-const CASE_PAGE_HEADING = "h2" as const;
+const CASE_PAGE_HEADING = "h1" as const;
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; list: ApptView[] };
 

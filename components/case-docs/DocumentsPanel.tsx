@@ -38,7 +38,7 @@ import {
 
 /** Reading order on this page; the long list of research sources goes last, inside a disclosure. */
 /** Heading level for the page title. h2 while the case shell still prints the h1 (lane A part 2 flips this). */
-const CASE_PAGE_HEADING = "h2" as const;
+const CASE_PAGE_HEADING = "h1" as const;
 
 const GROUP_ORDER = ["case_summary", "patient_note", "public_resource", "intake_report", "evidence"];
 const DISCLOSED_KINDS = new Set(["evidence"]);

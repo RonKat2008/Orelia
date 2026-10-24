@@ -21,8 +21,8 @@ import { ExpertChainCard } from "./ExpertChainCard";
 import { ExpertsSkeleton } from "./ExpertsSkeleton";
 import { describeTrace, refreshMessage, rowBadge, rowMeta } from "./view-model";
 
-/** Heading level of the page title: h2 while the case shell still prints the h1 (lane A part 2 flips this). */
-const CASE_PAGE_HEADING = "h2" as const;
+/** Heading level of the page title: the case shell prints no h1 now, so each page owns it. */
+const CASE_PAGE_HEADING = "h1" as const;
 
 type State =
   | { phase: "loading" }

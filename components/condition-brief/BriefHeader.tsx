@@ -10,8 +10,8 @@ export interface BriefHeaderProps {
   onRefresh: () => void;
 }
 
-/** Heading level of the page title: h2 while the case shell still prints the h1 (lane A part 2 flips this). */
-export const CASE_PAGE_HEADING = "h2" as const;
+/** Heading level of the page title: the case shell prints no h1 now, so each page owns it. */
+export const CASE_PAGE_HEADING = "h1" as const;
 
 export function BriefHeader({ brief, busy, onRefresh }: BriefHeaderProps) {
   const generated = formatGenerated(brief.generatedAt);

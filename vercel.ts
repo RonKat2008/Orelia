@@ -49,7 +49,11 @@ export const config: VercelConfig = {
     "app/api/cases/[id]/stream/route.ts": { maxDuration: 300 },
     "app/api/cases/[id]/research/route.ts": { maxDuration: 300 },
     "app/api/cases/route.ts": { maxDuration: 120 },
+    "app/api/cron/follow-ups/route.ts": { maxDuration: 120 },
   },
+  // Follow-ups without Inngest: hourly sweep of contacts whose next_follow_up_at has passed.
+  // Vercel sends Authorization: Bearer $CRON_SECRET; the route rejects anything else.
+  crons: [{ path: "/api/cron/follow-ups", schedule: "0 * * * *" }],
   headers: [{ source: "/(.*)", headers: securityHeaders }],
 };
 

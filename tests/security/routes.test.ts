@@ -186,6 +186,19 @@ for (const { route, method, handler } of inventory) {
         });
       }
     }
+    if (route.startsWith('/api/cron/')) {
+      it('rejects a missing or wrong bearer secret before database access', async () => {
+        vi.stubEnv('CRON_SECRET', 'synthetic-cron-secret');
+        for (const auth of [undefined, 'Bearer wrong']) {
+          const request = requestFor(route, method);
+          if (auth) request.headers.set('authorization', auth);
+          const response = await handler(request, contextFor(route));
+          expect(response.status).toBe(401);
+          expect(state.dbHits).toBe(0);
+          await cleanBody(response);
+        }
+      });
+    }
     // Error probes run through the owner path. Uncaught exceptions are failures too:
     // framework-generated responses must not become the route's error contract.
     if (route !== '/api/inngest' && !route.startsWith('/api/webhooks/')) {

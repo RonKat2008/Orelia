@@ -114,7 +114,16 @@ describe("GET /api/health", () => {
     expect(r.ok).toBe(true);
     expect(r.status).toBe("degraded");
     expect(r.inngest).toBe("unconfigured");
+    expect(r.scheduler).toBe("none");
     expect(r.env.missing).toEqual([]);
+  });
+
+  it("is ok with the cron scheduler when Inngest is absent but CRON_SECRET is set", async () => {
+    const { INNGEST_EVENT_KEY: _a, INNGEST_SIGNING_KEY: _b, ...noInngest } = prodComplete;
+    const r = await healthReport({ source: { ...noInngest, CRON_SECRET: "x" }, pingDb: async () => {} });
+    expect(r.status).toBe("ok");
+    expect(r.scheduler).toBe("cron");
+    expect(JSON.stringify(r)).not.toContain('"x"');
   });
 
   it("is ok with Inngest configured and down when a webhook secret is missing", async () => {

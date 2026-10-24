@@ -3,41 +3,25 @@
  *
  * When Inngest is not configured, the parts of the workflow that are immediate
  * still run inside the request: an approved follow-up is sent (through the same
- * gated sender), and a reply moves the contact to `replied`. Only the durable
- * timers (business-day 3/7 follow-ups, stall at day 10) are not scheduled; the
- * tracker says so ("Automatic follow-ups are paused until scheduling is connected").
+ * gated sender), and a reply moves the contact to `replied`. The business-day 3/7
+ * follow-ups and the stall are not durable timers here: contact/approved records
+ * contacts.next_follow_up_at, and the Vercel Cron sweep (follow-up-sweep.ts) acts on it.
+ * Without CRON_SECRET too, the tracker says follow-ups are paused.
  *
  * Nothing here can send by itself: the only send path is the injected
  * `deps.send`, and the follow-up workflow re-reads messages.approved_at first.
  */
-import { CONTACT_APPROVED, CONTACT_REPLY, FOLLOW_UP_APPROVED, type WorkflowStep } from './engine';
-import { transition } from './connection-machine';
+import { CONTACT_APPROVED, CONTACT_REPLY, FOLLOW_UP_APPROVED } from './engine';
+import { followUpDeadlines, transition } from './connection-machine';
+import { inlineStep } from './follow-up-sweep';
+import { schedulingConnected } from './scheduler';
 import { createFollowUpSendWorkflow, type ConnectionDeps } from './connection-workflow';
 import { inngestSendEvents, type SendEvents, type WorkflowEvent } from './events';
 import { OutreachError } from '../outreach/types';
 
 type Env = Record<string, string | undefined>;
 
-const set = (v: string | undefined) => (v ?? '').trim() !== '';
-
-/** True when durable scheduling works: both Inngest keys, or a local Inngest dev server. */
-export function schedulingConnected(env: Env = process.env): boolean {
-  const devServer = set(env.INNGEST_DEV) && env.INNGEST_DEV !== '0';
-  return devServer || (set(env.INNGEST_EVENT_KEY) && set(env.INNGEST_SIGNING_KEY));
-}
-
-/** Runs step functions immediately. Waiting and fan-out need a durable engine, so they are refused/dropped. */
-function inlineStep(): WorkflowStep {
-  return {
-    run: async (_id, fn) => fn(),
-    async waitForEvent() {
-      throw new Error('waitForEvent needs durable scheduling (Inngest); not available inline');
-    },
-    async sendEvent() {
-      return undefined;
-    },
-  };
-}
+export { schedulingConnected } from './scheduler';
 
 function asReasons(err: unknown): string[] | null {
   if (!err || typeof err !== 'object') return null;
@@ -69,13 +53,23 @@ async function replyReceived(deps: ConnectionDeps, event: WorkflowEvent): Promis
   await deps.cancelPreapproved?.({ contactId, reason: 'reply' });
 }
 
-/** Handles workflow events in-process. contact/approved is a no-op: the first message was already sent. */
+/** Records when the cron sweep should first look at this contact. Idempotent; sends nothing. */
+async function scheduleNextFollowUp(deps: ConnectionDeps, event: WorkflowEvent): Promise<void> {
+  const contactId = event.data.contactId;
+  if (typeof contactId !== 'string' || !contactId) return;
+  const ctx = await deps.loadContext(contactId);
+  if (ctx.state !== 'sent' || !ctx.firstSentAt || ctx.nextFollowUpAt || ctx.followUpsDue > 0) return;
+  const nextFollowUpAt = followUpDeadlines(ctx.firstSentAt, deps.tz).followUp1;
+  await deps.saveContext(contactId, { ...ctx, nextFollowUpAt });
+}
+
+/** Handles workflow events in-process. contact/approved only schedules next_follow_up_at: the first message was already sent. */
 export function inlineSendEvents(getDeps: () => ConnectionDeps): SendEvents {
   return async (events) => {
     for (const event of Array.isArray(events) ? events : [events]) {
       if (event.name === FOLLOW_UP_APPROVED) await followUpApproved(getDeps(), event);
       else if (event.name === CONTACT_REPLY) await replyReceived(getDeps(), event);
-      else if (event.name === CONTACT_APPROVED) continue; // follow-up timers are not scheduled
+      else if (event.name === CONTACT_APPROVED) await scheduleNextFollowUp(getDeps(), event);
     }
   };
 }

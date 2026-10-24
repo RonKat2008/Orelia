@@ -4,3 +4,4 @@ export * from './clock';
 export * from './engine';
 export * from './connection-workflow';
 export * from './events';
+export * from './scheduler';

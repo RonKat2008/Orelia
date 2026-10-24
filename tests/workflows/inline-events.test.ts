@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initialContext, type ContactContext } from '../../lib/workflows/connection-machine';
 import type { ConnectionDeps } from '../../lib/workflows/connection-workflow';
 import { contactApprovedEvent, contactReplyEvent, followUpApprovedEvent } from '../../lib/workflows/events';
+import { followUpScheduler } from '../../lib/workflows/scheduler';
 import { inlineSendEvents, schedulingConnected, workflowSendEvents } from '../../lib/workflows/inline-events';
 import { OutreachError } from '../../lib/outreach/types';
 
@@ -48,6 +49,36 @@ describe('workflowSendEvents without Inngest', () => {
   it('accepts a webhook reply event with the default deps instead of throwing', async () => {
     const send = workflowSendEvents({ DATABASE_URL: '' });
     await expect(send(contactReplyEvent({ contactId: 'c', caseId: 'k', dedupeKey: 'pm-9', receivedAt: NOW.toISOString() }))).resolves.toBeUndefined();
+  });
+});
+
+describe('followUpScheduler', () => {
+  it('prefers Inngest, then cron (CRON_SECRET), else none', () => {
+    expect(followUpScheduler({})).toBe('none');
+    expect(followUpScheduler({ CRON_SECRET: '  ' })).toBe('none');
+    expect(followUpScheduler({ CRON_SECRET: 'x' })).toBe('cron');
+    expect(followUpScheduler({ CRON_SECRET: 'x', INNGEST_EVENT_KEY: 'k', INNGEST_SIGNING_KEY: 's' })).toBe('inngest');
+  });
+});
+
+describe('contact/approved without Inngest', () => {
+  const approved = () => contactApprovedEvent({ contactId: 'c', caseId: 'k', messageId: 'm', approvedAt: NOW.toISOString() });
+
+  it('schedules next_follow_up_at at business day 3 instead of pausing', async () => {
+    const { d, sent, ctx } = deps({ state: 'sent', firstSentAt: FIRST });
+    await inlineSendEvents(() => d)(approved());
+    expect(ctx().nextFollowUpAt?.toISOString()).toBe('2026-10-29T12:00:00.000Z');
+    expect(sent).toEqual([]);
+  });
+
+  it('keeps an existing schedule, and ignores contacts that are not waiting', async () => {
+    const existing = new Date('2026-11-04T12:00:00.000Z');
+    const a = deps({ state: 'sent', firstSentAt: FIRST, nextFollowUpAt: existing });
+    await inlineSendEvents(() => a.d)(approved());
+    expect(a.ctx().nextFollowUpAt).toEqual(existing);
+    const b = deps({ state: 'replied', firstSentAt: FIRST });
+    await inlineSendEvents(() => b.d)(approved());
+    expect(b.ctx().nextFollowUpAt).toBeNull();
   });
 });
 

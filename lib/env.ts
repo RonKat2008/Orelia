@@ -221,7 +221,7 @@ export function checkEnv(mode?: EnvMode, source: EnvSource = process.env): EnvRe
     warnings.push("WAYFINDER_SIM_TIME_SCALE is set in prod; simulated time should only be used for demos");
   }
 
-  if ((m === "prod" || m === "demo") && !inngestConfigured(source)) {
+  if ((m === "prod" || m === "demo") && !inngestConfigured(source) && !isSet(source, "CRON_SECRET")) {
     warnings.push(
       "Inngest is not configured (INNGEST_EVENT_KEY / INNGEST_SIGNING_KEY): durable workflows and follow-ups are disabled and fail closed (nothing is sent)",
     );

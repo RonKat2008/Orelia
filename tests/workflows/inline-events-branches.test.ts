@@ -137,11 +137,13 @@ describe('inlineSendEvents dispatch', () => {
     expect(saved).toEqual([]);
   });
 
-  it('skips contact/approved events inside a batch', async () => {
+  it('handles contact/approved inside a batch by scheduling only (no send)', async () => {
     const { d, saved } = deps({ state: 'sent', firstSentAt: FIRST });
     const approved = { name: CONTACT_APPROVED, data: { contactId: 'c' } } as unknown as WorkflowEvent;
     await inlineSendEvents(() => d)([approved]);
-    expect(saved).toEqual([]);
+    expect(saved).toHaveLength(1);
+    expect(saved[0].nextFollowUpAt).toBeInstanceOf(Date);
+    expect(saved[0].state).toBe('sent');
   });
 
   it('handles an empty batch', async () => {

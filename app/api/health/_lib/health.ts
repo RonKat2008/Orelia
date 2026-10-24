@@ -1,4 +1,5 @@
 import { checkEnv, deployStatus, resolveMode } from "@/lib/env";
+import { followUpScheduler, type FollowUpScheduler } from "@/lib/workflows/scheduler";
 
 type Source = Record<string, string | undefined>;
 
@@ -12,13 +13,15 @@ export type DbStatus = "up" | "down" | "not_configured";
 
 export interface HealthReport {
   ok: boolean;
-  /** "ok", "degraded" (only Inngest missing; still serving) or "down". */
+  /** "ok", "degraded" (no follow-up scheduler: neither Inngest nor cron; still serving) or "down". */
   status: "ok" | "degraded" | "down";
   mode: string;
   db: DbStatus;
   gateway: string;
   modelAccess: string;
   inngest: string;
+  /** Active follow-up scheduler: inngest, cron (Vercel Cron + CRON_SECRET) or none. */
+  scheduler: FollowUpScheduler;
   outbound: string;
   env: { ok: boolean; missing: string[] };
   version?: string;
@@ -49,16 +52,18 @@ export async function healthReport(deps: HealthDeps): Promise<HealthReport> {
   const envCheck = checkEnv(mode, deps.source);
   const status = deployStatus(deps.source);
   const db = await checkDb(deps);
+  const scheduler = followUpScheduler(deps.source);
   const sha = deps.source.VERCEL_GIT_COMMIT_SHA;
   const ok = db !== "down" && envCheck.ok;
   return {
     ok,
-    status: !ok ? "down" : status.inngest === "unconfigured" && envCheck.mode !== "offline" && envCheck.mode !== "dev" ? "degraded" : "ok",
+    status: !ok ? "down" : scheduler === "none" && envCheck.mode !== "offline" && envCheck.mode !== "dev" ? "degraded" : "ok",
     mode: envCheck.mode,
     db,
     gateway: status.gateway,
     modelAccess: status.modelAccess,
     inngest: status.inngest,
+    scheduler,
     outbound: status.outbound,
     env: { ok: envCheck.ok, missing: envCheck.missing.map((m) => m.name) },
     ...(sha ? { version: sha.slice(0, 7) } : {}),

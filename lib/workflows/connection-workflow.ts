@@ -17,6 +17,7 @@ import {
   FOLLOW_UP_APPROVED,
   FOLLOW_UP_DRAFTED,
   type FunctionDefinition,
+  type WorkflowStep,
 } from './engine';
 import {
   followUpDeadlines,
@@ -102,6 +103,91 @@ async function applyTransition(
   return res;
 }
 
+export interface FollowUpDueInput {
+  contactId: string;
+  caseId: string;
+  /** Step-id suffix; also keeps replayed Inngest step ids stable. */
+  phase: string;
+  /** ISO of the unscaled deadline that has now passed. */
+  deadlineReal: string;
+}
+
+/**
+ * A follow-up deadline passed with no reply. Applies FOLLOW_UP_DUE, then either sends the
+ * stored pre-approved follow-up (walk-away mode, re-checking messages.approved_at), or
+ * creates an UNAPPROVED draft for the patient. After the last follow-up the contact stalls.
+ * Shared by the Inngest workflow and the Vercel Cron sweep so both follow the same path.
+ * Returns `{ outcome }` when the contact left the follow-up cadence (replied, declined, stalled).
+ */
+export async function handleFollowUpDue(
+  deps: ConnectionDeps,
+  step: WorkflowStep,
+  input: FollowUpDueInput,
+): Promise<{ outcome?: string }> {
+  const { contactId, caseId, phase, deadlineReal } = input;
+  // When the clock is accelerated the real wall time is far before the real business-day
+  // deadline, so the machine's "not due yet" check would reject FOLLOW_UP_DUE. Use max(now, real deadline).
+  const due = await step.run(`follow-up-due-${phase}`, async () => {
+    const ctx = await deps.loadContext(contactId);
+    if (ctx.state === 'declined' || ctx.state === 'replied') {
+      await deps.cancelPreapproved?.({ contactId, reason: ctx.state === 'declined' ? 'decline' : 'reply' });
+      return { skipped: ctx.state as string, effects: [] as { type: string; followUpNumber?: number }[] };
+    }
+    const real = new Date(deadlineReal);
+    const now = deps.clock.now();
+    const at = now.getTime() > real.getTime() ? now : real;
+    const res = await applyTransition(deps, contactId, { type: 'FOLLOW_UP_DUE' }, at);
+    return { skipped: null as string | null, effects: res.effects.map((e) => ({ ...e })) as { type: string; followUpNumber?: number }[] };
+  });
+  if (due.skipped) return { outcome: due.skipped };
+
+  for (const effect of due.effects) {
+    if (effect.type === 'DRAFT_FOLLOW_UP') {
+      const followUpNumber = effect.followUpNumber as 1 | 2;
+      const resolvePreapproved = deps.resolvePreapproved;
+      const pre = resolvePreapproved
+        ? await step.run(`resolve-preapproved-${followUpNumber}`, () =>
+            resolvePreapproved({ contactId, caseId, followUpNumber }),
+          )
+        : { action: 'none' as const };
+      if (pre.action === 'send') {
+        const sent = await step.run(`send-preapproved-${followUpNumber}`, async () => {
+          const approvedAt = await persistedApproval(deps, pre.messageId);
+          if (!approvedAt) return { sent: false as const };
+          const thread = (await deps.loadThread?.(contactId)) ?? undefined;
+          await deps.send({
+            contactId, caseId, messageId: pre.messageId, kind: 'follow_up', ...(thread ? { thread } : {}),
+          });
+          await applyTransition(deps, contactId, { type: 'APPROVED_SENT' }, deps.clock.now());
+          return { sent: true as const };
+        });
+        if (sent.sent) continue;
+      }
+      if (pre.action === 'hold') {
+        await step.run(`notify-approval-${followUpNumber}`, async () => {
+          await deps.notifyApprovalNeeded?.({ contactId, caseId, followUpNumber, reason: pre.reason });
+          return { notified: true };
+        });
+      }
+      // Unapproved draft. A later FOLLOW_UP_APPROVED event (or the approve route) is what sends it.
+      const draft = await step.run(`draft-follow-up-${followUpNumber}`, () =>
+        deps.draftFollowUp({ contactId, caseId, followUpNumber }),
+      );
+      await step.sendEvent(`emit-follow-up-drafted-${followUpNumber}`, {
+        name: FOLLOW_UP_DRAFTED,
+        data: { contactId, caseId, messageId: draft.messageId, followUpNumber },
+      });
+    } else if (effect.type === 'MARK_STALLED') {
+      await step.sendEvent('emit-stalled', {
+        name: CONTACT_STALLED,
+        data: { contactId, caseId },
+      });
+      return { outcome: 'stalled' };
+    }
+  }
+  return {};
+}
+
 export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefinition {
   return {
     id: 'contact-connection',
@@ -174,67 +260,9 @@ export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefiniti
           return { outcome: 'replied' };
         }
 
-        // Timed out. When the clock is accelerated the real wall time is far
-        // before the real business-day deadline, so the machine's "not due yet"
-        // check would reject FOLLOW_UP_DUE. Use max(now, unscaled real deadline).
-        const due = await step.run(`follow-up-due-${phase}`, async () => {
-          const ctx = await deps.loadContext(contactId);
-          if (ctx.state === 'declined' || ctx.state === 'replied') {
-            await deps.cancelPreapproved?.({ contactId, reason: ctx.state === 'declined' ? 'decline' : 'reply' });
-            return { skipped: ctx.state as string, effects: [] as { type: string; followUpNumber?: number }[] };
-          }
-          const real = new Date(deadline.real);
-          const now = deps.clock.now();
-          const at = now.getTime() > real.getTime() ? now : real;
-          const res = await applyTransition(deps, contactId, { type: 'FOLLOW_UP_DUE' }, at);
-          return { skipped: null as string | null, effects: res.effects.map((e) => ({ ...e })) as { type: string; followUpNumber?: number }[] };
-        });
-        if (due.skipped) return { outcome: due.skipped };
-
-        for (const effect of due.effects) {
-          if (effect.type === 'DRAFT_FOLLOW_UP') {
-            const followUpNumber = effect.followUpNumber as 1 | 2;
-            const resolvePreapproved = deps.resolvePreapproved;
-            const pre = resolvePreapproved
-              ? await step.run(`resolve-preapproved-${followUpNumber}`, () =>
-                  resolvePreapproved({ contactId, caseId, followUpNumber }),
-                )
-              : { action: 'none' as const };
-            if (pre.action === 'send') {
-              const sent = await step.run(`send-preapproved-${followUpNumber}`, async () => {
-                const approvedAt = await persistedApproval(deps, pre.messageId);
-                if (!approvedAt) return { sent: false as const };
-                const thread = (await deps.loadThread?.(contactId)) ?? undefined;
-                await deps.send({
-                  contactId, caseId, messageId: pre.messageId, kind: 'follow_up', ...(thread ? { thread } : {}),
-                });
-                await applyTransition(deps, contactId, { type: 'APPROVED_SENT' }, deps.clock.now());
-                return { sent: true as const };
-              });
-              if (sent.sent) continue;
-            }
-            if (pre.action === 'hold') {
-              await step.run(`notify-approval-${followUpNumber}`, async () => {
-                await deps.notifyApprovalNeeded?.({ contactId, caseId, followUpNumber, reason: pre.reason });
-                return { notified: true };
-              });
-            }
-            // Unapproved draft. A later FOLLOW_UP_APPROVED event is what sends it.
-            const draft = await step.run(`draft-follow-up-${followUpNumber}`, () =>
-              deps.draftFollowUp({ contactId, caseId, followUpNumber }),
-            );
-            await step.sendEvent(`emit-follow-up-drafted-${followUpNumber}`, {
-              name: FOLLOW_UP_DRAFTED,
-              data: { contactId, caseId, messageId: draft.messageId, followUpNumber },
-            });
-          } else if (effect.type === 'MARK_STALLED') {
-            await step.sendEvent('emit-stalled', {
-              name: CONTACT_STALLED,
-              data: { contactId, caseId },
-            });
-            return { outcome: 'stalled' };
-          }
-        }
+        // Timed out: the shared due handler (also driven by the cron sweep) applies the transition.
+        const due = await handleFollowUpDue(deps, step, { contactId, caseId, phase, deadlineReal: deadline.real });
+        if (due.outcome) return { outcome: due.outcome };
       }
       return { outcome: 'stalled' };
     },

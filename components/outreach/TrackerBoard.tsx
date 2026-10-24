@@ -70,7 +70,7 @@ function followUpNote(contact: ApiContact, state: ContactState, schedulingPaused
 interface TrackerBoardProps {
   caseId: string;
   tasks: OutreachTask[];
-  /** True when durable scheduling (Inngest) is not connected: day-3/day-7 follow-ups are not scheduled. */
+  /** True when no scheduler (Inngest or Vercel Cron) is connected: day-3/day-7 follow-ups are not scheduled. */
   schedulingPaused?: boolean;
 }
 

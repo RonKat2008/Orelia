@@ -1,3 +1,6 @@
+import { guardCase } from "@/lib/auth/ownership";
+import { rejectCrossOrigin } from "@/lib/auth/origin";
+import { jsonError } from "@/app/api/cases/_lib/http";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { reviews } from "@/db/schema";
@@ -15,6 +18,8 @@ export async function GET(request: Request) {
     return Response.json({ error: "caseId must be a UUID" }, { status: 400 });
   }
   try {
+    const denied = await guardCase(request, caseId);
+    if (denied) return denied;
     const db = getDb();
     const rows = await db.select().from(reviews).where(eq(reviews.caseId, caseId));
     return Response.json({
@@ -22,13 +27,13 @@ export async function GET(request: Request) {
       agreement: agreementByKind(rows.map((row) => ({ targetKind: row.targetKind, verdict: row.verdict }))),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not read reviews";
-    const status = message.includes("DATABASE_URL") ? 503 : 500;
-    return Response.json({ error: message }, { status });
+    return jsonError(500, "Unable to process request", error);
   }
 }
 
 export async function POST(request: Request) {
+  const csrf = rejectCrossOrigin(request);
+  if (csrf) return csrf;
   let body: unknown;
   try {
     body = await request.json();
@@ -70,6 +75,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    const denied = await guardCase(request, input.caseId);
+    if (denied) return denied;
     const db = getDb();
     const [created] = await db
       .insert(reviews)
@@ -91,8 +98,6 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not save the review";
-    const status = message.includes("DATABASE_URL") ? 503 : 500;
-    return Response.json({ error: message }, { status });
+    return jsonError(500, "Unable to process request", error);
   }
 }

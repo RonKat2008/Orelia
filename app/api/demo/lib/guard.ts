@@ -1,7 +1,7 @@
 /** Demo control-panel gate. Anything other than an explicit on-switch is off. */
 export function demoEnabled(env: Record<string, string | undefined>): boolean {
   const value = env.WAYFINDER_DEMO;
-  return value === "1" || value === "true";
+  return value === "1";
 }
 
 export class DemoDisabledError extends Error {

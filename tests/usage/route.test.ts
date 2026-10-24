@@ -1,10 +1,19 @@
-import { afterEach, expect, it, vi } from 'vitest';
+import { MemoryOwnerStore } from "@/lib/auth/ownership";
+import { signSession } from "@/lib/auth/session";
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ get: vi.fn(), listByCase: vi.fn() }));
 vi.mock('@/app/api/cases/_lib/services', () => ({ getServices: () => ({ cases: { get: mocks.get }, runs: { listByCase: mocks.listByCase } }) }));
 import { GET } from '@/app/api/cases/[id]/usage/route';
 const id = 'd035540d-6cda-42c4-ad94-ad1e9b8a027f';
-function request(caseId = id) { return GET(new Request('http://localhost'), { params: Promise.resolve({ id: caseId }) }); }
-afterEach(() => vi.clearAllMocks());
+function request(caseId = id) { return GET(new Request('http://localhost', { headers: { cookie: 'wf_session=' + signSession('usage-owner') } }), { params: Promise.resolve({ id: caseId }) }); }
+const holder = globalThis as unknown as { __wayfinderOwnerStore?: MemoryOwnerStore };
+beforeEach(() => {
+  vi.stubEnv('WAYFINDER_SESSION_SECRET', 'synthetic-usage-secret');
+  const store = new MemoryOwnerStore();
+  store.registerCase(id, 'usage-owner');
+  holder.__wayfinderOwnerStore = store;
+});
+afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); delete holder.__wayfinderOwnerStore; });
 it('returns totals and per-agent accounting without run content', async () => {
   mocks.get.mockResolvedValue({ id });
   mocks.listByCase.mockResolvedValue([{ agent: 'trials', tokensIn: 12, tokensOut: 3, costUsd: 1, outputSummary: 'private', error: 'private' }]);

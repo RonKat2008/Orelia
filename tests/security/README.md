@@ -14,12 +14,25 @@ Tests use real route handlers, signed sessions, ownership guards, Origin checks,
 webhook signature verification, and in-memory rate-limit counters. Storage,
 provider/network, demo filesystem/clock, and background execution boundaries are
 replaced so the suite cannot send messages, start research, or write demo state.
-All inputs and credentials are synthetic. No production files are changed.
+All inputs and credentials are synthetic. The suite does not modify production files.
+
+## Fixed in task #57
+
+All 45 regressions below are fixed in production routes; the original 154 security
+checks are unchanged. Reviews, ranking previews, and usage enforce case ownership.
+State-changing review, ranking, and demo routes enforce same-origin requests.
+Storage failures and Inngest registration failures return generic JSON errors;
+SSE failures emit a generic error event. Diagnostic errors stay in server logs.
+Demo access requires exactly `WAYFINDER_DEMO=1`; `true` is disabled.
+
+Validation: all **154/154 security checks pass**, and the full suite passes
+**1,067 tests** (98 files; 1 skipped, 2 todo). Typecheck, lint (3 pre-existing
+warnings), and the production build pass. No security assertions were weakened.
 
 ## Findings on the task-52 base
 
-The new suite has 154 tests: **109 pass, 45 fail intentionally**. Failures remain
-ordinary failing tests, not skipped tests or expected failures, so fixes turn the
+The original suite had 154 tests: **109 passed, 45 failed**. These remained ordinary
+failing tests, without skips or expected failures; the production fixes turn the
 same regressions green.
 
 | Gap | Routes |
@@ -52,5 +65,4 @@ protocol and receives a network-failure hygiene probe. GET readiness stays publi
 
 The existing auth/rate-limit/webhook tests also pass (47 tests). Full-suite result:
 97 existing test files pass; 1,022 tests pass, 45 new regressions fail, 1 is skipped,
-and 2 are todo. Project typecheck and focused ESLint pass. These tests are intentionally red until the production
-security gaps are fixed by their owners.
+and 2 are todo. Project typecheck and focused ESLint pass. This describes the task-52 baseline before the task-57 fixes.

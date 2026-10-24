@@ -14,36 +14,44 @@ type Ctx = { params: Promise<{ id: string }> };
 const patchSchema = z.object({ fields: caseInputSchema.partial().default({}) });
 
 export async function GET(req: Request, { params }: Ctx) {
-  const id = parseId((await params).id);
-  if (!id) return jsonError(400, "Invalid case id");
-  const denied = await guardCase(req, id);
-  if (denied) return denied;
-  const found = await getServices().cases.get(id);
-  return found ? NextResponse.json({ case: found }) : jsonError(404, "Case not found");
+  try {
+    const id = parseId((await params).id);
+    if (!id) return jsonError(400, "Invalid case id");
+    const denied = await guardCase(req, id);
+    if (denied) return denied;
+    const found = await getServices().cases.get(id);
+    return found ? NextResponse.json({ case: found }) : jsonError(404, "Case not found");
+  } catch (error) {
+    return jsonError(500, "Unable to process request", error);
+  }
 }
 
 /** PATCH /api/cases/[id] { fields? } -> apply the patient's edits and confirm (status 'confirmed'). */
 export async function PATCH(req: Request, { params }: Ctx) {
-  const id = parseId((await params).id);
-  if (!id) return jsonError(400, "Invalid case id");
-  const denied = await guardCase(req, id);
-  if (denied) return denied;
-  const body = await parseBody(req, patchSchema);
-  if (!body.ok) return body.response;
+  try {
+    const id = parseId((await params).id);
+    if (!id) return jsonError(400, "Invalid case id");
+    const denied = await guardCase(req, id);
+    if (denied) return denied;
+    const body = await parseBody(req, patchSchema);
+    if (!body.ok) return body.response;
 
-  const { cases } = getServices();
-  const existing = await cases.get(id);
-  if (!existing) return jsonError(404, "Case not found");
-  if (existing.status === "researching") return jsonError(409, "Research is running; case cannot be edited");
+    const { cases } = getServices();
+    const existing = await cases.get(id);
+    if (!existing) return jsonError(404, "Case not found");
+    if (existing.status === "researching") return jsonError(409, "Research is running; case cannot be edited");
 
-  const current = omit(existing, ["id", "status", "createdAt"]);
-  const merged = caseInputSchema.safeParse({ ...current, ...stripUndefined(body.data.fields) });
-  if (!merged.success) return jsonError(400, "Edited case is invalid", z.treeifyError(merged.error), fieldPaths(merged.error));
+    const current = omit(existing, ["id", "status", "createdAt"]);
+    const merged = caseInputSchema.safeParse({ ...current, ...stripUndefined(body.data.fields) });
+    if (!merged.success) return jsonError(400, "Edited case is invalid", z.treeifyError(merged.error), fieldPaths(merged.error));
 
-  const updated = await cases.update(id, merged.data, "confirmed");
-  if (!updated) return jsonError(404, "Case not found");
-  await ingestSummarySafely(updated);
-  return NextResponse.json({ case: updated });
+    const updated = await cases.update(id, merged.data, "confirmed");
+    if (!updated) return jsonError(404, "Case not found");
+    await ingestSummarySafely(updated);
+    return NextResponse.json({ case: updated });
+  } catch (error) {
+    return jsonError(500, "Unable to process request", error);
+  }
 }
 
 function omit<T extends object, K extends keyof T>(o: T, keys: K[]): Omit<T, K> {

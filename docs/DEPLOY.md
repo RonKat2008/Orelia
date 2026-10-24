@@ -345,7 +345,7 @@ task ("please send slides" etc.). A `contact-connection` run in Inngest resumes 
 | AgentCall webhook returns 401 | `AGENTCALL_WEBHOOK_SECRET` mismatch; signature is HMAC-SHA256 of the raw body, `X-AgentCall-Signature: sha256=<hex>`. | Re-copy the secret, redeploy. |
 | Send refused `not_allowlisted` | Address/number not in `OUTBOUND_ALLOWLIST` (correct behaviour for non-test targets). | If it is one of our test inboxes, add it exactly (case-insensitive email or E.164) and redeploy. Do **not** set `OUTBOUND_ALLOW_REAL`. |
 | Build error about `@x402/fetch` | The `agentmail` SDK dynamically imports an optional peer that isn't installed. | `next.config.ts` already sets `serverExternalPackages: ["agentmail"]`. If it reappears, check that line wasn't removed; do not install `@x402/fetch`. |
-| `/demo` returns 404 | `WAYFINDER_DEMO` isn't `1`/`true`. | Intentional off-switch; set it only on demo deployments. |
+| `/demo` returns 404 | `WAYFINDER_DEMO` isn't exactly `1`. | Intentional off-switch; set it only on demo deployments. |
 | `CREATE EXTENSION vector` fails | pgvector not enabled. | Run `CREATE EXTENSION vector;` in the Neon SQL editor. |
 
 Logs: Vercel -> Project -> **Logs** (filter by `/api/webhooks` or `/api/inngest`), or `vercel logs <deployment-url>`.

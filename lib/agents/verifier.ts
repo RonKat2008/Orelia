@@ -11,7 +11,7 @@ import { expertEligibility } from "@/lib/identity/eligibility";
  *  - flags conflicts for a human/UI to see
  *  - when the case is known, drops trials that are off-target for the disease/subtype or do not enroll adults
  *    (see ./relevance), recording each drop with its reason
- * An optional proposer (an Opus pass, off by default and never run offline) may only
+ * An optional proposer (an Opus pass, off by default and replayable offline) may only
  * propose merges between records that already exist and extra conflict notes. It cannot add claims.
  */
 
@@ -58,6 +58,8 @@ export interface MergeProposal {
   /** Keys of two existing kept records (same kind) the model thinks are the same entity. */
   keys: [string, string];
   reason: string;
+  /** Existing evidence IDs on both records; only structured identity facts count. */
+  evidenceIds?: string[];
 }
 
 export interface VerifyProposals {
@@ -342,9 +344,70 @@ function finalize(items: Working[], dropped: DroppedItem[], conflicts: ConflictI
   return { kept, dropped, merged, conflicts: canonicalConflicts };
 }
 
+/** Only explicit structured identity facts are eligible; narrative claims are never interpreted. */
+function structuredFacts(e: Evidence): Record<string, string> {
+  try {
+    const raw: unknown = JSON.parse(e.claim);
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      return Object.fromEntries(Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+    }
+  } catch { /* A typed scalar claim is also structured. */ }
+  const field = e.claimType.replace(/^identity[._]/, "");
+  return ["npi", "nctId", "domain", "name", "city", "state", "phone", "email"].includes(field)
+    ? { [field]: e.claim } : {};
+}
+
+function domain(raw: string | undefined): string {
+  if (!raw) return "";
+  try { return new URL(raw.includes("://") ? raw : `https://${raw}`).hostname.toLowerCase().replace(/^www\./, ""); }
+  catch { return ""; }
+}
+
+function identityMatches(a: Record<string, string>, b: Record<string, string>): boolean {
+  if (a.npi && b.npi && a.npi.trim() !== b.npi.trim()) return false;
+  if (a.nctId && b.nctId && a.nctId.toUpperCase() !== b.nctId.toUpperCase()) return false;
+  if (a.npi?.trim() && a.npi.trim() === b.npi?.trim()) return true;
+  if (a.nctId?.trim() && a.nctId.trim().toUpperCase() === b.nctId?.trim().toUpperCase()) return true;
+  if (domain(a.domain) && domain(a.domain) === domain(b.domain)) return true;
+  return ["name", "city", "state"].every((key) => !!normalizeName(a[key] ?? "") && normalizeName(a[key] ?? "") === normalizeName(b[key] ?? ""));
+}
+
+function resourceFacts(r: Resource): Record<string, string> {
+  return Object.fromEntries(Object.entries(r).filter((entry): entry is [string, string] => typeof entry[1] === "string")
+    .map(([key, value]) => [key === "url" ? "domain" : key, value]));
+}
+
+/** A proposal cannot override contradictory registry IDs, even with matching names/domains. */
+export function supportedMerge(a: VerifiedRecord, b: VerifiedRecord, proposal: MergeProposal): boolean {
+  const af = resourceFacts(a.resource), bf = resourceFacts(b.resource);
+  if (af.npi && bf.npi && af.npi.trim() !== bf.npi.trim()) return false;
+  if (af.nctId && bf.nctId && af.nctId.toUpperCase() !== bf.nctId.toUpperCase()) return false;
+  if (identityMatches(af, bf)) return true;
+  const cited = new Set(proposal.evidenceIds ?? []);
+  return a.evidence.filter((e) => cited.has(e.id)).some((ae) =>
+    b.evidence.filter((e) => cited.has(e.id)).some((be) => {
+      const left = structuredFacts(ae), right = structuredFacts(be);
+      for (const field of ["npi", "nctId"]) {
+        const ids = [af[field], bf[field], left[field], right[field]].filter((v): v is string => !!v?.trim());
+        if (new Set(ids.map((v) => v.trim().toUpperCase())).size > 1) return false;
+      }
+      return identityMatches(left, right);
+    }));
+}
+
+function structuredConflicts(record: VerifiedRecord): ConflictInfo[] {
+  const facts = record.evidence.map(structuredFacts);
+  return ["phone", "email", "npi", "nctId"].flatMap((field) => {
+    const values = [...new Set(facts.map((f) => f[field]?.trim()).filter((v): v is string => !!v))];
+    const normalized = new Set(values.map((v) => field === "phone" ? v.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "") : v.toLowerCase()));
+    return normalized.size > 1 ? [{ key: record.key, recordId: record.resource.id, reason: `Conflicting structured ${field} values`, values }] : [];
+  });
+}
+
 /**
  * Optional model pass. The proposer may only (a) propose merging two records that are already kept,
- * same kind, and (b) add conflict notes about existing keys. Unknown keys are ignored. No claims are added.
+ * same kind with deterministic identity support, and (b) add labeled conflict notes about existing keys.
+ * Unknown keys are ignored. No claims are added.
  */
 export async function verifyWithProposals(
   results: readonly ResearchResult[],
@@ -357,6 +420,7 @@ export async function verifyWithProposals(
   const proposals = await propose(base.kept);
   const byKey = new Map(base.kept.map((k) => [k.key, k]));
   const absorbed = new Set<string>();
+  const idMap = new Map<string, string>();
   const merged = [...base.merged];
   const conflicts = [...base.conflicts];
 
@@ -366,9 +430,9 @@ export async function verifyWithProposals(
     const b = byKey.get(kb);
     if (!a || !b || ka === kb || absorbed.has(ka) || absorbed.has(kb)) continue;
     if (a.resource.kind !== b.resource.kind) continue;
-    // Bibliographic namesakes and verified clinician identities must never be joined by a model proposal.
-    if (a.resource.kind === "expert" && (a.resource.verified || b.resource.kind === "expert" && b.resource.verified)) continue;
+    if (!supportedMerge(a, b, m)) continue;
     absorbed.add(kb);
+    idMap.set(b.resource.id, a.resource.id);
     const seen = new Set(a.evidence.map((e) => e.id));
     const combined = [...a.evidence, ...b.evidence.filter((e) => !seen.has(e.id))];
     byKey.set(ka, {
@@ -378,14 +442,34 @@ export async function verifyWithProposals(
     });
     merged.push({ key: ka, keptId: a.resource.id, mergedFromIds: [b.resource.id] });
   }
+  const kept = base.kept.filter((k) => !absorbed.has(k.key)).map((k) => byKey.get(k.key) ?? k);
+  const canonicalId = (id: string): string => {
+    const visited = new Set<string>();
+    while (idMap.get(id) && !visited.has(id)) {
+      visited.add(id);
+      id = idMap.get(id)!;
+    }
+    return id;
+  };
+  const resources = kept.map((k) => k.resource);
+  for (const record of kept) {
+    if (record.resource.kind === "expert") {
+      const institutionId = record.resource.institutionId;
+      if (institutionId && idMap.get(institutionId)) record.resource = { ...record.resource, institutionId: canonicalId(institutionId) };
+      record.shortlistEligibility = expertEligibility(record.resource, resources);
+    }
+    conflicts.push(...structuredConflicts(record));
+  }
   for (const c of proposals.conflicts) {
     const rec = byKey.get(c.key);
     if (!rec) continue;
-    conflicts.push({ key: c.key, recordId: rec.resource.id, reason: `[proposed] ${c.reason}`, values: [] });
+    const target = kept.find((r) => r.resource.id === canonicalId(rec.resource.id));
+    if (!target) continue;
+    conflicts.push({ key: target.key, recordId: target.resource.id, reason: `[proposed] ${c.reason}`, values: [] });
   }
 
   return {
-    kept: base.kept.filter((k) => !absorbed.has(k.key)).map((k) => byKey.get(k.key) ?? k),
+    kept,
     dropped: base.dropped,
     merged,
     conflicts,

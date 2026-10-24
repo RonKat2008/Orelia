@@ -99,15 +99,15 @@ describe("verifyWithProposals", () => {
     ),
   ];
 
-  it("applies a proposed merge of existing records without inventing evidence", async () => {
+  it("rejects a namesake proposal without structured identity support", async () => {
     const base = verify(results);
     const urls = new Set(base.kept.flatMap((k) => k.evidence.map((e) => e.sourceUrl)));
     const out = await verifyWithProposals(results, async (kept) => ({
       merges: [{ keys: [kept[0]!.key, kept[1]!.key], reason: "same person" }],
       conflicts: [{ key: "nonexistent", reason: "ignored" }],
     }));
-    expect(out.kept).toHaveLength(1);
-    expect(out.kept[0]!.evidence.every((e) => urls.has(e.sourceUrl))).toBe(true);
+    expect(out.kept).toHaveLength(2);
+    expect(out.kept.flatMap((k) => k.evidence).every((e) => urls.has(e.sourceUrl))).toBe(true);
     expect(out.conflicts).toHaveLength(0);
   });
 

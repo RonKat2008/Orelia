@@ -1,0 +1,163 @@
+.outreach {
+  --ink: #1c1915;
+  --muted: #5c564c;
+  --paper: #f6f1e8;
+  --card: #fffdf8;
+  --line: #ddd4c4;
+  --mark: #f3e2a8;
+  --focus: #1f4d3a;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Georgia, "Iowan Old Style", Palatino, serif;
+  line-height: 1.5;
+}
+
+.outreach h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.35rem;
+}
+
+.outreach .lede,
+.outreach .note {
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+}
+
+.outreach nav ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.outreach a {
+  color: var(--focus);
+}
+
+.outreach a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.outreach article,
+.outreach form {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 1rem 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.outreach h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.2rem;
+}
+
+.outreach fieldset {
+  border: 0;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+.outreach legend {
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.outreach label {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0.35rem 0;
+}
+
+.outreach dl {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0.5rem 0 0;
+}
+
+.outreach dt {
+  color: var(--muted);
+}
+
+.outreach dd {
+  margin: 0;
+}
+
+.outreach mark {
+  background: var(--mark);
+  padding: 0 0.15em;
+}
+
+.outreach pre,
+.outreach textarea {
+  white-space: pre-wrap;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.outreach textarea {
+  min-height: 9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  padding: 0.6rem;
+  background: #fff;
+  color: inherit;
+}
+
+.outreach .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.outreach button {
+  font: inherit;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+
+.outreach button.secondary {
+  background: transparent;
+  color: var(--ink);
+}
+
+.outreach button:focus-visible,
+.outreach a:focus-visible,
+.outreach input:focus-visible,
+.outreach textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.outreach .status {
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+
+.outreach ul.plain {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+@media (max-width: 380px) {
+  .outreach dl {
+    grid-template-columns: 1fr;
+  }
+}

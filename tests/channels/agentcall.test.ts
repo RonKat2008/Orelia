@@ -20,7 +20,7 @@ describe('AgentCallChannel.send', () => {
     const { ch, fetcher } = make();
     const ref = await ch.send(gatedCall());
     expect(ref).toEqual({ provider: 'agentcall', channel: 'voice', callId: 'call_1', status: 'initiated' });
-    const [url, init] = fetcher.mock.calls[0] as unknown as [string, any];
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit & { body: string; headers: Record<string, string> }];
     expect(url).toBe('https://api.agentcall.co/v1/calls/ai');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe(`Bearer ${KEY}`);
@@ -38,17 +38,17 @@ describe('AgentCallChannel.send', () => {
     const r = checkOutbound({
       draft: { channel: 'voice', address: TEST_PHONE, body: `${AI_DISCLOSURE_VOICE} Hello.`, contactId: 'c1', caseId: 'case1', approvedAt: '2026-10-28T15:00:00Z' },
       consent: { sharedFields: [] }, caseRecord: {}, contacts: [{ id: 'c1', address: TEST_PHONE, state: 'drafted' }], allowlist, now: '2026-10-28T16:00:00Z', mode: 'demo',
-    } as any);
+    } as Parameters<typeof checkOutbound>[0]);
     if (!r.ok) throw new Error(`refused: ${r.reasons}`);
     const { ch, fetcher } = make();
     await ch.send(r.payload);
-    expect(JSON.parse((fetcher.mock.calls[0] as any)[1].body).metadata).toEqual({ contactId: 'c1', caseId: 'case1' });
+    expect(JSON.parse((fetcher.mock.calls[0] as unknown as [string, { body: string }])[1].body).metadata).toEqual({ contactId: 'c1', caseId: 'case1' });
   });
 
   it('idempotency key is stable across retries', async () => {
     const { ch, fetcher } = make();
     await ch.send(gatedCall()); await ch.send(gatedCall());
-    const keys = fetcher.mock.calls.map((c: any) => JSON.parse(c[1].body).idempotencyKey);
+    const keys = fetcher.mock.calls.map(c => JSON.parse((c as unknown as [string, { body: string }])[1].body).idempotencyKey);
     expect(keys[0]).toBe(keys[1]);
   });
 
@@ -65,7 +65,7 @@ describe('AgentCallChannel.send', () => {
 
   it('refuses a script without the disclosure', async () => {
     const { ch, fetcher } = make();
-    const g = Object.freeze({ ...gatedCall(), body: 'Hello there.' }) as any;
+    const g = Object.freeze({ ...gatedCall(), body: 'Hello there.' }) as typeof gatedCall extends () => infer G ? G : never;
     await expect(ch.send(g)).rejects.toThrow(/disclosure/);
     expect(fetcher).not.toHaveBeenCalled();
   });
@@ -99,7 +99,7 @@ describe('getCall / getTranscript', () => {
     const { ch, fetcher } = make(json({ id: 'call_1', status: 'completed', transcript: turns }));
     expect(await ch.getCall('call_1')).toEqual({ callId: 'call_1', status: 'completed', transcript: turns });
     expect(await ch.getTranscript('call_1')).toMatchObject({ transcript: turns });
-    const calls = fetcher.mock.calls as unknown as [string, any][];
+    const calls = fetcher.mock.calls as unknown as [string, RequestInit][];
     expect(calls[0]![0]).toBe('https://api.agentcall.co/v1/calls/call_1');
     expect(calls[0]![1].method).toBe('GET');
     expect(calls[1]![0]).toBe('https://api.agentcall.co/v1/calls/call_1/transcript');

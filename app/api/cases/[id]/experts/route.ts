@@ -3,6 +3,7 @@ import { guardCase } from '@/lib/auth/ownership';
 import { traceExperts } from '@/lib/experts/trace';
 import { getExpertTraceStore } from '@/lib/experts/store';
 import { getTracePorts, loadTraceInput } from '@/lib/experts/wiring';
+import { getServices } from '@/app/api/cases/_lib/services';
 import { jsonError, parseId } from '../../_lib/http';
 
 export const runtime = 'nodejs';
@@ -16,6 +17,7 @@ export async function GET(req: Request, { params }: Ctx) {
   const denied = await guardCase(req, id);
   if (denied) return denied;
   try {
+    if (!(await getServices().cases.get(id))) return jsonError(404, 'Case not found');
     return NextResponse.json({ trace: await getExpertTraceStore().latest(id) });
   } catch (err) {
     return jsonError(500, 'Unable to load the research-to-care trace', err);

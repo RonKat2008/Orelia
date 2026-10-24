@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getServices } from '@/app/api/cases/_lib/services';
 import { MemoryOwnerStore } from '@/lib/auth/ownership';
 import { signSession } from '@/lib/auth/session';
 import { MemoryExpertTraceStore, setExpertTraceStoreForTests } from '@/lib/experts/store';
@@ -33,9 +34,14 @@ afterEach(() => {
 
 describe('experts route guards', () => {
   it('owner GET returns { trace: null } before any run', async () => {
+    const spy = vi.spyOn(getServices().cases, 'get').mockResolvedValue({ id: CASE } as never);
     const res = await GET(req('GET', 'owner'), ctx);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ trace: null });
+    spy.mockRestore();
+  });
+  it('owner GET returns 404 for a case that does not exist', async () => {
+    expect((await GET(req('GET', 'owner'), ctx)).status).toBe(404);
   });
   it('non-owner gets 404; cross-origin and missing-origin POST get 403', async () => {
     expect((await GET(req('GET', 'other'), ctx)).status).toBe(404);

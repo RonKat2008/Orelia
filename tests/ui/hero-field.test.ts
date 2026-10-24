@@ -98,9 +98,10 @@ describe("hero convergence field geometry", () => {
     expect(layoutForWidth(1440)).toBe(DESKTOP_LAYOUT);
     expect(layoutForWidth(375)).toBe(MOBILE_LAYOUT);
     expect(targetInField({ targetX: 0.5, targetY: 0.5 }, 2)).toEqual({ x: 0, y: 0 });
-    // Desktop centre sits in the gap right of the headline column; mobile top-right.
-    expect(DESKTOP_LAYOUT.targetX).toBeGreaterThanOrEqual(0.45);
-    expect(MOBILE_LAYOUT.targetX).toBeGreaterThan(0.75);
+    // The headline is centred, so the convergence point sits centred above it on every width.
+    expect(DESKTOP_LAYOUT.targetX).toBe(0.5);
+    expect(DESKTOP_LAYOUT.targetY).toBeLessThan(0.2);
+    expect(MOBILE_LAYOUT.targetX).toBe(0.5);
     expect(MOBILE_LAYOUT.targetY).toBeLessThan(0.1);
   });
 

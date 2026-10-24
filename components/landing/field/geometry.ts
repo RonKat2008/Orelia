@@ -51,10 +51,10 @@ export interface FieldLayout {
   fadeSpanPx: number;
 }
 
-/** Desktop: in the open gap between the headline column and the agents panel. */
-export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.31, ringPx: 28, glowPx: 150, fadeTopPx: 1e5, fadeSpanPx: 1 };
-/** Mobile: top-right, above the headline, so the copy stays on clean paper. */
-export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.88, targetY: 0.03, ringPx: 18, glowPx: 84, fadeTopPx: 60, fadeSpanPx: 170 };
+/** Desktop: centred just above the centred headline, so the ring crowns the copy instead of sitting on it. */
+export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.13, ringPx: 26, glowPx: 120, fadeTopPx: 1e5, fadeSpanPx: 1 };
+/** Mobile: top-centre, above the headline, so the copy stays on clean paper. */
+export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.03, ringPx: 18, glowPx: 84, fadeTopPx: 60, fadeSpanPx: 170 };
 export const WIDE_BREAKPOINT_PX = 1024;
 
 export const PARTICLE_COUNT_DESKTOP = 880;

@@ -57,6 +57,23 @@ describe('contact page role mailbox', () => {
   it('takes a role email anywhere on a page that is itself the contact page, but not a personal one', () => {
     const doors = classifyIntakeDoors({ url: 'https://www.org.example/contact', title: 'Contact Us | Org', text: '# Contact Us\n\nWe read every message.\n\nWestwood, MA · team@org.example\n\nPress: jane.doe@org.example' });
     expect(doors.find(d => d.kind === 'org_contact')?.emails).toEqual(['team@org.example']);
-    expect(classifyIntakeDoors({ url: 'https://www.org.example/about', title: 'About', text: 'About us\n\nteam@org.example' }).flatMap(d => d.emails)).toEqual([]);
+    // Off the contact page only a mailbox on the page's own domain counts (see own-domain role mailbox below).
+    expect(classifyIntakeDoors({ url: 'https://www.org.example/about', title: 'About', text: 'About us\n\nteam@partner.example' }).flatMap(d => d.emails)).toEqual([]);
+  });
+});
+
+describe('own-domain role mailbox', () => {
+  it('counts a role mailbox on the page own domain anywhere on the page, never another domain or a person', () => {
+    // Arrange
+    const page = { url: 'https://www.uniterare.org/about', title: 'About', text: 'We built this for patients.\n\nQuestions? Write to team@uniterare.org.\nPress: jane.doe@uniterare.org\nPartner: info@othersite.org' };
+    // Act
+    const doors = classifyIntakeDoors(page);
+    // Assert
+    expect(doors.find(d => d.kind === 'org_contact')?.emails).toEqual(['team@uniterare.org']);
+  });
+
+  it('does not treat a shared country-code suffix as the same site', () => {
+    const doors = classifyIntakeDoors({ url: 'https://charity-a.org.uk/about', title: 'About', text: 'Reach the other group at info@charity-b.org.uk' });
+    expect(doors.find(d => d.kind === 'org_contact')).toBeUndefined();
   });
 });

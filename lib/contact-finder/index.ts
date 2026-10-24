@@ -26,6 +26,20 @@ function isContactPage(page: ExaPage): boolean {
   } catch { return false; }
   return /^\s*contact\b/i.test(page.title ?? '');
 }
+/** Last two labels, or three under a two-letter country code's second level (nhs.uk, example.co.uk, example.com.au). */
+function registrable(host: string): string {
+  const labels = host.toLowerCase().replace(/^www\./, '').split('.');
+  const ccSecond = labels.length >= 3 && labels.at(-1)!.length === 2 && /^(?:co|com|org|net|ac|gov|edu|nhs)$/.test(labels.at(-2)!);
+  return labels.slice(ccSecond ? -3 : -2).join('.');
+}
+/** Role mailboxes whose domain is the page's own registrable domain. */
+function ownDomainRoleEmails(page: ExaPage): string[] {
+  let host: string;
+  try { host = new URL(page.url).hostname; } catch { return []; }
+  const site = registrable(host);
+  return [...new Set(((page.text ?? "").match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? [])
+    .map(s => s.toLowerCase()).filter(e => isRoleEmail(e) && registrable(e.split('@')[1]!) === site))];
+}
 /** Input must be fetched text from the Exa wrapper. Titles and URL keywords alone are insufficient. */
 export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
   try { if (!['https:', 'http:'].includes(new URL(page.url).protocol)) return []; } catch { return []; }
@@ -47,6 +61,14 @@ export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
     const door = found.find(d => d.kind === 'org_contact');
     if (door) door.emails = [...new Set([...door.emails, ...emails])];
     else if (emails.length) found.push({ kind: 'org_contact', evidenceUrl: page.url, excerpt: 'Contact us', emails });
+  }
+  // A role mailbox on the page's OWN domain (info@<site> on <site>) is the organization's own published inbox,
+  // wherever it sits on the page. Addresses on any other domain still need the local-block or contact-page rule.
+  const own = ownDomainRoleEmails(page).filter(e => !found.some(d => d.emails.includes(e)));
+  if (own.length) {
+    const door = found.find(d => d.kind === 'org_contact');
+    if (door) door.emails = [...door.emails, ...own];
+    else found.push({ kind: 'org_contact', evidenceUrl: page.url, excerpt: 'Organization mailbox', emails: own });
   }
   // Practice intake phone lines anywhere on the page, attached to a new-patient or referral door.
   for (const p of intakePhonesInBlocks(blocks)) {

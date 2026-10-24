@@ -18,7 +18,7 @@ import { webFormEvidence } from '../plan/contact-points';
 
 export const MAX_ENRICHED_INSTITUTIONS = 8;
 export const MAX_ENRICHED_ORGANIZATIONS = 4;
-const MAX_ROWS_PER_TARGET = 3;
+const MAX_ROWS_PER_TARGET = 4;
 const RESULTS = 5;
 /** Registries and aggregators never count as the institution's own site. */
 const NOT_OWN_HOST = /(?:^|\.)(?:cancer\.gov|nih\.gov|clinicaltrials\.gov|wikipedia\.org|healthgrades\.com|vitals\.com|webmd\.com|yelp\.com|facebook\.com|linkedin\.com|zocdoc\.com|usnews\.com)$/;
@@ -97,21 +97,18 @@ function pageRows(r: ExaResult, fetchedAt: string): Array<Evidence & { id: strin
   return [...doors, ...forms];
 }
 
-/** Contact point rows (with ids) for one target from pages on its own site; [] when not needed or on any failure. */
-export async function institutionContactRows(target: EnrichTarget, exa: ExaPort, fetchedAt: string): Promise<Array<Evidence & { id: string }>> {
-  const query = enrichmentQuery(target);
-  if (!query) return [];
+/** Rows from one search for one target, skipping routes it already has (`have` is updated). [] on any failure. */
+async function rowsForQuery(target: EnrichTarget, query: string, exa: ExaPort, fetchedAt: string, have: Set<string>, room: number): Promise<Array<Evidence & { id: string }>> {
   let results: ExaResult[];
   try { results = await exa.search({ query, numResults: RESULTS }); } catch { return []; }
   try {
     const own = ownHosts(target.name, target.evidence);
-    const have = new Set(contactRoutesOf(target.evidence).map((r) => `${r.channel}:${r.address}`));
     const out: Array<Evidence & { id: string }> = [];
     for (const r of results ?? []) {
       if (!r || typeof r.url !== 'string' || !/^https?:/i.test(r.url) || !onOwnSite(target, r.url, own)) continue;
       for (const { channel, address, ...row } of pageRows(r, fetchedAt)) {
         const key = `${channel}:${address}`;
-        if (have.has(key) || out.length >= MAX_ROWS_PER_TARGET) continue;
+        if (have.has(key) || out.length >= room) continue;
         have.add(key);
         out.push(row);
       }
@@ -120,6 +117,23 @@ export async function institutionContactRows(target: EnrichTarget, exa: ExaPort,
   } catch {
     return [];
   }
+}
+
+/** Searches per target: an institution that only gained its phone here still gets the online-form search. */
+const MAX_QUERIES_PER_TARGET = 2;
+
+/** Contact point rows (with ids) for one target from pages on its own site; [] when not needed or on any failure. */
+export async function institutionContactRows(target: EnrichTarget, exa: ExaPort, fetchedAt: string): Promise<Array<Evidence & { id: string }>> {
+  const have = new Set(contactRoutesOf(target.evidence).map((r) => `${r.channel}:${r.address}`));
+  const out: Array<Evidence & { id: string }> = [];
+  const asked = new Set<string>();
+  for (let i = 0; i < MAX_QUERIES_PER_TARGET && out.length < MAX_ROWS_PER_TARGET; i++) {
+    const query = enrichmentQuery({ ...target, evidence: [...target.evidence, ...out] });
+    if (!query || asked.has(query)) break;
+    asked.add(query);
+    out.push(...await rowsForQuery(target, query, exa, fetchedAt, have, MAX_ROWS_PER_TARGET - out.length));
+  }
+  return out;
 }
 
 /** Alias: the same own-site enrichment works for any target kind. */

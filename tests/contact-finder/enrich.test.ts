@@ -50,8 +50,20 @@ describe('institution contact enrichment', () => {
     const targets = Array.from({ length: 12 }, (_, i) => target({ targetId: `i${i}` }));
     const e = exa([page]);
     const out = await enrichInstitutions(targets, e.port, AT);
-    expect(e.search).toHaveBeenCalledTimes(8);
+    // Each of the 8 institutions gains its phone from the first search, so it also gets the online-form search.
+    expect(e.search).toHaveBeenCalledTimes(16);
     expect(out.size).toBe(8);
+  });
+
+  it('runs the online-form search after the phone search for an institution that had no phone', async () => {
+    // Arrange
+    const form: ExaResult = { url: 'https://my.clevelandclinic.org/webappointment', title: 'Request an Appointment', text: 'Request an appointment online. To fill out this form, enter the patient name, date of birth and reason for visit.' };
+    const search = vi.fn(async ({ query }: { query: string }) => (query === formQuery('Cleveland Clinic Genomic Medicine Institute') ? [form] : [page]));
+    // Act
+    const rows = await institutionContactRows(target(), { search } as ExaPort, AT);
+    // Assert
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(rows.map((r) => r.claimType)).toEqual(['contact_point.voice.new_patient_line', 'contact_point.web_form.intake_form']);
   });
 
   it('searches for a form page when an institution has a phone but no email or online form, and stamps the form', async () => {

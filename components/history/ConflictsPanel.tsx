@@ -15,16 +15,16 @@ export function ConflictsPanel({ conflicts }: { conflicts: readonly Conflict[] }
         </h3>
         <p className="m-0 max-w-prose text-small text-ink-2">{CONFLICT_NOTE}</p>
       </header>
-      <ul className="m-0 grid list-none gap-4 p-0">
+      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-4 p-0">
         {conflicts.map((conflict) => (
           <li key={conflict.id} className="grid gap-3 rounded-md border border-line bg-card p-4">
             <p className="m-0 text-body font-semibold text-ink">{conflict.topic}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
               {conflict.statements.map((statement) => (
                 <figure key={statement.eventId} className="m-0 grid gap-2 rounded-sm bg-paper-2 p-3 shadow-inset">
                   <blockquote className="m-0 text-body text-ink">&ldquo;{statement.text}&rdquo;</blockquote>
                   <figcaption className="flex flex-wrap items-center gap-2 text-small text-ink-2">
-                    <Badge tone="outline">Source: {statement.docTitle}</Badge>
+                    <Badge tone="outline" className="max-w-full whitespace-normal break-words">Source: {statement.docTitle}</Badge>
                     <span>{formatPartialDate(statement.date)}</span>
                   </figcaption>
                 </figure>

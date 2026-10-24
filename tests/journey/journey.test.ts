@@ -159,3 +159,21 @@ describe("resolveJourney: contact plan", () => {
     expect((await loadJourney(caseId, fetchImpl)).planStatus).toBeNull();
   });
 });
+
+describe("journey stage from server contacts", () => {
+  it("moves past the shortlist once contacts exist, even when the shortlist reports no selection", () => {
+    // Selection lives in the browser session; the shortlist API never marks items selected.
+    const sent = plan("ready", {
+      selectedCount: 0,
+      contacts: [{ consented: true, approved: true, state: "replied" }],
+      openTaskCount: 1,
+    });
+    expect(sent.current).toBe("tracker");
+    const unconsented = plan("ready", { selectedCount: 0, contacts: [{ consented: false, approved: false, state: "drafted" }] });
+    expect(unconsented.current).toBe("consent");
+  });
+
+  it("stays on the shortlist when nothing is selected and no contact exists", () => {
+    expect(plan("ready", { selectedCount: 0, contacts: [] }).current).toBe("shortlist");
+  });
+});

@@ -61,34 +61,36 @@ export function JourneyStepper({ plan }: { plan: JourneyPlan }) {
           </AccordionItem>
         </Accordion>
       )}
-      <Link
-        href={plan.expertsHref}
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
-      >
-        <Route aria-hidden className="size-4" />
-        From research to care
-      </Link>
-      <Link
-        href={plan.documentsHref}
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
-      >
-        <FileText aria-hidden className="size-4" />
-        Documents agents can use
-      </Link>
-      <Link
-        href={plan.historyHref}
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
-      >
-        <ScrollText aria-hidden className="size-4" />
-        Medical history
-      </Link>
-      <Link
-        href={plan.researchHref}
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
-      >
-        <BookOpenText aria-hidden className="size-4" />
-        Condition research
-      </Link>
+      <div className="grid grid-cols-2 gap-x-4 md:grid-cols-1">
+        <Link
+          href={plan.expertsHref}
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+        >
+          <Route aria-hidden className="size-4" />
+          From research to care
+        </Link>
+        <Link
+          href={plan.documentsHref}
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+        >
+          <FileText aria-hidden className="size-4" />
+          Documents agents can use
+        </Link>
+        <Link
+          href={plan.historyHref}
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+        >
+          <ScrollText aria-hidden className="size-4" />
+          Medical history
+        </Link>
+        <Link
+          href={plan.researchHref}
+          className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+        >
+          <BookOpenText aria-hidden className="size-4" />
+          Condition research
+        </Link>
+      </div>
       {plan.notes.length > 0 ? (
         <ul className="m-0 grid list-none gap-1.5 p-0 text-small text-ink-2">
           {plan.notes.map((note) => (

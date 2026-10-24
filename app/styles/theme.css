@@ -438,6 +438,13 @@
     color: inherit;
     min-height: 0;
   }
+  /* Legacy CSS paints every bare <button> as a green pill; utilities only override what they set. */
+  .ds-root :where(button):not([data-slot]) {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
   .ds-root :where(a) {
     color: inherit;
   }

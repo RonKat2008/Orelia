@@ -38,9 +38,9 @@ export function DocumentList({
       <h3 id="docs-heading" className="m-0 font-display text-h4 font-normal text-ink">
         Records you added ({documents.length})
       </h3>
-      <ul className="m-0 grid list-none gap-2 p-0">
+      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-2 p-0">
         {documents.map((doc) => (
-          <li key={doc.id} className="flex items-center justify-between gap-3 rounded-md border border-line bg-card p-3">
+          <li key={doc.id} className="flex min-w-0 items-center justify-between gap-3 rounded-md border border-line bg-card p-3">
             <span className="flex min-w-0 items-center gap-2">
               <FileText aria-hidden className="size-4 shrink-0 text-teal" />
               <span className="truncate text-body text-ink">{doc.title}</span>

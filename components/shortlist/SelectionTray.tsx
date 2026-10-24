@@ -102,13 +102,13 @@ export function SelectionTray({
             </ul>
           </Sheet>
           {count > 0 ? (
-            <Button asChild className="flex-1 sm:flex-none">
+            <Button asChild className="min-w-0 flex-1 px-4 sm:flex-none sm:px-5">
               <Link href={consentHref}>
-                Continue to consent <ArrowRight aria-hidden />
+                Continue to consent <ArrowRight aria-hidden className="hidden sm:block" />
               </Link>
             </Button>
           ) : (
-            <Button disabled className="flex-1 sm:flex-none">
+            <Button disabled className="min-w-0 flex-1 px-4 sm:flex-none sm:px-5">
               Continue to consent
             </Button>
           )}

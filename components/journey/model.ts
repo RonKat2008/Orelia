@@ -132,10 +132,12 @@ function currentStage(snapshot: JourneySnapshot): JourneyStage {
   if (!status || INTAKE_STATUSES.has(status)) return "intake";
   if (RESEARCH_STATUSES.has(status)) return "research";
 
-  const selected = snapshot.selectedCount ?? 0;
-  if (selected === 0) return "shortlist";
-
+  // Selection lives in the browser session (the shortlist API never marks items selected), so server-side
+  // contacts are the durable sign that the patient chose someone.
   const contacts = snapshot.contacts;
+  const selected = snapshot.selectedCount ?? 0;
+  if (selected === 0 && !(contacts && contacts.length > 0)) return "shortlist";
+
   if (!contacts) return "consent";
 
   if (contacts.some((contact) => contact.consented !== true)) return "consent";

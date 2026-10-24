@@ -42,7 +42,7 @@ export function LevelLegend({ value, onChange, counts }: LevelLegendProps) {
           role="radiogroup"
           aria-labelledby="level-filter-label"
           onKeyDown={onKeyDown}
-          className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-pill border border-line bg-paper-2 p-1 shadow-inset"
+          className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-line bg-paper-2 p-1 shadow-inset sm:rounded-pill"
         >
           {LEVEL_FILTERS.map((level) => {
             const active = level === value;

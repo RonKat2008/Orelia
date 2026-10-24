@@ -154,7 +154,7 @@ export function HistoryWorkspace({ caseId }: { caseId: string }) {
   const titles = new Map(timeline.documents.map((doc) => [doc.id, doc.title]));
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
       {!hasRecords ? (
         <EmptyState
           icon={<ScrollText />}

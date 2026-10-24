@@ -143,6 +143,9 @@ export class PostgresOutreachStore implements OutreachStore {
     ]);
     return result[1].rows.length === 1;
   }
+  async unreserve(draft: Draft) {
+    await this.db.update(s.messages).set({ approvedAt: null }).where(and(eq(s.messages.id, draft.id), eq(s.messages.contactId, draft.contactId), isNull(s.messages.sentAt), isNull(s.messages.providerMessageId)));
+  }
   async delivered(draft: Draft, ref: ProviderRef, sentAt: string) {
     const message = this.db.update(s.messages).set({ sentAt: new Date(sentAt), providerMessageId: ref.messageId, providerThreadId: ref.threadId }).where(eq(s.messages.id, draft.id));
     const contact = this.db.update(s.contacts).set({ state: 'sent', lastActivityAt: new Date(sentAt) }).where(eq(s.contacts.id, draft.contactId));

@@ -1,3 +1,4 @@
+import { ChannelError } from '../../lib/channels/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../db/client', async () => {
@@ -150,6 +151,19 @@ describe('createFollowUpSender refusals and edge cases', () => {
     return { send, calls, email, input: { contactId: 'c1', caseId: CASE_ID, messageId: 'm1', kind: 'follow_up' as const } };
   }
   const refusal = (reason: string) => expect.objectContaining({ name: 'FollowUpRefusedError', reasons: [reason] });
+
+  it('a provider HTTP 4xx releases the send claim (nothing was sent); an ambiguous failure keeps it', async () => {
+    const definite = build();
+    (definite.email.send as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new ChannelError('agentmail', 'forbidden', 403));
+    await expect(definite.send(definite.input)).rejects.toBeInstanceOf(ChannelError);
+    expect(definite.calls).toMatchObject({ reserve: 1, release: 1, delivered: 0 });
+    for (const err of [new ChannelError('agentmail', 'boom', 500, true), new ChannelError('agentmail', 'timeout', undefined, true), new Error('x')]) {
+      const ambiguous = build();
+      (ambiguous.email.send as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err);
+      await expect(ambiguous.send(ambiguous.input)).rejects.toBe(err);
+      expect(ambiguous.calls).toMatchObject({ reserve: 1, release: 0, delivered: 0 });
+    }
+  });
 
   it.each([
     ['the message does not exist', { message: undefined }],

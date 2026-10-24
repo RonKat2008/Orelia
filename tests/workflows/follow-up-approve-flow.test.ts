@@ -9,6 +9,7 @@
  *    messages.approved_at, so the inline workflow skipped it ("not approved in the database").
  */
 import { describe, expect, it } from 'vitest';
+import { ChannelError } from '../../lib/channels/types';
 import { MockCaller } from '../../lib/channels/mock-caller';
 import { MockMailer } from '../../lib/channels/mock-mailer';
 import {
@@ -205,6 +206,23 @@ describe('approving a follow-up without Inngest', () => {
     expect(t.mailer.sent).toHaveLength(0);
     expect(t.world.messages.get(fu1.messageId)).toMatchObject({ approvedAt: null, sentAt: null });
     expect((await t.service.draft(t.contactId)).id).toBe(fu1.messageId);
+  });
+
+  it('a provider 4xx on a follow-up leaves it unapproved and retryable; an ambiguous failure stays claimed', async () => {
+    const t = setup();
+    await t.sweep(DAY3);
+    const [fu1] = t.world.followUps(t.contactId);
+    const real = t.mailer.send.bind(t.mailer);
+    t.mailer.send = async () => { throw new ChannelError('agentmail', 'forbidden', 403); };
+    expect((await t.approve(fu1.messageId)).status).toBe(502);
+    expect(t.world.messages.get(fu1.messageId)).toMatchObject({ approvedAt: null, sentAt: null });
+    expect((await t.service.draft(t.contactId)).id).toBe(fu1.messageId);
+    t.mailer.send = async () => { throw new ChannelError('agentmail', 'boom', 500, true); };
+    expect((await t.approve(fu1.messageId)).status).toBe(502);
+    expect(t.world.messages.get(fu1.messageId)!.sentAt).toBeTruthy(); // ambiguous: never auto-retried
+    t.mailer.send = real;
+    expect((await t.approve(fu1.messageId)).status).toBe(409);
+    expect(t.mailer.sent).toHaveLength(0);
   });
 
   it('is not reported as queued when the contact can no longer receive it (replied): 409, nothing approved', async () => {

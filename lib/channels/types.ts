@@ -44,6 +44,15 @@ export class ChannelError extends Error {
   }
 }
 
+/**
+ * True only when the provider answered with an HTTP 4xx (not 408): it rejected the request, so nothing was sent and the
+ * approval can safely be undone for a retry. Network errors, timeouts, 5xx and malformed responses are ambiguous
+ * (the message may have gone out), so those stay claimed and are never retried automatically.
+ */
+export function isDefiniteNonDelivery(err: unknown): boolean {
+  return err instanceof ChannelError && err.status !== undefined && err.status >= 400 && err.status < 500 && err.status !== 408;
+}
+
 export interface ChannelGuardOptions {
   /** Same allowlist the gate used; adapters re-check it as a second lock (hard rule 4). */
   allowlist: readonly string[];

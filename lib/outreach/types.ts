@@ -43,6 +43,8 @@ export interface OutreachStore {
   draft(id: string, contact: Contact): Promise<Draft | undefined>;
   /** Compare-and-set: reserve approval BEFORE sending; never automatically retry an ambiguous send. */
   reserve(draft: Draft, approvedAt: string): Promise<boolean>;
+  /** Optional: undo reserve() after the provider definitely rejected the send (nothing went out), so the patient can retry. */
+  unreserve?(draft: Draft): Promise<void>;
   delivered(draft: Draft, ref: ProviderRef, sentAt: string): Promise<void>;
 }
 export class OutreachError extends Error { constructor(public status: number, public reasons: string[]) { super(reasons.join(', ')); } }

@@ -1,3 +1,4 @@
+import { isDefiniteNonDelivery } from '../channels/types';
 import { ingest, search } from '../case-docs';
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
@@ -108,7 +109,12 @@ export class OutreachService {
     const channel = this.channels.find(c => c.kind === contact.channel);
     if (!channel) throw new OutreachError(503, ['channel_unavailable']);
     if (!await this.store.reserve(draft, now)) throw new OutreachError(409, ['already_approved_or_consent_changed']);
-    const ref = await channel.send(gate.payload);
+    let ref: ProviderRef;
+    try { ref = await channel.send(gate.payload); } catch (error) {
+      // A provider 4xx means nothing was sent: undo the reservation so the patient can retry. Anything ambiguous stays reserved.
+      if (isDefiniteNonDelivery(error)) await this.store.unreserve?.(draft);
+      throw error;
+    }
     await this.store.delivered(draft, ref, now);
     return { draftId, approvedAt: now, sentAt: now, provider: ref };
   }

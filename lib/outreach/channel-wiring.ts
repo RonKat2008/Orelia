@@ -10,7 +10,7 @@ import { WebFormChannel, type LoadUpload } from '../channels/web-form';
 import type { BrowserProvider } from '../channels/browser-types';
 import { DemoCallSimulator, completeSimulatedCall, type SimulatedCallIngest } from './demo-call';
 import { demoDestinationsEnabled, outboundAllowlist, webAllowlist } from './demo-destinations';
-import type { ChannelGuardOptions, ProviderName } from '../channels/types';
+import { isDefiniteNonDelivery, type ChannelGuardOptions, type ProviderName } from '../channels/types';
 import { parseAllowlist } from '../safety/allowlist';
 import { FOLLOW_UP_BUSINESS_DAYS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
@@ -348,7 +348,11 @@ export function createFollowUpSender(opts: FollowUpSenderOptions = {}) {
       throw new FollowUpRefusedError([...gate.reasons]);
     }
     // If send throws we leave the sent_at claim set: an ambiguous send must not auto-retry (same policy as Codex's reserve).
-    const ref = await channel.send(gate.payload);
+    let ref: ProviderRef;
+    try { ref = await channel.send(gate.payload); } catch (error) {
+      if (isDefiniteNonDelivery(error)) await db.release(input.messageId, input.contactId); // provider 4xx: nothing was sent
+      throw error;
+    }
     await db.delivered(input.messageId, input.contactId, ref, realNow.toISOString());
     return { providerRef: ref.messageId ?? ref.callId ?? input.messageId };
   };

@@ -1,0 +1,52 @@
+{
+  "plan": "free",
+  "offerVersion": "live_trial_72h_v1",
+  "trial": {
+    "offerVersion": "live_trial_72h_v1",
+    "status": "active",
+    "startsAt": "2026-10-24T06:19:39.288Z",
+    "expiresAt": "2026-10-27T06:19:39.288Z",
+    "numberReleaseAt": "2026-10-29T06:19:39.288Z",
+    "consumedSeconds": 0,
+    "usedSeconds": 0,
+    "smsUsed": 0,
+    "smsRemaining": 5,
+    "requiresCard": true,
+    "autoConverts": false
+  },
+  "billingStatus": "unknown",
+  "billingPastDueAt": null,
+  "onboardingIntent": "inbound_voice",
+  "limits": {
+    "maxNumbers": 1,
+    "maxSmsPerMonth": 5,
+    "maxCallMinutesPerMonth": 0,
+    "maxOtpPerMonth": 0,
+    "allowedNumberTypes": [
+      "local"
+    ]
+  },
+  "usage": {
+    "activeNumbers": 1,
+    "smsThisMonth": 0,
+    "callMinutesThisMonth": 0
+  },
+  "freeInboundAiVoice": {
+    "capSeconds": 300,
+    "usedSeconds": 0,
+    "remainingSeconds": 300,
+    "resetsAt": null,
+    "offerVersion": "live_trial_72h_v1",
+    "status": "active",
+    "startsAt": "2026-10-24T06:19:39.288Z",
+    "expiresAt": "2026-10-27T06:19:39.288Z",
+    "numberReleaseAt": "2026-10-29T06:19:39.288Z",
+    "consumedSeconds": 0,
+    "smsUsed": 0,
+    "smsRemaining": 5,
+    "requiresCard": true,
+    "autoConverts": false
+  },
+  "memoryEnabled": false,
+  "period": "2026-10"
+}

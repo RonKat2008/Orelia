@@ -1,0 +1,36 @@
+{
+  "count": 3,
+  "limit": 5,
+  "inboxes": [
+    {
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pod_id": "00000000-0000-4000-8000-000000000001",
+      "inbox_id": "inbox@example.test",
+      "email": "inbox@example.test",
+      "display_name": "Aid caseworker",
+      "status_until": "2026-11-10T20:00:38.487Z",
+      "updated_at": "2026-10-11T20:00:38.996Z",
+      "created_at": "2026-10-11T20:00:22.738Z"
+    },
+    {
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pod_id": "00000000-0000-4000-8000-000000000001",
+      "inbox_id": "inbox@example.test",
+      "email": "inbox@example.test",
+      "display_name": "LA County DPSS Demo",
+      "status_until": "2026-11-10T20:00:38.140Z",
+      "updated_at": "2026-10-11T20:00:38.372Z",
+      "created_at": "2026-10-11T19:57:37.811Z"
+    },
+    {
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pod_id": "00000000-0000-4000-8000-000000000001",
+      "inbox_id": "inbox@example.test",
+      "email": "inbox@example.test",
+      "display_name": "AgentMail",
+      "status_until": "2026-11-23T05:01:30.596Z",
+      "updated_at": "2026-10-24T05:01:30.866Z",
+      "created_at": "2026-10-04T18:02:36.050Z"
+    }
+  ]
+}

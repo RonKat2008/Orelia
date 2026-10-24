@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
-import { AgentCallChannel, parseAgentCallWebhook, transcriptToText, verifyAgentCallSignature } from '../../lib/channels/agentcall';
+import { AgentCallChannel, normalizeTurns, parseAgentCallWebhook, transcriptToText, verifyAgentCallSignature } from '../../lib/channels/agentcall';
 import { ChannelError } from '../../lib/channels/types';
 import { AI_DISCLOSURE_VOICE } from '../../lib/safety/disclosure';
 import { checkOutbound } from '../../lib/safety/outbound-gate';
@@ -107,6 +107,17 @@ describe('getCall / getTranscript', () => {
     expect(calls[0]![0]).toBe('https://api.agentcall.co/v1/calls/call_1');
     expect(calls[0]![1].method).toBe('GET');
     expect(calls[1]![0]).toBe('https://api.agentcall.co/v1/calls/call_1/transcript');
+  });
+
+  it('maps documented GET transcript entries (assistant/user) onto ai/human', async () => {
+    const { ch } = make(json({ entries: [{ role: 'assistant', text: 'Hello', timestamp: 't1' }, { role: 'user', text: 'Hi' }], summary: 's' }));
+    expect(await ch.getTranscript('call_1')).toEqual({ callId: 'call_1', transcript: [{ role: 'ai', text: 'Hello', timestamp: 't1' }, { role: 'human', text: 'Hi' }] });
+  });
+});
+
+describe('normalizeTurns', () => {
+  it('reads webhook transcript and drops unknown roles', () => {
+    expect(normalizeTurns({ transcript: [{ role: 'ai', text: 'a' }, { role: 'system', text: 'x' }, { role: 'caller', text: 'b' }] })).toEqual([{ role: 'ai', text: 'a' }, { role: 'human', text: 'b' }]);
   });
 });
 

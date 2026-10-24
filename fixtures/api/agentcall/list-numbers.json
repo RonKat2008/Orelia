@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "id": "cmvm0e61q00hjpc016rwlkc3o",
+      "number": "+15555550100",
+      "country": "US",
+      "type": "local",
+      "label": null,
+      "status": "active",
+      "monthlyRate": 0,
+      "provisionedAt": "2026-10-24T06:19:39.422Z",
+      "carrierTier": "primary",
+      "messaging": {
+        "state": "registered",
+        "detail": "Registered for A2P texting. Messages deliver normally.",
+        "checkedAt": "2026-10-24T06:56:16.422Z"
+      },
+      "inbound": null,
+      "outbound": null
+    }
+  ],
+  "hasMore": false,
+  "nextCursor": null
+}

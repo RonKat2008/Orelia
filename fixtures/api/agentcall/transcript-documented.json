@@ -1,0 +1,15 @@
+{
+  "entries": [
+    {
+      "role": "assistant",
+      "text": "Hi, this is an automated assistant.",
+      "timestamp": "2026-05-13T14:30:00.000Z"
+    },
+    {
+      "role": "user",
+      "text": "Front desk speaking.",
+      "timestamp": "2026-05-13T14:30:04.000Z"
+    }
+  ],
+  "summary": "Documented GET /v1/calls/:id/transcript shape from api.agentcall.co/llms.txt. Not a live response: the account had zero calls."
+}

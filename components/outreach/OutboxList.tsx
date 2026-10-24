@@ -90,7 +90,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
           held: false,
         };
         setRows((current) => [...current, row]);
-        setPending({ done: index + 1, total: stored.contacts.length });
+        setPending({ done: index + 1, total: people.length });
       }
       setPending(null);
     })();

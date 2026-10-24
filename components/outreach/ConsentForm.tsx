@@ -60,6 +60,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
   const [saveErrors, setSaveErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [consentSavedAt, setConsentSavedAt] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [followUps, setFollowUps] = useState<FollowUpMessage[] | null>(null);
   const [followUpNote, setFollowUpNote] = useState<string | null>(null);
@@ -145,6 +146,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       return;
     }
     setSaved(true);
+    setConsentSavedAt(new Date().toISOString());
     toast.success("Your choices are saved", { description: "Next, read the drafts. Nothing is sent until you approve." });
   }
 
@@ -338,7 +340,10 @@ export function ConsentForm({ caseId }: { caseId: string }) {
             ))}
           </ul>
         )}
-        {contacts.length > 0 && caseRecord ? (
+        {contacts.length > 0 && caseRecord && !consentSavedAt ? (
+          <p className="m-0 text-small text-ink-2">Save your choices above, then you can approve follow-up text for each contact.</p>
+        ) : null}
+        {contacts.length > 0 && caseRecord && consentSavedAt ? (
           <div className="flex flex-wrap gap-3">
             {contacts.map((contact) => (
               <Button
@@ -354,7 +359,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
                     channel: contact.channel,
                     contactState: contact.state,
                     sharedFields: shared,
-                    consentApprovedAt: new Date().toISOString(),
+                    consentApprovedAt: consentSavedAt,
                     snapshot: {
                       diseaseName: caseRecord.diseaseName,
                       subtype: caseRecord.subtype ?? null,

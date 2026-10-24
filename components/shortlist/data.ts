@@ -428,7 +428,7 @@ export function initialSelection(
 const emptyShortlist: ShortlistPayload = { items: [], curationSummary: null, suggested: [] };
 
 function offlinePreview(): boolean {
-  const raw = process.env.WAYFINDER_OFFLINE ?? process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "";
+  const raw = process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "";
   return ["1", "true"].includes(raw.trim().toLowerCase());
 }
 

@@ -1,11 +1,11 @@
 import type { RankingFactor } from "@/config/ranking";
 import type { CaseInput, Resource } from "@/lib/contracts";
 import { rank, type RankingCandidate, type RankingSignal } from "@/lib/ranking/rank";
-import { matchNciCenters, type NciDataset } from "@/lib/sources/nci-centers";
+import { documentedExperience, nciDatasetFrom } from "@/lib/experts/experience";
+import { matchNciCenters } from "@/lib/sources/nci-centers";
 import { stateDistanceMiles } from "./research/geo";
 import { diseaseMatch, diseaseTerms, mentionStrength } from "./relevance";
 import type { EvidenceWithId, VerifiedRecord } from "./verifier";
-import { sameInvestigator } from "@/lib/identity/eligibility";
 
 /**
  * Derive ranking signals from VERIFIED records only. Values are deterministic functions of code-stamped facts
@@ -20,9 +20,6 @@ export type SignalCase = Pick<CaseInput, "diseaseName" | "subtype" | "homeState"
 
 const DEFAULT_TRAVEL_MILES = 500;
 const BEYOND_LIMIT_REACH = 0.1;
-const PAPERS_FOR_FULL_SCORE = 6;
-const RECENT_FOR_FULL_SCORE = 3;
-const TRIALS_LED_FOR_FULL_SCORE = 2;
 const SITES_FOR_FULL_SCORE = 3;
 const DEDICATED_CONDITIONS = 3;
 const BASKET_CONDITIONS = 10;
@@ -32,8 +29,8 @@ const CONTACT_PATH = /appl(y|ication)|contact|phone|email|helpline|intake/i;
 const round2 = (n: number): number => Math.round(Math.min(1, Math.max(0, n)) * 100) / 100;
 const ids = (evidence: readonly EvidenceWithId[]): string[] => [...new Set(evidence.map((e) => e.id))].sort();
 
-function signal(value: number, text: string, evidence: readonly EvidenceWithId[]): RankingSignal | undefined {
-  return evidence.length === 0 ? undefined : { value: round2(value), text, evidenceIds: ids(evidence) };
+function signal(value: number, text: string, evidence: readonly EvidenceWithId[], components?: RankingSignal["components"]): RankingSignal | undefined {
+  return evidence.length === 0 ? undefined : { value: round2(value), text, evidenceIds: ids(evidence), ...(components ? { components } : {}) };
 }
 
 /** 1 in the home state, 0.5-1 within the travel limit, 0.1 beyond it; undefined when a state is unknown. */
@@ -47,10 +44,6 @@ function reach(from: string | undefined, to: string | undefined, limit: number |
 
 const distanceText = (miles: number, home: string | undefined): string =>
   miles === 0 ? `in the home state (${home})` : `about ${miles} miles (state-to-state) from ${home ?? "home"}`;
-
-function leadsTrial(expertName: string, investigators: readonly string[]): boolean {
-  return investigators.some((i) => sameInvestigator(expertName, i));
-}
 
 const ctgov = (r: VerifiedRecord) => r.evidence.filter((e) => e.sourceKind === "ctgov");
 
@@ -112,35 +105,15 @@ function trialSignals(r: Extract<Resource, { kind: "trial" }>, rec: VerifiedReco
 
 // ---------- experts ----------
 
-function nciDatasetFrom(all: readonly VerifiedRecord[]): NciDataset {
-  const centers = all.flatMap((a) => {
-    const inst = a.resource;
-    const nci = a.evidence.find((e) => e.sourceKind === "nci");
-    if (inst.kind !== "institution" || !nci) return [];
-    const designation = /(Comprehensive|Clinical|Basic Laboratory) Cancer Center/.exec(nci.claim)?.[0] ?? "NCI-designated cancer center";
-    return [{ name: inst.name, city: inst.city ?? "", state: inst.state ?? "", designation, url: nci.sourceUrl }];
-  });
-  return { source_url: "https://www.cancer.gov/research/infrastructure/cancer-centers/find", generated_at: new Date(0).toISOString(), centers };
-}
-
 function expertSignals(r: Extract<Resource, { kind: "expert" }>, rec: VerifiedRecord, all: readonly VerifiedRecord[], c: SignalCase): SignalSet {
   const out: SignalSet = {};
   const pubs = rec.evidence.filter((e) => e.sourceKind === "pubmed");
   const identity = rec.evidence.filter((e) => e.sourceKind === "nppes" && e.claimType === "identity_verified");
-  const led = all.filter(
-    (a) => a.resource.kind === "trial" && a.resource.registry && leadsTrial(r.name, a.resource.registry.investigators),
-  );
   const p = r.profile;
-  if (p?.paperCount !== undefined || led.length > 0) {
-    const papers = p?.paperCount ?? 0;
-    const recent = p?.recentPaperCount ?? 0;
-    const value =
-      0.5 * Math.min(1, papers / PAPERS_FOR_FULL_SCORE) +
-      0.25 * Math.min(1, recent / RECENT_FOR_FULL_SCORE) +
-      0.25 * Math.min(1, led.length / TRIALS_LED_FOR_FULL_SCORE);
-    const parts = [`${papers} PubMed paper(s) on ${c.diseaseName} in the retrieved set (${recent} in the last 5 years)`];
-    if (led.length) parts.push(`listed as an overall official on ${led.length} recruiting trial(s)`);
-    out.subtypeExpertise = signal(value, `${parts.join("; ")}.`, [...pubs, ...led.flatMap(ctgov)]);
+  const exp = documentedExperience(r, rec, all, c);
+  if (exp.evidenceIds.length > 0) {
+    const evidenceById = new Map(all.flatMap((a) => a.evidence).map((e) => [e.id, e]));
+    out.subtypeExpertise = signal(exp.value, exp.text, exp.evidenceIds.flatMap((id) => evidenceById.get(id) ?? []), exp.components);
   }
 
   const nciHits = p?.affiliation ? matchNciCenters(p.affiliation, nciDatasetFrom(all)).records : [];

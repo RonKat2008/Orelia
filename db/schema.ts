@@ -381,3 +381,12 @@ export const webApplications = pgTable("web_applications", {
   result: jsonb("result").$type<Record<string, unknown>>(),
   ...timestamps,
 }, (table) => [index("web_applications_case_idx").on(table.caseId)]);
+
+// rd-research lane: one current Condition Brief per case (full ConditionBrief in `brief`, validated on read/write).
+export const conditionBriefs = pgTable("condition_briefs", {
+  caseId: uuid("case_id").primaryKey().references(() => cases.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  brief: jsonb("brief").$type<Record<string, unknown>>().notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

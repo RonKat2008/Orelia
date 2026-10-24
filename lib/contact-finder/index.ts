@@ -16,7 +16,15 @@ const rules: [IntakeDoorKind, RegExp][] = [
 export function isRoleEmail(email: string): boolean {
   const parts = email.trim().toLowerCase().split('@');
   if (parts.length !== 2 || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(parts[1])) return false;
-  return /^(?:intake|referrals?|appointments?|newpatients?|secondopinions?|pathology|navigation|navigator|trials?|clinicaltrials|studycoordinator|info|contact|office|support)(?:[._-](?:intake|referrals?|appointments?|office|team|coordinator|center))?$/.test(parts[0]);
+  return /^(?:intake|referrals?|appointments?|newpatients?|secondopinions?|pathology|navigation|navigator|trials?|clinicaltrials|studycoordinator|info|contact|office|support|team|help|hello|patientservices|patients)(?:[._-](?:intake|referrals?|appointments?|office|team|coordinator|center))?$/.test(parts[0]);
+}
+/** The page itself is a contact page: its URL path is /contact or /contact-us, or its title starts with "Contact". */
+function isContactPage(page: ExaPage): boolean {
+  try {
+    const path = new URL(page.url).pathname.toLowerCase().replace(/\/+$/, '');
+    if (/(?:^|\/)contact(?:-us)?$/.test(path)) return true;
+  } catch { return false; }
+  return /^\s*contact\b/i.test(page.title ?? '');
 }
 /** Input must be fetched text from the Exa wrapper. Titles and URL keywords alone are insufficient. */
 export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
@@ -31,6 +39,14 @@ export function classifyIntakeDoors(page: ExaPage): IntakeDoor[] {
     const emails = [...new Set((block.match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? []).filter(isRoleEmail).map(s => s.toLowerCase()))];
     // Evidence excerpt is the matching phrase only, avoiding incidental personal addresses/medical prose.
     found.push({ kind, evidenceUrl: page.url, excerpt: block.match(pattern)?.[0] ?? "", emails });
+  }
+  // A page that IS the organization's contact page ("/contact", "Contact us" title): its role mailbox counts as the
+  // org contact even when the address sits in a different text block than the "Contact us" heading.
+  if (isContactPage(page)) {
+    const emails = [...new Set((page.text.match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? []).filter(isRoleEmail).map(s => s.toLowerCase()))];
+    const door = found.find(d => d.kind === 'org_contact');
+    if (door) door.emails = [...new Set([...door.emails, ...emails])];
+    else if (emails.length) found.push({ kind: 'org_contact', evidenceUrl: page.url, excerpt: 'Contact us', emails });
   }
   // Practice intake phone lines anywhere on the page, attached to a new-patient or referral door.
   for (const p of intakePhonesInBlocks(blocks)) {

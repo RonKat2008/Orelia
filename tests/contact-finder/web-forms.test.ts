@@ -70,3 +70,15 @@ describe('webFormsOnPage', () => {
     expect(webFormRowsFromPage(blog, AT)).toEqual([]);
   });
 });
+
+describe('webFormsOnPage: self-described forms whose fields render with JavaScript', () => {
+  it('accepts an appointment-request page that says it is a form, even with no field labels in the text', () => {
+    const page = { url: 'https://my.clinic.example.org/webappointment', title: 'Request an Appointment | Example Clinic', text: '# Request an Appointment\n\nTo fill out this form, you’ll need:\n\n- To be 18 or older.\n- Insurance information, if insured.\n\nThis should take about 10 minutes to complete.' };
+    expect(webFormsOnPage(page)).toEqual([{ origin: 'intake_form', url: 'https://my.clinic.example.org/webappointment', sourceUrl: page.url, sourceKind: 'exa' }]);
+  });
+
+  it('still refuses self-described wording on a page not named as a form, and on a bare contact page', () => {
+    expect(webFormsOnPage({ url: 'https://clinic.example.org/about', title: 'About us', text: 'To fill out this form, you need your insurance card.' })).toEqual([]);
+    expect(webFormsOnPage({ url: 'https://org.example.org/contact-us', title: 'Contact us', text: 'Use this form to reach our team.' })).toEqual([]);
+  });
+});

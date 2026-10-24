@@ -52,3 +52,11 @@ describe('intake doors', () => {
     expect(doors).toBeGreaterThan(0);
   });
 });
+
+describe('contact page role mailbox', () => {
+  it('takes a role email anywhere on a page that is itself the contact page, but not a personal one', () => {
+    const doors = classifyIntakeDoors({ url: 'https://www.org.example/contact', title: 'Contact Us | Org', text: '# Contact Us\n\nWe read every message.\n\nWestwood, MA · team@org.example\n\nPress: jane.doe@org.example' });
+    expect(doors.find(d => d.kind === 'org_contact')?.emails).toEqual(['team@org.example']);
+    expect(classifyIntakeDoors({ url: 'https://www.org.example/about', title: 'About', text: 'About us\n\nteam@org.example' }).flatMap(d => d.emails)).toEqual([]);
+  });
+});

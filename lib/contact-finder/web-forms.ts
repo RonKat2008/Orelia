@@ -22,8 +22,8 @@ const DOCUMENT = /\.(?:pdf|docx?|pptx?|xlsx?|rtf)$/i;
 const EXCLUDED = /\b(?:careers?|jobs?|employment|hiring|volunteer(?:ing)?|donat(?:e|ion|ions)|giving|newsletter|subscribe|sign[ -]?in|log[ -]?in|register[ -]for[ -](?:an? )?event|residency|fellowships?|internships?|vendor|supplier|press|media)\b/i;
 
 const REFERRAL = /\b(?:refer(?:ral)?s? (?:a )?patients?|refer a patient|patient referrals?|physician referrals?|provider referrals?|online referrals?|referral (?:form|request))\b/i;
-const APPLICATION = /\b(?:apply(?: now| online| for (?:assistance|aid|a grant|financial (?:aid|assistance)|help))?|application(?: form)?|grant application|assistance application)\b/i;
-const INTAKE = /\b(?:request (?:an? )?appointments?|appointments? requests?|schedule (?:an? )?appointments?|book (?:an? )?appointments?|new patients? (?:form|forms|intake|registration|appointments?|requests?)|patient intake|intake forms?|second opinion requests?|request (?:a )?second opinions?|contact (?:us )?form)\b/i;
+const APPLICATION = /\b(?:apply(?: now| online| for (?:assistance|aid|a grant|financial (?:aid|assistance)|help))?|application(?: form)?|grant application|assistance application|request (?:[a-z]+ )?(?:assistance|financial aid|case management))\b/i;
+const INTAKE = /\b(?:request (?:an? )?appointments?|web ?appointments?|appointments? requests?|schedule (?:an? )?appointments?|book (?:an? )?appointments?|new patients? (?:form|forms|intake|registration|appointments?|requests?)|patient intake|intake forms?|second opinion requests?|request (?:a )?second opinions?|contact (?:us )?form)\b/i;
 
 /** Typical field labels; a line must consist of the label alone (plus required/optional markers). */
 const FIELDS: ReadonlyArray<[string, RegExp]> = [
@@ -93,9 +93,17 @@ function originOf(naming: string): Naming | null {
   return null;
 }
 
+/**
+ * The page says, in its own words, that it IS a form ("To fill out this form, you'll need..."). Many real intake
+ * pages render their fields with JavaScript, so the fetched text has no field labels; this wording, together with
+ * an explicit form name in the URL/title, is enough (never for a bare "Contact us" page).
+ */
+const SELF_DESCRIBED = /\b(?:(?:to )?fill (?:out|in) this (?:online )?form|complete this (?:online )?(?:form|request|application)|(?:use|submit) this (?:online )?form|this (?:form|request|application) (?:should|will) take|fill out the (?:online )?form below|complete the (?:online )?form below)\b/i;
+
 function hasFormEvidence(text: string, strictContact: boolean): boolean {
   const kinds = fieldKinds(text);
   if (!kinds) return false;
+  if (!strictContact && SELF_DESCRIBED.test(text)) return true;
   if (strictContact) return kinds.size >= MIN_FIELDS && kinds.has('message') && kinds.has('email');
   return kinds.size >= MIN_FIELDS || (kinds.size >= MIN_FIELDS_WITH_WORDING && FORM_WORDING.test(text));
 }

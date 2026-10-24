@@ -45,7 +45,7 @@ describe('enrichVerified', () => {
       ],
     };
     const search = vi.fn(async ({ query }: { query: string }) => query.includes('Aid Fund')
-      ? [{ url: 'https://aidfund.example.org/contact', title: 'Contact', text: 'Contact us: help@aidfund.example.org' }, { url: 'https://aidfund.example.org/contact', title: 'Contact', text: 'Contact us: info@aidfund.example.org' }]
+      ? [{ url: 'https://aidfund.example.org/contact', title: 'Contact', text: 'Contact us: jane.doe@aidfund.example.org' }, { url: 'https://aidfund.example.org/contact', title: 'Contact', text: 'Contact us: info@aidfund.example.org' }]
       : [{ url: 'https://northgate-genetics.example.org/appointment-request', title: 'Appointment Request', text: 'First Name\nLast Name\nDate of Birth\nEmail\nReason for visit' }]);
     // Act
     const out = await enrichVerified(withPhone, { search } as unknown as ExaPort, NOW);

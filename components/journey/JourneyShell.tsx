@@ -12,6 +12,7 @@ const waiting: JourneyPlan = {
   steps: [],
   nextLabel: "Finish intake",
   nextHref: "/",
+  documentsHref: "/cases/pending/documents",
   notes: [],
 };
 

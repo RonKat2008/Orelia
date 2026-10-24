@@ -6,7 +6,53 @@ import { StaggerList } from "@/components/motion/StaggerList";
 import { WaypointRoute } from "@/components/motion/WaypointRoute";
 import { ResourceCard, selectionLimit } from "./ResourceCard";
 import { EmptyState, LoadingSkeleton } from "@/components/threads/states";
-import { loadShortlist, type ShortlistCard } from "./data";
+import { bandShortlist, initialSelection, loadShortlist, type ShortlistCard } from "./data";
+
+function readStoredSelection(caseId: string): string[] | null {
+  const stored = sessionStorage.getItem(`wayfinder.selected.${caseId}`);
+  if (!stored) return null;
+  try {
+    const parsed = JSON.parse(stored) as unknown;
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) return parsed;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function CardList({
+  cards,
+  label,
+  selected,
+  limit,
+  onToggle,
+  scoreScale,
+}: {
+  cards: ShortlistCard[];
+  label: string;
+  selected: string[];
+  limit: number;
+  onToggle: (id: string) => void;
+  scoreScale: number | undefined;
+}) {
+  return (
+    <StaggerList
+      as="ol"
+      items={cards}
+      getKey={(card) => card.resource.id}
+      aria-label={label}
+      renderItem={(card) => (
+        <ResourceCard
+          card={card}
+          selected={selected.includes(card.resource.id)}
+          atCap={selected.length >= limit}
+          onToggle={onToggle}
+          scoreScale={scoreScale}
+        />
+      )}
+    />
+  );
+}
 
 const GROUPS: { id: ShortlistCard["group"]; title: string; short: string }[] = [
   { id: "specialists", title: "Specialists and centers", short: "Specialists" },
@@ -18,27 +64,21 @@ const GROUPS: { id: ShortlistCard["group"]; title: string; short: string }[] = [
 export function ShortlistView({ caseId }: { caseId: string }) {
   const [loaded, setLoaded] = useState(false);
   const [items, setItems] = useState<ShortlistCard[]>([]);
+  const [summary, setSummary] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const limit = selectionLimit();
 
   useEffect(() => {
     let active = true;
-    const stored = sessionStorage.getItem(`wayfinder.selected.${caseId}`);
+    const stored = readStoredSelection(caseId);
     void loadShortlist(caseId).then((result) => {
       if (!active) return;
-      setItems(result.items);
+      setItems(result.payload.items);
+      setSummary(result.payload.curationSummary);
       setPreview(result.preview);
       setLoaded(true);
-      if (!stored) return;
-      try {
-        const parsed = JSON.parse(stored) as unknown;
-        if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
-          setSelected(parsed.slice(0, limit));
-        }
-      } catch {
-        setSelected([]);
-      }
+      setSelected(initialSelection(stored, result.payload.suggested, limit));
     });
     return () => {
       active = false;
@@ -89,27 +129,50 @@ export function ShortlistView({ caseId }: { caseId: string }) {
           : "Ranked from the sources Wayfinder could verify."}{" "}
         Choose up to {limit}. {selected.length} selected.
       </p>
+      {summary ? <p className="notice">{summary}</p> : null}
       {GROUPS.map((group) => {
         const cards = items.filter((item) => item.group === group.id);
         if (cards.length === 0) return null;
+        const bands = bandShortlist(cards);
         return (
           <section key={group.id} className="stack" aria-labelledby={`group-${group.id}`}>
             <h2 id={`group-${group.id}`}>{group.title}</h2>
-            <StaggerList
-              as="ol"
-              items={cards}
-              getKey={(card) => card.resource.id}
-              aria-label={`${group.title}, ranked`}
-              renderItem={(card) => (
-                <ResourceCard
-                  card={card}
-                  selected={selected.includes(card.resource.id)}
-                  atCap={selected.length >= limit}
+            {bands.curated && bands.best.length > 0 ? (
+              <div className="stack">
+                <h3>Best fit</h3>
+                <CardList
+                  cards={bands.best}
+                  label={`Best fit ${group.title}`}
+                  selected={selected}
+                  limit={limit}
                   onToggle={toggle}
                   scoreScale={scoreScale}
                 />
-              )}
-            />
+              </div>
+            ) : null}
+            {bands.listed.length > 0 ? (
+              <CardList
+                cards={bands.listed}
+                label={bands.curated ? `Other ${group.title}` : `${group.title}, ranked`}
+                selected={selected}
+                limit={limit}
+                onToggle={toggle}
+                scoreScale={scoreScale}
+              />
+            ) : null}
+            {bands.excluded.length > 0 ? (
+              <details>
+                <summary>Not a fit ({bands.excluded.length})</summary>
+                <CardList
+                  cards={bands.excluded}
+                  label={`Not a fit, ${group.title}`}
+                  selected={selected}
+                  limit={limit}
+                  onToggle={toggle}
+                  scoreScale={scoreScale}
+                />
+              </details>
+            ) : null}
           </section>
         );
       })}

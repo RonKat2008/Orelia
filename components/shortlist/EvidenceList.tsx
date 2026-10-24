@@ -7,7 +7,7 @@ export function EvidenceList({ items }: { items: Evidence[] }) {
   return (
     <ul className="evidence">
       {items.map((item) => (
-        <li key={item.sourceUrl + item.claim}>
+        <li key={item.sourceUrl + item.claim} id={item.id ? `evidence-${item.id}` : undefined}>
           <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
             {item.claim}
           </a>

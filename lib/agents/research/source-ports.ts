@@ -30,7 +30,17 @@ export interface CtgovStudy {
   status: string;
   phases?: string[];
   sponsor?: string;
-  sites: Array<{ facility?: string; city?: string; state?: string; country?: string }>;
+  sites: Array<{ facility?: string; city?: string; state?: string; country?: string; status?: string }>;
+  /** Registry fields for relevance/age filtering and ranking signals. */
+  conditions?: string[];
+  keywords?: string[];
+  meshTerms?: string[];
+  stdAges?: string[];
+  minimumAge?: string;
+  /** Overall official names (study leads), as listed. */
+  investigators?: string[];
+  /** True when the registry lists a central contact. */
+  hasContact?: boolean;
 }
 
 export interface CtgovPort {

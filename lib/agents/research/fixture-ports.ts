@@ -4,6 +4,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { CANCER_WORDS, stateFromAffiliation } from "./geo";
 import { caseSlug } from "./shared";
 import type {
   CentersPort,
@@ -18,19 +19,8 @@ import type {
 } from "./source-ports";
 
 const RECENT_YEARS = 5;
-const STATE_NAMES: Record<string, string> = {
-  Alabama: "AL", Alaska: "AK", Arizona: "AZ", Arkansas: "AR", California: "CA", Colorado: "CO", Connecticut: "CT",
-  Delaware: "DE", Florida: "FL", Georgia: "GA", Hawaii: "HI", Idaho: "ID", Illinois: "IL", Indiana: "IN", Iowa: "IA",
-  Kansas: "KS", Kentucky: "KY", Louisiana: "LA", Maine: "ME", Maryland: "MD", Massachusetts: "MA", Michigan: "MI",
-  Minnesota: "MN", Mississippi: "MS", Missouri: "MO", Montana: "MT", Nebraska: "NE", Nevada: "NV",
-  "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY", "North Carolina": "NC",
-  "North Dakota": "ND", Ohio: "OH", Oklahoma: "OK", Oregon: "OR", Pennsylvania: "PA", "Rhode Island": "RI",
-  "South Carolina": "SC", "South Dakota": "SD", Tennessee: "TN", Texas: "TX", Utah: "UT", Vermont: "VT",
-  Virginia: "VA", Washington: "WA", "West Virginia": "WV", Wisconsin: "WI", Wyoming: "WY",
-};
 /** Fixture-only stand-in for distance filtering (the real CentersPort computes it). */
 const NEARBY_STATES: Record<string, string[]> = { AZ: ["AZ", "NM", "UT", "CO", "CA"] };
-const CANCER_WORDS = /sarcoma|cancer|carcinoma|lymphoma|leukemia|tumor|melanoma/i;
 
 interface Options {
   root?: string;
@@ -50,14 +40,6 @@ function decode(s: string): string {
     .replace(/&#x([0-9a-f]+);/gi, (_m, h: string) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_m, d: string) => String.fromCodePoint(Number(d)))
     .trim();
-}
-
-function stateFromAffiliation(text: string): string | undefined {
-  for (const [name, code] of Object.entries(STATE_NAMES)) {
-    if (new RegExp(`(?:,|\\s)${name}(?:[,.;\\s]|$)`).test(text)) return code;
-  }
-  const abbreviation = /,\s([A-Z]{2})(?:\s\d{5})?[,.]?(?:\s|$)/.exec(text);
-  return abbreviation && Object.values(STATE_NAMES).includes(abbreviation[1] ?? "") ? abbreviation[1] : undefined;
 }
 
 class FixtureReader {
@@ -170,13 +152,21 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
           phases: p.designModule?.phases,
           sponsor: p.sponsorCollaboratorsModule?.leadSponsor?.name,
           sites: (p.contactsLocationsModule?.locations ?? []).map(
-            (l: { facility?: string; city?: string; state?: string; country?: string }) => ({
+            (l: { facility?: string; city?: string; state?: string; country?: string; status?: string }) => ({
               facility: l.facility,
               city: l.city,
               state: l.state,
               country: l.country,
+              status: l.status,
             }),
           ),
+          conditions: p.conditionsModule?.conditions ?? [],
+          keywords: p.conditionsModule?.keywords ?? [],
+          meshTerms: (s.derivedSection?.conditionBrowseModule?.meshes ?? []).map((m: { term: string }) => m.term),
+          stdAges: p.eligibilityModule?.stdAges ?? [],
+          minimumAge: p.eligibilityModule?.minimumAge,
+          investigators: (p.contactsLocationsModule?.overallOfficials ?? []).flatMap((o: { name?: string }) => (o.name ? [o.name] : [])),
+          hasContact: (p.contactsLocationsModule?.centralContacts ?? []).length > 0,
         };
       });
     },

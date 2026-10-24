@@ -1,51 +1,37 @@
 "use client";
 
-import type { Resource } from "@/lib/contracts";
-import { EvidenceReveal } from "@/components/motion/EvidenceReveal";
-import { ScoreBar } from "@/components/motion/ScoreBar";
+import { DoorClosed, DoorOpen, MapPin, Sparkles } from "lucide-react";
+import { Badge, Checkbox, ChoiceRow, SourceChip } from "@/components/ui";
+import { cn } from "@/lib/ui/cn";
 import { evidenceForReason, type ShortlistCard } from "./data";
 import { EvidenceList } from "./EvidenceList";
+import { ScoreStack } from "./ScoreStack";
+import {
+  contactDoorOf,
+  eyebrowOf,
+  placeOf,
+  tierLabel,
+  titleOf,
+} from "./view-model";
 
 const MAX_SELECTED = 5;
 
-function titleOf(resource: Resource): string {
-  if (resource.kind === "trial") return resource.title;
-  return resource.name;
+export function selectionLimit() {
+  return MAX_SELECTED;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  cancer_center: "Cancer center",
-  rare_disease_center: "Rare disease center",
-  hospital: "Hospital",
-  advocacy: "Advocacy organization",
-  financial_aid: "Financial aid",
-  travel_aid: "Travel aid",
-};
-
-function humanize(value: string | undefined): string | undefined {
-  return value ? (KIND_LABEL[value] ?? value) : undefined;
-}
-
-function detailOf(resource: Resource): string {
-  if (resource.kind === "expert") {
-    return [resource.credentials, resource.specialty].filter(Boolean).join(", ");
-  }
-  if (resource.kind === "institution") {
-    const place = [resource.city, resource.state].filter(Boolean).join(", ");
-    return [humanize(resource.institutionKind), place].filter(Boolean).join(" in ");
-  }
-  if (resource.kind === "trial") return [resource.nctId, resource.status].filter(Boolean).join(", ");
-  return humanize(resource.organizationKind) ?? "Organization";
-}
+export type CardVariant = "feature" | "standard" | "muted";
 
 export function ResourceCard({
   card,
+  variant = "standard",
   selected,
   atCap,
   onToggle,
   scoreScale,
 }: {
   card: ShortlistCard;
+  variant?: CardVariant;
   /** Shared bar scale (the top score in the list) so bars compare across cards. */
   scoreScale?: number;
   selected: boolean;
@@ -54,62 +40,167 @@ export function ResourceCard({
 }) {
   const id = card.resource.id;
   const disabled = !selected && atCap;
+  const title = titleOf(card.resource);
+  const place = placeOf(card.resource);
+  const door = contactDoorOf(card);
+  const tier = tierLabel(card.tier);
+  const reasons = (card.tierReasons ?? []).flatMap((reason) => {
+    const cited = evidenceForReason(card, reason.evidenceIds);
+    // A reason with no source behind it is a claim we cannot show, so it is left out.
+    return cited.length > 0 ? [{ text: reason.text, cited }] : [];
+  });
+  const feature = variant === "feature";
+
   return (
-    <article className="panel resource-card" data-selected={selected ? "true" : "false"}>
-      <header className="resource-card__head">
-        <h3>{titleOf(card.resource)}</h3>
-        <p className="meta">{detailOf(card.resource)}</p>
-      </header>
-      {card.tier === "best" ? <p className="eyebrow">Best fit</p> : null}
-      {card.tier === "exclude" ? <p className="eyebrow">Not a fit</p> : null}
-      {card.tierReasons && card.tierReasons.length > 0 ? (
-        <ul className="tier-reasons">
-          {card.tierReasons.map((reason) => {
-            const cited = evidenceForReason(card, reason.evidenceIds);
-            return (
-              <li key={reason.text}>
-                <p>{reason.text}</p>
-                {cited.length > 0 ? (
-                  <>
-                    <p className="meta">
-                      {cited.map((item) => (
-                        <a key={item.id} href={`#evidence-${item.id}`}>
-                          Source: {item.claim}
-                        </a>
-                      ))}
-                    </p>
-                    <EvidenceList items={cited} />
-                  </>
-                ) : (
-                  <p className="meta">This reason has no attached source, so it is not shown as a claim.</p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+    <article
+      data-selected={selected}
+      aria-label={title}
+      className={cn(
+        "relative grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 rounded-lg border bg-card p-5 text-ink sm:p-7",
+        "transition-[box-shadow,border-color,background-color] duration-300 ease-out-expo motion-reduce:transition-none",
+        feature
+          ? "border-line/70 shadow-md lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-10"
+          : "border-line shadow-xs",
+        variant === "muted" && "bg-paper-2/50",
+        selected &&
+          "border-teal/60 bg-teal-soft/30 shadow-md ring-1 ring-teal/30",
+      )}
+    >
+      {feature ? (
+        <span
+          aria-hidden
+          className="absolute inset-y-6 left-0 w-1 rounded-r-pill bg-terracotta"
+        />
       ) : null}
-      <ScoreBar items={card.breakdown} total={card.score} max={scoreScale} />
-      <div className="resource-card__actions">
-        <label className="check">
-          <input
-            type="checkbox"
+
+      <div className="grid min-w-0 content-start gap-5">
+        <header className="grid gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <p className="m-0 text-micro font-semibold uppercase text-ink-3">
+              {eyebrowOf(card.resource)}
+            </p>
+            {tier ? (
+              <Badge
+                tone={
+                  card.tier === "best"
+                    ? "teal"
+                    : card.tier === "exclude"
+                      ? "neutral"
+                      : "sage"
+                }
+              >
+                {card.tier === "best" ? <Sparkles aria-hidden /> : null}
+                {tier}
+              </Badge>
+            ) : null}
+          </div>
+          <h4 className="m-0 max-w-none font-display text-h3 font-normal text-ink display-soft text-balance">
+            {title}
+          </h4>
+          {place ? (
+            <p className="m-0 flex items-center gap-1.5 text-small text-ink-2">
+              <MapPin aria-hidden className="size-4 shrink-0 text-ink-3" />
+              <span className="min-w-0 break-words">{place}</span>
+            </p>
+          ) : null}
+        </header>
+
+        {reasons.length > 0 ? (
+          <section aria-label="Why it fits" className="grid gap-3">
+            <h5 className="m-0 text-micro font-semibold uppercase text-ink-3">
+              {card.tier === "exclude" ? "Why it was set aside" : "Why it fits"}
+            </h5>
+            <ul className="m-0 grid list-none gap-4 p-0">
+              {reasons.map((reason) => (
+                <li key={reason.text} className="grid gap-2">
+                  <p className="m-0 max-w-prose text-body text-pretty">
+                    {reason.text}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {reason.cited.map((item) => (
+                      <SourceChip
+                        key={item.id ?? item.sourceUrl}
+                        url={item.sourceUrl}
+                        verified
+                        date={item.fetchedAt}
+                        title={item.claim}
+                      />
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        <details className="group/sources rounded-md border border-line bg-card open:bg-card">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md px-4 text-small font-semibold text-ink focus-ring [&::-webkit-details-marker]:hidden">
+            <span>
+              Sources{" "}
+              <span className="font-normal text-ink-3">
+                ({card.evidence.length})
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="text-ink-3 transition-transform duration-300 group-open/sources:rotate-45 motion-reduce:transition-none"
+            >
+              +
+            </span>
+          </summary>
+          <div className="px-4 pb-4">
+            <EvidenceList items={card.evidence} />
+          </div>
+        </details>
+      </div>
+
+      <div className="grid min-w-0 content-start gap-5">
+        <ScoreStack card={card} scale={scoreScale} />
+
+        <p
+          className={cn(
+            "m-0 flex items-start gap-2.5 rounded-md border px-3.5 py-3 text-small",
+            door.found
+              ? "border-ok/30 bg-ok-soft/60 text-ink"
+              : "border-dashed border-line-strong bg-paper-2/60 text-ink-2",
+          )}
+        >
+          {door.found ? (
+            <DoorOpen aria-hidden className="mt-0.5 size-5 shrink-0 text-ok" />
+          ) : (
+            <DoorClosed
+              aria-hidden
+              className="mt-0.5 size-5 shrink-0 text-ink-3"
+            />
+          )}
+          <span className="min-w-0">
+            <strong className="block font-semibold">
+              {door.found ? "Contact door found" : "No contact door found yet"}
+            </strong>
+            <span className="text-pretty">
+              {door.text ||
+                "Wayfinder found no public office, intake line or form for this one."}
+            </span>
+          </span>
+        </p>
+
+        <ChoiceRow
+          title={selected ? "Selected to contact" : "Select to contact"}
+          description={
+            disabled
+              ? "Five are already chosen. Remove one to add this."
+              : "Nothing is sent until you approve it."
+          }
+          className={cn(disabled && "opacity-60")}
+        >
+          <Checkbox
             checked={selected}
             disabled={disabled}
-            onChange={() => onToggle(id)}
+            onCheckedChange={() => onToggle(id)}
+            aria-label={`Select ${title} to contact`}
           />
-          <span>{selected ? "Selected to contact" : "Select to contact"}</span>
-        </label>
-        {disabled ? <p className="meta">Five resources are already selected. Uncheck one to add another.</p> : null}
+        </ChoiceRow>
       </div>
-      {card.evidence.length > 0 ? (
-        <EvidenceReveal evidence={card.evidence} />
-      ) : (
-        <p className="meta">No source links were attached to this result.</p>
-      )}
     </article>
   );
-}
-
-export function selectionLimit() {
-  return MAX_SELECTED;
 }

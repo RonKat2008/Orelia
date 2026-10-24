@@ -27,18 +27,39 @@ export const KIND_LABELS: Record<string, string> = {
   intake_report: "Intake report",
   patient_note: "Notes you added",
   public_resource: "Public resource info",
+  evidence: "Sources research found",
 };
+
+/** "disease_program" -> "Disease program". */
+export function humanizeTitle(title: string): string {
+  const spaced = title.replaceAll("_", " ").trim();
+  return spaced ? spaced[0].toUpperCase() + spaced.slice(1) : title;
+}
 
 export function kindLabel(kind: string): string {
   return KIND_LABELS[kind] ?? kind.replaceAll("_", " ");
 }
 
 /** What an outreach agent is allowed to draw from this document. */
-export function sharingLine(document: Pick<CaseDocument, "kind" | "sharedField">): string {
-  if (document.kind === "intake_report" || document.kind === "intake") return "Never shared";
+export function sharingLine(
+  document: Pick<CaseDocument, "kind" | "sharedField">,
+): string {
+  if (document.kind === "intake_report" || document.kind === "intake")
+    return "Never shared";
   const field = document.sharedField?.trim();
   if (field) return `Shared only with contacts you consent to ${field}`;
   return "Public resource info";
+}
+
+export type SharingKind = "never" | "consented" | "public";
+
+/** Same rule as sharingLine, as a value the UI can badge. */
+export function sharingKind(
+  document: Pick<CaseDocument, "kind" | "sharedField">,
+): SharingKind {
+  if (document.kind === "intake_report" || document.kind === "intake")
+    return "never";
+  return document.sharedField?.trim() ? "consented" : "public";
 }
 
 export const previewDocuments: CaseDocument[] = [
@@ -80,7 +101,9 @@ export function parseNote(value: unknown): NoteInput | null {
   return parsed.success ? parsed.data : null;
 }
 
-export function groupDocuments(documents: CaseDocument[]): { kind: string; items: CaseDocument[] }[] {
+export function groupDocuments(
+  documents: CaseDocument[],
+): { kind: string; items: CaseDocument[] }[] {
   const order: string[] = [];
   const groups = new Map<string, CaseDocument[]>();
   for (const document of documents) {
@@ -99,7 +122,10 @@ export type DocumentsLoad =
   | { status: "empty"; preview: boolean }
   | { status: "error"; message: string };
 
-export async function loadDocuments(caseId: string, fetchImpl: typeof fetch = fetch): Promise<DocumentsLoad> {
+export async function loadDocuments(
+  caseId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<DocumentsLoad> {
   try {
     const response = await fetchImpl(`/api/cases/${caseId}/documents`);
     if (response.status === 404) {
@@ -107,9 +133,14 @@ export async function loadDocuments(caseId: string, fetchImpl: typeof fetch = fe
         ? { status: "ready", documents: previewDocuments, preview: true }
         : { status: "empty", preview: true };
     }
-    if (!response.ok) return { status: "error", message: "Documents could not be loaded." };
+    if (!response.ok)
+      return { status: "error", message: "Documents could not be loaded." };
     const documents = parseDocuments(await response.json());
-    if (!documents) return { status: "error", message: "Documents came back in an unexpected shape." };
+    if (!documents)
+      return {
+        status: "error",
+        message: "Documents came back in an unexpected shape.",
+      };
     if (documents.length === 0) return { status: "empty", preview: false };
     return { status: "ready", documents, preview: false };
   } catch {
@@ -122,7 +153,8 @@ export function noteToDocument(note: NoteInput, id: string): CaseDocument {
     id,
     kind: "patient_note",
     title: note.title,
-    sharedField: note.sharedField && note.sharedField.length > 0 ? note.sharedField : null,
+    sharedField:
+      note.sharedField && note.sharedField.length > 0 ? note.sharedField : null,
     contactId: null,
     createdAt: new Date().toISOString(),
   };
@@ -133,7 +165,11 @@ export async function addPatientNote(
   note: NoteInput,
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ document: CaseDocument; preview: boolean } | { error: string }> {
-  const body = { title: note.title, text: note.text, sharedField: note.sharedField ?? "" };
+  const body = {
+    title: note.title,
+    text: note.text,
+    sharedField: note.sharedField ?? "",
+  };
   try {
     const response = await fetchImpl(`/api/cases/${caseId}/documents`, {
       method: "POST",
@@ -143,11 +179,17 @@ export async function addPatientNote(
     if (response.ok) {
       const parsed = caseDocumentSchema.safeParse(await response.json());
       if (parsed.success) return { document: parsed.data, preview: false };
-      return { document: noteToDocument(note, `note-${Date.now()}`), preview: false };
+      return {
+        document: noteToDocument(note, `note-${Date.now()}`),
+        preview: false,
+      };
     }
     if (response.status !== 404) return { error: "The note was not saved." };
   } catch {
     // API from task 25 may not be mounted yet.
   }
-  return { document: noteToDocument(note, `note-local-${Date.now()}`), preview: true };
+  return {
+    document: noteToDocument(note, `note-local-${Date.now()}`),
+    preview: true,
+  };
 }

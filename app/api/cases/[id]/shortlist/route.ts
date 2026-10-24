@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { ShortlistItem } from "@/lib/agents/persist";
+import type { ShortlistItem, ShortlistMeta } from "@/lib/agents/persist";
 import { getCurationStore, curationKey } from "@/lib/agents/curator-store";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
@@ -20,18 +20,35 @@ export async function GET(req: Request, { params }: Ctx) {
   if (!found) return jsonError(404, "Case not found");
 
   const items = await persist.getShortlist(id);
+  const meta: ShortlistMeta[] = persist.getShortlistMeta ? await persist.getShortlistMeta(id) : [];
+  const metaByKey = new Map(meta.map((row) => [curationKey(row.targetKind, row.targetId), row]));
   let curation: Awaited<ReturnType<ReturnType<typeof getCurationStore>["load"]>> = null;
   try {
     curation = await getCurationStore().load(id);
   } catch {
     curation = null; // curation is additive; never fail the shortlist because of it
   }
-  const groups: Record<string, Array<ShortlistItem & { tier: string; tierReasons: { text: string; evidenceIds: string[] }[] }>> = {
+  const groups: Record<string, Array<ShortlistItem & {
+    tier: string;
+    tierReasons: { text: string; evidenceIds: string[] }[];
+    caseCandidateId: string | null;
+    nctId: string | null;
+    organizationKind: "advocacy" | "financial_aid" | "travel_aid" | null;
+  }>> = {
     expert: [], institution: [], trial: [], organization: [],
   };
   for (const item of items) {
-    const c = curation?.byTarget.get(curationKey(item.targetKind, item.targetId));
-    (groups[item.targetKind] ??= []).push({ ...item, tier: c?.tier ?? "backup", tierReasons: c?.tierReasons ?? [] });
+    const key = curationKey(item.targetKind, item.targetId);
+    const c = curation?.byTarget.get(key);
+    const extra = metaByKey.get(key);
+    (groups[item.targetKind] ??= []).push({
+      ...item,
+      tier: c?.tier ?? "backup",
+      tierReasons: c?.tierReasons ?? [],
+      caseCandidateId: extra?.caseCandidateId ?? null,
+      nctId: extra?.nctId ?? null,
+      organizationKind: extra?.organizationKind ?? null,
+    });
   }
   for (const list of Object.values(groups)) list.sort((a, b) => a.rank - b.rank);
 

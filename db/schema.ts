@@ -186,6 +186,9 @@ export const caseCandidates = pgTable("case_candidates", {
     { factor: string; points: number; text: string; evidenceIds: string[] }[]
   >(),
   selected: boolean("selected").notNull().default(false),
+  // Curator tier beside the deterministic rank (task #26); reasons cite evidence ids.
+  tier: text("tier"),
+  tierReasons: jsonb("tier_reasons").$type<{ text: string; evidenceIds: string[] }[]>(),
 });
 
 export const contacts = pgTable("contacts", {

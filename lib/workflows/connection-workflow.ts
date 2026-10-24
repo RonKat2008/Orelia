@@ -52,6 +52,23 @@ export interface ConnectionDeps {
     caseId: string;
     followUpNumber: 1 | 2;
   }): Promise<{ messageId: string }>;
+  /**
+   * Walk-away mode. send = the stored pre-approved body is still valid.
+   * hold = do not send it; the patient must approve something else.
+   * Omitted means the historical draft-only cadence.
+   */
+  resolvePreapproved?(input: {
+    contactId: string;
+    caseId: string;
+    followUpNumber: 1 | 2;
+  }): Promise<{ action: 'send'; messageId: string; body: string } | { action: 'hold'; reason: string }>;
+  notifyApprovalNeeded?(input: {
+    contactId: string;
+    caseId: string;
+    followUpNumber: 1 | 2;
+    reason: string;
+  }): Promise<void>;
+  cancelPreapproved?(input: { contactId: string; reason: 'reply' | 'decline' | 'revoke' }): Promise<void>;
 }
 
 type Phase = 'followUp1' | 'followUp2' | 'stall';
@@ -151,6 +168,7 @@ export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefiniti
         if (reply) {
           await step.run(`reply-${phase}`, async () => {
             await applyTransition(deps, contactId, { type: 'REPLY_RECEIVED' }, deps.clock.now());
+            await deps.cancelPreapproved?.({ contactId, reason: 'reply' });
             return { ok: true };
           });
           return { outcome: 'replied' };
@@ -160,17 +178,47 @@ export function createConnectionWorkflow(deps: ConnectionDeps): FunctionDefiniti
         // before the real business-day deadline, so the machine's "not due yet"
         // check would reject FOLLOW_UP_DUE. Use max(now, unscaled real deadline).
         const due = await step.run(`follow-up-due-${phase}`, async () => {
+          const ctx = await deps.loadContext(contactId);
+          if (ctx.state === 'declined' || ctx.state === 'replied') {
+            await deps.cancelPreapproved?.({ contactId, reason: ctx.state === 'declined' ? 'decline' : 'reply' });
+            return { skipped: ctx.state as string, effects: [] as { type: string; followUpNumber?: number }[] };
+          }
           const real = new Date(deadline.real);
           const now = deps.clock.now();
           const at = now.getTime() > real.getTime() ? now : real;
           const res = await applyTransition(deps, contactId, { type: 'FOLLOW_UP_DUE' }, at);
-          return { effects: res.effects.map((e) => ({ ...e })) as { type: string; followUpNumber?: number }[] };
+          return { skipped: null as string | null, effects: res.effects.map((e) => ({ ...e })) as { type: string; followUpNumber?: number }[] };
         });
+        if (due.skipped) return { outcome: due.skipped };
 
         for (const effect of due.effects) {
           if (effect.type === 'DRAFT_FOLLOW_UP') {
             const followUpNumber = effect.followUpNumber as 1 | 2;
-            // Draft only. Sending requires patient approval (FOLLOW_UP_APPROVED).
+            const pre = deps.resolvePreapproved
+              ? await step.run(`resolve-preapproved-${followUpNumber}`, () =>
+                  deps.resolvePreapproved!({ contactId, caseId, followUpNumber }),
+                )
+              : { action: 'none' as const };
+            if (pre.action === 'send') {
+              const sent = await step.run(`send-preapproved-${followUpNumber}`, async () => {
+                const approvedAt = await persistedApproval(deps, pre.messageId);
+                if (!approvedAt) return { sent: false as const };
+                const thread = (await deps.loadThread?.(contactId)) ?? undefined;
+                await deps.send({
+                  contactId, caseId, messageId: pre.messageId, kind: 'follow_up', ...(thread ? { thread } : {}),
+                });
+                await applyTransition(deps, contactId, { type: 'APPROVED_SENT' }, deps.clock.now());
+                return { sent: true as const };
+              });
+              if (sent.sent) continue;
+            }
+            if (pre.action === 'hold') {
+              await step.run(`notify-approval-${followUpNumber}`, async () => {
+                await deps.notifyApprovalNeeded?.({ contactId, caseId, followUpNumber, reason: pre.reason });
+                return { notified: true };
+              });
+            }
+            // Unapproved draft. A later FOLLOW_UP_APPROVED event is what sends it.
             const draft = await step.run(`draft-follow-up-${followUpNumber}`, () =>
               deps.draftFollowUp({ contactId, caseId, followUpNumber }),
             );
@@ -209,6 +257,7 @@ export function createStalledRevivalWorkflow(deps: ConnectionDeps): FunctionDefi
         const ctx = await deps.loadContext(contactId);
         if (ctx.state !== 'stalled') return { revived: false, state: ctx.state as string };
         await applyTransition(deps, contactId, { type: 'REPLY_RECEIVED' }, deps.clock.now());
+        await deps.cancelPreapproved?.({ contactId, reason: 'reply' });
         return { revived: true, state: 'replied' };
       });
       if (!revived.revived) return revived;

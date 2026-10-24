@@ -113,6 +113,10 @@ export const cases = pgTable(
     .default(sql`ARRAY[]::goal[]`),
   status: text("status").notNull().default("unconfirmed"),
   ownerSessionId: text("owner_session_id"),
+  patientEmail: text("patient_email"),
+  patientNotifyOptIn: boolean("patient_notify_opt_in").notNull().default(false),
+  patientNotifyLastAt: timestamp("patient_notify_last_at", { withTimezone: true }),
+  patientNotifyDigestOn: text("patient_notify_digest_on"),
   ...timestamps,
   },
   (table) => [index("cases_owner_session_id_idx").on(table.ownerSessionId)],
@@ -255,6 +259,7 @@ export const messages = pgTable("messages", {
   sentAt: timestamp("sent_at", { withTimezone: true }),
   receivedAt: timestamp("received_at", { withTimezone: true }),
   classification: text("classification"),
+  approvalFingerprint: text("approval_fingerprint"),
 });
 
 export const calls = pgTable("calls", {

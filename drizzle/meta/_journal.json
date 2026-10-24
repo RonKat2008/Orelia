@@ -57,6 +57,13 @@
       "when": 1792821402000,
       "tag": "0029_agent_run_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792821500000,
+      "tag": "0030_walkaway_notify",
+      "breakpoints": true
     }
   ]
 }

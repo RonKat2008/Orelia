@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import * as s from '../../db/schema';
 import { OutreachError, type Candidate, type Consent, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
@@ -78,6 +78,15 @@ export class PostgresOutreachStore implements OutreachStore {
   }
   async saveDraft(draft: Draft) {
     await this.db.insert(s.messages).values({ id: draft.id, contactId: draft.contactId, channel: draft.channel, direction: 'outbound', subject: draft.subject, body: draft.body, sharedFields: draft.sharedFields });
+  }
+  async pendingDraft(contact: Contact, sharedFields: readonly string[]): Promise<Draft | undefined> {
+    const rows = await this.db.select().from(s.messages).where(and(
+      eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'), eq(s.messages.channel, contact.channel),
+      isNull(s.messages.approvedAt), isNull(s.messages.sentAt), isNull(s.messages.classification),
+    ));
+    const same = (a: readonly string[]) => a.length === sharedFields.length && a.every((f, i) => f === sharedFields[i]);
+    const row = rows.find(r => same(r.sharedFields));
+    return row ? { ...row, channel: contact.channel, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: null, sentAt: null } : undefined;
   }
   async draft(id: string, contact: Contact): Promise<Draft | undefined> {
     const [row] = await this.db.select().from(s.messages).where(and(eq(s.messages.id, id), eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound')));

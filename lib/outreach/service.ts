@@ -46,6 +46,8 @@ export class OutreachService {
     if (!consent?.approvedAt) throw new OutreachError(422, ['consent_required']);
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
+    const pending = await this.store.pendingDraft?.(contact, consent.sharedFields);
+    if (pending) return pending;
     const docs = await search({ caseId: contact.caseId, contactId: contact.id, allowedFields: [], query: 'intake requirements hours referral process', k: 5 });
     const draft = createDraft(contact, consent, record, docs);
     await this.store.saveDraft(draft);

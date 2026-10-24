@@ -61,7 +61,7 @@ export function TypeSection() {
       id="type"
       index="02 / Type"
       title={<Emph text="Newsreader to *speak*, Atkinson to read." />}
-      intro="Newsreader (variable serif, optical size) sets display and headings, light at large sizes. Atkinson Hyperlegible Next, designed for low-vision readers, carries everything people read or operate. Use italic emphasis and tracked caps eyebrows sparingly."
+      intro="Newsreader (variable serif, optical size) sets display and headings, light at large sizes. Atkinson Hyperlegible Next, designed for low-vision readers, carries everything people read or operate. Use italic emphasis and tracked caps eyebrows sparingly. Budget: each view uses three content sizes at most (h1, body and small, plus h3 for sections). The h1 runs 32 to 44 px and body is 16 px, 18 px in patient view."
     >
       <ol className="m-0 grid list-none gap-0 p-0">
         {TYPE_SCALE.map((row) => (

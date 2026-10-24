@@ -91,12 +91,12 @@ export const COLOR_GROUPS: ColorGroup[] = [
 
 export const TYPE_SCALE = [
   { token: "text-display", family: "Newsreader 300", sample: "Get seen, sooner.", display: true },
-  { token: "text-h1", family: "Newsreader 300", sample: "Your case, in order.", display: true },
+  { token: "text-h1", family: "Newsreader 300 · 32 to 44 px · once per page", sample: "Your case, in order.", display: true },
   { token: "text-h2", family: "Newsreader 400", sample: "Specialists who know this condition", display: true },
   { token: "text-h3", family: "Newsreader 400", sample: "Three trials are recruiting near you", display: true },
   { token: "text-h4", family: "Atkinson 700", sample: "What happens after you approve", display: false },
   { token: "text-lead", family: "Atkinson 400", sample: "We find, check and contact. You decide what is sent.", display: false },
-  { token: "text-body", family: "Atkinson 400", sample: "Every claim links to the page it came from, with the date we checked it.", display: false },
+  { token: "text-body", family: "Atkinson 400 · 16 px, 18 px in patient view", sample: "Every claim links to the page it came from, with the date we checked it.", display: false },
   { token: "text-small", family: "Atkinson 400", sample: "Last checked 2 hours ago by the Trials agent.", display: false },
   { token: "text-micro", family: "Atkinson 700 caps", sample: "Evidence", display: false },
   { token: "text-mono", family: "System mono", sample: "case_7f3a · NCT05123456", display: false },

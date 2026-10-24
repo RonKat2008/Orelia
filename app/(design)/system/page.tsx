@@ -13,6 +13,7 @@ import {
   StatusSection,
   SurfaceSection,
 } from "./_components/Gallery";
+import { V2Section } from "./_components/V2Gallery";
 import { Emph, Section } from "./_components/Section";
 import { ColorSection, MotionSection, ShapeSection, TypeSection } from "./_components/Tokens";
 import { JOURNEY } from "./_components/tokens-data";
@@ -34,6 +35,7 @@ const CONTENTS = [
   ["navigation", "Navigation"],
   ["overlays", "Overlays"],
   ["status", "Status"],
+  ["v2", "v2 primitives"],
   ["pair", "Both themes"],
 ] as const;
 
@@ -132,9 +134,10 @@ export default function DesignSystemPage() {
         <NavigationSection />
         <OverlaySection />
         <StatusSection />
+        <V2Section />
         <Section
           id="pair"
-          index="12 / Both themes"
+          index="13 / Both themes"
           title={<Emph text="Same system, *two* lights." />}
           intro="The same primitives with the theme forced on a wrapper via data-theme. Night is a deep blue-grey (#0b111b); teal and the accent hues lighten to keep every text token at 6.5:1 or better."
         >

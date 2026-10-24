@@ -8,7 +8,7 @@ export function PacketSections({ sections }: { sections: readonly PacketSection[
     <div className="grid gap-5">
       {includedSections(sections).map(s => (
         <section key={s.key} aria-label={s.title} className="grid gap-1.5">
-          <h5 className="m-0 font-display text-h4 font-normal text-ink">{s.title}</h5>
+          <h5 className="m-0 text-body font-semibold text-ink">{s.title}</h5>
           {s.items.length === 0 ? (
             <p className="m-0 text-small text-ink-3">Nothing to show here.</p>
           ) : (

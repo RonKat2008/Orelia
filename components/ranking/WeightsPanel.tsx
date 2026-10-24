@@ -12,7 +12,7 @@ export interface WeightsPanelProps {
   onChange: (weights: RankingWeights) => void;
 }
 
-/** A calm panel of four sliders. Meant to sit in a side column or a Sheet. */
+/** Four sliders that preview a new order. Sits inside a Details or a Sheet. */
 export function WeightsPanel({ weights: controlled, defaults = RANKING_WEIGHTS, onChange }: WeightsPanelProps) {
   const [internal, setInternal] = useState<RankingWeights>(defaults);
   const weights = controlled ?? internal;
@@ -26,12 +26,9 @@ export function WeightsPanel({ weights: controlled, defaults = RANKING_WEIGHTS, 
   return (
     <section aria-labelledby={`${baseId}-title`} className="grid gap-6">
       <header className="grid gap-2">
-        <h2
-          id={`${baseId}-title`}
-          className="m-0 font-display text-h3 font-normal text-ink display-soft"
-        >
-          How we order <em className="emph">fit</em>
-        </h2>
+        <h3 id={`${baseId}-title`} className="m-0 font-display text-h3 font-normal text-ink text-balance">
+          How we order fit
+        </h3>
         <p className="m-0 text-small text-ink-2 text-pretty">{RANKING_FORMULA}</p>
       </header>
       <div className="grid gap-6">
@@ -45,7 +42,7 @@ export function WeightsPanel({ weights: controlled, defaults = RANKING_WEIGHTS, 
                 <label htmlFor={inputId} className="text-body font-semibold text-ink">
                   {copy.label}
                 </label>
-                <output htmlFor={inputId} className="font-display text-h4 tabular-nums text-teal">
+                <output htmlFor={inputId} className="text-body font-semibold tabular-nums text-ink">
                   {weights[factor]}
                 </output>
               </div>
@@ -68,7 +65,7 @@ export function WeightsPanel({ weights: controlled, defaults = RANKING_WEIGHTS, 
         })}
       </div>
       <div>
-        <Button type="button" variant="secondary" size="sm" onClick={() => update({ ...defaults })}>
+        <Button type="button" variant="link" className="min-h-11" onClick={() => update({ ...defaults })}>
           <RotateCcw aria-hidden />
           Reset to defaults
         </Button>

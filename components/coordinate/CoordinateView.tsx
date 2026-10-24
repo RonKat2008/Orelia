@@ -1,19 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, EmptyState, Button } from '@/components/ui';
+import { Button, EmptyState, LoadingState, Skeleton } from '@/components/ui';
 import { loadContacts, loadResources } from './client';
 import { BoardPanel } from './BoardPanel';
 import { ConsultPanel } from './ConsultPanel';
 import { PacketPanel } from './PacketPanel';
 import { RequirementsPanel } from './RequirementsPanel';
+import { firstNeedingAction, type SectionKey } from './focus';
 import type { ContactOption, Resource } from './types';
 
 export function CoordinateView({ caseId }: { caseId: string }) {
   const [resources, setResources] = useState<Resource[] | null>(null);
   const [contacts, setContacts] = useState<ContactOption[]>([]);
   const [error, setError] = useState('');
+  const [needs, setNeeds] = useState<Partial<Record<SectionKey, boolean>>>({});
+  // The first section that needs action carries the page's one primary button; the rest show links.
+  const focus = firstNeedingAction(needs);
+  const reportNeeds = useCallback((key: SectionKey, value: boolean) => setNeeds(prev => (prev[key] === value ? prev : { ...prev, [key]: value })), []);
+  const onNeeds = (key: SectionKey) => (value: boolean) => reportNeeds(key, value);
 
   useEffect(() => {
     let live = true;
@@ -33,39 +39,28 @@ export function CoordinateView({ caseId }: { caseId: string }) {
 
   if (resources === null) {
     return (
-      <div role="status" aria-busy="true" className="grid gap-4">
-        <p className="m-0 text-lead text-ink-2">Loading your chosen specialists…</p>
+      <LoadingState label="Loading your chosen specialists" className="gap-4">
         <Skeleton className="h-40 w-full rounded-lg" />
-      </div>
+      </LoadingState>
     );
   }
 
   return (
-    <Tabs defaultValue="board">
-      <TabsList aria-label="Coordination">
-        <TabsTrigger value="board">Next steps</TabsTrigger>
-        <TabsTrigger value="requirements">Referral checklist</TabsTrigger>
-        <TabsTrigger value="packet">Specialist packet</TabsTrigger>
-        <TabsTrigger value="consult">Doctor to expert</TabsTrigger>
-      </TabsList>
-      <TabsContent value="board"><BoardPanel caseId={caseId} /></TabsContent>
+    <div className="grid gap-12">
+      <BoardPanel caseId={caseId} />
       {resources.length === 0 ? (
-        ['requirements', 'packet', 'consult'].map(v => (
-          <TabsContent key={v} value={v}>
-            <EmptyState
-              title="Choose who to contact first"
-              description={error || 'The checklist, packet and doctor requests are built for the specialists you chose.'}
-              action={<Button asChild variant="secondary"><Link href={`/cases/${caseId}/shortlist`}>Open the shortlist</Link></Button>}
-            />
-          </TabsContent>
-        ))
+        <EmptyState
+          title="Choose who to contact first"
+          description={error || 'The checklist, packet and doctor requests are built for the specialists you chose.'}
+          action={<Button asChild><Link href={`/cases/${caseId}/shortlist`}>Open the shortlist</Link></Button>}
+        />
       ) : (
         <>
-          <TabsContent value="requirements"><RequirementsPanel caseId={caseId} resources={resources} /></TabsContent>
-          <TabsContent value="packet"><PacketPanel caseId={caseId} resources={resources} contacts={contacts} /></TabsContent>
-          <TabsContent value="consult"><ConsultPanel caseId={caseId} resources={resources} /></TabsContent>
+          <RequirementsPanel caseId={caseId} resources={resources} primary={focus === 'requirements'} onNeeds={onNeeds('requirements')} />
+          <PacketPanel caseId={caseId} resources={resources} contacts={contacts} primary={focus === 'packet'} onNeeds={onNeeds('packet')} />
+          <ConsultPanel caseId={caseId} resources={resources} primary={focus === 'consult'} onNeeds={onNeeds('consult')} />
         </>
       )}
-    </Tabs>
+    </div>
   );
 }

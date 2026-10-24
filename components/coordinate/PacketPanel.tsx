@@ -2,14 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Paperclip, Plus, Printer, X } from 'lucide-react';
-import { Button, Card, Checkbox, ChoiceRow, Input, Label, Skeleton, toast } from '@/components/ui';
+import { Button, Checkbox, Details, Input, Label, List, ListRow, Skeleton, toast } from '@/components/ui';
 import { attachPacket, buildPacket, getPackets, packetPrintHref, patchPacket } from './client';
 import { includedSections } from './model';
-import { Live, PanelHeading, Reveal } from './shared';
+import type { SectionFocusProps } from './focus';
+import { Live, PanelHeading } from './shared';
 import { PacketSections } from './PacketSections';
 import type { ContactOption, Resource, SpecialistPacket } from './types';
 
-export function PacketPanel({ caseId, resources, contacts }: { caseId: string; resources: Resource[]; contacts: ContactOption[] }) {
+export function PacketPanel({ caseId, resources, contacts, primary, onNeeds }: { caseId: string; resources: Resource[]; contacts: ContactOption[] } & SectionFocusProps) {
   const [packets, setPackets] = useState<Record<string, SpecialistPacket>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -33,6 +34,12 @@ export function PacketPanel({ caseId, resources, contacts }: { caseId: string; r
       live = false;
     };
   }, [caseId]);
+
+  useEffect(() => {
+    if (!loading) onNeeds(resources.some(r => !packets[r.resourceKey]));
+  }, [loading, packets, resources, onNeeds]);
+  // Only the first specialist without a packet gets the primary button.
+  const firstMissing = resources.find(r => !packets[r.resourceKey])?.resourceKey;
 
   const put = (p: SpecialistPacket) => setPackets(prev => ({ ...prev, [p.resourceKey]: p }));
   const fail = async (status: number, msg: string) => {
@@ -68,30 +75,35 @@ export function PacketPanel({ caseId, resources, contacts }: { caseId: string; r
     <section aria-labelledby="packet-heading" className="grid gap-6">
       <PanelHeading
         id="packet-heading"
-        eyebrow="Specialist packet"
         title="A short summary for each specialist"
-        lede="Tick the parts you want included. Only ticked parts are previewed, printed or attached to a draft, and you read the draft before anything is sent."
+        lede="Tick the parts to include. Only ticked parts are printed or attached, and you read any draft first."
       />
       <Live>{message}</Live>
       {loading ? <Skeleton className="h-32 w-full rounded-lg" /> : null}
-      {resources.map((r, i) => {
+      {resources.map(r => {
         const packet = packets[r.resourceKey];
+        const isPrimary = primary && r.resourceKey === firstMissing;
         return (
-          <Reveal key={r.resourceKey} index={i}>
-            <Card className="grid gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h4 className="m-0 font-display text-h4 font-normal text-ink">{r.name}</h4>
-                <Button size="sm" variant={packet ? 'ghost' : 'secondary'} onClick={() => void build(r.resourceKey)} loading={busy === r.resourceKey} loadingText="Building">
-                  {packet ? 'Rebuild' : 'Build packet'}
-                </Button>
-              </div>
-              {packet ? (
-                <PacketEditor caseId={caseId} packet={packet} contacts={contactsFor(contacts, r)} onPatch={c => patch(packet, c)} onMessage={setMessage} />
-              ) : (
-                <p className="m-0 text-body text-ink-2">No packet yet.</p>
-              )}
-            </Card>
-          </Reveal>
+          <div key={r.resourceKey} className="grid gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <h4 className="m-0 min-w-0 break-words text-body font-semibold text-ink">{r.name}</h4>
+              <Button
+                size="sm"
+                variant={isPrimary ? 'primary' : 'link'}
+                className={isPrimary ? undefined : 'min-h-11'}
+                onClick={() => void build(r.resourceKey)}
+                loading={busy === r.resourceKey}
+                loadingText="Building"
+              >
+                {packet ? 'Rebuild' : 'Build packet'}<span className="sr-only"> for {r.name}</span>
+              </Button>
+            </div>
+            {packet ? (
+              <PacketEditor caseId={caseId} packet={packet} contacts={contactsFor(contacts, r)} onPatch={c => patch(packet, c)} onMessage={setMessage} />
+            ) : (
+              <p className="m-0 text-body text-ink-2">No packet yet.</p>
+            )}
+          </div>
         );
       })}
     </section>
@@ -133,71 +145,75 @@ function PacketEditor({ caseId, packet, contacts, onPatch, onMessage }: {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="grid content-start gap-3">
-        <fieldset className="m-0 grid gap-2 border-0 p-0">
-          <legend className="mb-1 text-small font-semibold text-ink">Include in the packet</legend>
-          {packet.sections.map(s => (
-            <ChoiceRow key={s.key} title={s.title} description={`${s.items.length} ${s.items.length === 1 ? 'item' : 'items'}`}>
-              <Checkbox checked={s.included} onCheckedChange={v => void onPatch({ included: { [s.key]: v === true } })} aria-label={`Include ${s.title}`} />
-            </ChoiceRow>
-          ))}
-        </fieldset>
-        <div className="grid gap-2">
-          <Label htmlFor={`${idBase}-q`}>Add a question for the specialist</Label>
-          <div className="flex gap-2">
-            <Input id={`${idBase}-q`} value={draftQ} maxLength={300} placeholder="What would you like to ask?" onChange={e => setDraftQ(e.target.value)} />
-            <Button
-              variant="secondary"
-              disabled={!draftQ.trim()}
-              onClick={() => {
-                void onPatch({ questions: [...questions, draftQ.trim()] });
-                setDraftQ('');
-              }}
-            >
-              <Plus aria-hidden /> Add
-            </Button>
-          </div>
-          {questions.length > 0 ? (
-            <ul className="m-0 grid list-none gap-1.5 p-0">
-              {questions.map((q, i) => (
-                <li key={`${i}-${q}`} className="flex items-start justify-between gap-2 rounded-sm bg-paper-2 px-3 py-2 text-small text-ink">
-                  <span className="min-w-0 break-words">{q}</span>
-                  <button type="button" className="shrink-0 rounded-sm p-1 text-ink-3 hover:text-ink focus-ring" aria-label={`Remove question: ${q}`} onClick={() => void onPatch({ questions: questions.filter((_, j) => j !== i) })}>
-                    <X aria-hidden className="size-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <Button asChild variant="secondary">
-            <a href={packetPrintHref(caseId, packet.resourceKey)} target="_blank" rel="noopener noreferrer">
-              <Printer aria-hidden /> Print<span className="sr-only"> (opens in a new tab)</span>
-            </a>
+    <div className="grid gap-5">
+      <List label={`Parts of the packet for ${packet.name}`}>
+        {packet.sections.map(s => (
+          <ListRow
+            key={s.key}
+            title={s.title}
+            selectId={`${idBase}-s-${s.key}`}
+            meta={`${s.items.length} ${s.items.length === 1 ? 'item' : 'items'}`}
+            leading={<Checkbox id={`${idBase}-s-${s.key}`} checked={s.included} onCheckedChange={v => void onPatch({ included: { [s.key]: v === true } })} />}
+          />
+        ))}
+      </List>
+      <div className="grid gap-2">
+        <Label htmlFor={`${idBase}-q`}>Add a question for the specialist</Label>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Input className="min-w-0 flex-1" id={`${idBase}-q`} value={draftQ} maxLength={300} placeholder="What would you like to ask?" onChange={e => setDraftQ(e.target.value)} />
+          <Button
+            variant="link"
+            className="min-h-11"
+            disabled={!draftQ.trim()}
+            onClick={() => {
+              void onPatch({ questions: [...questions, draftQ.trim()] });
+              setDraftQ('');
+            }}
+          >
+            <Plus aria-hidden /> Add question
           </Button>
         </div>
-        <div className="grid gap-2 rounded-md border border-line bg-paper-2/60 p-3">
-          <Label htmlFor={`${idBase}-c`}>Attach to an outreach draft</Label>
-          {contacts.length === 0 ? (
-            <p className="m-0 text-small text-ink-2">Choose who to contact first, then you can attach this to a draft.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              <select id={`${idBase}-c`} value={contactId} onChange={e => setContactId(e.target.value)} className="h-11 min-w-0 flex-1 rounded-md border border-line-strong bg-card px-3 text-body text-ink focus-ring">
-                {contacts.map(c => <option key={c.id} value={c.id}>{c.displayName}</option>)}
-              </select>
-              <Button variant="secondary" onClick={() => void attach()} loading={attaching} loadingText="Attaching" disabled={!contactId}>
-                <Paperclip aria-hidden /> Attach
-              </Button>
-            </div>
-          )}
-        </div>
+        {questions.length > 0 ? (
+          <List label="Your questions">
+            {questions.map((q, i) => (
+              <ListRow
+                key={`${i}-${q}`}
+                title={<span className="break-words font-normal">{q}</span>}
+                trailing={
+                  <Button variant="ghost" size="sm" className="min-h-11" onClick={() => void onPatch({ questions: questions.filter((_, j) => j !== i) })}>
+                    <X aria-hidden /> Remove<span className="sr-only"> question: {q}</span>
+                  </Button>
+                }
+              />
+            ))}
+          </List>
+        ) : null}
       </div>
-      <div className="min-w-0 rounded-md bg-paper-2 p-4 shadow-inset" aria-label="Preview of included sections" role="region">
-        <p className="m-0 mb-2 text-micro font-semibold uppercase text-ink-3">Preview, included sections only</p>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <Button asChild variant="link" className="min-h-11">
+          <a href={packetPrintHref(caseId, packet.resourceKey)} target="_blank" rel="noopener noreferrer">
+            <Printer aria-hidden /> Print this packet<span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </Button>
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor={`${idBase}-c`}>Attach to an outreach draft</Label>
+        {contacts.length === 0 ? (
+          <p className="m-0 text-small text-ink-2">Choose who to contact first, then you can attach this to a draft.</p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <select id={`${idBase}-c`} value={contactId} onChange={e => setContactId(e.target.value)} className="h-11 min-w-0 flex-1 rounded-md border border-line-strong bg-card px-3 text-body text-ink focus-ring">
+              {contacts.map(c => <option key={c.id} value={c.id}>{c.displayName}</option>)}
+            </select>
+            <Button variant="link" className="min-h-11" onClick={() => void attach()} loading={attaching} loadingText="Attaching" disabled={!contactId}>
+              <Paperclip aria-hidden /> Attach to draft
+            </Button>
+          </div>
+        )}
+      </div>
+      <Details summary="Preview what will be shared">
         {shown.length === 0 ? <p className="m-0 text-body text-ink-2">Nothing is ticked, so the packet is empty.</p> : <PacketSections sections={shown} />}
-      </div>
+      </Details>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check, ShieldCheck, X } from 'lucide-react';
-import { Badge, Button, Card, Field, Input, Skeleton, Textarea } from '@/components/ui';
+import { Button, Card, Field, Input, Skeleton, Textarea } from '@/components/ui';
 import { PROCESS_KIND_LABELS } from './model';
 import { PacketSections } from './PacketSections';
 import { Live, SourceLink } from './shared';
@@ -59,7 +59,7 @@ export function ReviewForm({ token }: { token: string }) {
   };
 
   if (phase.kind === 'loading') {
-    return <div role="status" aria-busy="true" className="grid gap-4"><p className="m-0 text-lead text-ink-2">Opening the request…</p><Skeleton className="h-48 w-full rounded-lg" /></div>;
+    return <div role="status" aria-busy="true" className="grid gap-4"><p className="m-0 text-body text-ink-2">Opening the request…</p><Skeleton className="h-48 w-full rounded-lg" /></div>;
   }
   if (phase.kind === 'gone') {
     return (
@@ -91,9 +91,9 @@ export function ReviewForm({ token }: { token: string }) {
       </Card>
 
       <section aria-labelledby="rv-who" className="grid gap-2">
-        <h2 id="rv-who" className="m-0 font-display text-h3 font-light text-ink display-soft">Request from {r.doctorName}’s patient to {r.expertName}</h2>
+        <h2 id="rv-who" className="m-0 font-display text-h3 font-normal text-ink">Request from {r.doctorName}’s patient to {r.expertName}</h2>
         <div className="flex flex-wrap items-center gap-3">
-          <Badge tone="teal">{PROCESS_KIND_LABELS[r.processKind]}</Badge>
+          <span className="text-small font-semibold text-ink">{PROCESS_KIND_LABELS[r.processKind]}</span>
           <SourceLink url={r.processSourceUrl} label="Where this process is described" />
         </div>
         {r.processDetail ? <p className="m-0 text-body text-ink-2">{r.processDetail}</p> : null}
@@ -117,7 +117,7 @@ export function ReviewForm({ token }: { token: string }) {
 
         {r.packet && r.packet.some(s => s.included) ? (
           <section aria-labelledby="rv-packet" className="grid gap-2 rounded-md border border-line bg-paper-2 p-4">
-            <h3 id="rv-packet" className="m-0 font-display text-h4 font-normal text-ink">Attached summary</h3>
+            <h3 id="rv-packet" className="m-0 text-body font-semibold text-ink">Attached summary</h3>
             <p className="m-0 text-small text-ink-2">Only the parts the patient chose to share.</p>
             <PacketSections sections={r.packet} />
           </section>

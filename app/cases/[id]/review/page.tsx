@@ -11,10 +11,10 @@ import {
 } from "@/components/ranking/ReviewCheckpoint";
 import { WeightsPanel } from "@/components/ranking/WeightsPanel";
 import type { AgreementSummary } from "@/components/ranking/model";
-import { PageIntro } from "@/components/shortlist/PageIntro";
+import { CasePage } from "@/components/outreach/CasePage";
 import { normalizeShortlist } from "@/components/shortlist/data";
 import { titleOf } from "@/components/shortlist/view-model";
-import { Button, Skeleton } from "@/components/ui";
+import { Button, Details, JudgeOnly, LoadingState, Skeleton } from "@/components/ui";
 
 interface PreviewRow {
   id: string;
@@ -163,88 +163,54 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="ds-root">
-      <PageIntro
-        eyebrow="Review"
-        title={
-          <>
-            Check the <em className="emph">shortlist</em>
-          </>
-        }
-        lede={
-          <>
-            Adjust how resources are ordered, then mark each lead correct or
-            incorrect. Changing weights previews a new order and does not
-            replace the saved shortlist.
-          </>
-        }
-        actions={
-          <Button asChild variant="secondary">
-            <Link href={`/cases/${caseId}/shortlist`}>
-              Back to the shortlist
-            </Link>
-          </Button>
-        }
-      />
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
-        <div className="min-w-0" aria-busy={busy}>
-          {busy && resources.length === 0 ? (
-            <div role="status" className="grid gap-4">
-              <span className="sr-only">Previewing this order</span>
-              <Skeleton className="h-28 w-full rounded-lg" />
-              <Skeleton className="h-56 w-full rounded-lg" />
-              <Skeleton className="h-56 w-full rounded-lg" />
-            </div>
-          ) : status ? (
-            <div
-              role="alert"
-              className="grid gap-3 rounded-lg border border-danger/30 bg-danger-soft p-6"
-            >
-              <h2 className="m-0 font-display text-h3 font-normal text-ink display-soft">
-                Preview ranking is unavailable
-              </h2>
-              <p className="m-0 text-body text-ink-2">{status}</p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setBusy(true);
-                    void rerank(weights, saved);
-                  }}
-                >
-                  Try again
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href={`/cases/${caseId}/shortlist`}>
-                    Back to the shortlist
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              {fallback ? (
-                <p className="mb-6 mt-0 rounded-md border border-gold/70 bg-gold-soft px-4 py-3 text-small text-ink">
-                  The weights preview is unavailable right now, so this is the
-                  saved order. Reviews still save.
-                </p>
-              ) : null}
-              <ReviewCheckpoint
-                caseId={caseId}
-                resources={resources}
-                agreement={agreement}
-                onSubmit={saveReview}
-              />
-            </>
-          )}
-        </div>
-        <aside
-          aria-label="Ranking weights"
-          className="h-fit rounded-lg border border-line bg-paper-2/60 p-6 shadow-inset lg:sticky lg:top-28"
-        >
+    // LANE C SWITCH POINT: patient={<Patient… />}
+    <CasePage
+      eyebrow="Evaluator tool"
+      title="Check the shortlist"
+      lede="Mark each lead correct or incorrect. Changing the order only previews it and never replaces the saved shortlist."
+      action={
+        <Button asChild variant="link" className="min-h-11">
+          <Link href={`/cases/${caseId}/shortlist`}>Back to the shortlist</Link>
+        </Button>
+      }
+    >
+      <JudgeOnly>
+        <Details summary="Tune the order" className="max-w-prose">
           <WeightsPanel weights={weights} onChange={changeWeights} />
-        </aside>
+        </Details>
+      </JudgeOnly>
+      <div className="min-w-0" aria-busy={busy}>
+        {busy && resources.length === 0 ? (
+          <LoadingState label="Previewing this order">
+            <Skeleton className="h-28 w-full rounded-lg" />
+            <Skeleton className="h-56 w-full rounded-lg" />
+          </LoadingState>
+        ) : status ? (
+          <div role="alert" className="grid gap-3">
+            <h3 className="m-0 font-display text-h3 font-normal text-ink text-balance">Preview ranking is unavailable</h3>
+            <p className="m-0 text-body text-danger">{status}</p>
+            <div>
+              <Button
+                onClick={() => {
+                  setBusy(true);
+                  void rerank(weights, saved);
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {fallback ? (
+              <p className="mb-6 mt-0 text-small text-ink-2">
+                The weights preview is unavailable right now, so this is the saved order. Reviews still save.
+              </p>
+            ) : null}
+            <ReviewCheckpoint caseId={caseId} resources={resources} agreement={agreement} onSubmit={saveReview} />
+          </>
+        )}
       </div>
-    </div>
+    </CasePage>
   );
 }

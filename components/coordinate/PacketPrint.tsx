@@ -53,8 +53,8 @@ export function PacketPrint({ caseId, resourceKey }: { caseId: string; resourceK
       ) : (
         <>
           <header className="grid gap-1 border-b border-line pb-4 print:border-black">
-            <p className="m-0 text-micro font-semibold uppercase text-ink-3 print:text-ink">Summary prepared by the patient for</p>
-            <h1 className="m-0 font-display text-h2 font-light text-ink display-soft print:text-ink">{packet.name}</h1>
+            <p className="m-0 text-small font-semibold text-ink-2 print:text-ink">Summary prepared by the patient for</p>
+            <h1 className="m-0 font-display text-h3 font-normal text-ink print:text-ink">{packet.name}</h1>
             <p className="m-0 text-small text-ink-2 print:text-ink">Only the parts the patient chose to share are included. Organized with Wayfinder; this is not medical advice.</p>
           </header>
           {includedSections(packet.sections).length === 0 ? (

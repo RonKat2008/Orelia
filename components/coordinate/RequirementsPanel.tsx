@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ClipboardCheck, FileText, Files, Mail, ShieldCheck, Stethoscope, FileQuestion, type LucideIcon } from 'lucide-react';
-import { Badge, Button, Card, Input, Label, Skeleton, toast } from '@/components/ui';
+import { Check, ClipboardCheck, FileText, Files, Mail, ShieldCheck, Stethoscope, FileQuestion, type LucideIcon } from 'lucide-react';
+import { Button, Details, Input, Label, List, ListRow, Skeleton, toast } from '@/components/ui';
 import { cn } from '@/lib/ui/cn';
 import { checkRequirements, getChecklists, setRequirement } from './client';
 import { REQUIREMENT_KIND_LABELS, REQUIREMENT_STATUS_LABELS, REQUIREMENT_STATUS_ORDER, checklistProgress } from './model';
-import { Live, PanelHeading, Reveal, SourceLink } from './shared';
+import type { SectionFocusProps } from './focus';
+import { Live, PanelHeading, SourceLink } from './shared';
 import type { ReferralRequirement, RequirementKind, RequirementStatus, RequirementsChecklist, Resource } from './types';
 
 const KIND_ICONS: Record<RequirementKind, LucideIcon> = {
@@ -18,7 +19,7 @@ const KIND_ICONS: Record<RequirementKind, LucideIcon> = {
   other: FileQuestion,
 };
 
-export function RequirementsPanel({ caseId, resources }: { caseId: string; resources: Resource[] }) {
+export function RequirementsPanel({ caseId, resources, primary, onNeeds }: { caseId: string; resources: Resource[] } & SectionFocusProps) {
   const [lists, setLists] = useState<Record<string, RequirementsChecklist>>({});
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -42,6 +43,10 @@ export function RequirementsPanel({ caseId, resources }: { caseId: string; resou
       live = false;
     };
   }, [caseId]);
+
+  useEffect(() => {
+    if (!loading) onNeeds(resources.some(r => !lists[r.resourceKey]));
+  }, [loading, lists, resources, onNeeds]);
 
   const check = async (resourceKey?: string) => {
     setBusyKey(resourceKey ?? '*');
@@ -75,27 +80,32 @@ export function RequirementsPanel({ caseId, resources }: { caseId: string; resou
     <section aria-labelledby="req-heading" className="grid gap-6">
       <PanelHeading
         id="req-heading"
-        eyebrow="Referral checklist"
         title="What each place asks for before they see you"
-        lede="We read each center’s public pages for things like referral letters, records and forms. Every item links to the page it came from. Please check the source before you rely on it."
+        lede="We read each center’s public pages. Every item links to its source, so please check it before you rely on it."
       />
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="secondary" onClick={() => void check()} loading={busyKey === '*'} loadingText="Checking" disabled={resources.length === 0 || busyKey !== null}>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <Button
+          variant={primary ? 'primary' : 'link'}
+          className={primary ? undefined : 'min-h-11'}
+          onClick={() => void check()}
+          loading={busyKey === '*'}
+          loadingText="Checking"
+          disabled={resources.length === 0 || busyKey !== null}
+        >
           <ClipboardCheck aria-hidden /> Check requirements
         </Button>
         <Live>{message}</Live>
       </div>
       {loading ? <Skeleton className="h-32 w-full rounded-lg" /> : null}
-      {resources.map((r, i) => (
-        <Reveal key={r.resourceKey} index={i}>
-          <ResourceChecklist
-            resource={r}
-            list={lists[r.resourceKey]}
-            busy={busyKey === r.resourceKey || busyKey === '*'}
-            onCheck={() => void check(r.resourceKey)}
-            onUpdate={update}
-          />
-        </Reveal>
+      {resources.map(r => (
+        <ResourceChecklist
+          key={r.resourceKey}
+          resource={r}
+          list={lists[r.resourceKey]}
+          busy={busyKey === r.resourceKey || busyKey === '*'}
+          onCheck={() => void check(r.resourceKey)}
+          onUpdate={update}
+        />
       ))}
     </section>
   );
@@ -110,15 +120,15 @@ function ResourceChecklist({ resource, list, busy, onCheck, onUpdate }: {
 }) {
   const progress = list ? checklistProgress(list.requirements.map(r => r.status)) : null;
   return (
-    <Card className="grid gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h4 className="m-0 font-display text-h4 font-normal text-ink">{resource.name}</h4>
-        <div className="flex items-center gap-2">
-          {progress && progress.total > 0 ? <Badge tone="teal">{progress.have} of {progress.total} ready</Badge> : null}
-          <Button size="sm" variant="ghost" onClick={onCheck} loading={busy} loadingText="Checking">
-            {list ? 'Check again' : 'Check'}
-          </Button>
-        </div>
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h4 className="m-0 min-w-0 break-words text-body font-semibold text-ink">
+          {resource.name}
+          {progress && progress.total > 0 ? <span className="font-normal text-ink-2"> · {progress.have} of {progress.total} ready</span> : null}
+        </h4>
+        <Button size="sm" variant="link" className="min-h-11" onClick={onCheck} loading={busy} loadingText="Checking">
+          {list ? 'Check again' : 'Check'}<span className="sr-only"> {resource.name}</span>
+        </Button>
       </div>
       {!list ? (
         <p className="m-0 text-body text-ink-2">Not checked yet.</p>
@@ -127,13 +137,13 @@ function ResourceChecklist({ resource, list, busy, onCheck, onUpdate }: {
           {list.unavailableReason ?? 'We did not find published requirements for this place. You can call or email them to ask what they need.'}
         </p>
       ) : (
-        <ul className="m-0 grid list-none gap-3 p-0">
+        <List label={`Requirements for ${resource.name}`}>
           {list.requirements.map(req => (
             <RequirementRow key={req.id} req={req} onChange={(s, note) => onUpdate(list, req, s, note)} />
           ))}
-        </ul>
+        </List>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -142,46 +152,46 @@ function RequirementRow({ req, onChange }: { req: ReferralRequirement; onChange:
   const [note, setNote] = useState(req.note ?? '');
   const noteId = `note-${req.id}`;
   return (
-    <li className="grid gap-3 rounded-md border border-line bg-paper-2/60 p-4">
-      <div className="flex items-start gap-3">
-        <Icon aria-hidden className="mt-0.5 size-5 shrink-0 text-teal" />
-        <div className="grid min-w-0 gap-1">
-          <p className="m-0 font-semibold text-ink">
-            {req.label} <span className="font-normal text-ink-3">· {REQUIREMENT_KIND_LABELS[req.kind]}</span>
-          </p>
-          {req.detail ? <p className="m-0 text-small text-ink-2 text-pretty">{req.detail}</p> : null}
-          <SourceLink url={req.sourceUrl} />
+    <ListRow
+      title={req.label}
+      leading={<Icon aria-hidden className="text-ink-2" />}
+      meta={[REQUIREMENT_KIND_LABELS[req.kind], req.detail].filter(Boolean).join(' · ')}
+    >
+      <div className="grid gap-2">
+        <SourceLink url={req.sourceUrl} />
+        <div role="group" aria-label={`Status for ${req.label}`} className="flex flex-wrap gap-2">
+          {REQUIREMENT_STATUS_ORDER.map(s => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={req.status === s}
+              onClick={() => void onChange(s, note || undefined)}
+              className={cn(
+                'inline-flex min-h-11 items-center gap-1.5 rounded-pill border px-3.5 text-small font-semibold focus-ring transition-colors duration-150 motion-reduce:transition-none',
+                req.status === s ? 'border-teal/40 bg-teal-soft text-teal-ink' : 'border-line-strong bg-card text-ink-2 hover:border-ink-3 hover:text-ink',
+              )}
+            >
+              {req.status === s ? <Check aria-hidden className="size-4" /> : null}
+              {REQUIREMENT_STATUS_LABELS[s]}
+            </button>
+          ))}
         </div>
+        <Details label={null} summary={note ? 'Edit your note' : 'Add a note'} defaultOpen={Boolean(req.note)}>
+          <div className="grid gap-1.5">
+            <Label htmlFor={noteId}>Note <span className="font-normal text-ink-3">(optional)</span></Label>
+            <Input
+              id={noteId}
+              value={note}
+              maxLength={400}
+              placeholder="For example, asked Dr. Lee on Oct 2"
+              onChange={e => setNote(e.target.value)}
+              onBlur={() => {
+                if (note !== (req.note ?? '')) void onChange(req.status, note);
+              }}
+            />
+          </div>
+        </Details>
       </div>
-      <div role="group" aria-label={`Status for ${req.label}`} className="flex flex-wrap gap-2">
-        {REQUIREMENT_STATUS_ORDER.map(s => (
-          <button
-            key={s}
-            type="button"
-            aria-pressed={req.status === s}
-            onClick={() => void onChange(s, note || undefined)}
-            className={cn(
-              'min-h-10 rounded-pill border px-3.5 text-small font-semibold focus-ring transition-colors motion-reduce:transition-none',
-              req.status === s ? 'border-teal bg-teal text-on-teal' : 'border-line-strong bg-card text-ink-2 hover:border-ink-3 hover:text-ink',
-            )}
-          >
-            {REQUIREMENT_STATUS_LABELS[s]}
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor={noteId}>Note <span className="font-normal text-ink-3">(optional)</span></Label>
-        <Input
-          id={noteId}
-          value={note}
-          maxLength={400}
-          placeholder="For example, asked Dr. Lee on Oct 2"
-          onChange={e => setNote(e.target.value)}
-          onBlur={() => {
-            if (note !== (req.note ?? '')) void onChange(req.status, note);
-          }}
-        />
-      </div>
-    </li>
+    </ListRow>
   );
 }

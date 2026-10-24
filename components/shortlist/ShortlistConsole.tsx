@@ -11,7 +11,7 @@ import { FilterBar } from "./FilterBar";
 import { JudgeOverview, hasOverview } from "./JudgeOverview";
 import { ShortlistDetail, TIER_TONE } from "./ShortlistDetail";
 import { badgeViews } from "./verify-model";
-import { GROUPS, NO_FILTERS, eyebrowOf, matchesFilters, placeOf, tierLabel, titleOf, type ShortlistFilters } from "./view-model";
+import { GROUPS, NO_FILTERS, matchesFilters, metaOf, tierLabel, titleOf, type ShortlistFilters } from "./view-model";
 
 const OVERVIEW = "__overview__";
 
@@ -187,7 +187,7 @@ export function ShortlistConsole({
                     badges={tier && card.tier ? <Badge tone={TIER_TONE[card.tier]}>{tier}</Badge> : null}
                     meta={
                       <>
-                        {[eyebrowOf(card.resource), placeOf(card.resource)].filter(Boolean).join(" · ")}
+                        {metaOf(card)}
                         {card.evidence.length > 0 ? (
                           <>
                             {" · "}

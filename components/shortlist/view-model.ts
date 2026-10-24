@@ -1,4 +1,5 @@
-import type { Resource } from "@/lib/contracts";
+import type { Evidence, Resource } from "@/lib/contracts";
+import { RARE_TAG_LABELS, isExpertCenter, rareTags } from "@/lib/rare-disease/tags";
 import { computeScoreSegments, type ScoreSegment } from "@/lib/motion/score";
 import { reachabilityLabel } from "@/lib/outreach/reachability";
 import type { ShortlistCard } from "./data";
@@ -18,6 +19,13 @@ export const GROUPS: {
     short: "Specialists",
     blurb:
       "People and programs who see this disease, with the publications or designations that point to them.",
+  },
+  {
+    id: "studies",
+    title: "Studies & registries",
+    short: "Studies & registries",
+    blurb:
+      "Studies that follow people over time and patient registries. Joining usually means sharing health details, not trying a treatment.",
   },
   {
     id: "trials",
@@ -48,6 +56,7 @@ const KIND_LABEL: Record<string, string> = {
   advocacy: "Advocacy organization",
   financial_aid: "Financial aid",
   travel_aid: "Travel aid",
+  registry: RARE_TAG_LABELS.registry,
 };
 
 export function titleOf(resource: Resource): string {
@@ -58,8 +67,25 @@ function label(value: string | undefined): string | undefined {
   return value ? (KIND_LABEL[value] ?? value) : undefined;
 }
 
+/**
+ * Quiet "Expert center" word for NORD Centers of Excellence, RDCRN consortia and the Undiagnosed Diseases Network,
+ * from code-stamped claim types only. One label (the first match), or null.
+ */
+export function expertCenterLabel(
+  evidence: readonly Pick<Evidence, "claimType">[],
+): string | null {
+  const tags = rareTags(evidence);
+  if (!isExpertCenter(tags)) return null;
+  const tag = tags.find((t) => t === "nord_coe" || t === "rdcrn" || t === "udn");
+  return tag ? RARE_TAG_LABELS[tag] : null;
+}
+
 /** Small line above the name: what this is. */
-export function eyebrowOf(resource: Resource): string {
+export function eyebrowOf(
+  resource: Resource,
+  evidence: readonly Pick<Evidence, "claimType">[] = [],
+): string {
+  const tags = rareTags(evidence);
   if (resource.kind === "expert")
     return (
       [resource.credentials, resource.specialty].filter(Boolean).join(", ") ||
@@ -67,7 +93,12 @@ export function eyebrowOf(resource: Resource): string {
     );
   if (resource.kind === "institution")
     return label(resource.institutionKind) ?? "Care center";
-  if (resource.kind === "trial") return "Clinical trial";
+  if (resource.kind === "trial")
+    return resource.studyType === "observational" || tags.includes("observational_study")
+      ? RARE_TAG_LABELS.observational_study
+      : "Clinical trial";
+  if (tags.includes("registry") && resource.organizationKind !== "registry")
+    return RARE_TAG_LABELS.registry;
   return label(resource.organizationKind) ?? "Organization";
 }
 
@@ -83,6 +114,13 @@ export function placeOf(resource: Resource): string | undefined {
       [resource.nctId, resource.status].filter(Boolean).join(" · ") || undefined
     );
   return undefined;
+}
+
+/** Judge meta line: type · place · expert-center word (a quiet tag, so the row keeps its badge budget). */
+export function metaOf(card: Pick<ShortlistCard, "resource" | "evidence">): string {
+  return [eyebrowOf(card.resource, card.evidence), placeOf(card.resource), expertCenterLabel(card.evidence)]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function statesOf(resource: Resource): string[] {

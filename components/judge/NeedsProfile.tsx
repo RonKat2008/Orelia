@@ -120,6 +120,13 @@ export function NeedsProfile({
           ))}
         </Block>
       ) : null}
+      {(needs.workup ?? []).length > 0 ? (
+        <Block as={B} id="needs-workup" title="What to look for in a diagnostic workup" hint="Kinds of testing services to look for. Never a diagnosis.">
+          {needs.workup.map((w) => (
+            <Item key={w.id} needs={needs} evidenceIds={w.evidenceIds} text={w.text} plain={w.plain} />
+          ))}
+        </Block>
+      ) : null}
       {needs.redFlags.length > 0 ? (
         <Block as={B} id="needs-red-flags" title="Red flags">
           {needs.redFlags.map((r) => (

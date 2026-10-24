@@ -1,4 +1,6 @@
 import { bandShortlist, selectionKey, type ShortlistCard } from "@/components/shortlist/data";
+import { expertCenterLabel } from "@/components/shortlist/view-model";
+import { RARE_TAG_LABELS, rareTags } from "@/lib/rare-disease/tags";
 import { contactRoutesOf } from "@/lib/outreach/reachability";
 import { resourceKindLabel } from "@/lib/patient-status/plain";
 import { SHORTLIST_COPY } from "./copy";
@@ -56,10 +58,22 @@ export function reachOf(card: ShortlistCard): string | null {
   return null;
 }
 
-/** One meta line: type · place · how we'd reach them. */
+/** Plain type word. Studies and registries get their own words; everything else keeps the shared label. */
+function kindWord(card: ShortlistCard): string {
+  const tags = rareTags(card.evidence);
+  const r = card.resource as { studyType?: string; organizationKind?: string };
+  if (card.resource.kind === "trial" && (r.studyType === "observational" || tags.includes("observational_study")))
+    return RARE_TAG_LABELS.observational_study;
+  if (r.organizationKind === "registry" || tags.includes("registry")) return RARE_TAG_LABELS.registry;
+  return resourceKindLabel(card.resource.kind, r.organizationKind);
+}
+
+/**
+ * One meta line: type · place · how we'd reach them. An expert center adds its name here, not as a badge, because the
+ * patient row's only badge is "Good match".
+ */
 export function metaLine(card: ShortlistCard): string {
-  const kind = resourceKindLabel(card.resource.kind, (card.resource as { organizationKind?: string }).organizationKind);
-  return [kind, placeOf(card), reachOf(card)].filter(Boolean).join(" · ");
+  return [kindWord(card), placeOf(card), reachOf(card), expertCenterLabel(card.evidence)].filter(Boolean).join(" · ");
 }
 
 /** "Good match" for the strongest picks: suggested or top-rated. At most this one badge per row. */

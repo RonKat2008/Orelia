@@ -49,7 +49,7 @@ export function SelectionTray({
                 <li key={selectionKey(card)} className="flex min-h-14 items-center gap-3 border-b border-line py-2">
                   <div className="grid min-w-0 flex-1">
                     <span className="truncate font-semibold text-ink">{titleOf(card.resource)}</span>
-                    <span className="truncate text-small text-ink-2">{eyebrowOf(card.resource)}</span>
+                    <span className="truncate text-small text-ink-2">{eyebrowOf(card.resource, card.evidence)}</span>
                   </div>
                   <IconButton label={`Remove ${titleOf(card.resource)}`} onClick={() => onRemove(selectionKey(card))}>
                     <X aria-hidden />

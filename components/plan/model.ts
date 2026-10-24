@@ -23,8 +23,17 @@ export const KIND_LABELS: Record<string, string> = {
 };
 
 /** "Introduce by email", "Verify by phone call": purpose and channel, each said once. */
-export function stepLabel(step: Pick<PlanStep, 'purpose' | 'channel'>): string {
-  return `${PURPOSE_LABELS[step.purpose]} by ${CHANNEL_LABELS[step.channel].toLowerCase()}`;
+export function stepLabel(step: Pick<PlanStep, 'purpose' | 'channel'>, opts: { registry?: boolean } = {}): string {
+  const purpose = opts.registry && (step.purpose === 'intro' || step.purpose === 'apply') ? REGISTRY_PURPOSE : PURPOSE_LABELS[step.purpose];
+  return `${purpose} by ${CHANNEL_LABELS[step.channel].toLowerCase()}`;
+}
+
+/** Patient registries are joined, not "introduced to". Label only; the plan's steps are unchanged. */
+const REGISTRY_PURPOSE = 'Join the registry';
+
+/** True when the plan rule names a patient registry (label only, no plan logic). */
+export function isRegistryPlan(resource: Pick<ResourcePlan, 'rule'>): boolean {
+  return /registry/i.test(resource.rule);
 }
 
 /** waitFor in plain words. */

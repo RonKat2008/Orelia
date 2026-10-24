@@ -6,6 +6,7 @@ import {
   type Evidence,
   type Resource,
 } from "@/lib/contracts";
+import { isStudyOrRegistry, rareTags } from "@/lib/rare-disease/tags";
 import { z } from "zod";
 
 export const tierSchema = z.enum(["best", "good", "backup", "exclude"]);
@@ -20,7 +21,7 @@ export const shortlistCardSchema = z.object({
   score: z.number(),
   breakdown: z.array(scoreBreakdownItemSchema),
   evidence: z.array(evidenceSchema),
-  group: z.enum(["specialists", "trials", "advocacy", "aid"]),
+  group: z.enum(["specialists", "studies", "trials", "advocacy", "aid"]),
   tier: tierSchema.optional(),
   tierReasons: z.array(tierReasonSchema).optional(),
 });
@@ -228,10 +229,20 @@ export const previewShortlist: ShortlistCard[] = [
   },
 ];
 
-export function groupOf(resource: Resource): ShortlistCard["group"] {
+/**
+ * "Studies & registries" holds observational studies and patient registries, kept apart from interventional trials.
+ * Code-stamped claim types decide it (rareTags); the contract's studyType and registry kind agree with them.
+ */
+export function groupOf(
+  resource: Resource,
+  evidence: readonly { claimType: string }[] = [],
+): ShortlistCard["group"] {
   if (resource.kind === "expert" || resource.kind === "institution")
     return "specialists";
-  if (resource.kind === "trial") return "trials";
+  if (isStudyOrRegistry(rareTags(evidence))) return "studies";
+  if (resource.kind === "trial")
+    return resource.studyType === "observational" ? "studies" : "trials";
+  if (resource.organizationKind === "registry") return "studies";
   if (resource.organizationKind === "advocacy") return "advocacy";
   return "aid";
 }
@@ -279,8 +290,9 @@ const apiResponseSchema = z.object({
 
 function organizationKindOf(
   evidence: Evidence[],
-): "advocacy" | "financial_aid" | "travel_aid" {
+): "advocacy" | "financial_aid" | "travel_aid" | "registry" {
   const types = evidence.map((item) => item.claimType);
+  if (types.includes("patient_registry")) return "registry";
   if (types.some((type) => type.includes("travel"))) return "travel_aid";
   if (types.some((type) => type.includes("aid"))) return "financial_aid";
   return "advocacy";
@@ -341,7 +353,7 @@ function normalizeApiShortlist(value: unknown): ShortlistPayload | null {
           score: row.score,
           breakdown: row.breakdown,
           evidence,
-          group: groupOf(resource),
+          group: groupOf(resource, evidence),
           tier: row.tier,
           tierReasons: row.tierReasons,
           caseCandidateId: row.caseCandidateId ?? null,
@@ -370,7 +382,7 @@ export function normalizeShortlist(value: unknown): ShortlistPayload | null {
   if (!parsed.success) return normalizeApiShortlist(value);
   const items = parsed.data.items.map((item) => ({
     ...item,
-    group: groupOf(item.resource),
+    group: groupOf(item.resource, item.evidence),
   }));
   const known = new Set(items.map((item) => item.resource.id));
   return {

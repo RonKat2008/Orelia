@@ -11,7 +11,7 @@ import { ScoreStack } from "./ScoreStack";
 import { VerifiedBadges } from "./VerifiedBadges";
 import { VerifyByPhone } from "./VerifyByPhone";
 import { canVerifyByPhone, resourceKeyOf, type BadgeView } from "./verify-model";
-import { contactDoorOf, eyebrowOf, placeOf, tierLabel, titleOf } from "./view-model";
+import { contactDoorOf, metaOf, tierLabel, titleOf } from "./view-model";
 
 export const TIER_TONE: Record<NonNullable<ShortlistCard["tier"]>, "teal" | "neutral" | "outline"> = {
   best: "teal",
@@ -50,7 +50,6 @@ export function ShortlistDetail({
 }: ShortlistDetailProps) {
   const Heading = CASE_SECTION_HEADING;
   const title = titleOf(card.resource);
-  const place = placeOf(card.resource);
   const tier = tierLabel(card.tier);
   const door = contactDoorOf(card);
   const verdict = verdictFor(judge, {
@@ -83,7 +82,7 @@ export function ShortlistDetail({
             {verdict ? <Badge tone="outline">Judge: {verdictLabel(verdict.verdict)}</Badge> : null}
           </span>
         </div>
-        <p className="m-0 break-words text-small text-ink-2">{[eyebrowOf(card.resource), place].filter(Boolean).join(" · ")}</p>
+        <p className="m-0 break-words text-small text-ink-2">{metaOf(card)}</p>
       </header>
 
       {reasons.length > 0 || verdict ? (

@@ -25,6 +25,7 @@ import {
   demoStepLabel,
   evidenceBadgeText,
   isHttpUrl,
+  isRegistryPlan,
   stepLabel,
   sortedSteps,
   waitText,
@@ -163,6 +164,7 @@ function ResourceSection({
               index={index}
               total={steps.length}
               resourceName={resource.name}
+              registry={isRegistryPlan(resource)}
               busy={busy}
               onToggle={enabled => onToggle(resource.resourceKey, step.id, enabled)}
               onMove={delta => onMove(resource.resourceKey, step.id, delta)}
@@ -180,6 +182,7 @@ function StepRow({
   index,
   total,
   resourceName,
+  registry,
   busy,
   onToggle,
   onMove,
@@ -189,6 +192,7 @@ function StepRow({
   index: number;
   total: number;
   resourceName: string;
+  registry: boolean;
   busy: boolean;
   onToggle: (enabled: boolean) => void;
   onMove: (delta: -1 | 1) => void;
@@ -196,7 +200,7 @@ function StepRow({
   const demo = useDemoDestinations();
   const demoLabel = demo.enabled ? demoStepLabel(step.channel, demo.callsRingTestNumber) : null;
   const Icon = CHANNEL_ICONS[step.channel];
-  const label = stepLabel(step);
+  const label = stepLabel(step, { registry });
   const isLast = index === total - 1;
   const wait = index === 0 && step.waitFor === 'none' ? null : waitText(step.waitFor, index === 0);
 

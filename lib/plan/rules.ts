@@ -57,6 +57,7 @@ const ORIGIN_LABEL: Record<PlanContactOrigin, string> = {
   org_contact: 'main office',
   nppes_location_phone: 'practice office listed in the national provider registry',
   ctgov_central_contact: 'central study contact listed on ClinicalTrials.gov',
+  demo_coordinator: 'Demo coordinator',
   application_form: 'online application form',
   referral_form: 'online referral form',
   intake_form: 'online intake form',

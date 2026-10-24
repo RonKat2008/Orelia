@@ -8,6 +8,8 @@
 import type { Evidence, SourceKind } from '../contracts/evidence';
 import { parseContactPoints, type ContactPointOrigin } from '../contact-finder/contact-points';
 import type { PlanChannel, PlanEvidence } from './contract';
+import { normalizeAddress } from '../safety/allowlist';
+import { demoCoordinatorInboxes } from '../outreach/demo-coordinators';
 
 export type WebFormOrigin = 'application_form' | 'referral_form' | 'intake_form';
 export const WEB_FORM_ORIGINS: readonly WebFormOrigin[] = ['application_form', 'referral_form', 'intake_form'];
@@ -23,7 +25,25 @@ export interface WebFormPoint {
   sourceKind: SourceKind;
 }
 
-export type PlanContactOrigin = ContactPointOrigin | WebFormOrigin;
+export type DemoCoordinatorOrigin = 'demo_coordinator';
+export type PlanContactOrigin = ContactPointOrigin | WebFormOrigin | DemoCoordinatorOrigin;
+
+/** Reserved evidence row the plan input loader stamps (in code) for a contact mapped to a demo coordinator inbox. DEMO ONLY. */
+export const DEMO_COORDINATOR_CLAIM_TYPE = 'contact_point.email.demo_coordinator';
+export const DEMO_COORDINATOR_EVIDENCE_PREFIX = 'contact_point:demo_coordinator:';
+
+/** Code-only constructor for the demo coordinator evidence row (an allowlisted demo inbox, never a real contact). */
+export function demoCoordinatorEvidence(contactId: string, address: string): PlanEvidence {
+  return { id: `${DEMO_COORDINATOR_EVIDENCE_PREFIX}${contactId}`, claimType: DEMO_COORDINATOR_CLAIM_TYPE, claim: address, sourceUrl: 'https://wayfinder.invalid/demo-coordinator', sourceKind: 'exa' };
+}
+
+function parseDemoCoordinator(e: PlanEvidence): PlanContactPoint | null {
+  if (e.claimType !== DEMO_COORDINATOR_CLAIM_TYPE || !e.id.startsWith(DEMO_COORDINATOR_EVIDENCE_PREFIX)) return null;
+  const address = normalizeAddress(e.claim);
+  // Double lock: only an address that is a demo coordinator inbox right now (mode on AND allowlisted).
+  if (!address || address !== e.claim || !demoCoordinatorInboxes(process.env).includes(address)) return null;
+  return { channel: 'email', address, origin: 'demo_coordinator', evidenceId: e.id, sourceUrl: e.sourceUrl, sourceKind: e.sourceKind };
+}
 
 export interface PlanContactPoint {
   channel: PlanChannel;
@@ -83,6 +103,9 @@ function parseWebForm(e: PlanEvidence): PlanContactPoint | null {
  * claim must BE the address/URL, and the source kind must be one that can vouch for the origin.
  */
 export function parsePlanContactPoints(evidence: readonly PlanEvidence[]): PlanContactPoint[] {
+  const demo = evidence.flatMap((e) => { const cp = parseDemoCoordinator(e); return cp ? [cp] : []; });
+  // Demo mode: a resource mapped to a demo coordinator never exposes its real contact points to the planner.
+  if (demo.length > 0) return demo;
   return evidence.flatMap((e): PlanContactPoint[] => {
     if (!e.id || !e.claimType.startsWith(`${PREFIX}.`)) return [];
     if (e.claimType.startsWith(`${PREFIX}.web_form.`)) {

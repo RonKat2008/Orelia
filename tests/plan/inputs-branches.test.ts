@@ -43,6 +43,21 @@ describe('PostgresPlanInputLoader', () => {
     expect(out[0].evidence).toEqual([{ id: 'e1', claimType: 'contact_point.email', claim: 'a@example.org', sourceUrl: 'https://example.org', sourceKind: 'exa' }]);
   });
 
+  it('stamps a demo coordinator email point for a contact mapped to a demo inbox (demo mode only)', async () => {
+    vi.stubEnv('WAYFINDER_DEMO_COORDINATORS', '1');
+    vi.stubEnv('OUTBOUND_ALLOWLIST', 'demo-a@example.org');
+    vi.stubEnv('AGENTMAIL_SENDER_INBOX_ID', 'sender@example.org');
+    const { fake, loader } = setup();
+    fake.queue('select:contacts', [{ id: 'c1', targetKind: 'organization', targetId: 'o1', address: 'demo-a@example.org' }, { id: 'c2', targetKind: 'organization', targetId: 'o2', address: 'real@hospital.example' }]);
+    fake.queue('select:case_candidates', []);
+    fake.queue('select:organizations', [{ name: 'Org1', kind: 'advocacy' }], [{ name: 'Org2', kind: 'advocacy' }]);
+    fake.queue('select:evidence', [], []);
+    const out = await loader.load(CASE);
+    expect(out[0].evidence.map((e) => [e.claimType, e.claim])).toEqual([['contact_point.email.demo_coordinator', 'demo-a@example.org']]);
+    expect(out[1].evidence).toEqual([]);
+    expect(out[0]).not.toHaveProperty('address');
+  });
+
   it('resolves institution, trial and missing-row names (falling back to the target id)', async () => {
     const { fake, loader } = setup();
     fake.queue('select:contacts', [

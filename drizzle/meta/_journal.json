@@ -78,6 +78,13 @@
       "when": 1792821700000,
       "tag": "0032_contact_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792821800000,
+      "tag": "0033_history",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { contactPlanSchema, MAX_PLAN_RESOURCES, type ResourcePlan } from '@/lib/plan/contract';
-import { buildContactPlan, buildDeterministicPlan, parsePlanContactPoints, webFormEvidence } from '@/lib/plan';
+import { buildContactPlan, buildDeterministicPlan, NO_CHANNEL_REASON, parsePlanContactPoints, validatePlanAgainstInputs, webFormEvidence } from '@/lib/plan';
+import { demoCoordinatorEvidence } from '@/lib/plan/contact-points';
 import { emailEv, formEv, NOW, phoneEv, plainEv, resource } from './planner-fixtures';
 
 const E = () => emailEv('org_contact', 'info@aid.example.org');
@@ -186,5 +187,40 @@ describe('buildDeterministicPlan', () => {
   it('buildContactPlan without llm returns the deterministic plan', async () => {
     const input = [resource('organization', 'o1', [E()], 'advocacy')];
     expect(await buildContactPlan('c', input, { now: NOW })).toEqual(buildDeterministicPlan('c', input, { now: NOW }));
+  });
+});
+
+describe('demo coordinator mode', () => {
+  const demo = (address: string, contactId = 'contact-d1') => demoCoordinatorEvidence(contactId, address);
+  const envOn = () => {
+    vi.stubEnv('WAYFINDER_DEMO_COORDINATORS', '1');
+    vi.stubEnv('OUTBOUND_ALLOWLIST', 'demo-a@example.org');
+    vi.stubEnv('AGENTMAIL_SENDER_INBOX_ID', 'sender@example.org');
+  };
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('gives a doorless resource an email step to the demo coordinator, labelled "Demo coordinator"', () => {
+    envOn();
+    const rp = only(resource('organization', 'd1', [demo('demo-a@example.org')], 'advocacy'));
+    expect(shape(rp)).toEqual(['email:intro:none']);
+    expect(rp.steps[0].reason).toContain('Demo coordinator');
+    expect(rp.steps[0].evidenceIds).toEqual(['contact_point:demo_coordinator:contact-d1']);
+    expect(rp.unavailableReason).toBeNull();
+  });
+
+  it('never plans the real contact points of a demo-mapped resource, and the plan validates', () => {
+    envOn();
+    const input = resource('organization', 'd1', [E(), P(), F(), demo('demo-a@example.org')], 'advocacy');
+    const rp = only(input);
+    expect(rp.steps.map(s => s.channel)).toEqual(['email']);
+    const plan = buildDeterministicPlan('case-1', [input], { now: NOW });
+    expect(validatePlanAgainstInputs(plan, [input])).toEqual([]);
+  });
+
+  it('ignores the demo row when the mode is off or the address is not an allowlisted demo inbox', () => {
+    const ev = demo('demo-a@example.org');
+    expect(only(resource('organization', 'd1', [ev], 'advocacy')).unavailableReason).toBe(NO_CHANNEL_REASON);
+    envOn();
+    expect(only(resource('organization', 'd1', [demo('other@hospital.example')], 'advocacy')).unavailableReason).toBe(NO_CHANNEL_REASON);
   });
 });

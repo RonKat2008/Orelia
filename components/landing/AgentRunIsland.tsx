@@ -3,6 +3,9 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { whenIdleAfterLoad } from "@/lib/ui/defer";
 
+/** Below the `sm` breakpoint the hero card is hidden. */
+const HIDDEN_QUERY = "(max-width: 639.98px)";
+
 type PanelComponent = ComponentType<{ className?: string }>;
 
 /**
@@ -14,6 +17,8 @@ export function AgentRunIsland({ children }: { children: ReactNode }) {
   const [Panel, setPanel] = useState<PanelComponent | null>(null);
 
   useEffect(() => {
+    // The card is hidden on phones, so they never download its script.
+    if (window.matchMedia(HIDDEN_QUERY).matches) return;
     let isCancelled = false;
     const cancel = whenIdleAfterLoad(() => {
       import("./AgentRunPanel")

@@ -39,10 +39,11 @@ export function HeroPauseButton({ className }: { className?: string }) {
       size="sm"
       onClick={toggle}
       aria-pressed={isPaused}
+      aria-label={isPaused ? "Play animation" : "Pause animation"}
       className={cn("bg-paper/70 text-ink-2 backdrop-blur-sm hover:text-ink", className)}
     >
       {isPaused ? <Play aria-hidden /> : <Pause aria-hidden />}
-      {isPaused ? "Play animation" : "Pause animation"}
+      {isPaused ? "Play" : "Pause"}
     </Button>
   );
 }

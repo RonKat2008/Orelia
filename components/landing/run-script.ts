@@ -92,6 +92,16 @@ export function frameAt(ms: number): RunFrame {
   };
 }
 
+/**
+ * The hero card's one line for a frame. Three lines cross-fade as the run advances: searching, found, plan ready.
+ * Counts are sample numbers, shown under an "Example" label.
+ */
+export function panelLine(frame: RunFrame): string {
+  if (frame.curated) return "Plan ready: 3 to contact";
+  if (frame.doneCount >= 3) return "Found 8 people and groups";
+  return "Looking in 5 places…";
+}
+
 /** The finished state: what reduced-motion visitors see, and where a paused run can rest. */
 export const FINAL_FRAME: RunFrame = frameAt(RUN_TIMES.end);
 

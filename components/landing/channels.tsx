@@ -1,5 +1,4 @@
 import { Globe, Mail, Phone, type LucideIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/ui/cn";
 import { CHANNELS, type ChannelId } from "./content";
 
@@ -9,41 +8,37 @@ export const CHANNEL_ICONS: Record<ChannelId, LucideIcon> = {
   web: Globe,
 };
 
-const CHANNEL_TONES = {
-  call: "call",
-  email: "email",
-  web: "apply",
-} as const;
+/** Channel hues appear only as a 16 px icon tint (docs/DESIGN-v2.md 4.1). */
+export const CHANNEL_TINTS: Record<ChannelId, string> = {
+  call: "text-ch-call",
+  email: "text-ch-email",
+  web: "text-ch-apply",
+};
 
 export function channelLabel(id: ChannelId): string {
   return CHANNELS.find((channel) => channel.id === id)?.label ?? id;
 }
 
-/** One channel as a badge: icon + word, so meaning never rests on colour. */
-export function ChannelBadge({ channel, className }: { channel: ChannelId; className?: string }) {
+/** One channel as a tinted 16 px icon. The word is read by screen readers, so meaning never rests on colour. */
+export function ChannelIcon({ channel, className }: { channel: ChannelId; className?: string }) {
   const Icon = CHANNEL_ICONS[channel];
   return (
-    <Badge tone={CHANNEL_TONES[channel]} className={className}>
-      <Icon aria-hidden />
-      {channelLabel(channel)}
-    </Badge>
+    <>
+      <Icon aria-hidden className={cn("size-4 shrink-0", CHANNEL_TINTS[channel], className)} strokeWidth={2} />
+      <span className="sr-only">{channelLabel(channel)}</span>
+    </>
   );
 }
 
-/** A channel combination ("Call + Email") as joined badges, read as one phrase by screen readers. */
-export function ChannelCombo({ channels, className }: { channels: readonly ChannelId[]; className?: string }) {
+/** A channel combination as icons, read as one phrase ("Call and Email"). */
+export function ChannelIcons({ channels, className }: { channels: readonly ChannelId[]; className?: string }) {
   return (
-    <span
-      role="img"
-      aria-label={channels.map(channelLabel).join(" and ")}
-      className={cn("inline-flex flex-wrap items-center gap-1", className)}
-    >
-      {channels.map((channel, i) => (
-        <span key={channel} aria-hidden className="inline-flex items-center gap-1">
-          {i > 0 ? <span className="text-micro font-semibold text-ink-3">+</span> : null}
-          <ChannelBadge channel={channel} />
-        </span>
-      ))}
+    <span className={cn("inline-flex items-center gap-2", className)}>
+      <span className="sr-only">{channels.map(channelLabel).join(" and ")}</span>
+      {channels.map((channel) => {
+        const Icon = CHANNEL_ICONS[channel];
+        return <Icon key={channel} aria-hidden className={cn("size-4", CHANNEL_TINTS[channel])} strokeWidth={2} />;
+      })}
     </span>
   );
 }

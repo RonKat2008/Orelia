@@ -28,9 +28,8 @@ function useOnScreen(ref: React.RefObject<HTMLElement | null>): boolean {
 }
 
 /**
- * The hero's "agents at work" panel, animated: a scripted, clearly labelled illustrative run.
- * Agents tick to done, source chips land, the curator picks a best fit, then a draft waits
- * for approval. Reduced motion shows the finished state, still. Loaded lazily by
+ * The hero's sample-case card, animated: a scripted, clearly labelled example run. Its one line
+ * moves from searching, to found, to plan ready. Reduced motion shows the finished state, still. Loaded lazily by
  * AgentRunIsland over the server-rendered first frame.
  */
 export default function AgentRunPanel({ className }: { className?: string }) {
@@ -39,7 +38,6 @@ export default function AgentRunPanel({ className }: { className?: string }) {
   const rootRef = useRef<HTMLElement>(null);
   const isOnScreen = useOnScreen(rootRef);
   const [keyframe, setKeyframe] = useState(0);
-  const [hasTriedApprove, setHasTriedApprove] = useState(false);
 
   const isRunning = !reduced && !isPaused && isOnScreen;
   useEffect(() => {
@@ -53,9 +51,6 @@ export default function AgentRunPanel({ className }: { className?: string }) {
   return (
     <AgentRunPanelView
       frame={frame}
-      isPaused={isPaused}
-      hasTriedApprove={hasTriedApprove}
-      onApprove={() => setHasTriedApprove(true)}
       rootRef={rootRef}
       className={className}
     />

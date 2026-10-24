@@ -31,7 +31,7 @@ export function EditorialHero({
   return (
     <header className="grain border-b border-line bg-paper-2/70">
       <div className="page-container grid gap-6 py-16 sm:py-24">
-        <p className="m-0 text-micro font-semibold uppercase text-ink-3">
+        <p className="m-0 text-small font-semibold text-ink-2">
           <span aria-hidden className="mr-2 inline-block h-px w-8 translate-y-[-3px] bg-terracotta align-middle" />
           {eyebrow}
         </p>
@@ -43,7 +43,7 @@ export function EditorialHero({
         >
           {title}
         </h1>
-        <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">{lede}</p>
+        <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">{lede}</p>
         {children ? <div className="flex flex-wrap gap-3 pt-2">{children}</div> : null}
       </div>
     </header>
@@ -66,7 +66,7 @@ export function EditorialSection({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className={cn("scroll-mt-28 border-t border-line pt-8", className)}>
-      {number ? <p className="m-0 mb-3 font-mono text-mono text-ink-3">{number}</p> : null}
+      {number ? <p className="m-0 mb-3 text-small text-ink-2">{number}</p> : null}
       <h2
         id={`${id}-heading`}
         className="m-0 mb-4 max-w-none font-display text-h2 font-light text-ink display-soft text-balance"

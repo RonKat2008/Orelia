@@ -9,53 +9,54 @@ export const START_HREF = "/start";
 export const JUDGE_START_HREF = "/start?view=judge";
 export const HOW_IT_WORKS_ID = "how-it-works";
 
-export const TRUST_LINE = [
-  "Every claim links to its source",
-  "Nothing is sent without your approval",
-  "No medical advice",
-] as const;
+/** The one quiet promise under the hero buttons (the full list lives in "What we never do"). */
+export const HERO_REASSURANCE = "Nothing is sent without your OK." as const;
 
 export const HERO_PROMISE = "Expert finders tell you who the expert is. Wayfinder gets you seen." as const;
 
 export interface HowStep {
   id: string;
-  kicker: string;
+  /** Same four names as the patient progress line in a case, so one step count runs site-wide. */
   title: string;
+  /** One plain sentence (grade 6 to 8). */
   body: string;
+  /** Judge-level detail for /how-it-works. Agent names are fine here. */
+  behind: string;
 }
 
 export const HOW_STEPS: readonly HowStep[] = [
   {
-    id: "details",
-    kicker: "Your details",
-    title: "Share what you already have.",
-    body: "Paste a report or describe your situation in your own words. Wayfinder pulls out the details, then asks you to confirm each one before any research starts.",
+    id: "tell",
+    title: "Tell us",
+    body: "Share a report or answer a few questions. You check every detail first.",
+    behind:
+      "Your report is read into fields. You confirm each one before any research starts, and you choose which fields a contact may ever see.",
   },
   {
-    id: "swarm",
-    kicker: "Agent swarm",
-    title: "A team of research agents goes looking.",
-    body: "Separate agents search registries, trial listings, published literature, advocacy groups and aid programs at the same time, and find the public way in to each one.",
+    id: "search",
+    title: "We search",
+    body: "We look through public records, studies, clinics and patient groups. Every claim is checked against its source.",
+    behind:
+      "Nine search agents run at once across registries, trial listings, medical papers, advocacy groups and aid programs. A verifier drops any claim it cannot source. A curator keeps the best fits.",
   },
   {
-    id: "validate",
-    kicker: "Validation",
-    title: "Every claim is checked against its source.",
-    body: "Each fact about a resource must trace back to the page it came from. A verifier drops anything it cannot source, and a curator keeps the best fits for you to choose from.",
-  },
-  {
-    id: "plan",
-    kicker: "A plan per resource",
-    title: "Each door gets its own way in.",
-    body: "A clinic may want a call and an email. A trial may want its screening form and a note to the coordinator. Wayfinder plans the channel, or the mix of channels, each one actually uses.",
+    id: "choose",
+    title: "You choose",
+    body: "Pick up to 5 people or groups. Tick what each one may see.",
+    behind:
+      "A case keeps at most five active contacts. A planner picks the way in for each one: call, email, an online form, or a mix.",
   },
   {
     id: "reach",
-    kicker: "Outreach & follow-up",
-    title: "You approve. Wayfinder calls, emails, applies and follows up.",
-    body: "Nothing leaves until you read it and say yes. Then agents send, call and submit, read the replies, follow up on a steady schedule, and turn anything you need to do into a clear task.",
+    title: "We reach out",
+    body: "You read each message first. Then we send it and follow up.",
+    behind:
+      "Every message passes the outbound gate: approved by you, only the fields you ticked, and an AI disclosure. Follow-ups on business day 3 and day 7 are approved up front.",
   },
 ] as const;
+
+/** Site-wide patient step count. The judge console has 7 stages. */
+export const PATIENT_STEP_COUNT = HOW_STEPS.length;
 
 export type ChannelId = "call" | "email" | "web";
 
@@ -120,37 +121,47 @@ export const PLAN_EXAMPLES: readonly PlanExample[] = [
 ] as const;
 
 export interface SafetyPromise {
+  id: string;
   title: string;
+  /** One sentence for the landing page and the top of /trust. */
   body: string;
+  /** More for the Details disclosure on /trust. */
+  more: string;
 }
 
-/** "What we never do": each line mirrors a guardrail in lib/safety. */
+/** "What we never do": each line mirrors a guardrail in lib/safety. The landing page shows the first three. */
 export const PROMISES: readonly SafetyPromise[] = [
   {
+    id: "advice",
     title: "Never medical advice",
-    body: "Wayfinder finds, contacts and coordinates. It does not interpret reports, suggest treatments or rank care.",
+    body: "We find people and groups and help you reach them. We do not read your results or suggest treatments.",
+    more: "Wayfinder does not interpret reports, recommend treatments or choose care for you. Every fact about a person or group links to the public page it came from, and anything without a source is dropped.",
   },
   {
+    id: "approval",
     title: "Never a message you did not approve",
-    body: "Every email, call script and form waits for you to read it and say yes. Follow-ups are approved up front, too.",
+    body: "Every email, call script and form waits for you to read it and say yes.",
+    more: "Follow-ups are approved up front too, so you can walk away. A case has at most five active contacts. Every email, and the start of every call, says that AI helped.",
   },
   {
-    title: "Never a field you did not choose",
-    body: "You tick which details each contact may see. Anything unticked stays out of the email, the call and the form.",
+    id: "fields",
+    title: "Never a detail you did not choose",
+    body: "You tick what each contact may see. Anything unticked stays out.",
+    more: "Unticked details stay out of the email, the call and the form. The check happens in code before anything leaves, and it cannot be switched off.",
   },
   {
-    title: "Never outside the allowlist in the demo",
-    body: "In demo mode, messages can only reach addresses and numbers on an approved test list. Real intake teams are never contacted.",
+    id: "test-inboxes",
+    title: "In this demo, messages only go to our own test inboxes",
+    body: "Real clinics, doctors and phone numbers are never contacted in the demo.",
+    more: "In demo mode, messages can only reach addresses and numbers on an approved test list. Real intake teams are never contacted.",
   },
   {
+    id: "urgent",
     title: "Urgent? Call 911",
-    body: "If symptoms are new, worsening or urgent, contact your care team or call 911. Wayfinder is not for emergencies.",
+    body: "If symptoms are new, worsening or urgent, contact your care team or call 911.",
+    more: "Wayfinder is not for emergencies.",
   },
 ] as const;
 
-/** Source domains each research lane reads from (see lib/sources and lib/agents/research). */
-export const FIND_SOURCES = {
-  centers: ["npiregistry.cms.hhs.gov", "cancer.gov"],
-  trials: ["clinicaltrials.gov"],
-  literature: ["pubmed.ncbi.nlm.nih.gov"],
-} as const;
+/** The three promises the landing page shows. */
+export const LANDING_PROMISES = PROMISES.slice(0, 3);

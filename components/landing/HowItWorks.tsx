@@ -1,72 +1,43 @@
+import { ClipboardList, ListChecks, Search, Send, type LucideIcon } from "lucide-react";
 import { HOW_IT_WORKS_ID, HOW_STEPS } from "./content";
-import { StepFramesIsland } from "./StepFramesIsland";
-import { VIGNETTES } from "./Vignettes";
+
+const STEP_ICONS: Record<string, LucideIcon> = {
+  tell: ClipboardList,
+  search: Search,
+  choose: ListChecks,
+  reach: Send,
+};
 
 /**
- * Section 2: the five-scene story (details, swarm, validation, plan, outreach). On wide screens the vignette stage is sticky
- * and LandingChoreography flips `data-active` as each step crosses the middle of the
- * viewport. On phones each step shows its own vignette inline. The wide-screen stage is a
- * client island (StepFramesIsland), so its duplicate vignettes stay out of the HTML.
+ * Landing section 2: the four steps, in one row of plain text. The same four names as the patient
+ * progress line inside a case, so there is one step count site-wide.
  */
 export function HowItWorks() {
   return (
-    <section aria-labelledby="how-heading" className="relative border-y border-line bg-paper-2">
+    <section aria-labelledby={HOW_IT_WORKS_ID} className="border-b border-line">
       <div className="page-container py-section">
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-12">
-          <p className="m-0 text-micro font-semibold uppercase text-ink-3 lg:col-span-12">How it works</p>
-          <h2
-            id={HOW_IT_WORKS_ID}
-            tabIndex={-1}
-            data-reveal="split"
-            className="m-0 scroll-mt-24 font-display text-h1 font-light text-balance text-ink outline-none display-soft lg:col-span-8"
-          >
-            From your details to a door that <em className="emph">opens</em>.
-          </h2>
-        </div>
-
-        <div className="mt-stack grid grid-cols-[minmax(0,1fr)] gap-x-12 lg:mt-16 lg:grid-cols-12">
-          <ol className="relative m-0 list-none p-0 lg:col-span-5">
-            {/* Progress rail (desktop): scaled by scroll progress. */}
-            <span aria-hidden className="absolute bottom-0 left-[1.15rem] top-0 hidden w-px bg-line-strong lg:block" />
-            <span
-              aria-hidden
-              data-rail
-              className="absolute left-[1.15rem] top-0 hidden h-full w-px origin-top scale-y-0 bg-teal lg:block motion-reduce:scale-y-100"
-            />
-            {HOW_STEPS.map((step, i) => {
-              const Vignette = VIGNETTES[step.id];
-              return (
-                <li
-                  key={step.id}
-                  data-step={i}
-                  data-active={i === 0}
-                  className="group/step group/scene relative grid grid-cols-[minmax(0,1fr)] gap-5 border-t border-line py-10 first:border-t-0 lg:min-h-[68vh] lg:content-center lg:border-t-0 lg:py-0 lg:pl-16"
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-9 place-items-center rounded-pill border border-line-strong bg-card font-display text-small text-ink-2 shadow-xs transition-[background-color,color,border-color,transform] duration-500 ease-out-expo group-data-[active=true]/step:scale-110 group-data-[active=true]/step:border-teal group-data-[active=true]/step:bg-teal group-data-[active=true]/step:text-on-teal motion-reduce:transition-none lg:absolute lg:left-0 lg:top-1/2 lg:-translate-y-1/2 lg:group-data-[active=true]/step:-translate-y-1/2"
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="grid gap-3 transition-transform duration-700 ease-out-expo lg:group-data-[active=true]/step:translate-x-1 motion-reduce:transition-none">
-                    <p className="m-0 text-micro font-semibold uppercase text-teal">{step.kicker}</p>
-                    <h3 className="m-0 font-display text-h3 text-ink display-soft transition-colors duration-500 lg:text-ink-3 lg:group-data-[active=true]/step:text-ink">
-                      {step.title}
-                    </h3>
-                    <p className="m-0 max-w-[30rem] text-body text-ink-2 transition-colors duration-500 lg:text-ink-3 lg:group-data-[active=true]/step:text-ink-2">
-                      {step.body}
-                    </p>
-                  </div>
-                  <div className="lg:hidden">{Vignette ? <Vignette /> : null}</div>
-                </li>
-              );
-            })}
-          </ol>
-
-          <div aria-hidden className="hidden lg:col-span-7 lg:block">
-            <StepFramesIsland />
-          </div>
-        </div>
+        <h2
+          id={HOW_IT_WORKS_ID}
+          tabIndex={-1}
+          className="m-0 scroll-mt-24 font-display text-h2 font-light text-balance text-ink outline-none display-soft"
+        >
+          How it works
+        </h2>
+        <ol className="m-0 mt-12 grid list-none grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-10 p-0 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
+          {HOW_STEPS.map((step, i) => {
+            const Icon = STEP_ICONS[step.id] ?? ClipboardList;
+            return (
+              <li key={step.id} className="grid min-w-0 content-start gap-3">
+                <Icon aria-hidden className="size-6 text-teal" strokeWidth={1.75} />
+                <h3 className="m-0 font-display text-h3 font-light text-ink display-soft">
+                  <span className="sr-only">Step {i + 1}: </span>
+                  {step.title}
+                </h3>
+                <p className="m-0 max-w-[22rem] text-body text-pretty text-ink-2">{step.body}</p>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </section>
   );

@@ -3,9 +3,11 @@ import {
   CHANNELS,
   HOW_STEPS,
   PLAN_EXAMPLES,
+  HERO_REASSURANCE,
+  LANDING_PROMISES,
+  PATIENT_STEP_COUNT,
   PROMISES,
   START_HREF,
-  TRUST_LINE,
 } from "@/components/landing/content";
 import {
   FINAL_FRAME,
@@ -15,6 +17,7 @@ import {
   delayAfter,
   frameAt,
   nextKeyframe,
+  panelLine,
 } from "@/components/landing/run-script";
 
 describe("illustrative agent run script", () => {
@@ -53,25 +56,34 @@ describe("illustrative agent run script", () => {
   });
 });
 
+describe("hero card line", () => {
+  it("moves from searching, to found, to plan ready as the run advances", () => {
+    expect(panelLine(frameAt(0))).toBe("Looking in 5 places…");
+    expect(panelLine(frameAt(4000))).toBe("Found 8 people and groups");
+    expect(panelLine(FINAL_FRAME)).toBe("Plan ready: 3 to contact");
+  });
+});
+
 describe("landing copy", () => {
   it("routes every start CTA to the intake flow", () => {
     expect(START_HREF).toBe("/start");
   });
 
-  it("tells the five-step story and the five promises", () => {
-    expect(HOW_STEPS.map((step) => step.kicker)).toEqual([
-      "Your details",
-      "Agent swarm",
-      "Validation",
-      "A plan per resource",
-      "Outreach & follow-up",
-    ]);
+  it("tells one four-step story, matching the patient progress line", () => {
+    expect(HOW_STEPS.map((step) => step.title)).toEqual(["Tell us", "We search", "You choose", "We reach out"]);
+    expect(PATIENT_STEP_COUNT).toBe(4);
     expect(PROMISES).toHaveLength(5);
     expect(PROMISES.some((promise) => /911/.test(promise.title + promise.body))).toBe(true);
   });
 
+  it("shows three promises on the landing page and keeps patient copy free of jargon", () => {
+    expect(LANDING_PROMISES).toHaveLength(3);
+    const patientCopy = [HERO_REASSURANCE, ...HOW_STEPS.flatMap((s) => [s.title, s.body]), ...LANDING_PROMISES.flatMap((p) => [p.title, p.body])].join(" ");
+    expect(patientCopy).not.toMatch(/\b(agents?|swarm|curator|verifier|allowlist|resource|score|rank|tier|pipeline)\b/i);
+  });
+
   it("never phrases copy as medical advice", () => {
-    const copy = [...TRUST_LINE, ...HOW_STEPS.flatMap((s) => [s.title, s.body]), ...PROMISES.map((p) => p.body)].join(" ");
+    const copy = [HERO_REASSURANCE, ...HOW_STEPS.flatMap((s) => [s.title, s.body, s.behind]), ...PROMISES.flatMap((p) => [p.body, p.more])].join(" ");
     expect(copy).not.toMatch(/\b(you should take|we recommend|diagnos(e|is) you|treatment plan)\b/i);
   });
 
@@ -82,11 +94,11 @@ describe("landing copy", () => {
     expect(PLAN_EXAMPLES.some((plan) => plan.channels.length > 1)).toBe(true);
   });
 
-  it("lists what we never do, including the demo allowlist", () => {
+  it("lists what we never do, including that the demo only reaches test inboxes", () => {
     const titles = PROMISES.map((promise) => promise.title).join(" ");
     expect(titles).toMatch(/medical advice/i);
     expect(titles).toMatch(/approve/i);
-    expect(titles).toMatch(/field/i);
-    expect(titles).toMatch(/allowlist/i);
+    expect(titles).toMatch(/detail/i);
+    expect(titles).toMatch(/test inboxes/i);
   });
 });

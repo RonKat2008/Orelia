@@ -9,12 +9,8 @@ export default function NotFound() {
   return (
     <EditorialPage>
       <StateScreen
-        eyebrow="404"
-        title={
-          <>
-            We could not find that <em className="emph">page</em>
-          </>
-        }
+        eyebrow="Error 404"
+        title="We could not find that page"
         description="The link may be old or mistyped. Nothing is lost: your cases are exactly where you left them."
         art={<WaypointArt variant="lost" />}
         actions={

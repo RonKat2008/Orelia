@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import { FinalCta } from "@/components/landing/FinalCta";
-import { FindsBento } from "@/components/landing/FindsBento";
 import { Hero } from "@/components/landing/Hero";
-import { HowItAdapts } from "@/components/landing/HowItAdapts";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { LandingChoreography } from "@/components/landing/LandingChoreography";
-import { ProblemSection } from "@/components/landing/ProblemSection";
-import { TrustSection } from "@/components/landing/TrustSection";
+import { NeverSection } from "@/components/landing/NeverSection";
 import { START_HREF } from "@/components/landing/content";
 import { LenisProvider } from "@/components/shell/LenisProvider";
 import { SiteFooter } from "@/components/shell/SiteFooter";
@@ -15,7 +11,7 @@ import { SiteHeader } from "@/components/shell/SiteHeader";
 export const metadata: Metadata = {
   title: "Wayfinder: find the experts, get seen",
   description:
-    "For adults with a rare disease: research agents find specialists, trials, advocacy groups and aid, check every claim against its source, then call, email or apply online for you, only after you approve each message, and follow up.",
+    "For adults with a rare disease. We find specialists, studies, patient groups and aid, check every claim against its source, and reach out for you after you approve each message.",
 };
 
 export default function LandingPage() {
@@ -25,15 +21,11 @@ export default function LandingPage() {
         <SiteHeader cta={{ href: START_HREF, label: "Start your case" }} viewToggle />
         <main id="main">
           <Hero />
-          <ProblemSection />
           <HowItWorks />
-          <HowItAdapts />
-          <TrustSection />
-          <FindsBento />
+          <NeverSection />
           <FinalCta />
         </main>
         <SiteFooter />
-        <LandingChoreography />
       </div>
     </LenisProvider>
   );

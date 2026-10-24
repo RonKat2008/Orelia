@@ -51,9 +51,9 @@ export function StateScreen({
     <section className={cn("grain flex flex-1 items-center border-b border-line bg-paper-2/60", className)}>
       <div className="page-container grid gap-10 py-16 sm:py-24 md:grid-cols-[1fr_auto] md:items-center">
         <div className="grid max-w-prose gap-5">
-          <p className="m-0 text-micro font-semibold uppercase text-ink-3">{eyebrow}</p>
+          <p className="m-0 text-small font-semibold text-ink-2">{eyebrow}</p>
           <h1 className="m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance">{title}</h1>
-          <p className="m-0 text-lead text-ink-2 text-pretty">{description}</p>
+          <p className="m-0 text-body text-ink-2 text-pretty">{description}</p>
           {actions ? <div className="flex flex-wrap gap-3 pt-2">{actions}</div> : null}
         </div>
         <div className="md:order-last">{art}</div>

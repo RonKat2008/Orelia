@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { caseInputSchema, TRAVEL_LIMIT_MAX_MILES, type CaseInput } from "@/lib/contracts";
+import { caseInputSchema, normalizeUndiagnosed, TRAVEL_LIMIT_MAX_MILES, UNDIAGNOSED_DISEASE_NAME, type CaseInput } from "@/lib/contracts";
 import { normalizeUsState } from "@/lib/contracts/us-state";
 import { assessReportScope, OutOfScopeError } from "./report-scope";
 import { OPUS } from "./models";
@@ -27,6 +27,7 @@ const FIXTURE_HINTS: [RegExp, string][] = [
   [/epithelioid sarcoma/i, "epithelioid-sarcoma"],
   [/igg4/i, "igg4-related-disease"],
   [/ehlers|vascular eds/i, "vascular-eds"],
+  [/no diagnosis yet|undiagnosed|not (?:yet )?diagnosed/i, "undiagnosed"],
 ];
 
 /** Offline only: find which recorded fixture a pasted synthetic report corresponds to. */
@@ -70,6 +71,11 @@ const extractionSchema = z.preprocess(
 );
 
 export interface ExtractOptions {
+  /**
+   * The patient said they have no diagnosis yet. The extractor still copies location, travel, goals and insurance,
+   * but any condition name, code or subtype it returns is discarded (no diagnosis guessing).
+   */
+  undiagnosed?: boolean;
   /** Fixture stem under fixtures/llm/intake-extractor/. Derived from the text when omitted. */
   offlineKey?: string;
   store?: RunStore;
@@ -83,17 +89,21 @@ export async function extractCase(reportText: string, opts: ExtractOptions = {})
   const early = assessReportScope(reportText);
   if (early) throw new OutOfScopeError(early);
   const offlineKey = opts.offlineKey ?? (await offlineKeyFor(reportText).catch(() => "unknown"));
+  // Undiagnosed: a report may name no condition at all, so the label stands in before validation.
+  const output = opts.undiagnosed
+    ? z.preprocess((raw) => ({ ...(sanitizeExtraction(raw) as object), diseaseName: UNDIAGNOSED_DISEASE_NAME }), extractionSchema)
+    : extractionSchema;
   const { outOfScope, ...input } = await runAgent({
     name: "intake-extractor",
     model: OPUS,
     system: SYSTEM,
     prompt: `REPORT:\n"""\n${reportText}\n"""\n\nReturn the JSON object now.`,
     tools: [],
-    output: extractionSchema as z.ZodType<z.infer<typeof caseInputSchema> & { outOfScope?: "pediatric" | "non_us" }>,
+    output: output as z.ZodType<z.infer<typeof caseInputSchema> & { outOfScope?: "pediatric" | "non_us" }>,
     caseId: "00000000-0000-0000-0000-000000000000",
     store: opts.store ?? new MemoryRunStore(),
     offlineKey,
   });
   if (outOfScope) throw new OutOfScopeError(outOfScope);
-  return input;
+  return opts.undiagnosed ? normalizeUndiagnosed({ ...input, undiagnosed: true }) : input;
 }

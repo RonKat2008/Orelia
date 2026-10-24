@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ShortlistItem, ShortlistMeta } from "@/lib/agents/persist";
+import type { OrganizationKind } from "@/lib/contracts";
 import { getCurationStore, curationKey } from "@/lib/agents/curator-store";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
@@ -35,7 +36,7 @@ export async function GET(req: Request, { params }: Ctx) {
       tierReasons: { text: string; evidenceIds: string[] }[];
       caseCandidateId: string | null;
       nctId: string | null;
-      organizationKind: "advocacy" | "financial_aid" | "travel_aid" | null;
+      organizationKind: OrganizationKind | null;
     }>> = {
       expert: [], institution: [], trial: [], organization: [],
     };

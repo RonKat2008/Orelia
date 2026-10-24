@@ -6,6 +6,9 @@ export {
   caseSchema,
   diseaseCodesSchema,
   goalSchema,
+  isUndiagnosed,
+  normalizeUndiagnosed,
+  UNDIAGNOSED_DISEASE_NAME,
   type Case,
   type CaseInput,
 } from "./case";
@@ -17,7 +20,9 @@ export {
 } from "./evidence";
 export {
   expertProfileSchema,
+  ORGANIZATION_KINDS,
   resourceSchema,
+  type OrganizationKind,
   trialRegistrySchema,
   type ExpertProfile,
   type Resource,

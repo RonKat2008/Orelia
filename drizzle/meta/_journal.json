@@ -169,6 +169,13 @@
       "when": 1792900000000,
       "tag": "0048_needs_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792950000000,
+      "tag": "0049_rare_disease",
+      "breakpoints": true
     }
   ]
 }

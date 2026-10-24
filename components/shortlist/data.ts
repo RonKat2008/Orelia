@@ -1,5 +1,6 @@
 import {
   evidenceSchema,
+  ORGANIZATION_KINDS,
   resourceSchema,
   scoreBreakdownItemSchema,
   type Evidence,
@@ -267,7 +268,7 @@ const apiItemSchema = z.object({
   tierReasons: z.array(tierReasonSchema).optional(),
   caseCandidateId: z.string().nullable().optional(),
   nctId: z.string().nullable().optional(),
-  organizationKind: z.enum(["advocacy", "financial_aid", "travel_aid"]).nullable().optional(),
+  organizationKind: z.enum(ORGANIZATION_KINDS).nullable().optional(),
 });
 
 const apiResponseSchema = z.object({

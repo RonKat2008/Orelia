@@ -3,6 +3,7 @@ import { z } from "zod";
 import { extractCase } from "@/lib/agents/intake-extractor";
 import { OutOfScopeError } from "@/lib/agents/report-scope";
 import { REPORT_TEXT_MAX, REPORT_TEXT_MIN } from "@/lib/contracts";
+import { undiagnosedCaseInput, undiagnosedFieldsSchema } from "./_lib/undiagnosed";
 import { rejectCrossOrigin } from "@/lib/auth/origin";
 import { getOwnerStore } from "@/lib/auth/ownership";
 import { ensureSession } from "@/lib/auth/session";
@@ -24,7 +25,14 @@ function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
   return Promise.race([work, late]).finally(() => clearTimeout(timer));
 }
 
-const bodySchema = z.object({ reportText: z.string().trim().min(REPORT_TEXT_MIN).max(REPORT_TEXT_MAX) });
+const bodySchema = z.object({
+  reportText: z.string().trim().min(REPORT_TEXT_MIN).max(REPORT_TEXT_MAX),
+  /** The patient answered "Not yet" to "Do you have a diagnosis?". */
+  undiagnosed: z.literal(true).optional(),
+  /** With undiagnosed: the question-flow answers (skips extraction). Without it, the report is read by the extractor. */
+  fields: undiagnosedFieldsSchema.optional(),
+}).refine((b) => !b.fields || b.undiagnosed === true, { message: "fields are only accepted with undiagnosed", path: ["fields"] });
+
 
 /** POST /api/cases { reportText } -> extract with Opus, insert case as 'draft' for the patient to confirm. */
 export async function POST(req: Request) {
@@ -38,7 +46,10 @@ export async function POST(req: Request) {
   if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
   let input: Awaited<ReturnType<typeof extractCase>>;
   try {
-    input = await withDeadline(extractCase(body.data.reportText), EXTRACT_DEADLINE_MS);
+    const { reportText, undiagnosed, fields } = body.data;
+    input = undiagnosed && fields
+      ? undiagnosedCaseInput(fields)
+      : await withDeadline(extractCase(reportText, undiagnosed ? { undiagnosed: true } : {}), EXTRACT_DEADLINE_MS);
   } catch (e) {
     if (e instanceof OutOfScopeError) return jsonError(422, e.message);
     if (e instanceof ExtractTimeoutError) return jsonError(504, "Reading the report took too long; please try again", e.message);

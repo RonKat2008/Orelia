@@ -1,7 +1,8 @@
 import type { CaseRecord, SafetyContact, SafetyDraft } from '../safety/types';
 import type { GatedDraft } from '../safety/outbound-gate';
+import type { OrganizationKind } from '@/lib/contracts';
 export type Kind = 'expert' | 'institution' | 'trial' | 'organization';
-export interface Candidate { id: string; caseId: string; targetId: string; targetKind: Kind; purpose?: 'advocacy' | 'financial_aid' | 'travel_aid'; evidence: { claim: string; claimType: string; sourceUrl: string }[] }
+export interface Candidate { id: string; caseId: string; targetId: string; targetKind: Kind; purpose?: OrganizationKind; evidence: { claim: string; claimType: string; sourceUrl: string }[] }
 export interface Contact extends SafetyContact { id: string; caseId: string; targetId: string; targetKind: Kind; channel: 'email' | 'voice'; address: string; purpose?: Candidate['purpose'] }
 export interface Consent { contactId: string; sharedFields: string[]; approvedAt: string }
 export interface Draft extends Omit<SafetyDraft, 'channel'> { channel: 'email' | 'voice'; contextDocIds?: string[]; id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null; /** follow_up_1 / follow_up_2 for follow-up messages, reply_records / reply_slides for reply letters; null/absent for the first message. */ classification?: string | null }

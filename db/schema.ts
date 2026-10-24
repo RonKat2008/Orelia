@@ -33,6 +33,7 @@ export const organizationKindEnum = pgEnum("organization_kind", [
   "advocacy",
   "financial_aid",
   "travel_aid",
+  "registry",
 ]);
 
 export const targetKindEnum = pgEnum("target_kind", [
@@ -101,6 +102,7 @@ export const cases = pgTable(
     orpha?: string | null;
     mesh?: string | null;
     icd10?: string | null;
+    omim?: string | null;
   }>(),
   subtype: text("subtype"),
   stageSummary: text("stage_summary"),
@@ -109,6 +111,10 @@ export const cases = pgTable(
   insurer: text("insurer"),
   planId: text("plan_id"),
   travelLimitMiles: integer("travel_limit_miles"),
+  /** The patient has no diagnosis yet (diagnostic odyssey path); diseaseName then holds a fixed label. */
+  undiagnosed: boolean("undiagnosed").notNull().default(false),
+  /** Patient's own words about their symptoms (undiagnosed path); quoted back with a citation, never interpreted. */
+  symptomNotes: text("symptom_notes"),
   goals: goalEnum("goals")
     .array()
     .notNull()

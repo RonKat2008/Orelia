@@ -2,6 +2,10 @@ import { z } from "zod";
 
 const evidenceRefs = z.array(z.string());
 
+/** "registry" = a patient registry (often joined through a form or an email), stamped by code. */
+export const ORGANIZATION_KINDS = ["advocacy", "financial_aid", "travel_aid", "registry"] as const;
+export type OrganizationKind = (typeof ORGANIZATION_KINDS)[number];
+
 /** Code-sourced facts about a person's publication footprint (stamped from tool output, never by a model). */
 export const expertProfileSchema = z.object({
   paperCount: z.number().int().nonnegative().optional(),
@@ -56,6 +60,8 @@ const trialResourceSchema = z.object({
   nctId: z.string().min(1),
   title: z.string().min(1),
   status: z.string().optional(),
+  /** ClinicalTrials.gov study type, stamped by code from the registry. Observational = natural-history / cohort study. */
+  studyType: z.enum(["interventional", "observational"]).optional(),
   registry: trialRegistrySchema.optional(),
   evidenceRefs,
 });
@@ -64,7 +70,7 @@ const organizationResourceSchema = z.object({
   kind: z.literal("organization"),
   id: z.string().min(1),
   name: z.string().min(1),
-  organizationKind: z.enum(["advocacy", "financial_aid", "travel_aid"]).optional(),
+  organizationKind: z.enum(ORGANIZATION_KINDS).optional(),
   url: z.url().optional(),
   evidenceRefs,
 });

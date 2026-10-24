@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { cases } from "@/db/schema";
-import type { Case, CaseInput } from "@/lib/contracts";
+import { normalizeUndiagnosed, type Case, type CaseInput } from "@/lib/contracts";
 
 export interface CaseStore {
   create(input: CaseInput, status?: string): Promise<Case>;
@@ -33,10 +33,13 @@ function rowToCase(row: Row): Case {
     planId: row.planId ?? undefined,
     travelLimitMiles: row.travelLimitMiles ?? undefined,
     goals: row.goals ?? [],
+    ...(row.undiagnosed ? { undiagnosed: true } : {}),
+    ...(row.symptomNotes ? { symptomNotes: row.symptomNotes } : {}),
   };
 }
 
-function inputToValues(input: CaseInput) {
+function inputToValues(raw: CaseInput) {
+  const input = normalizeUndiagnosed(raw);
   return {
     diseaseName: input.diseaseName,
     diseaseCodes: input.diseaseCodes ?? null,
@@ -48,6 +51,8 @@ function inputToValues(input: CaseInput) {
     planId: input.planId ?? null,
     travelLimitMiles: input.travelLimitMiles ?? null,
     goals: input.goals,
+    undiagnosed: input.undiagnosed === true,
+    symptomNotes: input.symptomNotes ?? null,
   };
 }
 
@@ -91,7 +96,7 @@ export class MemoryCaseStore implements CaseStore {
   private readonly rows = new Map<string, Case>();
 
   async create(input: CaseInput, status = "draft"): Promise<Case> {
-    const c: Case = { ...input, id: randomUUID(), status, createdAt: new Date().toISOString() };
+    const c: Case = { ...normalizeUndiagnosed(input), id: randomUUID(), status, createdAt: new Date().toISOString() };
     this.rows.set(c.id, c);
     return c;
   }
@@ -103,7 +108,7 @@ export class MemoryCaseStore implements CaseStore {
   async update(id: string, input: CaseInput, status: string): Promise<Case | null> {
     const prev = this.rows.get(id);
     if (!prev) return null;
-    const next: Case = { ...input, id, status, createdAt: prev.createdAt };
+    const next: Case = { ...normalizeUndiagnosed(input), id, status, createdAt: prev.createdAt };
     this.rows.set(id, next);
     return next;
   }

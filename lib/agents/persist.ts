@@ -23,7 +23,7 @@ import {
   organizations,
   trials,
 } from "@/db/schema";
-import type { Resource, ScoreBreakdownItem } from "@/lib/contracts";
+import type { OrganizationKind, Resource, ScoreBreakdownItem } from "@/lib/contracts";
 import type { EvidenceWithId, VerifiedRecord } from "./verifier";
 
 export type ResourceKind = Resource["kind"];
@@ -61,7 +61,7 @@ export interface ShortlistMeta {
   targetId: string;
   caseCandidateId: string;
   nctId: string | null;
-  organizationKind: "advocacy" | "financial_aid" | "travel_aid" | null;
+  organizationKind: OrganizationKind | null;
 }
 
 /** An expert with case-scoped verified evidence: shortlisted, or kept as research below the shortlist threshold. */

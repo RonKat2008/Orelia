@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { saveFixture } from "@/lib/agents/replay";
-import { buildUserMessage, generateBrief, parseGenerated, type ChatFn } from "@/lib/condition-brief/generate";
+import { CONDITION_BRIEF_SYSTEM_PROMPT, buildUserMessage, generateBrief, parseGenerated, type ChatFn } from "@/lib/condition-brief/generate";
 import { collected, src, stmt } from "./core-fixture";
 
 const OUT = { statements: [stmt("s1", ["orphanet:1"])], questions: [{ id: "q1", text: "Is this condition inherited?", statementIds: ["s1"] }] };
@@ -63,5 +63,17 @@ describe("generateBrief", () => {
     await generateBrief(collected(), { offline: false, record: true, fixtureSlug: "vascular-eds", fixtureRoot: root, chatFn: async () => JSON.stringify(OUT) });
     const saved = JSON.parse(await readFile(path.join(root, "fixtures/llm/condition-brief/vascular-eds.json"), "utf8"));
     expect(saved).toEqual(OUT);
+  });
+});
+
+describe("CONDITION_BRIEF_SYSTEM_PROMPT prevalence rule", () => {
+  it("requires prevalence statements to cite reference sources, not PubMed", () => {
+    expect(CONDITION_BRIEF_SYSTEM_PROMPT).toMatch(/Prevalence, incidence and frequency statements/);
+    for (const id of ["orphanet:", "gard:", "genereviews:"]) expect(CONDITION_BRIEF_SYSTEM_PROMPT).toContain(id);
+    expect(CONDITION_BRIEF_SYSTEM_PROMPT).toMatch(/Never cite a PubMed/);
+    expect(CONDITION_BRIEF_SYSTEM_PROMPT).toMatch(/not stated in the provided reference sources/);
+  });
+  it("keeps the no-medical-advice rules", () => {
+    expect(CONDITION_BRIEF_SYSTEM_PROMPT).toMatch(/Never give medical advice/);
   });
 });

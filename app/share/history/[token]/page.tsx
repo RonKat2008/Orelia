@@ -26,7 +26,7 @@ export default async function SharedHistoryPage({ params }: { params: Promise<{ 
           />
         ) : (
           <section aria-labelledby="inactive" className="grid max-w-prose gap-3">
-            <h1 id="inactive" className="m-0 font-display text-h2 font-light text-ink display-soft">This link is no longer active</h1>
+            <h1 id="inactive" className="m-0 font-display text-h1 font-light text-ink display-soft">This link is no longer active</h1>
             <p className="m-0 text-body text-ink-2">
               It may have expired or been turned off by the person who shared it. Ask them to send a new link if you still need it.
             </p>

@@ -1,38 +1,58 @@
-import { CircleAlert, CircleCheck, LoaderCircle, Clock } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock, LoaderCircle } from "lucide-react";
+import type { ReactNode } from "react";
 import type { DocStatus } from "@/lib/accounts/contract";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/ui/cn";
 import type { UploadPhase } from "./useUploadQueue";
 
 const SPIN = "animate-spin motion-reduce:animate-none";
 
-/** Chip for an in-flight local upload. */
+/** A status as an icon and a few calm words. Plain text, not a badge: colour never carries the meaning alone. */
+function Status({ tone, children, icon }: { tone: "ok" | "busy" | "wait" | "bad"; children: ReactNode; icon: ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 text-small font-semibold [&_svg]:size-4",
+        tone === "ok" && "text-ok",
+        tone === "busy" && "text-teal-ink dark:text-teal",
+        tone === "wait" && "text-ink-2",
+        tone === "bad" && "text-danger",
+      )}
+    >
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+/** Where a local upload is, in words: waiting, getting ready, uploading, reading the text, or failed. */
 export function UploadPhaseChip({ phase, progress }: { phase: UploadPhase; progress: number }) {
   switch (phase) {
     case "uploading":
-      return <Badge tone="teal"><LoaderCircle aria-hidden className={SPIN} />Uploading {progress}%</Badge>;
+      return <Status tone="busy" icon={<LoaderCircle aria-hidden className={SPIN} />}>Uploading, {progress}%</Status>;
     case "creating":
+      return <Status tone="busy" icon={<LoaderCircle aria-hidden className={SPIN} />}>Getting ready</Status>;
     case "queued":
-      return <Badge tone="neutral"><Clock aria-hidden />{phase === "queued" ? "Waiting" : "Starting"}</Badge>;
+      return <Status tone="wait" icon={<Clock aria-hidden />}>Waiting for its turn</Status>;
     case "processing":
-      return <Badge tone="teal"><LoaderCircle aria-hidden className={SPIN} />Reading text</Badge>;
+      return <Status tone="busy" icon={<LoaderCircle aria-hidden className={SPIN} />}>Reading the text</Status>;
     case "failed":
-      return <Badge tone="danger"><CircleAlert aria-hidden />Failed</Badge>;
+      return <Status tone="bad" icon={<CircleAlert aria-hidden />}>Did not upload</Status>;
     default:
-      return <Badge tone="outline">Ready to upload</Badge>;
+      return <Status tone="wait" icon={<Clock aria-hidden />}>Ready to upload</Status>;
   }
 }
 
-/** Chip for a document as stored on the server. */
+/** A saved document's state, in words. */
 export function DocStatusChip({ status }: { status: DocStatus }) {
   switch (status) {
     case "embedded":
-      return <Badge tone="ok"><CircleCheck aria-hidden />Embedded</Badge>;
+      return <Status tone="ok" icon={<CircleCheck aria-hidden />}>Ready to use</Status>;
     case "failed":
-      return <Badge tone="danger"><CircleAlert aria-hidden />Failed</Badge>;
+      return <Status tone="bad" icon={<CircleAlert aria-hidden />}>We could not read it</Status>;
     case "uploaded":
     case "extracting":
-      return <Badge tone="teal"><LoaderCircle aria-hidden className={SPIN} />Reading text</Badge>;
+      return <Status tone="busy" icon={<LoaderCircle aria-hidden className={SPIN} />}>Reading the text</Status>;
     default:
-      return <Badge tone="warn"><Clock aria-hidden />Upload incomplete</Badge>;
+      return <Status tone="wait" icon={<Clock aria-hidden />}>Upload did not finish</Status>;
   }
 }

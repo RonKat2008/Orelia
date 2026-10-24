@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight, Download, FileText, UserRound } from "lucide-react";
+import { Download } from "lucide-react";
 import type { Account, LibraryDocument } from "@/lib/accounts/contract";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { List, ListRow } from "@/components/ui/list-row";
+import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { AccountGate } from "./AccountGate";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import { SECTION_TITLE } from "./FormBits";
@@ -25,70 +25,52 @@ function useDocumentCount(): number | null {
   return count;
 }
 
-const TILE =
-  "group grid gap-4 p-6 no-underline [&_svg]:size-5";
-
 function OverviewBody({ account }: { account: Account }) {
   const count = useDocumentCount();
   const firstName = account.name?.trim().split(/\s+/)[0];
   return (
-    <div className="grid gap-12">
-      <section aria-labelledby="hello" className="grid gap-6">
+    <div className="grid max-w-wide gap-12">
+      <section aria-labelledby="hello" className="grid gap-4">
         <h2 id="hello" className={SECTION_TITLE}>
           {firstName ? `Hello, ${firstName}.` : "Hello."}
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card asChild interactive padding="none" variant="raised">
-            <Link href="/account/profile" className={TILE}>
-              <span className="flex items-center justify-between text-teal">
-                <span className="grid size-10 place-items-center rounded-pill bg-teal-soft"><UserRound aria-hidden /></span>
-                <ArrowUpRight aria-hidden className="text-ink-3 transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" />
-              </span>
-              <span className="grid gap-1">
-                <span className="font-display text-h4 text-ink">Profile</span>
-                <span className="text-small text-ink-2">Who you are, where you live and what you are managing, so you never retype it.</span>
-              </span>
-            </Link>
-          </Card>
-          <Card asChild interactive padding="none" variant="raised">
-            <Link href="/account/documents" className={TILE}>
-              <span className="flex items-center justify-between text-teal">
-                <span className="grid size-10 place-items-center rounded-pill bg-teal-soft"><FileText aria-hidden /></span>
-                <ArrowUpRight aria-hidden className="text-ink-3 transition-transform duration-300 ease-out-expo group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" />
-              </span>
-              <span className="grid gap-1">
-                <span className="font-display text-h4 text-ink">
-                  Documents{count !== null ? <span className="ml-2 text-small font-semibold text-ink-2">{count}</span> : null}
-                </span>
-                <span className="text-small text-ink-2">Your private medical document library. Upload, search and organise.</span>
-              </span>
-            </Link>
-          </Card>
+        <List label="Your account">
+          <ListRow
+            href="/account/profile"
+            title="Profile"
+            meta="Who you are and where you live, so you never retype it."
+          />
+          <ListRow
+            href="/account/documents"
+            title="Documents"
+            meta="Your private medical document library."
+            trailing={count !== null ? `${count} ${count === 1 ? "document" : "documents"}` : undefined}
+          />
+        </List>
+      </section>
+
+      <section aria-labelledby="appearance-heading" className="grid gap-4">
+        <h2 id="appearance-heading" className={SECTION_TITLE}>Appearance</h2>
+        <div className="flex flex-wrap items-center gap-4">
+          <ThemeToggle />
+          <p className="m-0 text-small text-ink-2">Light, dark, or match your device.</p>
         </div>
       </section>
 
-      <section aria-labelledby="data-heading" className="grid gap-5">
-        <h2 id="data-heading" className={SECTION_TITLE}>Your data</h2>
-        <Card className="grid gap-5">
-          <div className="grid gap-1">
-            <h3 className="m-0 text-h4 font-bold text-ink">Download everything</h3>
-            <p className="m-0 max-w-prose text-small text-ink-2">
-              Get a JSON copy of your profile, cases and document details. You own your information.
-            </p>
-          </div>
-          <div>
-            <Button asChild variant="secondary">
-              <a href="/api/account/export" download><Download aria-hidden />Download my data (JSON)</a>
-            </Button>
-          </div>
-        </Card>
-        <div className="grid gap-4 rounded-lg border border-danger/30 bg-danger-soft/50 p-5 sm:p-6">
-          <div className="grid gap-1">
-            <h3 className="m-0 text-h4 font-bold text-ink">Delete account</h3>
-            <p className="m-0 max-w-prose text-small text-ink-2">
-              Permanently removes your cases, documents, stored files, profile and sign-in. This cannot be undone.
-            </p>
-          </div>
+      <section aria-labelledby="data-heading" className="grid gap-4">
+        <h2 id="data-heading" className={SECTION_TITLE}>Manage your data</h2>
+        <div className="grid gap-1">
+          <p className="m-0 max-w-prose text-body text-ink-2">
+            You own your information. Get a copy of your profile, cases and document details.
+          </p>
+          <Button asChild variant="link" className="min-h-11 w-fit text-body">
+            <a href="/api/account/export" download><Download aria-hidden />Download my data (JSON)</a>
+          </Button>
+        </div>
+        <div className="grid gap-1 border-t border-line pt-4">
+          <p className="m-0 max-w-prose text-body text-ink-2">
+            Deleting your account removes your cases, documents, files, profile and sign-in. It cannot be undone.
+          </p>
           <div>
             <DeleteAccountDialog />
           </div>

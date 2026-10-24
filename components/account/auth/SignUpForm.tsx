@@ -75,6 +75,8 @@ export function SignUpForm({ next }: { next?: string }) {
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
           value={email}
           onValueChange={setEmail}
           error={errors.email}
@@ -95,7 +97,7 @@ export function SignUpForm({ next }: { next?: string }) {
         <Button type="submit" size="lg" loading={pending} loadingText="Creating account" className="w-full text-body">
           Create account
         </Button>
-        <p className="m-0 text-small text-ink-2">Wayfinder is for adults (18+).</p>
+        <p className="m-0 text-small text-ink-2">Wayfinder is for adults, 18 and over.</p>
       </form>
     </AuthCard>
   );

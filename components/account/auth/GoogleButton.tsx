@@ -45,7 +45,7 @@ export function GoogleButton({ callbackURL, onError }: { callbackURL: string; on
 
 export function OrDivider() {
   return (
-    <div className="flex items-center gap-4 text-small text-ink-3" role="separator" aria-label="or">
+    <div className="flex items-center gap-4 text-small text-ink-2" role="separator" aria-label="or">
       <span aria-hidden className="h-px flex-1 bg-line" />
       or use email
       <span aria-hidden className="h-px flex-1 bg-line" />

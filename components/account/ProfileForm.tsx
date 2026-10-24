@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { LockKeyhole } from "lucide-react";
 import { goalSchema } from "@/lib/contracts/case";
 import {
   CONTACT_PREFERENCES,
@@ -19,6 +18,9 @@ import { Skeleton } from "@/components/ui/feedback";
 import { toast } from "@/components/ui/toast";
 import { AccountGate } from "./AccountGate";
 import { Callout, SECTION_TITLE, TextField } from "./FormBits";
+import { ErrorSummary } from "@/components/ui/error-summary";
+import { LoadingState } from "@/components/ui/states";
+import { cn } from "@/lib/ui/cn";
 import { apiRequest } from "./helpers/api";
 
 type TextKey =
@@ -75,14 +77,56 @@ function toInput(form: FormState): Record<string, unknown> {
   };
 }
 
-function Section({ title, description, children }: { title: string; description?: ReactNode; children: ReactNode }) {
+const SECTION_TITLES = [
+  "About you",
+  "Where you live",
+  "Insurance",
+  "Your care team",
+  "Your condition",
+  "Medications & allergies",
+  "Preferences",
+] as const;
+
+interface SectionProps {
+  title: (typeof SECTION_TITLES)[number];
+  description?: ReactNode;
+  children: ReactNode;
+  /** The section showing on a phone. From 768 px up every section shows. */
+  active: number;
+  /** Phones show every section when a field needs fixing, so the problem is never hidden. */
+  showAll: boolean;
+  onStep: (index: number) => void;
+}
+
+/** One profile section. On a phone only the active one shows, with Back / Next; wider screens show all of them. */
+function Section({ title, description, children, active, showAll, onStep }: SectionProps) {
+  const index = SECTION_TITLES.indexOf(title);
+  const visible = showAll || index === active;
+  const prev = SECTION_TITLES[index - 1];
+  const next = SECTION_TITLES[index + 1];
   return (
-    <section aria-label={title} className="grid gap-6 border-t border-line pt-8 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
+    <section
+      aria-label={title}
+      data-section={index}
+      className={cn(
+        "grid-cols-1 gap-6 border-t border-line pt-8 md:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12",
+        visible ? "grid" : "hidden",
+      )}
+    >
       <div className="grid content-start gap-2">
+        <p className="m-0 text-small text-ink-2 md:hidden">Step {index + 1} of {SECTION_TITLES.length}</p>
         <h2 className={SECTION_TITLE}>{title}</h2>
         {description ? <p className="m-0 text-small text-ink-2 text-pretty">{description}</p> : null}
       </div>
-      <div className="grid min-w-0 content-start gap-5 sm:grid-cols-2 [&>.wide]:sm:col-span-2">{children}</div>
+      <div className="grid min-w-0 content-start gap-5 sm:grid-cols-2 [&>.wide]:sm:col-span-2">
+        {children}
+        {!showAll ? (
+          <div className="wide flex flex-wrap items-center gap-x-6 gap-y-1 md:hidden">
+            {prev ? <Button type="button" variant="link" className="min-h-11" onClick={() => onStep(index - 1)}>Back: {prev}</Button> : null}
+            {next ? <Button type="button" variant="link" className="min-h-11" onClick={() => onStep(index + 1)}>Next: {next}</Button> : null}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -95,6 +139,7 @@ function ProfileBody() {
   const [adultOnly, setAdultOnly] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [active, setActive] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -110,6 +155,7 @@ function ProfileBody() {
     };
   }, []);
 
+  const showAll = Object.keys(errors).length > 0 || Boolean(adultOnly);
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((prev) => ({ ...prev, [key]: value }));
   const text = (key: TextKey) => ({ value: form[key], onValueChange: (v: string) => set(key, v), error: errors[key], id: `pf-${key}` });
 
@@ -132,8 +178,7 @@ function ProfileBody() {
         if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
       }
       setErrors(fieldErrors);
-      setFormError("Please fix the highlighted fields.");
-      focusFirstError(fieldErrors);
+      setFormError("Fix the fields below, then save again");
       return;
     }
     setErrors({});
@@ -157,8 +202,7 @@ function ProfileBody() {
         if (key && !fieldErrors[key]) fieldErrors[key] = issue.message;
       }
       setErrors(fieldErrors);
-      setFormError("Please fix the highlighted fields.");
-      focusFirstError(fieldErrors);
+      setFormError("Fix the fields below, then save again");
       return;
     }
     setFormError(res.message ?? "We could not save your profile. Please try again.");
@@ -166,23 +210,26 @@ function ProfileBody() {
 
   if (!loaded) {
     return (
-      <div aria-busy="true" className="grid gap-6">
-        <span className="sr-only">Loading your profile</span>
+      <LoadingState label="Loading your profile">
         <Skeleton className="h-40" />
         <Skeleton className="h-40" />
-      </div>
+      </LoadingState>
     );
   }
 
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="grid gap-10">
-      <Callout tone="info">
-        <span className="inline-flex items-center gap-2 font-semibold"><LockKeyhole aria-hidden className="size-4" />Private to you.</span>{" "}
-        Only the fields you tick when you contact someone are ever shared.
-      </Callout>
+      <p className="m-0 max-w-prose text-body text-ink-2">
+        Fill in what you like and skip the rest. Only the details you tick when you contact someone are ever shared.
+      </p>
+      {formError && Object.keys(errors).length > 0 ? (
+        <ErrorSummary
+          errors={Object.entries(errors).map(([key, message]) => ({ fieldId: `pf-${key}`, message }))}
+        />
+      ) : null}
       {loadError ? <Callout tone="danger" role="alert">{loadError}</Callout> : null}
 
-      <Section title="About you" description="Your preferred name is how Wayfinder addresses you.">
+      <Section active={active} showAll={showAll} onStep={setActive} title="About you" description="Your preferred name is how Wayfinder addresses you.">
         <TextField {...text("preferredName")} label="Preferred name" autoComplete="nickname" required />
         <TextField {...text("legalName")} label="Legal name" optional autoComplete="name" />
         <TextField
@@ -206,7 +253,7 @@ function ProfileBody() {
         {adultOnly ? <Callout tone="warn" role="alert" className="wide">{adultOnly}</Callout> : null}
       </Section>
 
-      <Section title="Where you live" description="Helps find care within reach.">
+      <Section active={active} showAll={showAll} onStep={setActive} title="Where you live" description="Helps find care within reach.">
         <TextField {...text("city")} label="City" optional autoComplete="address-level2" />
         <Field label="State" htmlFor="pf-state" optional error={errors.state}>
           <Select value={form.state || UNSET} onValueChange={(v) => set("state", v === UNSET ? "" : v)}>
@@ -221,18 +268,18 @@ function ProfileBody() {
         <TextField {...text("phone")} label="Phone" optional type="tel" autoComplete="tel" />
       </Section>
 
-      <Section title="Insurance" description="Optional. Used to find programs and centers that take your plan.">
+      <Section active={active} showAll={showAll} onStep={setActive} title="Insurance" description="Optional. Used to find programs and centers that take your plan.">
         <TextField {...text("insurer")} label="Insurer" optional />
         <TextField {...text("plan")} label="Plan" optional />
         <TextField {...text("memberId")} label="Member ID" optional autoComplete="off" />
       </Section>
 
-      <Section title="Your care team">
+      <Section active={active} showAll={showAll} onStep={setActive} title="Your care team">
         <TextField {...text("pcpName")} label="Primary care clinician" optional />
         <TextField {...text("pcpPractice")} label="Practice or clinic" optional />
       </Section>
 
-      <Section title="Your condition">
+      <Section active={active} showAll={showAll} onStep={setActive} title="Your condition">
         <TextField {...text("primaryDiagnosis")} label="Primary diagnosis" optional fieldClassName="wide" />
         <TextField {...text("diagnosedOn")} label="Diagnosed on" optional placeholder="YYYY, YYYY-MM or YYYY-MM-DD" />
         <Field label="Other conditions" htmlFor="pf-otherConditions" optional error={errors.otherConditions} className="wide">
@@ -246,7 +293,7 @@ function ProfileBody() {
         </Field>
       </Section>
 
-      <Section title="Medications & allergies" description="For your own reference. Wayfinder never gives medical advice.">
+      <Section active={active} showAll={showAll} onStep={setActive} title="Medications & allergies" description="For your own reference. Wayfinder never gives medical advice.">
         <Field label="Medications" htmlFor="pf-medications" optional error={errors.medications} className="wide">
           <Textarea
             id="pf-medications"
@@ -268,7 +315,7 @@ function ProfileBody() {
         </Field>
       </Section>
 
-      <Section title="Preferences">
+      <Section active={active} showAll={showAll} onStep={setActive} title="Preferences">
         <TextField {...text("preferredLanguage")} label="Preferred language" optional />
         <Field label="Best way to reach you" htmlFor="pf-contactPreference" optional>
           <Select value={form.contactPreference || UNSET} onValueChange={(v) => set("contactPreference", v === UNSET ? "" : v)}>
@@ -312,9 +359,9 @@ function ProfileBody() {
         </fieldset>
       </Section>
 
-      <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-4 border-t border-line bg-paper/90 px-4 py-4 backdrop-blur-md sm:mx-0 sm:px-0">
+      <div className="flex flex-wrap items-center gap-4 border-t border-line pt-6">
         <Button type="submit" size="lg" loading={saving} loadingText="Saving">Save profile</Button>
-        {formError ? <p role="alert" className="m-0 text-small font-semibold text-danger">{formError}</p> : null}
+        {formError && Object.keys(errors).length === 0 ? <p role="alert" className="m-0 text-small font-semibold text-danger">{formError}</p> : null}
       </div>
     </form>
   );

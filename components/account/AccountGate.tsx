@@ -7,6 +7,7 @@ import type { Account } from "@/lib/accounts/contract";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/display";
 import { Skeleton } from "@/components/ui/feedback";
+import { LoadingState } from "@/components/ui/states";
 import { signInHref } from "./helpers/safe-next";
 import { useAccount } from "./helpers/use-account";
 
@@ -16,11 +17,10 @@ export function AccountGate({ path, children }: { path: string; children: (accou
 
   if (state.status === "loading") {
     return (
-      <div aria-busy="true" aria-live="polite" className="grid gap-4">
-        <span className="sr-only">Loading your account</span>
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
-      </div>
+      <LoadingState label="Loading your account">
+        <Skeleton className="h-16" />
+        <Skeleton className="h-16" />
+      </LoadingState>
     );
   }
   if (!state.enabled) {
@@ -29,7 +29,7 @@ export function AccountGate({ path, children }: { path: string; children: (accou
         icon={<LockKeyhole />}
         title="Accounts are not available yet"
         description="You can keep using Wayfinder without one. Your cases stay in this browser."
-        action={<Button asChild variant="secondary"><Link href="/start">Start a case</Link></Button>}
+        action={<Button asChild size="lg"><Link href="/start">Start a case</Link></Button>}
       />
     );
   }
@@ -37,12 +37,12 @@ export function AccountGate({ path, children }: { path: string; children: (accou
     return (
       <EmptyState
         icon={<LockKeyhole />}
-        title="Sign in to see this page"
+        title="Sign in to see your account"
         description="An account keeps your profile and medical documents private and in one place."
         action={
-          <div className="flex flex-wrap justify-center gap-3">
-            <Button asChild><Link href={signInHref(path)}>Sign in</Link></Button>
-            <Button asChild variant="secondary"><Link href="/auth/sign-up">Create an account</Link></Button>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+            <Button asChild size="lg"><Link href={signInHref(path)}>Sign in</Link></Button>
+            <Button asChild variant="link" className="min-h-11 text-body"><Link href="/auth/sign-up">Create an account</Link></Button>
           </div>
         }
       />

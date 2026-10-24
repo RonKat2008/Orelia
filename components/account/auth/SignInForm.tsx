@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/ui/cn";
 import { authClient } from "@/lib/auth/client";
 import { Callout, TextField } from "../FormBits";
 import { safeNext } from "../helpers/safe-next";
@@ -24,7 +25,7 @@ export function SignInForm({ next }: { next?: string }) {
     event.preventDefault();
     if (pending) return;
     if (!email.trim() || !password) {
-      setError("Enter your email and password.");
+      setError("Enter your email and password");
       return;
     }
     setPending(true);
@@ -67,6 +68,8 @@ export function SignInForm({ next }: { next?: string }) {
           type="email"
           autoComplete="email"
           inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
           value={email}
           onValueChange={setEmail}
           required
@@ -80,11 +83,12 @@ export function SignInForm({ next }: { next?: string }) {
           onValueChange={setPassword}
           required
         />
-        <div className="-mt-2 text-small">
-          <Link href="/auth/forgot-password" className={AUTH_LINK}>
+        <p className="-mt-2 m-0 flex flex-wrap items-center gap-x-5 text-small">
+          <Link href="/auth/forgot-password" className={cn(AUTH_LINK, "inline-flex min-h-11 items-center")}>
             Forgot your password?
           </Link>
-        </div>
+          {/* TODO(auth): offer "Email me a sign-in link" here once the auth backend enables the magic-link plugin. */}
+        </p>
         {error ? <Callout tone="danger" role="alert">{error}</Callout> : null}
         <Button type="submit" size="lg" loading={pending} loadingText="Signing in" className="w-full text-body">
           Sign in

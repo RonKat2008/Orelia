@@ -49,7 +49,7 @@ export function DeleteAccountDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="danger">Delete account</Button>
+        <Button variant="danger-ghost" className="-ml-3 min-h-11">Delete account</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

@@ -22,4 +22,10 @@ describe("Evidence", () => {
   it("rejects an unknown source kind", () => {
     expect(evidenceSchema.safeParse({ ...valid, sourceKind: "model" }).success).toBe(false);
   });
+
+  it("accepts an optional id and stays valid without one", () => {
+    expect(evidenceSchema.parse({ ...valid, id: "ev-1" }).id).toBe("ev-1");
+    expect(evidenceSchema.parse(valid).id).toBeUndefined();
+    expect(evidenceSchema.safeParse({ ...valid, id: "" }).success).toBe(false);
+  });
 });

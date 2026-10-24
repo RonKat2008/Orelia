@@ -30,4 +30,18 @@ describe("Resource", () => {
   it("rejects an unknown kind", () => {
     expect(resourceSchema.safeParse({ kind: "clinic", id: "x", name: "X", evidenceRefs: [] }).success).toBe(false);
   });
+
+  it("expert accepts optional verified and profile; trial accepts optional registry", () => {
+    const expert = resourceSchema.parse({
+      kind: "expert", id: "e1", name: "Ada", npi: "1234567890", verified: true,
+      profile: { paperCount: 3, recentPaperCount: 1, affiliation: "X", state: "AZ" }, evidenceRefs: [],
+    });
+    expect(expert.kind === "expert" && expert.verified).toBe(true);
+    const registry = {
+      conditions: ["A"], keywords: [], meshTerms: [], stdAges: ["ADULT"], phases: ["PHASE2"], usSiteCount: 2,
+      usRecruitingSiteCount: 1, recruitingSiteStates: ["AZ"], investigators: [], hasContact: true,
+    };
+    expect(resourceSchema.safeParse({ kind: "trial", id: "t", nctId: "NCT1", title: "T", registry, evidenceRefs: [] }).success).toBe(true);
+    expect(resourceSchema.safeParse({ kind: "trial", id: "t", nctId: "NCT1", title: "T", registry: { conditions: [] }, evidenceRefs: [] }).success).toBe(false);
+  });
 });

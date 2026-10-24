@@ -1,0 +1,140 @@
+/*
+ * Wayfinder design tokens — "survey map" direction.
+ * Light: survey paper (faintly green-grey, not cream) with deep navy ink.
+ * Dark: night chart — blue-black sea with chalk ink.
+ * One accent, the route teal; every other colour is semantic.
+ *
+ * Theme: follows the OS by default; [data-theme="light|dark"] on <html> forces it.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Base */
+  --wf-paper: #eeede5;
+  --wf-paper-raised: #f8f7f2;
+  --wf-paper-sunk: #e4e3d9;
+  --wf-ink: #1d2b36;
+  --wf-ink-muted: #52606a;
+  --wf-rule: #cdcbbd;
+  --wf-contour: #d9d7ca;
+
+  /* Accent: the route */
+  --wf-route: #2a6670;
+  --wf-route-soft: #2a667026;
+
+  /* Semantic status */
+  --wf-verified: #3a7449;
+  --wf-pending: #9a6d16;
+  --wf-failed: #a04d45;
+  --wf-neutral: #868980;
+  --wf-quiet: #a9aba1;
+
+  /* Score palette: tints of route + earth, ordered */
+  --wf-score-0: #2a6670;
+  --wf-score-1: #5b8f8f;
+  --wf-score-2: #9a6d16;
+  --wf-score-3: #7e7a5c;
+
+  --wf-focus: #2a6670;
+  --wf-shadow: 0 1px 0 #1d2b360f, 0 8px 24px -12px #1d2b3640;
+
+  /* Type */
+  --wf-font-display: var(--font-display, "Iowan Old Style", Georgia, serif);
+  --wf-font-text: var(--font-text, system-ui, sans-serif);
+  --wf-text-sm: 0.875rem;
+  --wf-text-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
+  --wf-text-lg: 1.25rem;
+  --wf-text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --wf-text-hero: clamp(2.25rem, 1.4rem + 3.6vw, 3.75rem);
+  --wf-leading-text: 1.55;
+  --wf-leading-display: 1.08;
+
+  /* Space: a 4px base with deliberate jumps */
+  --wf-space-1: 0.25rem;
+  --wf-space-2: 0.5rem;
+  --wf-space-3: 0.75rem;
+  --wf-space-4: 1rem;
+  --wf-space-6: 1.5rem;
+  --wf-space-8: 2rem;
+  --wf-space-12: 3rem;
+  --wf-space-section: clamp(3rem, 2rem + 4vw, 6rem);
+
+  /* Shape: small radius for controls, larger for surfaces, pills for status */
+  --wf-radius-control: 6px;
+  --wf-radius-surface: 14px;
+  --wf-radius-pill: 999px;
+
+  /* Motion (CSS side; JS side lives in lib/motion/tokens.ts) */
+  --wf-duration-fast: 180ms;
+  --wf-duration-normal: 350ms;
+  --wf-ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --wf-paper: #0f1a22;
+    --wf-paper-raised: #16232d;
+    --wf-paper-sunk: #0b141a;
+    --wf-ink: #e3e1d6;
+    --wf-ink-muted: #9ba7ad;
+    --wf-rule: #2b3a45;
+    --wf-contour: #1c2a34;
+    --wf-route: #6fb6b4;
+    --wf-route-soft: #6fb6b42e;
+    --wf-verified: #82bb8e;
+    --wf-pending: #d9ad5a;
+    --wf-failed: #d2857c;
+    --wf-neutral: #727b7f;
+    --wf-quiet: #4d5a62;
+    --wf-score-0: #6fb6b4;
+    --wf-score-1: #4f8f90;
+    --wf-score-2: #d9ad5a;
+    --wf-score-3: #a8a27c;
+    --wf-focus: #6fb6b4;
+    --wf-shadow: 0 1px 0 #0000004d, 0 10px 28px -14px #000000b3;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --wf-paper: #0f1a22;
+  --wf-paper-raised: #16232d;
+  --wf-paper-sunk: #0b141a;
+  --wf-ink: #e3e1d6;
+  --wf-ink-muted: #9ba7ad;
+  --wf-rule: #2b3a45;
+  --wf-contour: #1c2a34;
+  --wf-route: #6fb6b4;
+  --wf-route-soft: #6fb6b42e;
+  --wf-verified: #82bb8e;
+  --wf-pending: #d9ad5a;
+  --wf-failed: #d2857c;
+  --wf-neutral: #727b7f;
+  --wf-quiet: #4d5a62;
+  --wf-score-0: #6fb6b4;
+  --wf-score-1: #4f8f90;
+  --wf-score-2: #d9ad5a;
+  --wf-score-3: #a8a27c;
+  --wf-focus: #6fb6b4;
+  --wf-shadow: 0 1px 0 #0000004d, 0 10px 28px -14px #000000b3;
+}
+
+/* Status tone helper: sets --wf-tone for any element with data-tone. */
+[data-tone="quiet"] { --wf-tone: var(--wf-quiet); }
+[data-tone="pending"] { --wf-tone: var(--wf-pending); }
+[data-tone="verified"] { --wf-tone: var(--wf-verified); }
+[data-tone="failed"] { --wf-tone: var(--wf-failed); }
+[data-tone="neutral"] { --wf-tone: var(--wf-neutral); }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

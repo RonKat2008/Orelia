@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { CaseInput, Evidence, ResearchResult, Resource } from "@/lib/contracts";
 import { assessTrial } from "./relevance";
+import { expertEligibility } from "@/lib/identity/eligibility";
 
 /**
  * Verifier (HARD RULE 2): deterministic code, no model in the trust path.
@@ -22,6 +23,8 @@ export interface VerifiedRecord {
   /** Dedupe key, e.g. "expert:npi:1234567890". */
   key: string;
   evidence: EvidenceWithId[];
+  /** Ineligible experts remain available as research, but must not become shortlist candidates. */
+  shortlistEligibility?: { eligible: boolean; reason: string };
 }
 
 export interface DroppedItem {
@@ -179,6 +182,11 @@ function mergeResources(a: Resource, b: Resource): Resource {
     if (k === "evidenceRefs" || k === "id" || k === "kind") continue;
     merged[k] = firstDefined(merged[k], v as unknown);
   }
+  if (a.kind === "expert" && b.kind === "expert") {
+    // Identity's corroborated publication profile wins over a broad literature-search count.
+    const identity = a.verified ? a : b.verified ? b : undefined;
+    if (identity) { merged.verified = true; merged.profile = identity.profile; }
+  }
   return merged as Resource;
 }
 
@@ -272,7 +280,12 @@ export function verify(results: readonly ResearchResult[], context?: VerifyConte
   }
 
   mergeNameOnlyExperts(working);
-  return finalize([...working.values()], dropped, conflicts);
+  const output = finalize([...working.values()], dropped, conflicts);
+  const resources = output.kept.map((r) => r.resource);
+  for (const record of output.kept) {
+    if (record.resource.kind === "expert") record.shortlistEligibility = expertEligibility(record.resource, resources);
+  }
+  return output;
 }
 
 /**
@@ -353,6 +366,8 @@ export async function verifyWithProposals(
     const b = byKey.get(kb);
     if (!a || !b || ka === kb || absorbed.has(ka) || absorbed.has(kb)) continue;
     if (a.resource.kind !== b.resource.kind) continue;
+    // Bibliographic namesakes and verified clinician identities must never be joined by a model proposal.
+    if (a.resource.kind === "expert" && (a.resource.verified || b.resource.kind === "expert" && b.resource.verified)) continue;
     absorbed.add(kb);
     const seen = new Set(a.evidence.map((e) => e.id));
     const combined = [...a.evidence, ...b.evidence.filter((e) => !seen.has(e.id))];

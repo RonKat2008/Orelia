@@ -67,6 +67,8 @@ function toAuthorHits(
       const hit: PubmedAuthorHit = {
         name: `${firstName} ${a.lastName}`,
         firstName,
+        middleName: a.firstName.trim().split(/\s+/).slice(1).join(" ") || undefined,
+        affiliations: a.affiliations,
         lastName: a.lastName,
         ...(affiliation ? { affiliation } : {}),
         ...(state ? { state } : {}),
@@ -154,6 +156,7 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
       }
       return {
         searchUrl: url.href,
+        truncated: result.records.length >= NPPES_RESULT_LIMIT,
         providers: result.records
           .filter((r) => r.enumeration_type !== "NPI-2" && r.basic.status !== "I")
           .map((r) => {
@@ -161,6 +164,7 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
             const taxonomy = r.taxonomies?.find((t) => t.primary) ?? r.taxonomies?.[0];
             return {
               npi: r.number,
+              raw: r,
               firstName: r.basic.first_name ?? "",
               lastName: r.basic.last_name ?? "",
               credential: r.basic.credential,

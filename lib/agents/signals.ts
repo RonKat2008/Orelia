@@ -5,6 +5,7 @@ import { matchNciCenters, type NciDataset } from "@/lib/sources/nci-centers";
 import { stateDistanceMiles } from "./research/geo";
 import { diseaseMatch, diseaseTerms, mentionStrength } from "./relevance";
 import type { EvidenceWithId, VerifiedRecord } from "./verifier";
+import { sameInvestigator } from "@/lib/identity/eligibility";
 
 /**
  * Derive ranking signals from VERIFIED records only. Values are deterministic functions of code-stamped facts
@@ -47,16 +48,8 @@ function reach(from: string | undefined, to: string | undefined, limit: number |
 const distanceText = (miles: number, home: string | undefined): string =>
   miles === 0 ? `in the home state (${home})` : `about ${miles} miles (state-to-state) from ${home ?? "home"}`;
 
-const normName = (s: string): string[] => s.toLowerCase().replace(/[^a-z\s-]/g, " ").split(/\s+/).filter(Boolean);
-
 function leadsTrial(expertName: string, investigators: readonly string[]): boolean {
-  const parts = normName(expertName);
-  const first = parts[0];
-  const last = parts[parts.length - 1];
-  return investigators.some((i) => {
-    const tokens = normName(i);
-    return !!first && !!last && tokens.includes(first) && tokens.includes(last);
-  });
+  return investigators.some((i) => sameInvestigator(expertName, i));
 }
 
 const ctgov = (r: VerifiedRecord) => r.evidence.filter((e) => e.sourceKind === "ctgov");
@@ -153,7 +146,7 @@ function expertSignals(r: Extract<Resource, { kind: "expert" }>, rec: VerifiedRe
   const nciHits = p?.affiliation ? matchNciCenters(p.affiliation, nciDatasetFrom(all)).records : [];
   const nciEvidence = all.filter((a) => a.resource.kind === "institution" && nciHits.some((h) => h.name === (a.resource as { name: string }).name)).flatMap((a) => a.evidence.filter((e) => e.sourceKind === "nci"));
   const fitParts: string[] = [];
-  if (r.verified && identity.length) fitParts.push("identity confirmed in NPPES (NPI " + r.npi + ")");
+  if (r.verified && identity.length) fitParts.push(identity.map((e) => e.claim).join("; "));
   if (nciHits[0]) fitParts.push(`paper affiliation matches ${nciHits[0].name} (${nciHits[0].designation})`);
   out.institutionalFit = signal(
     (r.verified ? 0.4 : 0) + (nciHits.length ? 0.6 : 0),

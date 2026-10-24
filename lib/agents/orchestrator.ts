@@ -1,3 +1,4 @@
+import { expertEligibility } from "@/lib/identity/eligibility";
 import { agentNameSchema, type CaseInput, type ResearchResult } from "@/lib/contracts";
 import type { CaseStore } from "./case-store";
 import type { Persist, RankedEntry } from "./persist";
@@ -153,7 +154,7 @@ async function finalizeCase(
   const ranked: RankedEntry[] = [];
   const kinds = [...new Set(verified.kept.map((k) => k.resource.kind))].sort();
   for (const kind of kinds) {
-    const group = verified.kept.filter((k) => k.resource.kind === kind);
+    const group = verified.kept.filter((k) => k.resource.kind === kind && (k.resource.kind !== "expert" || expertEligibility(k.resource, verified.kept.map((r) => r.resource)).eligible));
     const out = (deps.rank ?? defaultRank)(group.map((rec) => toCandidate(rec, verified.kept, caseRecord)));
     for (const r of out) ranked.push({ record: r.record, score: r.score, rank: r.rank, breakdown: r.breakdown });
   }

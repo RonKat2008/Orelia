@@ -1,3 +1,4 @@
+import type { NppesProvider as RawNppesProvider } from "@/lib/sources/nppes";
 /**
  * Minimal source interfaces the research agents depend on. The real wrappers in lib/sources/* are adapted to
  * these ports at wiring time; agents never import a wrapper directly. Ports return plain facts, never URLs the
@@ -11,6 +12,8 @@ export interface PubmedAuthorHit {
   lastName: string;
   /** Affiliation text from the author's most relevant paper, if PubMed had one. */
   affiliation?: string;
+  affiliations?: string[];
+  middleName?: string;
   /** Two-letter US state parsed from the affiliation, if any. */
   state?: string;
   /** Papers in the retrieved set that this author appears on. */
@@ -48,6 +51,8 @@ export interface CtgovPort {
 }
 
 export interface NppesProvider {
+  /** Full registry facts retained for deterministic identity checks. */
+  raw?: RawNppesProvider;
   npi: string;
   firstName: string;
   lastName: string;
@@ -58,6 +63,7 @@ export interface NppesProvider {
 }
 
 export interface NppesLookupResult {
+  truncated?: boolean;
   /** The registry query URL that produced these results (usable as a source URL for "no unique match"). */
   searchUrl: string;
   providers: NppesProvider[];

@@ -50,9 +50,11 @@ describe("runResearch", () => {
     expect(status("network")).toBe("not_implemented");
     expect(runs.every((r) => ["done", "failed", "not_implemented"].includes(r.status))).toBe(true);
 
-    expect(summary.candidates).toBe(2);
+    expect(summary.candidates).toBe(0);
+    expect(summary.verified.kept).toHaveLength(2);
+    expect(summary.verified.kept.every((r) => r.shortlistEligibility?.eligible === false)).toBe(true);
     const list = await persist.getShortlist(c.id);
-    expect(list).toHaveLength(2);
+    expect(list).toHaveLength(0);
     expect(list.every((i) => i.evidence.length > 0 && i.breakdown.length === 4)).toBe(true);
     expect((await cases.get(c.id))?.status).toBe("ready");
   });

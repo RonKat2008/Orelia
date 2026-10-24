@@ -1,0 +1,11 @@
+# Expert identities
+
+`matchIdentity` is a pure assessment of PubMed author facts and raw NPPES results. It returns verified, probable, ambiguous or rejected, with reasons. Only verified carries an NPI. Verification requires an active individual record, exact first/family names, compatible middle initials when supplied, an allowed disease-specific clinical taxonomy, and a practice city/state appearing together in an author affiliation. Mailing addresses do not corroborate practice locations. Any trainee taxonomy disqualifies the record. Unknown disease families and truncated registry results fail closed.
+
+The allowlist in `taxonomies.ts` covers sarcoma, vascular EDS and IgG4-related disease. Expand it explicitly for additional families. This is identity corroboration, not a claim about treatment quality or current appointment availability.
+
+The identity agent replaces model identity claims, identifiers and credentials with code-sourced facts. It retains raw registry data through the fixture/live adapters and uses PubMed middle names. Paper counts used for eligibility count distinct retrieved PMIDs whose titles explicitly mention the disease or subtype; title-only matching is conservative and misses papers that establish relevance only in abstracts or indexing. Publication dates are measured against the current year, consistent with existing ports.
+
+Only corroborated experts with at least two disease-specific papers, or one plus a lead role on a retained relevant trial, become candidates. Others remain in `VerifyOutput.kept` with `shortlistEligibility` and a reason, and are filtered before ranking/persistence. Trial leads require full first/family-name agreement and compatible middle initials; initials-only registry names cannot qualify.
+
+Fixture correction: Liping Li's recorded NPPES taxonomy is trainee code 390200000X, so identity is rejected. Jerad Gardner's recorded taxonomy is active pathology (207ZP0102X), with Danville PA matching his PubMed affiliation and middle initial. His identity is corroborated, but his single retrieved disease paper makes him ineligible for the shortlist. No sarcoma expert qualifies in the current small recorded sample; keep the threshold and expand the sample instead.

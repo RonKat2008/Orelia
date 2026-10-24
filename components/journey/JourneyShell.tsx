@@ -13,6 +13,7 @@ const waiting: JourneyPlan = {
   nextLabel: "Finish your case",
   nextHref: "/start",
   documentsHref: "/cases/pending/documents",
+  expertsHref: "/cases/pending/experts",
   notes: [],
 };
 

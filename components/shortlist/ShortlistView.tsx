@@ -28,6 +28,9 @@ import {
 import { FilterBar } from "./FilterBar";
 import { ResourceCard, selectionLimit, type CardVariant } from "./ResourceCard";
 import { SelectionTray } from "./SelectionTray";
+import { loadInsurer, loadVerifications } from "./verify-client";
+import { badgeViews } from "./verify-model";
+import type { VerificationsResponse } from "@/lib/verification/contract";
 import { ShortlistSkeleton } from "./ShortlistSkeleton";
 import {
   filtersToQuery,
@@ -77,7 +80,15 @@ function CardGroup({
   limit,
   onToggle,
   scoreScale,
+  caseId,
+  insurer,
+  verifications,
+  onVerificationChanged,
 }: {
+  caseId: string;
+  insurer: string | null;
+  verifications: VerificationsResponse | null;
+  onVerificationChanged: () => void;
   cards: ShortlistCard[];
   label: string;
   variant: CardVariant;
@@ -103,6 +114,13 @@ function CardGroup({
             atCap={selected.length >= limit}
             onToggle={() => onToggle(selectionKey(card))}
             scoreScale={scoreScale}
+            caseId={caseId}
+            insurer={insurer}
+            badges={badgeViews(
+              verifications?.badges[`${card.resource.kind}:${card.resource.id}`],
+              verifications?.requests ?? [],
+            )}
+            onVerificationChanged={onVerificationChanged}
           />
         </li>
       ))}
@@ -123,6 +141,8 @@ export function ShortlistView({ caseId }: { caseId: string }) {
   });
   const [order, setOrder] = useState<OrderPreview | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [verifications, setVerifications] = useState<VerificationsResponse | null>(null);
+  const [insurer, setInsurer] = useState<string | null>(null);
   const limit = selectionLimit();
 
   useEffect(() => {
@@ -145,6 +165,22 @@ export function ShortlistView({ caseId }: { caseId: string }) {
       active = false;
     };
   }, [caseId, limit]);
+
+  const refreshVerifications = useCallback(() => {
+    void loadVerifications(caseId).then(setVerifications);
+  }, [caseId]);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([loadVerifications(caseId), loadInsurer(caseId)]).then(([found, name]) => {
+      if (!active) return;
+      setVerifications(found);
+      setInsurer(name);
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId]);
 
   const setFilters = useCallback(
     (next: ShortlistFilters) => {
@@ -210,6 +246,8 @@ export function ShortlistView({ caseId }: { caseId: string }) {
   );
 
   if (!loaded) return <ShortlistSkeleton />;
+
+  const verifyProps = { caseId, insurer, verifications, onVerificationChanged: refreshVerifications };
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-12 pb-28">
@@ -357,6 +395,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
                       limit={limit}
                       onToggle={toggle}
                       scoreScale={scoreScale}
+                      {...verifyProps}
                     />
                   </div>
                 ) : null}
@@ -380,6 +419,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
                       limit={limit}
                       onToggle={toggle}
                       scoreScale={scoreScale}
+                      {...verifyProps}
                     />
                   </div>
                 ) : null}
@@ -409,6 +449,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
                         limit={limit}
                         onToggle={toggle}
                         scoreScale={scoreScale}
+                        {...verifyProps}
                       />
                     </div>
                   </details>

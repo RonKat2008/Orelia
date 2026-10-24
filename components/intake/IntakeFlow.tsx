@@ -10,6 +10,8 @@ import { confirmAndResearch, extractCase, InvalidFields, ScopeRefusal } from "./
 import { NEEDS_REVIEW, checkUpload, fallbackFor } from "./fallback";
 import { ReportStep } from "./ReportStep";
 import { ReviewStep } from "./ReviewStep";
+import { mergeProfileIntoDraft } from "@/lib/accounts/prefill";
+import { ProfilePrefillCard, useIntakeProfile } from "./ProfilePrefill";
 
 const STEPS: StepperStep[] = [
   { id: "report", label: "Share a report", description: "Paste or upload" },
@@ -67,6 +69,7 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   const stepRef = useRef<HTMLDivElement>(null);
   /** Synchronous in-flight guard: a double click fires twice before React re-renders the disabled state. */
   const busyRef = useRef(false);
+  const profile = useIntakeProfile();
 
   // Move focus to the new step's heading so keyboard and screen reader users land in the right place.
   const focusKey = phase === "reading" || phase === "starting" ? null : phase;
@@ -119,7 +122,10 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
     setError(null);
     try {
       const { record, preview: isPreview } = await extractCase(reportText, fallbackFor(reportText, demos));
-      setDraft(record.diseaseName === NEEDS_REVIEW ? { ...record, diseaseName: "" } : record);
+      const base = record.diseaseName === NEEDS_REVIEW ? { ...record, diseaseName: "" } : record;
+      const merged = mergeProfileIntoDraft(base, profile);
+      setDraft(merged.draft);
+      if (merged.filled.length) toast.info("Filled in from your profile", { description: "Check each detail before the search." });
       setPreview(isPreview);
       setPhase("review");
       toast.success("Report read", { description: "Check each detail before the search starts." });
@@ -191,6 +197,8 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
               onConfirm={() => void startSearch()}
             />
           ) : (
+            <>
+            <ProfilePrefillCard profile={profile} onUse={(text) => { setReportText(text); setError(null); }} />
             <ReportStep
               demos={demos}
               reportText={reportText}
@@ -204,6 +212,7 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
               onFile={(file) => void loadFile(file)}
               onExtract={() => void readReport()}
             />
+            </>
           )}
         </Reveal>
       </div>

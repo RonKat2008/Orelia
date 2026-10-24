@@ -63,6 +63,14 @@ export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: s
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const kinds = useMemo(() => parseKinds(searchParams.get("kinds")), [searchParams]);
 
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    // "Use my documents" (account library import) changes the history outside this component.
+    const onChanged = (e: Event) => { if ((e as CustomEvent<{ caseId?: string }>).detail?.caseId === caseId) setReloadKey(k => k + 1); };
+    window.addEventListener("wayfinder:history-changed", onChanged);
+    return () => window.removeEventListener("wayfinder:history-changed", onChanged);
+  }, [caseId]);
+
   useEffect(() => {
     let cancelled = false;
     void getTimeline(caseId).then((result) => {
@@ -73,7 +81,7 @@ export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: s
     return () => {
       cancelled = true;
     };
-  }, [caseId]);
+  }, [caseId, reloadKey]);
 
   const setKinds = useCallback(
     (next: EventKind[]) => {

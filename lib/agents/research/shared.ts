@@ -447,6 +447,7 @@ export function runResearch(spec: ResearchAgentSpec) {
       const seeded = JSON.stringify(await spec.seed(call, c)).slice(0, MAX_SEED_CHARS);
       const prompt = [
         `Case: ${JSON.stringify(caseBrief(c))}`,
+        ...(ctx.medicalHistory ? [ctx.medicalHistory] : []),
         `Initial tool results (already fetched; call tools again only if you need more):\n${seeded}`,
         `Return ONLY JSON: {"records": Resource[], "evidence": {"claimType": string, "claim": string, "sourceUrl": string}[]}.`,
         `Every record's evidenceRefs must be the "id" (if you gave the item one) or the sourceUrl of evidence items you return.`,

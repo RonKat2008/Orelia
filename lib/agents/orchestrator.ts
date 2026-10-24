@@ -34,6 +34,11 @@ export interface OrchestratorDeps {
   curate?: (caseId: string, caseRecord: CaseInput, ranked: RankedEntry[]) => Promise<ValidatedCuration>;
   /** Where curation results are saved. Defaults to getCurationStore(). */
   curations?: CurationStore;
+  /**
+   * Cited snippets from the case owner's document library for the agents' prompt (untrusted data). Defaults to the
+   * account library retriever; returns '' for anonymous cases. Pass `async () => ''` to disable.
+   */
+  medicalHistory?: (caseId: string, caseRecord: CaseInput) => Promise<string>;
 }
 
 export interface ResearchSummary {
@@ -118,6 +123,15 @@ async function finishRun(store: RunStore, runId: string, outcome: PromiseSettled
   return "failed";
 }
 
+/** The case owner's library, searched for the condition: a cited, sanitized block, or '' (anonymous case / none). */
+async function caseLibraryContext(caseId: string, caseRecord: CaseInput): Promise<string> {
+  const { searchCaseLibrary } = await import("@/lib/accounts/case-link");
+  const { historyContextBlock } = await import("@/lib/accounts/retrieve");
+  const query = [caseRecord.diseaseName, caseRecord.subtype].filter(Boolean).join(" ");
+  const { results } = await searchCaseLibrary(caseId, query, 4);
+  return historyContextBlock(results, 500);
+}
+
 export async function runResearch(caseId: string, deps: OrchestratorDeps): Promise<ResearchSummary> {
   // Inngest throws control-flow signals while planning steps. Terminal failure belongs to
   // onFailure; catching a planning signal here would incorrectly fail a healthy case.
@@ -148,7 +162,8 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
 
   const fanout = await step.run("run-agents", async () => {
     const agentStore = new AdoptingStore(deps.store, runIds);
-    const ctx: ResearchContext = { ports: deps.ports, store: agentStore, caseId };
+    const medicalHistory = await (deps.medicalHistory ?? caseLibraryContext)(caseId, caseRecord).catch(() => '');
+    const ctx: ResearchContext = { ports: deps.ports, store: agentStore, caseId, ...(medicalHistory ? { medicalHistory } : {}) };
     const timeoutMs = deps.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
 
     // 2. Fan out. allSettled: one failing agent never sinks the rest.

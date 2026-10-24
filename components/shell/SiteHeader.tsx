@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/ui/cn";
+import { AccountMenu } from "./AccountMenu";
 import { MobileMenu } from "./MobileMenu";
 import { isNavItemActive, type NavItem } from "./nav";
 import { ThemeToggle } from "./ThemeToggle";
@@ -82,6 +83,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
 
         <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3 md:ml-0">
           {viewToggle ? <ViewToggle /> : null}
+          <AccountMenu />
           <ThemeToggle className="hidden sm:inline-flex" />
           {cta ? (
             <Button asChild size="sm" className="hidden sm:inline-flex">

@@ -6,7 +6,7 @@ import {
   routeFiles, routePath, methods, mutates, contextFor, requestFor,
   type Handler, type Method,
 } from '../helpers/security/routes';
-import { publicRoutes, creationRoutes } from './public-routes';
+import { publicRoutes, creationRoutes, statusOnlyRoutes } from './public-routes';
 
 const state = vi.hoisted(() => ({ fail: false, failRuns: false, dbHits: 0, caseReads: 0 }));
 // Replace storage/provider boundaries only. Real route handlers, ownership, Origin,
@@ -206,7 +206,7 @@ for (const { route, method, handler } of inventory) {
         state.fail = true;
         if (demo) vi.stubEnv('WAYFINDER_DEMO', '1');
         const response = await handler(requestFor(route, method, cookie('owner')), contextFor(route));
-        if (route !== '/api/health') expect(response.status).toBeGreaterThanOrEqual(400);
+        if (!statusOnlyRoutes.has(route) && !statusOnlyRoutes.has(key)) expect(response.status).toBeGreaterThanOrEqual(400);
         await cleanBody(response);
       });
     }

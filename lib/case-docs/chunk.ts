@@ -10,3 +10,16 @@ export function chunk(text: string, size = 3200, overlap = 400): string[] {
   }
   return chunks;
 }
+
+export interface PageChunk { chunkIndex: number; page: number | null; section: string | null; content: string }
+/**
+ * Page-aware chunking for uploaded documents: chunks never span pages, so every chunk keeps a page/section reference
+ * for citations. Same windows as chunk().
+ */
+export function chunkPages(pages: readonly { page: number | null; section: string | null; text: string }[], size = 3200, overlap = 400): PageChunk[] {
+  const out: PageChunk[] = [];
+  for (const p of pages) {
+    for (const content of chunk(p.text, size, overlap)) out.push({ chunkIndex: out.length, page: p.page, section: p.section, content });
+  }
+  return out;
+}

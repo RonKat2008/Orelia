@@ -6,6 +6,7 @@ import { REPORT_TEXT_MAX, REPORT_TEXT_MIN } from "@/lib/contracts";
 import { rejectCrossOrigin } from "@/lib/auth/origin";
 import { getOwnerStore } from "@/lib/auth/ownership";
 import { ensureSession } from "@/lib/auth/session";
+import { currentAccount } from "@/lib/accounts/current";
 import { checkRateLimit, clientIp, CREATE_CASE_IP_LIMITS, getRateLimitStore, rateLimitedResponse } from "@/lib/rate-limit";
 import { jsonError, parseBody } from "./_lib/http";
 import { ingestSummarySafely } from "./_lib/case-summary";
@@ -46,6 +47,9 @@ export async function POST(req: Request) {
   try {
     const created = await getServices().cases.create(input, "draft");
     await getOwnerStore().setOwner(created.id, session.id);
+    // Signed-in patients own the case through their account too, so its agents read their document library.
+    const account = await currentAccount(req);
+    if (account) await getOwnerStore().setAccount?.(created.id, account.id);
     await ingestSummarySafely(created);
     const res = NextResponse.json({ case: created }, { status: 201 });
     if (session.setCookie) res.headers.append("Set-Cookie", session.setCookie);

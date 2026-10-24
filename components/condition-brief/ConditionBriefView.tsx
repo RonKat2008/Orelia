@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/feedback";
 import { toast } from "@/components/ui/toast";
+import { DocumentCitations } from "@/components/account/DocumentCitations";
 import type { BriefSource, ConditionBrief } from "@/lib/condition-brief/contract";
 import { BriefDocument } from "./BriefDocument";
 import { BriefHeader } from "./BriefHeader";
@@ -83,6 +84,7 @@ export function ConditionBriefView({ caseId }: { caseId: string }) {
       <BriefHeader brief={phase.brief} busy={busy} onRefresh={() => run(true)} />
       <LevelLegend value={level} onChange={setLevel} counts={counts} />
       <BriefDocument brief={phase.brief} level={level} onOpenSource={setOpen} />
+      <DocumentCitations caseId={caseId} query={[phase.brief.diseaseName, "diagnosis findings"].join(" ")} heading="What your own documents say" />
       <SourceDrawer source={open} onClose={() => setOpen(null)} />
     </div>
   );

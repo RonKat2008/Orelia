@@ -115,13 +115,15 @@ export const cases = pgTable(
     .default(sql`ARRAY[]::goal[]`),
   status: text("status").notNull().default("unconfirmed"),
   ownerSessionId: text("owner_session_id"),
+  /** Neon Auth user id of the signed-in account that owns this case (null for anonymous cases). */
+  accountId: text("account_id"),
   patientEmail: text("patient_email"),
   patientNotifyOptIn: boolean("patient_notify_opt_in").notNull().default(false),
   patientNotifyLastAt: timestamp("patient_notify_last_at", { withTimezone: true }),
   patientNotifyDigestOn: text("patient_notify_digest_on"),
   ...timestamps,
   },
-  (table) => [index("cases_owner_session_id_idx").on(table.ownerSessionId)],
+  (table) => [index("cases_owner_session_id_idx").on(table.ownerSessionId), index("cases_account_id_idx").on(table.accountId)],
 );
 
 export const rateLimits = pgTable("rate_limits", {
@@ -475,3 +477,54 @@ export const conditionBriefs = pgTable("condition_briefs", {
   generatedAt: timestamp("generated_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---- accounts lane: profile + medical-document library (account_id = Neon Auth user id) ----
+export const accountProfiles = pgTable("account_profiles", {
+  accountId: text("account_id").primaryKey(),
+  profile: jsonb("profile").$type<Record<string, unknown>>().notNull(),
+  ...timestamps,
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const accountDocuments = pgTable("account_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: text("account_id").notNull(),
+  title: text("title").notNull(),
+  docType: text("doc_type").notNull(),
+  dateOfService: text("date_of_service"),
+  provider: text("provider"),
+  notes: text("notes"),
+  tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
+  fileName: text("file_name").notNull(),
+  contentType: text("content_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  blobPathname: text("blob_pathname").notNull(),
+  status: text("status").notNull().default("pending_upload"),
+  statusDetail: text("status_detail"),
+  pageCount: integer("page_count"),
+  chunkCount: integer("chunk_count").notNull().default(0),
+  /** Sanitized extracted text (untrusted data). Never logged. */
+  text: text("text"),
+  ...timestamps,
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("account_documents_account_idx").on(table.accountId, table.createdAt),
+  uniqueIndex("account_documents_blob_pathname_key").on(table.blobPathname),
+]);
+
+export const accountDocumentChunks = pgTable("account_document_chunks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  accountId: text("account_id").notNull(),
+  documentId: uuid("document_id").notNull().references(() => accountDocuments.id, { onDelete: "cascade" }),
+  chunkIndex: integer("chunk_index").notNull(),
+  page: integer("page"),
+  section: text("section"),
+  content: text("content").notNull(),
+  embedding: vector("embedding", { dimensions: 1024 }).notNull(),
+  embedModel: text("embed_model").notNull(),
+  ...timestamps,
+}, table => [
+  index("account_document_chunks_scope_idx").on(table.accountId, table.embedModel),
+  index("account_document_chunks_document_idx").on(table.documentId),
+  index("account_document_chunks_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+]);

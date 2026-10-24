@@ -7,6 +7,8 @@ export interface ResearchContext {
   ports: SourcePorts;
   store: RunStore;
   caseId: string;
+  /** Cited snippets from the patient's own document library (untrusted data; never for search queries). */
+  medicalHistory?: string;
 }
 
 export interface ResearchAgent {

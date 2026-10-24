@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose } from "@/components/ui/sheet";
+import { MobileAccountLinks } from "./AccountMenu";
 import { isNavItemActive, type NavItem } from "./nav";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -47,6 +48,7 @@ export function MobileMenuSheet({ nav, cta, pathname, open, onOpenChange }: Mobi
           </SheetClose>
         ))}
       </nav>
+      <MobileAccountLinks />
       <div className="mt-6 flex items-center justify-between gap-4">
         <span className="text-small font-semibold text-ink-2">Theme</span>
         <ThemeToggle />

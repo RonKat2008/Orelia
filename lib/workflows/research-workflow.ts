@@ -1,5 +1,7 @@
 import { NonRetriableError } from "inngest";
 import { runResearch, type OrchestratorDeps, type ResearchStep } from "@/lib/agents/orchestrator";
+import { failOpenRuns } from "@/lib/agents/phase-runs";
+import type { RunStore } from "@/lib/agents/run-store";
 import { inngest } from "./inngest";
 
 export const RESEARCH_EVENT = "case/research.requested";
@@ -47,8 +49,10 @@ export async function executeResearch(caseId: string, deps: OrchestratorDeps, st
   return { candidates: summary.candidates, verify: summary.verify, runStatuses: summary.runStatuses };
 }
 
-export async function failResearch(caseId: string, deps: Pick<OrchestratorDeps, "cases">) {
-  await deps.cases.compareAndSetStatus(caseId, ["researching"], "research_failed");
+export async function failResearch(caseId: string, deps: Pick<OrchestratorDeps, "cases"> & { runs?: RunStore }) {
+  const failed = await deps.cases.compareAndSetStatus(caseId, ["researching"], "research_failed");
+  // A dead attempt must not leave agent cards spinning; best effort, the status flip is what matters.
+  if (failed && deps.runs) await failOpenRuns(deps.runs, caseId, "Research stopped before it finished").catch(() => 0);
 }
 
 export function createResearchWorkflow(load?: LoadDeps) {
@@ -56,7 +60,8 @@ export function createResearchWorkflow(load?: LoadDeps) {
   // Cleanup must still work if source/agent wiring was the cause of the failure.
   const loadFailureDeps = load ?? (async () => {
     const { getServices } = await import("@/app/api/cases/_lib/services");
-    return { cases: getServices().cases };
+    const services = getServices();
+    return { cases: services.cases, runs: services.runs };
   });
   return inngest.createFunction(
     {

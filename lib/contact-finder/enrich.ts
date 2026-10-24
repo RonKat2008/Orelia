@@ -36,7 +36,8 @@ export interface EnrichTarget {
 /** Search queries: a form page for an institution that already has a phone, the contact / apply page for an organization. */
 export const formQuery = (name: string): string => `"${name}" request an appointment online form`;
 export const organizationContactQuery = (name: string): string => `"${name}" contact us`;
-const CONCURRENCY = 4;
+/** Exa itself is capped at 3 requests/s (shared limiter); more workers only overlap network latency. */
+const CONCURRENCY = 6;
 
 const hostOf = (url: string): string | null => {
   try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { return null; }

@@ -40,7 +40,8 @@ describe("runResearch", () => {
       // network/advocacy/aid/contact_finder missing from registry entirely
     ]);
 
-    expect(runs).toHaveLength(agentNameSchema.options.length);
+    // One card per research agent, plus the verifier/ranker/curator phase rows.
+    expect(runs).toHaveLength(agentNameSchema.options.length + 3);
     expect(status("literature")).toBe("done");
     expect(status("centers")).toBe("done");
     expect(status("trials")).toBe("failed");

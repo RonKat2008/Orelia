@@ -24,7 +24,15 @@ export type AgentCardState = {
   error?: string;
   outputSummary?: string;
   sources?: SourceRef[];
+  finishedAt?: string;
 };
+
+/** Post-search pipeline stages, reported by their own agent_runs rows. */
+export type PipelinePhase = "verify" | "rank" | "curate";
+export type PhaseRun = { status: AgentRunStatus; startedAt?: string; finishedAt?: string };
+export type PhaseRuns = Partial<Record<PipelinePhase, PhaseRun>>;
+
+const PHASE_BY_AGENT: Record<string, PipelinePhase> = { verifier: "verify", ranker: "rank", curator: "curate" };
 
 export function initialAgents(): AgentCardState[] {
   return AGENT_NAMES.map((agent) => ({ agent, status: "queued" }));
@@ -41,14 +49,17 @@ const runRowSchema = z.object({
   counts: countsSchema.nullish(),
   error: z.string().nullish(),
   outputSummary: z.string().nullish(),
+  startedAt: z.string().nullish(),
+  finishedAt: z.string().nullish(),
 });
 
 const runsEventSchema = z.object({
   caseStatus: z.string().optional(),
   runs: z.array(runRowSchema),
+  serverTime: z.string().optional(),
 });
 
-export type RunsSnapshot = { caseStatus?: string; cards: AgentCardState[] };
+export type RunsSnapshot = { caseStatus?: string; cards: AgentCardState[]; phases: PhaseRuns; serverTime?: string };
 
 /** Folds an agent_runs snapshot into the nine cards. Agents with no row yet stay queued. */
 export function parseRunsSnapshot(data: string, previous: AgentCardState[] = initialAgents()): RunsSnapshot | null {
@@ -70,9 +81,15 @@ export function parseRunsSnapshot(data: string, previous: AgentCardState[] = ini
       counts: run.counts ?? card.counts,
       error: run.error ?? undefined,
       outputSummary: run.outputSummary ?? undefined,
+      finishedAt: run.finishedAt ?? undefined,
     };
   });
-  return { caseStatus: parsed.data.caseStatus, cards };
+  const phases: PhaseRuns = {};
+  for (const run of parsed.data.runs) {
+    const phase = PHASE_BY_AGENT[run.agent];
+    if (phase) phases[phase] = { status: run.status, startedAt: run.startedAt ?? undefined, finishedAt: run.finishedAt ?? undefined };
+  }
+  return { caseStatus: parsed.data.caseStatus, cards, phases, serverTime: parsed.data.serverTime };
 }
 
 /* Single-agent events (used by the typed preview). */
@@ -125,13 +142,44 @@ export const PHASES = [
 
 export type PhaseIndex = 0 | 1 | 2 | 3 | 4;
 
+const phaseDone = (run?: PhaseRun) => run?.status === "done" || run?.status === "not_implemented";
+
 /**
- * Where the pipeline is. The stream reports agent rows and the case status, not the
- * later steps, so after the searches settle we show "Verify" until the case is ready.
+ * Where the pipeline is. Searches first; once they settle the verifier, ranker and curator rows say which
+ * later stage is active. Without those rows (older runs) the settled searches show as "Verify" until ready.
  */
-export function derivePhase(cards: AgentCardState[], caseStatus?: string): PhaseIndex {
+export function derivePhase(cards: AgentCardState[], caseStatus?: string, phases: PhaseRuns = {}): PhaseIndex {
   if (caseStatus === "ready") return 4;
-  return cards.every((card) => isSettled(card.status)) ? 1 : 0;
+  if (!cards.every((card) => isSettled(card.status))) return 0;
+  if (phaseDone(phases.rank)) return 3;
+  if (phaseDone(phases.verify)) return 2;
+  return 1;
+}
+
+export const PHASE_ACTIVE_LABEL: Record<PipelinePhase, string> = {
+  verify: "Checking every claim has a source",
+  rank: "Ranking what fits",
+  curate: "Picking the best matches",
+};
+
+export type PhaseTimer = { phase: PipelinePhase; label: string; startedAtMs: number | null };
+
+/** Which timer to show, or null while searching / after the run. startedAtMs (server time) is null until known. */
+export function activePhaseTimer(cards: AgentCardState[], caseStatus: string | undefined, phases: PhaseRuns): PhaseTimer | null {
+  if (caseStatus === "ready" || caseStatus === "research_failed") return null;
+  if (!cards.every((card) => isSettled(card.status))) return null;
+  const index = derivePhase(cards, caseStatus, phases);
+  const phase: PipelinePhase = index === 1 ? "verify" : index === 2 ? "rank" : "curate";
+  const toMs = (iso?: string) => (iso && !Number.isNaN(Date.parse(iso)) ? Date.parse(iso) : null);
+  // A phase that has not logged its start yet began when the stage before it finished.
+  const settledAt = Math.max(0, ...cards.map((card) => toMs(card.finishedAt) ?? 0)) || null;
+  const before = phase === "verify" ? settledAt : toMs(phases[phase === "rank" ? "verify" : "rank"]?.finishedAt);
+  return { phase, label: PHASE_ACTIVE_LABEL[phase], startedAtMs: toMs(phases[phase]?.startedAt) ?? before };
+}
+
+export function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 export function swarmTotals(cards: AgentCardState[]) {
@@ -166,7 +214,7 @@ export function connectionBadge(connection: string, caseStatus?: string): Connec
 }
 
 /** One calm sentence about what is happening now. */
-export function narrate(cards: AgentCardState[], caseStatus: string | undefined, lastActive?: AgentName): string {
+export function narrate(cards: AgentCardState[], caseStatus: string | undefined, lastActive?: AgentName, phases: PhaseRuns = {}): string {
   if (caseStatus === "research_failed") return "The search stopped before it finished.";
   if (caseStatus === "ready") {
     const { records, evidence } = swarmTotals(cards);
@@ -178,7 +226,12 @@ export function narrate(cards: AgentCardState[], caseStatus: string | undefined,
     const others = running.length - 1;
     return `${NARRATIVE[lead.agent]}${others > 0 ? `, and ${others} more search${others === 1 ? "" : "es"}` : ""}…`;
   }
-  if (cards.every((card) => isSettled(card.status))) return "Checking that every claim has a source, then ranking what fits.";
+  if (cards.every((card) => isSettled(card.status))) {
+    const timer = activePhaseTimer(cards, caseStatus, phases);
+    if (timer?.phase === "rank") return "Ranking what fits your case, with reasons.";
+    if (timer?.phase === "curate") return "Picking the best matches and writing why.";
+    return "Checking that every claim has a source, then ranking what fits.";
+  }
   return "Getting the researchers ready…";
 }
 

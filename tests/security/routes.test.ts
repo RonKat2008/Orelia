@@ -21,7 +21,7 @@ vi.mock('../../app/api/cases/_lib/services', async () => {
   };
   return { getServices: () => ({
     cases: { get: async () => found(), create: async () => found(), update: async () => found(), compareAndSetStatus: async () => true },
-    runs: { listByCase: async () => { if (state.fail || state.failRuns) throw new Error(f.FAILURE); return []; } },
+    runs: { listByCase: async () => { if (state.fail || state.failRuns) throw new Error(f.FAILURE); return []; }, create: async () => 'run-1', update: async () => undefined, deleteByCase: async () => undefined },
     persist: { getShortlist: async () => [] },
   }) };
 });

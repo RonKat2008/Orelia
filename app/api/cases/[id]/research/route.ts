@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { guardCase } from "@/lib/auth/ownership";
 import { readSession } from "@/lib/auth/session";
 import { checkRateLimit, clientIp, getRateLimitStore, RESEARCH_IP_LIMITS, RESEARCH_LIMITS, rateLimitedResponse } from "@/lib/rate-limit";
+import { ATTEMPT_AGENT, beginPhase } from "@/lib/agents/phase-runs";
 import { isOffline } from "@/lib/env";
 import { inngest } from "@/lib/workflows/inngest";
 import { RESEARCH_EVENT, RESEARCH_STARTABLE, executeResearch, failResearch } from "@/lib/workflows/research-workflow";
@@ -36,11 +37,20 @@ export async function POST(req: Request, { params }: Ctx) {
       return jsonError(409, "Research is already running for this case");
     }
 
+    // This request won the claim: start the attempt from a clean slate (a retry must not stack rows), with a heartbeat row.
+    try {
+      await services.runs.deleteByCase?.(id);
+      await beginPhase(services.runs, id, ATTEMPT_AGENT);
+    } catch (e) {
+      await failResearch(id, { cases: services.cases });
+      throw e;
+    }
+
     if (!isOffline(process.env.WAYFINDER_OFFLINE) && process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY) {
       try {
         await inngest.send({ name: RESEARCH_EVENT, data: { caseId: id } });
       } catch (e) {
-        await failResearch(id, services);
+        await failResearch(id, { cases: services.cases, runs: services.runs });
         console.error(`[research ${id}] event delivery failed`, e instanceof Error ? e.message : e);
         return jsonError(503, "Could not queue research; please retry");
       }
@@ -56,7 +66,7 @@ export async function POST(req: Request, { params }: Ctx) {
             agents: wiring.agents,
           }, { run: (_id, work) => work() });
         } catch (e) {
-          await failResearch(id, services);
+          await failResearch(id, { cases: services.cases, runs: services.runs });
           console.error(`[research ${id}]`, e instanceof Error ? e.message : e);
         }
       });

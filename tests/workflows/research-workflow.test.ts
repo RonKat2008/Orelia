@@ -79,7 +79,8 @@ describe("research durability", () => {
     await executeResearch(c.id, deps, step);
     expect(run).toHaveBeenCalledTimes(1);
     expect(save).toHaveBeenCalledTimes(2);
-    expect(await deps.store.listByCase(c.id)).toHaveLength(9);
+    // Nine agents + verifier/ranker/curator phase rows; the persistence retry added none.
+    expect(await deps.store.listByCase(c.id)).toHaveLength(12);
     expect(step.calls).toEqual(["deadline", "queue", "run-agents", "verify", "contacts", "rank", "curate", "persist", "persist"]);
     expect((await deps.cases.get(c.id))?.status).toBe("ready");
     // Full replay performs no writes and doesn't regress ready -> researching.
@@ -122,6 +123,32 @@ describe("research durability", () => {
     expect(summary.runStatuses.trials).toBe("failed");
     expect(summary.runStatuses.literature).toBe("not_implemented");
     expect((await deps.cases.get(c.id))?.status).toBe("ready");
+  });
+
+  it("retrying from research_failed clears the old attempt's rows and starts one heartbeat, without duplicates", async () => {
+    const { deps, c } = await setup();
+    mocks.after.mockImplementation(() => undefined);
+    vi.stubEnv("INNGEST_EVENT_KEY", "");
+    await deps.cases.setStatus(c.id, "research_failed");
+    const stale = await deps.store.create(c.id, "literature");
+    await deps.store.update(stale, { status: "running", startedAt: new Date(0) });
+    expect((await post(c.id)).status).toBe(202);
+    const rows = await deps.store.listByCase(c.id);
+    expect(rows.map((r) => r.agent)).toEqual(["research"]);
+    expect(rows[0]!.id).not.toBe(stale);
+    // A double click while running is rejected and adds nothing.
+    expect((await post(c.id)).status).toBe(409);
+    expect(await deps.store.listByCase(c.id)).toHaveLength(1);
+  });
+
+  it("failResearch also fails open runs so no card keeps spinning", async () => {
+    const { deps, c } = await setup();
+    await deps.cases.setStatus(c.id, "researching");
+    const id = await deps.store.create(c.id, "trials");
+    await deps.store.update(id, { status: "running" });
+    await failResearch(c.id, { cases: deps.cases, runs: deps.store });
+    expect((await deps.cases.get(c.id))?.status).toBe("research_failed");
+    expect((await deps.store.listByCase(c.id))[0]!.status).toBe("failed");
   });
 
   it("registers terminal failure cleanup and a per-case singleton", async () => {

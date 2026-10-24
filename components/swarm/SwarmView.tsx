@@ -11,7 +11,7 @@ import { SPRING } from "@/lib/ui/motion";
 import type { SwarmAgent } from "@/lib/motion/status";
 import { AgentCard } from "./AgentCard";
 import { SourceStrip } from "./SourceStrip";
-import { PHASES, connectionBadge, derivePhase, describeProgress, narrate, swarmTotals, type AgentCardState } from "./stream";
+import { PHASES, activePhaseTimer, connectionBadge, derivePhase, describeProgress, formatElapsed, narrate, swarmTotals, type AgentCardState } from "./stream";
 import { useSwarmStream } from "./useSwarmStream";
 
 function toSwarmAgents(cards: AgentCardState[]): SwarmAgent[] {
@@ -30,8 +30,8 @@ function ConnectionNote({ connection, caseStatus }: { connection: string; caseSt
       </p>
     );
   }
-  if (connection === "reconnecting") {
-    return <Badge tone="warn" dot>Connection dropped. Reconnecting…</Badge>;
+  if (connection === "polling" && caseStatus !== "ready" && caseStatus !== "research_failed") {
+    return <Badge tone="warn" dot>Still working — reconnecting</Badge>;
   }
   const badge = connectionBadge(connection, caseStatus);
   return (
@@ -41,10 +41,28 @@ function ConnectionNote({ connection, caseStatus }: { connection: string; caseSt
   );
 }
 
+/** "Ranking what fits… 0:34 · usually about a minute" while the post-search stages run. */
+function PhaseTimerLine({ label, startedAtMs, clockOffsetMs }: { label: string; startedAtMs: number | null; clockOffsetMs: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const elapsed = startedAtMs === null ? null : formatElapsed(now + clockOffsetMs - startedAtMs);
+  return (
+    <p className="m-0 flex flex-wrap items-baseline gap-x-3 text-small text-ink-2" data-testid="phase-timer">
+      <span>
+        {label}…{elapsed ? <span className="ml-2 font-semibold tabular-nums text-ink">{elapsed}</span> : null}
+      </span>
+      <span>Finishing up usually takes about a minute.</span>
+    </p>
+  );
+}
+
 export function SwarmView({ caseId }: { caseId: string }) {
   const reduced = useReducedMotionGate();
   const swarm = useSwarmStream(caseId);
-  const { cards, caseStatus, connection, lastActive, sources, retry, retrying } = swarm;
+  const { cards, caseStatus, connection, lastActive, sources, retry, retrying, retryError, phases, clockOffsetMs } = swarm;
 
   const [prevCards, setPrevCards] = useState(cards);
   const [announcement, setAnnouncement] = useState("");
@@ -56,7 +74,8 @@ export function SwarmView({ caseId }: { caseId: string }) {
 
   const ready = caseStatus === "ready";
   const failed = caseStatus === "research_failed" || connection === "lost";
-  const phase = failed ? 0 : derivePhase(cards, caseStatus);
+  const phase = failed ? 0 : derivePhase(cards, caseStatus, phases);
+  const timer = failed ? null : activePhaseTimer(cards, caseStatus, phases);
   const totals = swarmTotals(cards);
   const preview = connection === "preview";
 
@@ -83,8 +102,9 @@ export function SwarmView({ caseId }: { caseId: string }) {
             <div className="grid gap-3">
               <ConnectionNote connection={connection} caseStatus={caseStatus} />
               <p className="m-0 font-display text-h3 font-light text-ink display-soft text-balance">
-                {narrate(cards, caseStatus, lastActive)}
+                {narrate(cards, caseStatus, lastActive, phases)}
               </p>
+              {timer ? <PhaseTimerLine label={timer.label} startedAtMs={timer.startedAtMs} clockOffsetMs={clockOffsetMs} /> : null}
             </div>
             <Progress
               label="Searches finished"
@@ -129,6 +149,7 @@ export function SwarmView({ caseId }: { caseId: string }) {
                 <RefreshCw aria-hidden />
                 Try the search again
               </Button>
+              {retryError ? <p className="m-0 mt-3 text-small text-danger" role="status">{retryError}</p> : null}
             </div>
           </motion.div>
         ) : null}

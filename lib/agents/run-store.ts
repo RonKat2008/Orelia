@@ -31,6 +31,8 @@ export interface RunStore {
   create(caseId: string, agent: string): Promise<string>;
   update(runId: string, patch: RunUpdate): Promise<void>;
   listByCase(caseId: string): Promise<RunRecord[]>;
+  /** Drop every run row of a case (start of a fresh research attempt, so retries never stack rows). */
+  deleteByCase?(caseId: string): Promise<void>;
 }
 
 function applyPatch(run: RunRecord, patch: RunUpdate): RunRecord {
@@ -72,6 +74,10 @@ export class MemoryRunStore implements RunStore {
   async listByCase(caseId: string): Promise<RunRecord[]> {
     return [...this.runs.values()].filter((r) => r.caseId === caseId);
   }
+
+  async deleteByCase(caseId: string): Promise<void> {
+    for (const [id, run] of this.runs) if (run.caseId === caseId) this.runs.delete(id);
+  }
 }
 
 /** Postgres-backed store over the agent_runs table (read by the SSE stream). */
@@ -107,5 +113,9 @@ export class DbRunStore implements RunStore {
       .where(eq(agentRuns.caseId, caseId))
       .orderBy(asc(agentRuns.startedAt));
     return rows as RunRecord[];
+  }
+
+  async deleteByCase(caseId: string): Promise<void> {
+    await this.db.delete(agentRuns).where(eq(agentRuns.caseId, caseId));
   }
 }

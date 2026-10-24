@@ -12,6 +12,7 @@ import { runCurator, type ValidatedCuration } from "./curator";
 import { caseSlug } from "./research/shared";
 import { verifyWithProposals, type Proposer, type VerifyOutput } from "./verifier";
 import { enrichVerified } from "./contact-enrichment";
+import { ATTEMPT_AGENT, PHASE_AGENT, beginPhase, ensureRun, failOpenRuns, settlePhase } from "./phase-runs";
 
 export interface OrchestratorDeps {
   store: RunStore;
@@ -124,6 +125,7 @@ export async function runResearch(caseId: string, deps: OrchestratorDeps): Promi
     return await runResearchPhases(caseId, deps);
   } catch (e) {
     await deps.cases.setStatus(caseId, "research_failed");
+    await failOpenRuns(deps.store, caseId, errMessage(e)).catch(() => 0);
     throw e;
   }
 }
@@ -136,7 +138,7 @@ async function runResearchPhases(caseId: string, deps: OrchestratorDeps): Promis
     if (!caseRecord) throw new Error(`Case ${caseId} not found`);
     await deps.cases.setStatus(caseId, "researching");
     const runIds: [string, string][] = [];
-    for (const name of agentNameSchema.options) runIds.push([name, await deps.store.create(caseId, name)]);
+    for (const name of agentNameSchema.options) runIds.push([name, await ensureRun(deps.store, caseId, name)]);
     return { caseRecord, runIds };
   });
   const { caseRecord } = queued;
@@ -182,10 +184,19 @@ async function finalizeCase(
   deps: OrchestratorDeps,
   step: ResearchStep,
 ): Promise<ResearchSummary> {
-  const checked = await step.run("verify", () => verifyWithProposals(results, deps.proposer, caseRecord));
+  // Post-search phases are recorded as agent_runs rows so the stream can show verify -> rank -> curate live.
+  const checked = await step.run("verify", async () => {
+    await beginPhase(deps.store, caseId, PHASE_AGENT.verify);
+    return verifyWithProposals(results, deps.proposer, caseRecord);
+  });
   // Code-only contact enrichment: institution intake phones / role emails from their own site (bounded, never fails).
-  const verified = await step.run("contacts", () => enrichVerified(checked, deps.ports.exa, new Date()));
+  const verified = await step.run("contacts", async () => {
+    const out = await enrichVerified(checked, deps.ports.exa, new Date());
+    await settlePhase(deps.store, caseId, PHASE_AGENT.verify, `${out.kept.length} records kept, ${out.dropped.length} dropped`);
+    return out;
+  });
   const ranked = await step.run("rank", async () => {
+    await beginPhase(deps.store, caseId, PHASE_AGENT.rank);
     const ranked: RankedEntry[] = [];
     const kinds = [...new Set(verified.kept.map((k) => k.resource.kind))].sort();
     for (const kind of kinds) {
@@ -193,12 +204,21 @@ async function finalizeCase(
       const out = (deps.rank ?? defaultRank)(group.map((rec) => toCandidate(rec, verified.kept, caseRecord)));
       for (const r of out) ranked.push({ record: r.record, score: r.score, rank: r.rank, breakdown: r.breakdown });
     }
+    await settlePhase(deps.store, caseId, PHASE_AGENT.rank, `${ranked.length} ranked`);
     return ranked;
   });
   const curate =
     deps.curate ??
-    ((id: string, c: CaseInput, r: RankedEntry[]) => runCurator(id, c, r, { store: deps.store, offlineKey: caseSlug(c) }));
-  const curation = await step.run("curate", () => curate(caseId, caseRecord, ranked));
+    (async (id: string, c: CaseInput, r: RankedEntry[]) => {
+      // Adopt one curator row so a step retry never stacks a second card.
+      const adopting = new AdoptingStore(deps.store, new Map([[PHASE_AGENT.curate, await ensureRun(deps.store, id, PHASE_AGENT.curate)]]));
+      return runCurator(id, c, r, { store: adopting, offlineKey: caseSlug(c) });
+    });
+  const curation = await step.run("curate", async () => {
+    const out = await curate(caseId, caseRecord, ranked);
+    await settlePhase(deps.store, caseId, PHASE_AGENT.curate, "curation complete"); // no-op when the curator settled itself
+    return out;
+  });
   await step.run("persist", async () => {
     // Below-threshold experts stay research: saved for the read-only Experts trace, never as candidates.
     const research = verified.kept.filter((k) => k.resource.kind === "expert" && k.shortlistEligibility?.eligible !== true);
@@ -210,6 +230,7 @@ async function finalizeCase(
     }
     if (deps.deadline !== undefined && Date.now() >= deps.deadline) throw new Error("Research exceeded 180s deadline");
     await deps.cases.setStatus(caseId, "ready");
+    await settlePhase(deps.store, caseId, ATTEMPT_AGENT, "research complete").catch(() => undefined);
     return { saved: ranked.length };
   });
 

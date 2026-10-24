@@ -1,6 +1,8 @@
 import { requireCaseOwner } from "@/lib/auth/ownership";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
+import { isFinished, loadProgress } from "@/lib/agents/progress-snapshot";
+import { reapIfStuck } from "@/lib/workflows/research-watchdog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,13 +12,13 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const POLL_MS = 1000;
 const MAX_STREAM_MS = 280_000;
-const EXPECTED_AGENTS = 9;
-const TERMINAL_RUN = new Set(["done", "failed", "not_implemented"]);
-const TERMINAL_CASE = new Set(["ready", "research_failed"]);
+/** The lazy stuck-research check runs this often inside one stream (each tick is ~1s). */
+const REAP_EVERY_TICKS = 30;
 
 /**
  * GET /api/cases/[id]/stream -> SSE. 'runs' events carry an agent_runs snapshot every ~1s;
- * a final 'done' event is sent once all agents are terminal AND the case has been persisted.
+ * a final 'done' event is sent once all agents are terminal AND the case has been persisted. Research that
+ * went quiet (function killed) is ended by the lazy watchdog check so the stream always reaches a terminal state.
  */
 export async function GET(req: Request, { params }: Ctx) {
   try {
@@ -34,13 +36,13 @@ export async function GET(req: Request, { params }: Ctx) {
           controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
         const deadline = Date.now() + MAX_STREAM_MS;
         try {
+          let tick = 0;
           while (!req.signal.aborted && Date.now() < deadline) {
-            const [snapshot, current] = await Promise.all([runs.listByCase(id), cases.get(id)]);
-            send("runs", { caseId: id, caseStatus: current?.status, runs: snapshot });
-            const allTerminal =
-              snapshot.length >= EXPECTED_AGENTS && snapshot.every((r) => TERMINAL_RUN.has(r.status));
-            if (allTerminal && current && TERMINAL_CASE.has(current.status)) {
-              send("done", { caseId: id, caseStatus: current.status });
+            if (tick++ % REAP_EVERY_TICKS === 0) await reapIfStuck(id, { cases, runs }).catch(() => undefined);
+            const progress = await loadProgress(id, { cases, runs });
+            send("runs", progress);
+            if (isFinished(progress)) {
+              send("done", { caseId: id, caseStatus: progress.caseStatus });
               break;
             }
             await new Promise((r) => setTimeout(r, POLL_MS));

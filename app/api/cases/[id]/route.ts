@@ -6,6 +6,7 @@ import { readSession } from "@/lib/auth/session";
 import { checkRateLimit, DELETE_CASE_LIMITS, getRateLimitStore, rateLimitedResponse } from "@/lib/rate-limit";
 import { fieldPaths, jsonError, parseBody, parseId } from "../_lib/http";
 import { ingestSummarySafely } from "../_lib/case-summary";
+import { reapIfStuck } from "@/lib/workflows/research-watchdog";
 import { getServices } from "../_lib/services";
 
 export const runtime = "nodejs";
@@ -21,7 +22,9 @@ export async function GET(req: Request, { params }: Ctx) {
     if (!id) return jsonError(400, "Invalid case id");
     const denied = await guardCase(req, id);
     if (denied) return denied;
-    const found = await getServices().cases.get(id);
+    const { cases, runs } = getServices();
+    await reapIfStuck(id, { cases, runs }).catch(() => undefined); // lazy watchdog: a dead run flips to research_failed
+    const found = await cases.get(id);
     return found ? NextResponse.json({ case: found }) : jsonError(404, "Case not found");
   } catch (error) {
     return jsonError(500, "Unable to process request", error);

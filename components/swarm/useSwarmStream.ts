@@ -3,17 +3,19 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import type { AgentName } from "@/lib/contracts";
 import { playMockStream } from "./preview";
+import { startLiveSync, type SyncConnection } from "./liveSync";
 import {
   applySwarmEvent,
   initialAgents,
   parseRunsSnapshot,
   sourcesFromShortlist,
   type AgentCardState,
+  type PhaseRuns,
   type SourceWithAgent,
   type SwarmEvent,
 } from "./stream";
 
-export type Connection = "connecting" | "live" | "reconnecting" | "preview" | "lost";
+export type Connection = SyncConnection | "preview";
 
 export type SwarmState = {
   cards: AgentCardState[];
@@ -23,10 +25,14 @@ export type SwarmState = {
   /** Newest first. */
   sources: SourceWithAgent[];
   previewDone: boolean;
+  /** Verifier / ranker / curator rows: the post-search stages. */
+  phases: PhaseRuns;
+  /** serverTime - clientTime at the last snapshot, so phase timers use the server's clock. */
+  clockOffsetMs: number;
 };
 
 type Action =
-  | { type: "runs"; data: string }
+  | { type: "runs"; data: string; clientNow: number }
   | { type: "event"; event: SwarmEvent }
   | { type: "status"; caseStatus: string }
   | { type: "connection"; connection: Connection }
@@ -35,11 +41,13 @@ type Action =
   | { type: "sources"; sources: SourceWithAgent[] }
   | { type: "reset" };
 
-const INITIAL: SwarmState = {
+export const INITIAL: SwarmState = {
   cards: initialAgents(),
   connection: "connecting",
   sources: [],
   previewDone: false,
+  phases: {},
+  clockOffsetMs: 0,
 };
 
 function sameCard(a: AgentCardState | undefined, b: AgentCardState): boolean {
@@ -48,6 +56,7 @@ function sameCard(a: AgentCardState | undefined, b: AgentCardState): boolean {
     a.status === b.status &&
     a.error === b.error &&
     a.outputSummary === b.outputSummary &&
+    a.finishedAt === b.finishedAt &&
     JSON.stringify(a.counts) === JSON.stringify(b.counts)
   );
 }
@@ -56,17 +65,19 @@ function changedAgent(prev: AgentCardState[], next: AgentCardState[]): AgentName
   return next.find((card, i) => !sameCard(prev[i], card))?.agent;
 }
 
-function reducer(state: SwarmState, action: Action): SwarmState {
+export function swarmReducer(state: SwarmState, action: Action): SwarmState {
   switch (action.type) {
     case "runs": {
       const snapshot = parseRunsSnapshot(action.data, state.cards);
       if (!snapshot) return state;
       const changed = changedAgent(state.cards, snapshot.cards);
+      const serverMs = snapshot.serverTime ? Date.parse(snapshot.serverTime) : NaN;
       return {
         ...state,
         cards: changed ? snapshot.cards : state.cards,
+        phases: snapshot.phases,
         caseStatus: snapshot.caseStatus ?? state.caseStatus,
-        connection: "live",
+        clockOffsetMs: Number.isNaN(serverMs) ? state.clockOffsetMs : serverMs - action.clientNow,
         lastActive: changed ?? state.lastActive,
       };
     }
@@ -99,88 +110,68 @@ const PREVIEW_AFTER_MS = 6000;
 
 /** Live research swarm: SSE from the stream route, with a labelled typed preview only in offline mode. */
 export function useSwarmStream(caseId: string) {
-  const [state, dispatch] = useReducer(reducer, INITIAL);
+  const [state, dispatch] = useReducer(swarmReducer, INITIAL);
   const [attempt, setAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | undefined>();
 
   useEffect(() => {
     let stopMock = () => {};
-    let sawEvent = false;
-    let previewing = false;
-    let finished = false;
-    const stream = new EventSource(`/api/cases/${caseId}/stream`);
-
     const offline = ["1", "true"].includes((process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "").trim().toLowerCase());
-    const startPreview = () => {
-      if (previewing || sawEvent) return;
-      if (!offline) {
-        // Live case: never show invented progress. Report the lost connection instead.
-        stream.close();
-        dispatch({ type: "connection", connection: "lost" });
-        return;
-      }
-      previewing = true;
-      stream.close();
-      dispatch({ type: "preview" });
-      stopMock = playMockStream(
-        (event) => dispatch({ type: "event", event }),
-        () => dispatch({ type: "previewEnd" }),
-      );
-    };
-
-    stream.addEventListener("runs", (message) => {
-      sawEvent = true;
-      dispatch({ type: "runs", data: (message as MessageEvent<string>).data });
+    const sync = startLiveSync({
+      caseId,
+      // Live cases never show invented progress; only the offline demo may play a labelled preview.
+      ...(offline
+        ? {
+            previewAfterMs: PREVIEW_AFTER_MS,
+            onPreview: () => {
+              dispatch({ type: "preview" });
+              stopMock = playMockStream(
+                (event) => dispatch({ type: "event", event }),
+                () => dispatch({ type: "previewEnd" }),
+              );
+            },
+          }
+        : {}),
+      onSnapshot: (data) => dispatch({ type: "runs", data, clientNow: Date.now() }),
+      onConnection: (connection) => dispatch({ type: "connection", connection }),
+      onDone: (caseStatus) => {
+        dispatch({ type: "status", caseStatus: caseStatus ?? "ready" });
+        if (caseStatus === "research_failed") return;
+        void fetch(`/api/cases/${caseId}/shortlist`)
+          .then((response) => (response.ok ? response.json() : null))
+          .then((json: unknown) => dispatch({ type: "sources", sources: sourcesFromShortlist(json) }))
+          .catch(() => undefined);
+      },
     });
-
-    stream.addEventListener("done", (message) => {
-      sawEvent = true;
-      finished = true;
-      stream.close();
-      try {
-        const body = JSON.parse((message as MessageEvent<string>).data) as { caseStatus?: string };
-        if (body.caseStatus) dispatch({ type: "status", caseStatus: body.caseStatus });
-      } catch {
-        dispatch({ type: "status", caseStatus: "ready" });
-      }
-      void fetch(`/api/cases/${caseId}/shortlist`)
-        .then((response) => (response.ok ? response.json() : null))
-        .then((json: unknown) => dispatch({ type: "sources", sources: sourcesFromShortlist(json) }))
-        .catch(() => undefined);
-    });
-
-    stream.addEventListener("error", (event) => {
-      if (finished) return;
-      const serverMessage = event instanceof MessageEvent && typeof event.data === "string" && event.data;
-      if (serverMessage) {
-        stream.close();
-        dispatch({ type: "connection", connection: "lost" });
-        return;
-      }
-      if (!sawEvent) startPreview();
-      else dispatch({ type: "connection", connection: stream.readyState === EventSource.CLOSED ? "lost" : "reconnecting" });
-    });
-
-    const giveUp = offline ? window.setTimeout(startPreview, PREVIEW_AFTER_MS) : undefined;
-
     return () => {
-      if (giveUp !== undefined) window.clearTimeout(giveUp);
-      stream.close();
+      sync.stop();
       stopMock();
     };
   }, [caseId, attempt]);
 
   const retry = useCallback(async () => {
     setRetrying(true);
+    setRetryError(undefined);
     try {
-      await fetch(`/api/cases/${caseId}/research`, { method: "POST" });
+      const response = await fetch(`/api/cases/${caseId}/research`, { method: "POST" });
+      // 409 means a run is already going (another tab or a double click): just attach to it.
+      if (!response.ok && response.status !== 409) {
+        setRetryError(
+          response.status === 429
+            ? "Too many restarts in a short time. Please wait a little and try again."
+            : "Could not restart the search. Please try again in a moment.",
+        );
+        return;
+      }
+      dispatch({ type: "reset" });
+      setAttempt((n) => n + 1);
     } catch {
-      // The stream reports the outcome; a failed POST just leaves the failed state in place.
+      setRetryError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setRetrying(false);
     }
-    dispatch({ type: "reset" });
-    setAttempt((n) => n + 1);
-    setRetrying(false);
   }, [caseId]);
 
-  return { ...state, retry, retrying };
+  return { ...state, retry, retrying, retryError };
 }

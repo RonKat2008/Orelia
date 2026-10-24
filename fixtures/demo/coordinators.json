@@ -1,0 +1,37 @@
+{
+  "note": "FICTIONAL intake coordinators for the Wayfinder demo. Every inbox is an AgentMail test inbox we create and own; nothing here is a real hospital or person.",
+  "coordinators": [
+    {
+      "key": "slides",
+      "username": "wf-demo-sarcoma-intake",
+      "displayName": "Intake Desk — Demo Sarcoma Center",
+      "scenario": "please_send_slides",
+      "delaySeconds": 20,
+      "reply": "Thank you for reaching out. Before we can schedule a second-opinion review, please send the pathology slides (or a slide request form from the original lab) and the most recent pathology report.\n\n— Intake Desk, Demo Sarcoma Center (fictional, demo only)"
+    },
+    {
+      "key": "referral",
+      "username": "wf-demo-connective-tissue-intake",
+      "displayName": "New Patient Line — Demo Connective Tissue Clinic",
+      "scenario": "needs_referral",
+      "delaySeconds": 30,
+      "reply": "Thanks for your message. Our clinic requires a referral from the patient's current physician before we can offer an appointment. Please have the referring office fax or send the referral and recent genetic testing results.\n\n— New Patient Line, Demo Connective Tissue Clinic (fictional, demo only)"
+    },
+    {
+      "key": "call",
+      "username": "wf-demo-rare-immunology-intake",
+      "displayName": "Referral Coordinator — Demo Rare Immunology Program",
+      "scenario": "call_to_schedule",
+      "delaySeconds": 40,
+      "reply": "Hello, thank you for contacting the Rare Immunology Program. The easiest way to schedule is a short phone call with our coordinator. Please call us during business hours, or reply with a good time to reach you.\n\n— Referral Coordinator, Demo Rare Immunology Program (fictional, demo only)"
+    },
+    {
+      "key": "silent",
+      "username": "wf-demo-patient-navigator",
+      "displayName": "Patient Navigator — Demo Advocacy Foundation",
+      "scenario": "silent",
+      "delaySeconds": null,
+      "reply": null
+    }
+  ]
+}

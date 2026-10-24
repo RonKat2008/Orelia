@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { guardCase } from '@/lib/auth/ownership';
+import { readSession } from '@/lib/auth/session';
+import { checkRateLimit, clientIp, getRateLimitStore, HISTORY_ADD_LIMITS, rateLimitedResponse } from '@/lib/rate-limit';
 import { gatewayConfig } from '@/lib/ai/gateway';
 import { addRecordBodySchema, MAX_RECORD_CHARS } from '@/lib/history/contract';
 import { addRecord, HistoryLimitError, loadTimeline } from '@/lib/history/ingest';
@@ -35,6 +37,9 @@ export async function POST(req: Request, { params }: Ctx) {
   const body = addRecordBodySchema.safeParse(raw);
   if (!body.success) return jsonError(400, 'Invalid body', undefined, fieldPaths(body.error));
   try {
+    // Deleting a record frees a slot under the record cap, so bound additions (each may run the extractor) per hour.
+    const limit = await checkRateLimit(getRateLimitStore(), HISTORY_ADD_LIMITS(id, readSession(req) ?? 'anonymous', clientIp(req)), new Date());
+    if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
     const result = await addRecord(id, body.data, { llm: gatewayConfig() !== undefined });
     return NextResponse.json(result, { status: 201 });
   } catch (err) {

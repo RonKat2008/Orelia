@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { guardCase } from '@/lib/auth/ownership';
+import { readSession } from '@/lib/auth/session';
+import { checkRateLimit, clientIp, getRateLimitStore, PLAN_BUILD_LIMITS, rateLimitedResponse } from '@/lib/rate-limit';
 import { gatewayConfig } from '@/lib/ai/gateway';
 import { applyPlanEdits, buildContactPlan } from '@/lib/plan';
 import { planPatchBodySchema } from '@/lib/plan/contract';
@@ -51,6 +53,8 @@ export async function POST(req: Request, { params }: Ctx) {
   if (denied) return denied;
   const llm = await wantsLlm(req);
   try {
+    const limit = await checkRateLimit(getRateLimitStore(), PLAN_BUILD_LIMITS(id, readSession(req) ?? 'anonymous', clientIp(req)), new Date());
+    if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
     const inputs = await loadPlanInputs(id);
     if (inputs.length === 0) return jsonError(422, 'Select at least one resource before building a contact plan');
     const store = getPlanStore();

@@ -14,6 +14,15 @@ import { getServices } from "./_lib/services";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
+/** Answer before the 120s function limit kills the request with a non-JSON platform error. */
+const EXTRACT_DEADLINE_MS = 105_000;
+class ExtractTimeoutError extends Error {}
+function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new ExtractTimeoutError("extraction timed out")), ms); });
+  return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
+
 const bodySchema = z.object({ reportText: z.string().trim().min(REPORT_TEXT_MIN).max(REPORT_TEXT_MAX) });
 
 /** POST /api/cases { reportText } -> extract with Opus, insert case as 'draft' for the patient to confirm. */
@@ -28,9 +37,10 @@ export async function POST(req: Request) {
   if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
   let input: Awaited<ReturnType<typeof extractCase>>;
   try {
-    input = await extractCase(body.data.reportText);
+    input = await withDeadline(extractCase(body.data.reportText), EXTRACT_DEADLINE_MS);
   } catch (e) {
     if (e instanceof OutOfScopeError) return jsonError(422, e.message);
+    if (e instanceof ExtractTimeoutError) return jsonError(504, "Reading the report took too long; please try again", e.message);
     return jsonError(502, "Could not extract case fields from the report", e instanceof Error ? e.message : String(e));
   }
   try {

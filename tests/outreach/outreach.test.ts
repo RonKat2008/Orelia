@@ -143,6 +143,13 @@ describe('outreach API and safety boundary', () => {
     const responses = await Promise.all([draft, other].map(d => ctx.api.approve(req({ draftId: d.id }), contact.id)));
     expect(responses.map(r => r.status).sort()).toEqual([200, 409]); expect(ctx.email.sent).toHaveLength(1);
   });
+  it('25 simultaneous approvals of the same draft send exactly once', async () => {
+    const ctx = setup(); const { contact, draft } = await ready(ctx);
+    const responses = await Promise.all(Array.from({ length: 25 }, () => ctx.api.approve(req({ draftId: draft.id }), contact.id)));
+    expect(responses.filter(r => r.status === 200)).toHaveLength(1);
+    expect(responses.filter(r => r.status === 409)).toHaveLength(24);
+    expect(ctx.email.sent).toHaveLength(1);
+  });
   it('keeps ambiguous channel failures reserved so retries cannot duplicate a send', async () => {
     const ctx = setup(); const { contact, draft } = await ready(ctx);
     ctx.email.send = async () => { throw new Error('timeout after provider accepted'); };

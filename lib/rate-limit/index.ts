@@ -104,6 +104,21 @@ export const CREATE_CASE_IP_LIMITS = (ip: string | null): RateRule[] =>
   ip ? [{ key: `create-case:ip:${ip}`, max: 10, windowMs: HOUR_MS }] : [];
 export const RESEARCH_IP_LIMITS = (ip: string | null): RateRule[] =>
   ip ? [{ key: `research:ip:${ip}`, max: 10, windowMs: HOUR_MS }] : [];
+/**
+ * Adding a history record runs the extractor (a model call when the gateway is set). Deleting a record frees its
+ * slot under the 50-record cap, so the cap alone does not bound a delete-and-re-add loop: count additions instead.
+ */
+export const HISTORY_ADD_LIMITS = (caseId: string, sessionId: string, ip: string | null): RateRule[] => [
+  { key: `history-add:case:${caseId}`, max: 60, windowMs: HOUR_MS },
+  { key: `history-add:session:${sessionId}`, max: 120, windowMs: HOUR_MS },
+  ...(ip ? [{ key: `history-add:ip:${ip}`, max: 120, windowMs: HOUR_MS }] : []),
+];
+/** Each plan (re)build may refine the plan with one model call. */
+export const PLAN_BUILD_LIMITS = (caseId: string, sessionId: string, ip: string | null): RateRule[] => [
+  { key: `plan-build:case:${caseId}`, max: 20, windowMs: HOUR_MS },
+  { key: `plan-build:session:${sessionId}`, max: 60, windowMs: HOUR_MS },
+  ...(ip ? [{ key: `plan-build:ip:${ip}`, max: 60, windowMs: HOUR_MS }] : []),
+];
 /** Deleting a case is rare and destructive: a small per-session budget stops a runaway script. */
 export const DELETE_CASE_LIMITS = (sessionId: string): RateRule[] => [
   { key: `delete-case:session:${sessionId}`, max: 20, windowMs: HOUR_MS },

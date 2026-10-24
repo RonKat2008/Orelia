@@ -84,3 +84,42 @@ export function withOrder(plan: ContactPlan, resourceKey: string, stepIds: strin
 export function toggleEdit(resourceKey: string, stepId: string, enabled: boolean): PlanEdit {
   return { type: 'toggle', resourceKey, stepId, enabled };
 }
+
+export interface StepContext {
+  resourceName: string;
+  /** 1-based position among the resource's enabled steps. */
+  number: number;
+  total: number;
+  purpose: StepPurpose;
+  channel: PlanChannel;
+}
+
+function contextFor(resource: ResourcePlan, match: (s: PlanStep) => boolean): StepContext | null {
+  const enabled = sortedSteps(resource).filter(s => s.enabled);
+  const index = enabled.findIndex(match);
+  if (index === -1) return null;
+  const s = enabled[index];
+  return { resourceName: resource.name, number: index + 1, total: enabled.length, purpose: s.purpose, channel: s.channel };
+}
+
+/** Which plan step an outbox draft (one first message per contact) belongs to. Pure; null when unknown. */
+export function draftStepContext(plan: ContactPlan | null, draft: { contactId: string; channel: 'email' | 'voice' }): StepContext | null {
+  const resource = plan?.resources.find(r => r.contactId === draft.contactId);
+  if (!resource) return null;
+  const firstMessage = contextFor(resource, s => s.channel === draft.channel && s.purpose !== 'follow_up');
+  return firstMessage ?? contextFor(resource, s => s.channel === draft.channel);
+}
+
+/** Which web_form step a drafted application belongs to (matched by the step's form URL). Pure. */
+export function applicationStepContext(plan: ContactPlan | null, app: { contactId: string | null; url: string }): StepContext | null {
+  for (const resource of plan?.resources ?? []) {
+    if (app.contactId && resource.contactId && resource.contactId !== app.contactId) continue;
+    const ctx = contextFor(resource, s => s.channel === 'web_form' && s.targetRef === app.url);
+    if (ctx) return ctx;
+  }
+  return null;
+}
+
+export function stepContextText(ctx: StepContext): string {
+  return `Step ${ctx.number} of ${ctx.total} in the plan for ${ctx.resourceName}: ${PURPOSE_LABELS[ctx.purpose]} by ${CHANNEL_LABELS[ctx.channel].toLowerCase()}`;
+}

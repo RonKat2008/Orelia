@@ -11,7 +11,7 @@ export const PURPOSE_LABELS: Record<StepPurpose, string> = {
   apply: 'Apply',
   follow_up: 'Follow up',
   confirm: 'Confirm',
-  verify: 'Verify by phone',
+  verify: 'Verify',
 };
 
 export const KIND_LABELS: Record<string, string> = {
@@ -20,6 +20,11 @@ export const KIND_LABELS: Record<string, string> = {
   trial: 'Clinical trial',
   organization: 'Organization',
 };
+
+/** "Introduce by email", "Verify by phone call": purpose and channel, each said once. */
+export function stepLabel(step: Pick<PlanStep, 'purpose' | 'channel'>): string {
+  return `${PURPOSE_LABELS[step.purpose]} by ${CHANNEL_LABELS[step.channel].toLowerCase()}`;
+}
 
 /** waitFor in plain words. */
 export function waitText(waitFor: WaitFor, isFirst: boolean): string {

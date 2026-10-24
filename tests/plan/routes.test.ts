@@ -101,6 +101,22 @@ describe('plan routes: behaviour', () => {
     expect((await res.json()).plan.caseId).toBe(CASE);
   });
 
+  it('GET ?optional=1 answers 200 { plan: null } before a plan exists (no 404 console noise), then the plan', async () => {
+    const optional = () => GET(new Request(`${ORIGIN}/api/cases/${CASE}/plan?optional=1`, { headers: { cookie: cookie('owner') } }), ctx(CASE));
+    const empty = await optional();
+    expect(empty.status).toBe(200);
+    expect(await empty.json()).toEqual({ plan: null });
+    await plans.save(makePlan(CASE));
+    const res = await optional();
+    expect(res.status).toBe(200);
+    expect((await res.json()).plan.caseId).toBe(CASE);
+  });
+
+  it('GET ?optional=1 still hides another owner\'s case', async () => {
+    const res = await GET(new Request(`${ORIGIN}/api/cases/${CASE}/plan?optional=1`, { headers: { cookie: cookie('other') } }), ctx(CASE));
+    expect(res.status).toBe(404);
+  });
+
   it('POST with no selection is 422 and builds nothing', async () => {
     selected = [];
     const res = await post();

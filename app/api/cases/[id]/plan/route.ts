@@ -14,7 +14,10 @@ export const runtime = 'nodejs';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-/** GET /api/cases/[id]/plan -> { plan } or 404 when none has been built. */
+/**
+ * GET /api/cases/[id]/plan -> { plan } or 404 when none has been built.
+ * `?optional=1` answers 200 { plan: null } instead of 404, for callers (the journey rail) that only peek.
+ */
 export async function GET(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, 'Invalid case id');
@@ -22,7 +25,8 @@ export async function GET(req: Request, { params }: Ctx) {
   if (denied) return denied;
   try {
     const plan = await getPlanStore().latest(id);
-    return plan ? NextResponse.json({ plan }) : jsonError(404, 'No contact plan yet');
+    if (plan) return NextResponse.json({ plan });
+    return new URL(req.url).searchParams.get('optional') === '1' ? NextResponse.json({ plan: null }) : jsonError(404, 'No contact plan yet');
   } catch (err) {
     return jsonError(500, 'Unable to load the contact plan', err);
   }

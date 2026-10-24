@@ -207,6 +207,13 @@ function mergeConflicts(fromHistory: readonly PacketItem[], detected: readonly P
   return [...fromHistory, ...detected].filter(i => (seen.has(i.text) ? false : (seen.add(i.text), true))).slice(0, LIMITS.conflicts);
 }
 
+/** The packet prints each timeline item's date; a line that opens with that date drops it (and its separator). */
+function withoutLeadingDate(line: string, found: FoundDate | undefined): string {
+  if (!found || found.index !== 0) return line;
+  const rest = line.slice(found.length).replace(/^[\s:,.\-–—]+/, '');
+  return rest || line;
+}
+
 export function buildSections(input: BuildInput, previousIncluded?: Partial<Record<PacketSectionKey, boolean>>): PacketSection[] {
   const keywords = keywordsFor(input.name, input.claims);
   const summary: PacketItem[] = [];
@@ -225,9 +232,10 @@ export function buildSections(input: BuildInput, previousIncluded?: Partial<Reco
       seenLines.add(dedupe);
       order++;
       if (docIndex === 0 && firstLines < LIMITS.summary && !isMarkdownHeading(raw) && !/^\w[\w ]{0,30}:\s*$/.test(line)) { summary.push({ text: line, date: null, sourceDocId: doc.id, sourceUrl: null }); firstLines++; }
-      const date = findDates(line)[0]?.date ?? null;
+      const found = findDates(line)[0];
+      const date = found?.date ?? null;
       const score = relevance(line, keywords);
-      if (date) timeline.push({ text: line, date, sourceDocId: doc.id, sourceUrl: null, score, order });
+      if (date) timeline.push({ text: withoutLeadingDate(line, found), date, sourceDocId: doc.id, sourceUrl: null, score, order });
       if (isTestLine(line)) tests.push({ item: { text: line, date, sourceDocId: doc.id, sourceUrl: null }, score, order });
     }
   });

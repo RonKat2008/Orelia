@@ -202,6 +202,12 @@ describe("legend and header", () => {
   });
   const header = (b = sampleBrief) =>
     renderToStaticMarkup(createElement(BriefHeader, { brief: b, busy: false, onRefresh: noop }));
+  it("uses an h2 under the case layout's single h1, with the shared uppercase eyebrow", () => {
+    const out = header();
+    expect(out).not.toContain("<h1");
+    expect(out).toMatch(/<h2[^>]*>What the public sources say about/);
+    expect(out).toMatch(/<p class="[^"]*uppercase[^"]*">Condition brief<\/p>/);
+  });
   it("shows disease, date, offline badge and dropped count", () => {
     const out = header();
     expect(out).toContain("Synthetic Example Syndrome");
@@ -222,6 +228,11 @@ describe("client", () => {
   it("returns null brief on 404 for GET", async () => {
     const f = vi.fn(() => res(404, { error: "none" }));
     expect(await getBrief("c1", f as unknown as typeof fetch)).toEqual({ ok: true, brief: null });
+  });
+  it("GET asks optionally and reads 200 { brief: null } as 'none yet'", async () => {
+    const f = vi.fn((url: string) => { void url; return res(200, { brief: null }); });
+    expect(await getBrief("c1", f as unknown as typeof fetch)).toEqual({ ok: true, brief: null });
+    expect(f.mock.calls[0][0]).toBe("/api/cases/c1/condition-brief?optional=1");
   });
   it("validates the response with the schema", async () => {
     const good = await getBrief("c1", (() => res(200, { brief: sampleBrief })) as unknown as typeof fetch);

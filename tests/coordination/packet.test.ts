@@ -206,6 +206,18 @@ describe('attach', () => {
 
 void SUMMARY_DOC; void OUTSIDE_DOC;
 
+describe('timeline lines that start with their own date', () => {
+  const doc = { id: 'd-1', title: 'Notes', text: 'Clinic notes\n06/15/2021 — Follow-up visit\nAdmission 2023-04-02\n2019-06-12: Initial visit' };
+  const timeline = buildSections({ name: 'Center', claims: [], docs: [doc], requirements: [], patientQuestions: [] }).find(s => s.key === 'timeline')!.items;
+  it('drop the leading date so the packet does not print it twice', () => {
+    expect(timeline.map(i => [i.date, i.text])).toEqual([
+      ['2019-06-12', 'Initial visit'],
+      ['2021-06-15', 'Follow-up visit'],
+      ['2023-04-02', 'Admission 2023-04-02'],
+    ]);
+  });
+});
+
 describe('markdown records', () => {
   const md = {
     id: 'md-1', title: 'Genetic report',
@@ -220,7 +232,7 @@ describe('markdown records', () => {
   });
 
   it('strips markdown markers from timeline and test lines', () => {
-    expect(items('timeline')).toEqual(['2025-02-10 — Panel result']);
+    expect(items('timeline')).toEqual(['Panel result']);
     expect(items('tests')).toContain('Classification: Likely pathogenic');
   });
 });

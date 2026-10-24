@@ -115,6 +115,18 @@ describe("loadJourney", () => {
     expect(loaded.missingCase).toBe(false);
   });
 
+  it("asks for the plan as optional so a case without one does not log a 404", async () => {
+    const urls: string[] = [];
+    const fetchImpl = vi.fn(async (url: string) => {
+      urls.push(url);
+      if (url.includes("/plan")) return new Response(JSON.stringify({ plan: null }), { status: 200 });
+      return new Response(JSON.stringify({ case: { diseaseName: "Vascular EDS", status: "ready", goals: [] } }), { status: 200 });
+    });
+    const loaded = await loadJourney(caseId, fetchImpl as unknown as typeof fetch);
+    expect(urls).toContain(`/api/cases/${caseId}/plan?optional=1`);
+    expect(loaded.planStatus).toBeNull();
+  });
+
   it("records a missing case", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 404 }));
     const loaded = await loadJourney(caseId, fetchImpl as unknown as typeof fetch);
@@ -149,13 +161,13 @@ describe("resolveJourney: contact plan", () => {
   it("loadJourney reads the plan status and tolerates a missing plan", async () => {
     const routes: Record<string, unknown> = {
       [`/api/cases/${caseId}`]: { case: { diseaseName: "Synthetic", status: "ready" } },
-      [`/api/cases/${caseId}/plan`]: { plan: { status: "approved" } },
+      [`/api/cases/${caseId}/plan?optional=1`]: { plan: { status: "approved" } },
     };
     const fetchImpl = vi.fn(async (url: string) =>
       routes[url] ? new Response(JSON.stringify(routes[url]), { status: 200 }) : new Response("{}", { status: 404 }),
     ) as unknown as typeof fetch;
     expect((await loadJourney(caseId, fetchImpl)).planStatus).toBe("approved");
-    delete routes[`/api/cases/${caseId}/plan`];
+    delete routes[`/api/cases/${caseId}/plan?optional=1`];
     expect((await loadJourney(caseId, fetchImpl)).planStatus).toBeNull();
   });
 });

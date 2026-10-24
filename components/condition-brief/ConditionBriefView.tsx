@@ -50,7 +50,7 @@ export function ConditionBriefView({ caseId }: { caseId: string }) {
   if (phase.kind === "error") {
     return (
       <div className="ds-root grid max-w-prose gap-4" role="alert">
-        <h1 className="display-soft m-0 font-display text-h2 text-ink">The brief did not load</h1>
+        <h2 className="display-soft m-0 font-display text-h2 text-ink">The brief did not load</h2>
         <p className="m-0 text-body text-ink-2">{phase.message}</p>
         <Button variant="secondary" className="w-fit" onClick={() => window.location.reload()}>
           Try again
@@ -62,10 +62,10 @@ export function ConditionBriefView({ caseId }: { caseId: string }) {
   if (phase.kind === "none") {
     return (
       <div className="ds-root grid max-w-prose gap-5">
-        <p className="m-0 text-micro text-ink-3">Condition brief</p>
-        <h1 className="display-soft m-0 text-balance font-display text-h1 text-ink">
+        <p className="m-0 text-micro font-semibold uppercase text-ink-3">Condition brief</p>
+        <h2 className="display-soft m-0 text-balance font-display text-h1 text-ink">
           A plain-language <em className="emph">brief</em> on your condition
-        </h1>
+        </h2>
         <p className="m-0 text-lead text-ink-2">
           We read public sources such as Orphanet, PubMed, ClinicalTrials.gov and NIH, then write down how rare the condition is, what is
           known, what research is under way, and questions you might bring to your care team. Every statement shows where it came from and

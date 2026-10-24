@@ -84,6 +84,14 @@ describe("condition-brief route: GET/POST", () => {
     expect((await res.json()).brief.caseId).toBe(caseId);
   });
 
+  it("GET ?optional=1 answers 200 { brief: null } before any brief (no 404 console noise)", async () => {
+    const optional = (who = "owner") => GET(new Request(`${ORIGIN}/api/cases/${caseId}/condition-brief?optional=1`, { headers: { cookie: cookie(who) } }), { params: Promise.resolve({ id: caseId }) });
+    const empty = await optional();
+    expect(empty.status).toBe(200);
+    expect(await empty.json()).toEqual({ brief: null });
+    expect((await optional("other")).status).toBe(404);
+  });
+
   it("POST builds and saves when none exists (201), then returns the cache (200)", async () => {
     const first = await post();
     expect(first.status).toBe(201);

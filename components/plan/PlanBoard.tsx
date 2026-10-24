@@ -8,12 +8,11 @@ import { useReducedMotionGate } from '@/lib/motion/MotionPreference';
 import { DURATION, EASE, STAGGER } from '@/lib/motion/tokens';
 import type { ContactPlan, PlanChannel, PlanStep, ResourcePlan } from '@/lib/plan/contract';
 import {
-  CHANNEL_LABELS,
   KIND_LABELS,
-  PURPOSE_LABELS,
   enabledStepCount,
   isHttpUrl,
   shortEvidenceId,
+  stepLabel,
   sortedSteps,
   waitText,
 } from './model';
@@ -155,7 +154,7 @@ function StepRow({
 }) {
   const reduced = useReducedMotionGate();
   const Icon = CHANNEL_ICONS[step.channel];
-  const label = `${PURPOSE_LABELS[step.purpose]} by ${CHANNEL_LABELS[step.channel].toLowerCase()}`;
+  const label = stepLabel(step);
   const isLast = index === total - 1;
   const connector = reduced
     ? { initial: false as const }

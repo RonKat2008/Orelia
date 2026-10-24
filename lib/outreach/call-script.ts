@@ -14,7 +14,12 @@ export function resourceContext(contact: Contact, consent: Consent, record: Case
     && !!doc.sourceUrl && /^https?:\/\//i.test(doc.sourceUrl)
     && !containsUnsharedField(`${doc.content}\n${doc.sourceUrl}`, record, consent.sharedFields)
     && !flagMedicalAdvice(doc.content).flagged && !looksLikeInjection(doc.content))
-    .slice(0, 3).map(doc => ({ id: doc.id, text: `${doc.content.slice(0, 300)} (source_url: ${doc.sourceUrl})` }));
+    .slice(0, 3).map(doc => ({ id: doc.id, text: `${readableContext(doc.content.slice(0, 300))} (source: ${doc.sourceUrl})` }));
+}
+/** A context line that is only a US E.164 number (how contact points are stored) reads as "Phone: +1 555-123-4567". */
+function readableContext(content: string): string {
+  const us = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(content.trim());
+  return us ? `Phone: +1 ${us[1]}-${us[2]}-${us[3]}` : content;
 }
 /** Plain-language labels for the consented case fields (docs/PLAN.md HARD RULE 6). Copy only. */
 export const FIELD_LABELS: Record<string, string> = {

@@ -17,6 +17,7 @@ import {
 import {
   bandShortlist,
   initialSelection,
+  shouldPersistInitialSelection,
   loadHomeState,
   loadShortlist,
   orderByPreview,
@@ -158,7 +159,9 @@ export function ShortlistView({ caseId }: { caseId: string }) {
           error: result.error,
           homeState,
         });
-        setSelected(initialSelection(stored, result.payload.suggested, limit));
+        const initial = initialSelection(stored, result.payload.suggested, limit);
+        setSelected(initial);
+        if (shouldPersistInitialSelection(stored, initial)) writeStoredSelection(caseId, initial);
       },
     );
     return () => {

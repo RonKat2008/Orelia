@@ -425,6 +425,11 @@ export function initialSelection(
     .slice(0, limit);
 }
 
+/** Suggestions shown as ticked must be stored like a click, or consent opens with nobody selected. */
+export function shouldPersistInitialSelection(stored: string[] | null, initial: string[]): boolean {
+  return stored === null && initial.length > 0;
+}
+
 const emptyShortlist: ShortlistPayload = { items: [], curationSummary: null, suggested: [] };
 
 function offlinePreview(): boolean {

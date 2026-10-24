@@ -11,6 +11,7 @@ import {
   bandShortlist,
   evidenceForReason,
   initialSelection,
+  shouldPersistInitialSelection,
   normalizeShortlist,
   previewShortlist,
   type ShortlistCard,
@@ -65,6 +66,13 @@ describe("shortlist curation", () => {
   it("pre-selects at most five suggestions unless the patient already chose", () => {
     expect(initialSelection(null, ["a", "b", "c", "d", "e", "f"], 5)).toEqual(["a", "b", "c", "d", "e"]);
     expect(initialSelection(["saved"], ["a"], 5)).toEqual(["saved"]);
+  });
+
+  it("persists accepted suggestions so Continue to consent sees them without a click", () => {
+    // Consent reads the stored selection; suggestions shown as ticked must be stored too.
+    expect(shouldPersistInitialSelection(null, ["a", "b"])).toBe(true);
+    expect(shouldPersistInitialSelection(null, [])).toBe(false);
+    expect(shouldPersistInitialSelection(["saved"], ["saved"])).toBe(false);
   });
 });
 

@@ -67,7 +67,7 @@ export async function loadJourney(caseId: string, fetchImpl: typeof fetch = fetc
       tasks = readTasks(await readJson(tasksResponse));
     }
 
-    const planResponse = await fetchImpl(`/api/cases/${caseId}/plan`).catch(() => null);
+    const planResponse = await fetchImpl(`/api/cases/${caseId}/plan?optional=1`).catch(() => null);
     const planStatus = planResponse && planResponse.ok ? readPlanStatus(await readJson(planResponse)) : null;
 
     return { summary, status, selectedCount, openTaskCount, contacts, tasks, planStatus, missingCase: false };

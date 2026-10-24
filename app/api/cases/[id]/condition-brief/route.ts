@@ -19,7 +19,10 @@ const postBodySchema = z.object({ refresh: z.boolean().optional() }).strict();
 const g = globalThis as unknown as { __wayfinderConditionBriefInflight?: Map<string, Promise<ConditionBrief>> };
 const inflight = (g.__wayfinderConditionBriefInflight ??= new Map());
 
-/** GET /api/cases/[id]/condition-brief -> { brief } or 404 when none has been built. */
+/**
+ * GET /api/cases/[id]/condition-brief -> { brief } or 404 when none has been built.
+ * `?optional=1` answers 200 { brief: null } instead of 404 (the page peeks before offering "Build the brief").
+ */
 export async function GET(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, "Invalid case id");
@@ -27,7 +30,8 @@ export async function GET(req: Request, { params }: Ctx) {
   if (denied) return denied;
   try {
     const brief = await getConditionBriefStore().latest(id);
-    return brief ? NextResponse.json({ brief }) : jsonError(404, "No condition brief yet");
+    if (brief) return NextResponse.json({ brief });
+    return new URL(req.url).searchParams.get("optional") === "1" ? NextResponse.json({ brief: null }) : jsonError(404, "No condition brief yet");
   } catch (err) {
     return jsonError(500, "Unable to load the condition brief", err);
   }

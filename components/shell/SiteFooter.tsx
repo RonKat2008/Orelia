@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { demoEnabled } from "@/app/api/demo/lib/guard";
 import { cn } from "@/lib/ui/cn";
 import { Wordmark } from "./Wordmark";
 
-const COLUMNS = [
+const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: "Wayfinder",
     links: [
@@ -22,6 +23,12 @@ const COLUMNS = [
   },
 ];
 
+/** Footer columns; "See a demo" only when the demo control panel is enabled (the page 404s otherwise). */
+export function footerColumns(env: Record<string, string | undefined>) {
+  const showDemo = demoEnabled(env);
+  return COLUMNS.map((column) => ({ ...column, links: column.links.filter((link) => showDemo || link.href !== "/demo") }));
+}
+
 export function SiteFooter({ className }: { className?: string }) {
   return (
     <footer data-slot="site-footer" className={cn("grain mt-section border-t border-line bg-paper-2", className)}>
@@ -33,7 +40,7 @@ export function SiteFooter({ className }: { className?: string }) {
             source, nothing sent without your approval.
           </p>
         </div>
-        {COLUMNS.map((column) => (
+        {footerColumns(process.env).map((column) => (
           <nav key={column.heading} aria-label={column.heading} className="grid content-start gap-3">
             <h2 className="m-0 max-w-none font-sans text-micro font-semibold uppercase text-ink-3">{column.heading}</h2>
             <ul className="m-0 grid list-none gap-2 p-0">

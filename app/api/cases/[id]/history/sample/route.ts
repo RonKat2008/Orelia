@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { guardCase } from '@/lib/auth/ownership';
-import { demoEnabled } from '@/app/api/demo/lib/guard';
+import { historySamplesEnabled } from '@/lib/history/samples-enabled';
 import { HISTORY_FIXTURE_SLUGS, loadHistoryFixture } from '@/fixtures/history';
 import { getHistoryStore } from '@/lib/history/store';
 import { addRecord, HistoryLimitError, loadTimeline } from '@/lib/history/ingest';
@@ -14,7 +14,7 @@ const bodySchema = z.object({ slug: z.enum(HISTORY_FIXTURE_SLUGS) }).strict();
 
 /** POST /api/cases/[id]/history/sample { slug } -> 201 { timeline }. Demo/offline only; synthetic records. */
 export async function POST(req: Request, { params }: Ctx) {
-  if (!demoEnabled(process.env) && process.env.WAYFINDER_OFFLINE !== '1') return jsonError(404, 'Not found');
+  if (!historySamplesEnabled(process.env)) return jsonError(404, 'Not found');
   const id = parseId((await params).id);
   if (!id) return jsonError(400, 'Invalid case id');
   const denied = await guardCase(req, id);

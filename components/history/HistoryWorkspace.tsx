@@ -53,7 +53,7 @@ function SamplePicker({ onLoad }: { onLoad: (slug: SampleSlug) => Promise<"ok" |
 }
 
 /** Client container for the medical-history page: fetches the timeline and composes every panel. */
-export function HistoryWorkspace({ caseId }: { caseId: string }) {
+export function HistoryWorkspace({ caseId, samplesEnabled = false }: { caseId: string; samplesEnabled?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -164,7 +164,7 @@ export function HistoryWorkspace({ caseId }: { caseId: string }) {
       ) : null}
 
       <RecordDropzone onSubmit={onAdd} onUploadPdf={onPdf} />
-      <SamplePicker onLoad={onSample} />
+      {samplesEnabled ? <SamplePicker onLoad={onSample} /> : null}
 
       {hasRecords ? (
         <>

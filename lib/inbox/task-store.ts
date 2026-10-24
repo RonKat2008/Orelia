@@ -19,7 +19,8 @@ export interface TaskStore {
   markApproved(id: string, at: string): Promise<boolean>;
   /** Undo markApproved (approved -> open) when a later step fails. */
   reopen(id: string): Promise<void>;
-  markDone(id: string): Promise<void>;
+  /** Optionally merges extra keys into the task's details (used to keep grounding evidence). */
+  markDone(id: string, detailsPatch?: Record<string, unknown>): Promise<void>;
   /** Highest-ranked case candidate that has no contact yet. */
   nextCandidate(caseId: string): Promise<NextCandidate | undefined>;
   closeContact(contactId: string): Promise<void>;
@@ -43,45 +44,69 @@ export class MemoryTaskStore implements TaskStore {
     r.status = 'approved'; r.approvedAt = at; return true;
   }
   async reopen(id: string) { const r = this.rows.get(id); if (r?.status === 'approved') { r.status = 'open'; r.approvedAt = null; } }
-  async markDone(id: string) { const r = this.rows.get(id); if (r) r.status = 'done'; }
+  async markDone(id: string, patch?: Record<string, unknown>) { const r = this.rows.get(id); if (r) { r.status = 'done'; if (patch) r.details = { ...r.details, ...patch }; } }
   async nextCandidate() { return this.next; }
   async closeContact(contactId: string) { this.closed.push(contactId); }
 }
 
-/**
- * KNOWN LIMITATION: the `tasks` table has only (contact_id, kind, draft_body, due_at, status), so title, letter,
- * details, caseId and the draft text are persisted as JSON inside `draft_body`. approvedAt is implied by status
- * (approved/done) and not stored; createdAt is not stored (the read time is returned).
- */
-interface Payload { title: string; caseId: string; letter?: TaskDraft['letter']; details?: TaskDraft['details']; text?: string }
+type TaskRow = typeof s.tasks.$inferSelect;
+type Envelope = { letter?: TaskDraft['letter']; details?: TaskDraft['details'] };
+interface LegacyPayload extends Envelope { title?: string; caseId?: string; text?: string }
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** Old rows kept everything as JSON in draft_body. Never throws; undefined if draft_body is not such JSON. */
+function parseLegacy(body: string | null): LegacyPayload | undefined {
+  if (!body) return undefined;
+  try { const v: unknown = JSON.parse(body); return isObject(v) ? v as LegacyPayload : undefined; } catch { return undefined; }
+}
+
+/** Draft -> insert values for the real tasks columns. details holds the { letter, details } envelope. */
+export function taskToRow(d: TaskDraft): typeof s.tasks.$inferInsert {
+  return {
+    contactId: d.contactId, caseId: d.caseId, kind: d.kind, title: d.title, status: 'open',
+    draftBody: d.draftBody ?? null, details: { letter: d.letter ?? null, details: d.details ?? null }, approvedAt: null,
+  };
+}
+
+/** Row -> StoredTask, preferring columns; falls back to legacy JSON in draft_body when title/details are null. */
+export function rowToTask(row: TaskRow, now: () => string = () => new Date().toISOString()): StoredTask {
+  const legacy = row.title == null || row.details == null ? parseLegacy(row.draftBody) : undefined;
+  const env: Envelope = row.details
+    ? { letter: (row.details.letter as TaskDraft['letter'] | null) ?? undefined, details: (row.details.details as TaskDraft['details'] | null) ?? undefined }
+    : { letter: legacy?.letter, details: legacy?.details };
+  return {
+    id: row.id, createdAt: now(), contactId: row.contactId, caseId: row.caseId ?? legacy?.caseId ?? '', kind: row.kind,
+    title: row.title ?? legacy?.title ?? '', status: row.status, requiresApproval: true,
+    approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
+    draftBody: legacy ? legacy.text : (row.draftBody ?? undefined),
+    letter: env.letter, details: env.details,
+  };
+}
 
 export class PostgresTaskStore implements TaskStore {
   private get db() { return getDb(); }
-  private toStored(row: typeof s.tasks.$inferSelect): StoredTask {
-    const p = JSON.parse(row.draftBody ?? '{}') as Payload;
-    return {
-      id: row.id, createdAt: new Date().toISOString(), contactId: row.contactId, caseId: p.caseId, kind: row.kind, title: p.title,
-      status: row.status, requiresApproval: true, approvedAt: null, draftBody: p.text, letter: p.letter, details: p.details,
-    };
-  }
   async saveTasks(drafts: TaskDraft[]) {
     if (!drafts.length) return [];
-    const rows = await this.db.insert(s.tasks).values(drafts.map(d => ({
-      contactId: d.contactId, kind: d.kind, status: 'open' as const,
-      draftBody: JSON.stringify({ title: d.title, caseId: d.caseId, letter: d.letter, details: d.details, text: d.draftBody } satisfies Payload),
-    }))).returning();
-    return rows.map(r => this.toStored(r));
+    const rows = await this.db.insert(s.tasks).values(drafts.map(taskToRow)).returning();
+    return rows.map(r => rowToTask(r));
   }
   async task(id: string) {
     const [row] = await this.db.select().from(s.tasks).where(eq(s.tasks.id, id));
-    return row ? this.toStored(row) : undefined;
+    return row ? rowToTask(row) : undefined;
   }
-  async markApproved(id: string) {
-    const rows = await this.db.update(s.tasks).set({ status: 'approved' }).where(and(eq(s.tasks.id, id), eq(s.tasks.status, 'open'))).returning({ id: s.tasks.id });
+  async markApproved(id: string, at: string) {
+    const rows = await this.db.update(s.tasks).set({ status: 'approved', approvedAt: new Date(at) }).where(and(eq(s.tasks.id, id), eq(s.tasks.status, 'open'))).returning({ id: s.tasks.id });
     return rows.length === 1;
   }
-  async reopen(id: string) { await this.db.update(s.tasks).set({ status: 'open' }).where(and(eq(s.tasks.id, id), eq(s.tasks.status, 'approved'))); }
-  async markDone(id: string) { await this.db.update(s.tasks).set({ status: 'done' }).where(eq(s.tasks.id, id)); }
+  async reopen(id: string) { await this.db.update(s.tasks).set({ status: 'open', approvedAt: null }).where(and(eq(s.tasks.id, id), eq(s.tasks.status, 'approved'))); }
+  async markDone(id: string, patch?: Record<string, unknown>) {
+    if (!patch) { await this.db.update(s.tasks).set({ status: 'done' }).where(eq(s.tasks.id, id)); return; }
+    const [row] = await this.db.select().from(s.tasks).where(eq(s.tasks.id, id));
+    const env = (row?.details ?? {}) as Record<string, unknown>;
+    const details = { ...env, details: { ...((env.details as Record<string, unknown> | null) ?? {}), ...patch } };
+    await this.db.update(s.tasks).set({ status: 'done', details }).where(eq(s.tasks.id, id));
+  }
   async nextCandidate(caseId: string) {
     const [row] = await this.db.select().from(s.caseCandidates).where(and(eq(s.caseCandidates.caseId, caseId), notExists(
       this.db.select({ one: sql`1` }).from(s.contacts).where(and(eq(s.contacts.caseId, caseId), eq(s.contacts.targetId, s.caseCandidates.targetId), eq(s.contacts.targetKind, s.caseCandidates.targetKind))),

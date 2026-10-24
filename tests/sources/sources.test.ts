@@ -41,8 +41,23 @@ describe("transport and rate limit", () => {
     const live = new FetchTransport(fetcher as typeof fetch, () => new Date(now));
     expect((await live.request({url:"https://api.exa.ai/search",method:"POST",body:{query:"test"}})).fetchedAt).toBe(now);
     expect(fetcher.mock.calls[0]).toBeDefined();
-    const failing = new FetchTransport(vi.fn(async () => new Response("secret",{status:429})) as typeof fetch);
-    await expect(failing.request({url:"https://example.com/?api_key=secret"})).rejects.toMatchObject({status:429,message:"http: Request failed"});
+    const sleeps: number[] = [];
+    const failing = new FetchTransport(
+      vi.fn(async () => new Response(JSON.stringify({ error: "API rate limit exceeded", "api-key": "203.0.113.4" }), { status: 429 })) as typeof fetch,
+      () => new Date(now),
+      async (ms) => { sleeps.push(ms); },
+    );
+    await expect(failing.request({ url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?api_key=secret" })).rejects.toThrow(/429 https:\/\/eutils\.ncbi\.nlm\.nih\.gov\/entrez\/eutils\/esearch\.fcgi: API rate limit exceeded/);
+    await expect(failing.request({ url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?api_key=secret" })).rejects.toThrow(/^(?!.*secret)(?!.*203\.0\.113\.4)/);
+    expect(sleeps.slice(0, 3)).toEqual([1000, 2000, 4000]);
+    const retry = vi.fn()
+      .mockResolvedValueOnce(new Response("wait", { status: 429, headers: { "retry-after": "2" } }))
+      .mockResolvedValueOnce(new Response('{"ok":true}', { status: 200 }));
+    const slept: number[] = [];
+    const recovered = new FetchTransport(retry as typeof fetch, () => new Date(now), async (ms) => { slept.push(ms); });
+    expect((await recovered.request({ url: "https://clinicaltrials.gov/api/v2/studies?query.cond=x" })).status).toBe(200);
+    expect(slept).toEqual([2000]);
+    expect(retry).toHaveBeenCalledTimes(2);
   });
 });
 

@@ -6,8 +6,10 @@ import {
   CONTACT_STALLED,
   FOLLOW_UP_APPROVED,
   FOLLOW_UP_DRAFTED,
+  createConnectionRestartWorkflow,
   createConnectionWorkflow,
   createFollowUpSendWorkflow,
+  createStalledRevivalWorkflow,
   followUpDeadlines,
   initialContext,
   type ConnectionDeps,
@@ -57,16 +59,23 @@ function setup(scale = 1) {
   store.set(CID, initialContext());
   const send = vi.fn(async (..._args: any[]) => ({ providerRef: 'ref' }));
   const draftFollowUp = vi.fn(async (i: any) => ({ messageId: `draft-${i.followUpNumber}` }));
+  const approvals = new Map<string, string>([
+    ['m-1', NOW.toISOString()],
+    ['draft-1', NOW.toISOString()],
+  ]);
+  const threads = new Map<string, { threadId: string; messageId: string }>();
   const deps: ConnectionDeps = {
     clock: { now: () => NOW, scale },
     send,
     draftFollowUp,
+    loadMessageApproval: async (id) => approvals.get(id) ?? null,
+    loadThread: async (id) => threads.get(id) ?? null,
     loadContext: async (id) => structuredClone(store.get(id)!),
     saveContext: async (id, ctx) => {
       store.set(id, structuredClone(ctx));
     },
   };
-  return { store, send, draftFollowUp, deps };
+  return { store, send, draftFollowUp, deps, approvals, threads };
 }
 
 const approved = {
@@ -88,6 +97,14 @@ describe('connection workflow', () => {
     expect(wf.trigger.event).toBe(CONTACT_APPROVED);
     expect(wf.idempotency).toBe('event.data.contactId');
     expect(createFollowUpSendWorkflow(ctx.deps).idempotency).toBe('event.data.messageId');
+  });
+
+  it('forged event approvedAt with no database approval sends nothing', async () => {
+    ctx.approvals.delete('m-1');
+    const step = new FakeStep({ 'wait-reply-followUp1': reply });
+    const out = await createConnectionWorkflow(ctx.deps).handler({ event: created, step });
+    expect(out).toEqual({ outcome: 'unapproved' });
+    expect(ctx.send).not.toHaveBeenCalled();
   });
 
   it('refuses to proceed when approval lacks approvedAt', async () => {
@@ -278,6 +295,77 @@ describe('follow-up send workflow', () => {
       step: new FakeStep(),
     });
     expect(r.skipped).toBeTruthy();
+    expect(c.send).not.toHaveBeenCalled();
+  });
+
+  it('forged follow-up approval in the event sends nothing when the row is unapproved', async () => {
+    const c = setup();
+    c.store.set(CID, {
+      ...c.store.get(CID)!,
+      state: 'sent',
+      firstSentAt: NOW,
+      followUpsDue: 1,
+      followUpsSent: 0,
+    });
+    c.approvals.delete('draft-1');
+    const r: any = await createFollowUpSendWorkflow(c.deps).handler({
+      event: approvedFU,
+      step: new FakeStep(),
+    });
+    expect(r.skipped).toMatch(/not approved/);
+    expect(c.send).not.toHaveBeenCalled();
+  });
+
+  it('passes the stored thread into a follow-up send', async () => {
+    const c = setup();
+    c.store.set(CID, {
+      ...c.store.get(CID)!,
+      state: 'sent',
+      firstSentAt: NOW,
+      followUpsDue: 1,
+      followUpsSent: 0,
+    });
+    c.threads.set(CID, { threadId: 'thr_1', messageId: 'msg_1' });
+    await createFollowUpSendWorkflow(c.deps).handler({ event: approvedFU, step: new FakeStep() });
+    expect(c.send).toHaveBeenCalledWith({
+      contactId: CID,
+      caseId: CASE,
+      messageId: 'draft-1',
+      kind: 'follow_up',
+      thread: { threadId: 'thr_1', messageId: 'msg_1' },
+    });
+  });
+});
+
+describe('stalled revival', () => {
+  it('moves a stalled contact to replied and restarts the connection run without sending', async () => {
+    const c = setup();
+    c.store.set(CID, { ...initialContext(), state: 'stalled', firstSentAt: NOW });
+    const step = new FakeStep();
+    const out: any = await createStalledRevivalWorkflow(c.deps).handler({
+      event: { name: CONTACT_REPLY, data: { contactId: CID, caseId: CASE, dedupeKey: 'pm-9', messageId: 'pm-9' } },
+      step,
+    });
+    expect(out).toMatchObject({ revived: true, state: 'replied', restarted: true });
+    expect(c.store.get(CID)!.state).toBe('replied');
+    expect(c.send).not.toHaveBeenCalled();
+    expect(step.events[0].payload.name).toBe('contact/connection.restart');
+
+    const restarted: any = await createConnectionRestartWorkflow(c.deps).handler({
+      event: step.events[0].payload,
+      step: new FakeStep(),
+    });
+    expect(restarted).toEqual({ outcome: 'replied' });
+    expect(c.send).not.toHaveBeenCalled();
+  });
+
+  it('leaves a non-stalled contact alone', async () => {
+    const c = setup();
+    const out: any = await createStalledRevivalWorkflow(c.deps).handler({
+      event: { name: CONTACT_REPLY, data: { contactId: CID, caseId: CASE, dedupeKey: 'pm-1' } },
+      step: new FakeStep(),
+    });
+    expect(out).toEqual({ revived: false, state: 'drafted' });
     expect(c.send).not.toHaveBeenCalled();
   });
 });

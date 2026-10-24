@@ -1,5 +1,5 @@
 import type { Evidence } from "../contracts/evidence";
-import { RateLimiter, SourceError, json, type Transport } from "./transport";
+import { endpointOf, RateLimiter, SourceError, json, type Transport } from "./transport";
 import { evidence, type SourceResult } from "./types";
 import { parseXml, descendants, value } from "./xml";
 
@@ -73,7 +73,7 @@ export class PubMedClient {
     if (!ids.length) return {records: [], evidence: []};
     if (!ids.every(id => /^\d+$/.test(id))) throw new SourceError("pubmed", "Invalid PMID");
     const response = await this.get("efetch",{db:"pubmed",id:ids.join(","),retmode:"xml"},key);
-    if (response.status >= 400) throw new SourceError("pubmed", "Request failed", response.status);
+    if (response.status >= 400) throw new SourceError("pubmed", `HTTP ${response.status} ${response.requestUrl ? endpointOf(response.requestUrl) : "unknown-endpoint"}`, response.status);
     const records = parsePubmedXml(response.body).filter(r => ids.includes(r.pmid)).map(r => ({...r,fetchedAt:response.fetchedAt}));
     return {records, evidence: records.map(a => evidence("pubmed",a.sourceUrl,response.fetchedAt,"publication",`${a.title} (${a.year ?? "year unknown"}); authors: ${a.authors.map(x => x.name).join(", ")}`))};
   }

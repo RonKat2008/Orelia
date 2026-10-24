@@ -135,8 +135,10 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
         meshTerms: t.meshTerms,
         stdAges: t.stdAges,
         minimumAge: t.minimumAge,
+        maximumAge: t.maximumAge,
         investigators: t.investigators.flatMap((o) => (o.name ? [o.name] : [])),
         hasContact: t.contacts.length > 0,
+        centralContacts: t.contacts.map((c) => ({ phone: c.phone, email: c.email })),
       }));
     },
   };

@@ -8,6 +8,9 @@ import type { OrchestratorDeps, ResearchStep } from "@/lib/agents/orchestrator";
 import type { SourcePorts } from "@/lib/agents/research/source-ports";
 import { createResearchWorkflow, executeResearch, failResearch, RESEARCH_TIMEOUT_MS } from "@/lib/workflows/research-workflow";
 import { inngest } from "@/lib/workflows/inngest";
+import { MemoryOwnerStore } from "@/lib/auth/ownership";
+import { signSession } from "@/lib/auth/session";
+import { resetMemoryRateLimitStore } from "@/lib/rate-limit";
 
 const mocks = vi.hoisted(() => ({ services: vi.fn(), wiring: vi.fn(), after: vi.fn() }));
 vi.mock("@/app/api/cases/_lib/services", () => ({ getServices: mocks.services }));
@@ -28,6 +31,11 @@ class MemoStep implements ResearchStep {
   }
 }
 
+const SESSION = "test-session";
+const SECRET = "test-secret";
+const owners = new MemoryOwnerStore();
+const holder = globalThis as unknown as { __wayfinderOwnerStore?: unknown };
+
 async function setup() {
   const cases = new MemoryCaseStore();
   const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
@@ -36,20 +44,31 @@ async function setup() {
     cases, store: new MemoryRunStore(), persist: new MemoryPersist(), ports: {} as SourcePorts,
     agents: [{ name: "literature", model: "claude-haiku-5-5", run }],
   };
+  owners.registerCase(c.id, SESSION);
   mocks.services.mockReturnValue({ cases, runs: deps.store, persist: deps.persist });
   mocks.wiring.mockResolvedValue({ ports: deps.ports, agents: deps.agents });
   return { deps, c, run, step: new MemoStep() };
 }
-const post = (id: string) => POST(new Request("http://localhost", { method: "POST" }), { params: Promise.resolve({ id }) });
+const post = (id: string) => POST(
+  new Request("http://localhost", {
+    method: "POST",
+    headers: { origin: "http://localhost", cookie: `wf_session=${signSession(SESSION, { WAYFINDER_SESSION_SECRET: SECRET })}` },
+  }),
+  { params: Promise.resolve({ id }) },
+);
 
 beforeEach(() => {
+  vi.stubEnv("WAYFINDER_SESSION_SECRET", SECRET);
+  vi.stubEnv("DATABASE_URL", "");
+  holder.__wayfinderOwnerStore = owners;
+  resetMemoryRateLimitStore();
   vi.stubEnv("WAYFINDER_OFFLINE", "0");
   vi.stubEnv("INNGEST_EVENT_KEY", "test-event-key");
   vi.stubEnv("INNGEST_SIGNING_KEY", "test-signing-key");
   mocks.after.mockReset();
   mocks.wiring.mockReset();
 });
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.useRealTimers(); });
+afterEach(() => { delete holder.__wayfinderOwnerStore; resetMemoryRateLimitStore(); vi.restoreAllMocks(); vi.unstubAllEnvs(); vi.useRealTimers(); });
 
 describe("research durability", () => {
   it("memoizes every phase through a persistence retry; successful agents are not rerun", async () => {
@@ -213,5 +232,18 @@ describe("research start API", () => {
     expect((await post("11111111-1111-4111-8111-111111111111")).status).toBe(404);
     await deps.cases.setStatus(c.id, "draft");
     expect((await post(c.id)).status).toBe(409);
+  });
+
+  it("rate limits the 4th start on a case within an hour: 429 + Retry-After, case not claimed", async () => {
+    const { deps, c } = await setup();
+    vi.spyOn(inngest, "send").mockResolvedValue({ ids: ["event-id"] });
+    for (let i = 0; i < 3; i++) {
+      expect((await post(c.id)).status).toBe(202);
+      await deps.cases.setStatus(c.id, "confirmed");
+    }
+    const res = await post(c.id);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("3600");
+    expect((await deps.cases.get(c.id))?.status).toBe("confirmed");
   });
 });

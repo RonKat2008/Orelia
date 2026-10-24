@@ -1,0 +1,87 @@
+{
+  "voices": [
+    {
+      "id": "marin",
+      "name": "Marin",
+      "trait": "Soft & Natural",
+      "description": "Light, friendly tone that sounds like a real person on the line. New top pick for receptionist and support.",
+      "bestFor": "Receptionist, support, conversational small business"
+    },
+    {
+      "id": "cedar",
+      "name": "Cedar",
+      "trait": "Warm & Grounded",
+      "description": "Even, thoughtful cadence with a hint of warmth. Feels like a calm coworker picked up.",
+      "bestFor": "Advisory, healthcare, trust-building calls"
+    },
+    {
+      "id": "shimmer",
+      "name": "Shimmer",
+      "trait": "Bright & Energetic",
+      "description": "Long-running default. Upbeat, warm, and welcoming.",
+      "bestFor": "Sales, outreach, high-energy brands",
+      "sampleUrl": "https://agentcall.co/voices/shimmer.mp3"
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "trait": "Calm & Authoritative",
+      "description": "Steady, reassuring, and knowledgeable.",
+      "bestFor": "Healthcare, finance, advisory",
+      "sampleUrl": "https://agentcall.co/voices/sage.mp3"
+    },
+    {
+      "id": "ash",
+      "name": "Ash",
+      "trait": "Warm & Conversational",
+      "description": "Friendly tone that puts people at ease.",
+      "bestFor": "Customer service, support lines",
+      "sampleUrl": "https://agentcall.co/voices/ash.mp3"
+    },
+    {
+      "id": "ballad",
+      "name": "Ballad",
+      "trait": "Expressive & Melodic",
+      "description": "Dynamic range with natural inflection.",
+      "bestFor": "Engaging, narrative conversations",
+      "sampleUrl": "https://agentcall.co/voices/ballad.mp3"
+    },
+    {
+      "id": "coral",
+      "name": "Coral",
+      "trait": "Clear & Professional",
+      "description": "Crisp, business-appropriate delivery.",
+      "bestFor": "B2B calls, sales",
+      "sampleUrl": "https://agentcall.co/voices/coral.mp3"
+    },
+    {
+      "id": "echo",
+      "name": "Echo",
+      "trait": "Resonant & Deep",
+      "description": "Authoritative presence with depth.",
+      "bestFor": "Formal inquiries, executive comms",
+      "sampleUrl": "https://agentcall.co/voices/echo.mp3"
+    },
+    {
+      "id": "verse",
+      "name": "Verse",
+      "trait": "Smooth & Articulate",
+      "description": "Polished and refined delivery.",
+      "bestFor": "Premium/luxury, executive communication",
+      "sampleUrl": "https://agentcall.co/voices/verse.mp3"
+    },
+    {
+      "id": "alloy",
+      "name": "Alloy",
+      "trait": "Neutral & Balanced",
+      "description": "Clean, clear, restrained. Useful when a flatter delivery fits the use case.",
+      "bestFor": "Generic notifications, IVR-style flows",
+      "sampleUrl": "https://agentcall.co/voices/alloy.mp3"
+    }
+  ],
+  "defaultVoice": "shimmer",
+  "pricing": {
+    "outboundAiVoice": "$0.40/minute",
+    "inboundAiVoice": "$0.40/minute"
+  }
+}

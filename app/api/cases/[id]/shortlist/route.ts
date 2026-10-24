@@ -3,15 +3,18 @@ import type { ShortlistItem } from "@/lib/agents/persist";
 import { getCurationStore, curationKey } from "@/lib/agents/curator-store";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
+import { guardCase } from "@/lib/auth/ownership";
 
 export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 /** GET /api/cases/[id]/shortlist -> candidates (rank, score, breakdown, evidence urls) grouped by resource kind. */
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, "Invalid case id");
+  const denied = await guardCase(req, id);
+  if (denied) return denied;
   const { cases, persist } = getServices();
   const found = await cases.get(id);
   if (!found) return jsonError(404, "Case not found");

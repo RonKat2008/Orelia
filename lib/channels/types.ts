@@ -1,3 +1,4 @@
+import { isGatedDraft } from '../safety/outbound-gate';
 import { isAllowed, normalizeAddress } from '../safety/allowlist';
 import type { GatedDraft } from '../safety/outbound-gate';
 export type { GatedDraft } from '../safety/outbound-gate';
@@ -16,10 +17,17 @@ export interface ProviderRef {
   readonly status?: string;
 }
 
+/** Existing AgentMail thread a follow-up must reply inside. Still only accepted with a GatedDraft. */
+export interface OutboundThreadRef {
+  readonly inboxId?: string;
+  readonly threadId?: string;
+  readonly messageId: string;
+}
+
 /** Adapters accept only the payload checkOutbound produced; raw drafts do not type-check. */
 export interface Channel {
   readonly kind: ChannelKind;
-  send(gated: GatedDraft): Promise<ProviderRef>;
+  send(gated: GatedDraft, thread?: OutboundThreadRef): Promise<ProviderRef>;
 }
 
 /** Status/body come from the provider; secrets and request bodies are never copied in. */
@@ -48,7 +56,7 @@ export interface ChannelGuardOptions {
  * hand-built or cast object is rejected here before any network call.
  */
 export function assertGated(gated: GatedDraft, kind: ChannelKind, provider: ProviderName, guard: ChannelGuardOptions): string {
-  if (!gated || typeof gated !== 'object' || !Object.isFrozen(gated) || typeof gated.approvedAt !== 'string') {
+  if (!isGatedDraft(gated)) {
     throw new ChannelError(provider, 'Refusing payload that did not come from checkOutbound');
   }
   if (gated.channel !== kind) throw new ChannelError(provider, `Refusing ${gated.channel} payload on ${kind} channel`);

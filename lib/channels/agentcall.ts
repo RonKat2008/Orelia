@@ -8,7 +8,7 @@ const SCRIPT_RULES = 'Stay strictly on the approved script below. Give no medica
 
 export interface AgentCallOptions {
   apiKey: string;
-  /** AgentCall number ID (e.g. "num_abc123"), not a phone number. */
+  /** AgentCall number id (opaque; live ids are cuids, docs examples use num_…), not a phone number. */
   fromNumberId: string;
   guard: ChannelGuardOptions;
   fetcher?: typeof fetch;
@@ -60,12 +60,13 @@ export class AgentCallChannel implements Channel {
 
   async getCall(callId: string): Promise<AgentCallInfo> {
     const res = await this.request('GET', `/v1/calls/${encodeURIComponent(callId)}`);
-    return { callId: pickId(res) ?? callId, ...(typeof res.status === 'string' ? { status: res.status } : {}), ...(Array.isArray(res.transcript) ? { transcript: res.transcript as Turn[] } : {}) };
+    const transcript = normalizeTurns(res);
+    return { callId: pickId(res) ?? callId, ...(typeof res.status === 'string' ? { status: res.status } : {}), ...(transcript ? { transcript } : {}) };
   }
 
   async getTranscript(callId: string): Promise<AgentCallInfo> {
     const res = await this.request('GET', `/v1/calls/${encodeURIComponent(callId)}/transcript`);
-    const transcript = Array.isArray(res.transcript) ? res.transcript as Turn[] : Array.isArray(res) ? res as unknown as Turn[] : undefined;
+    const transcript = normalizeTurns(res);
     return { callId: pickId(res) ?? callId, ...(typeof res.status === 'string' ? { status: res.status } : {}), ...(transcript ? { transcript } : {}) };
   }
 
@@ -92,6 +93,21 @@ export class AgentCallChannel implements Channel {
 function pickId(res: Record<string, unknown>): string | undefined {
   const id = res.id ?? res.callId;
   return typeof id === 'string' && id ? id : undefined;
+}
+
+/** Webhook turns use role ai|human on `transcript`. GET /v1/calls/:id/transcript documents `entries` with assistant|user. */
+export function normalizeTurns(res: Record<string, unknown> | unknown[]): Turn[] | undefined {
+  const raw = Array.isArray(res) ? res : Array.isArray(res.transcript) ? res.transcript : Array.isArray(res.entries) ? res.entries : undefined;
+  if (!raw) return undefined;
+  const turns: Turn[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const role = row.role === 'ai' || row.role === 'assistant' ? 'ai' : row.role === 'human' || row.role === 'user' || row.role === 'caller' ? 'human' : undefined;
+    if (!role || typeof row.text !== 'string') continue;
+    turns.push({ role, text: row.text, ...(typeof row.timestamp === 'string' ? { timestamp: row.timestamp } : {}) });
+  }
+  return turns;
 }
 
 function scrub(msg: string, key: string): string { return key ? msg.split(key).join('[redacted]') : msg; }

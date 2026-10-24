@@ -1,5 +1,6 @@
 import { AI_DISCLOSURE_EMAIL, flagMedicalAdvice, minimize, withDisclosure, type CaseRecord } from '../safety';
 import type { TaskKind } from '../contracts/task';
+import { sharedFieldLines } from '../outreach/call-script';
 import type { InboxClassification } from './schema';
 
 export interface Party { name: string; email?: string; address?: string }
@@ -7,6 +8,8 @@ export interface DraftContext {
   contextDocIds?: string[];
   coordinatorQuestion?: string;
   contactId: string;
+  /** Stored inbound message this event came from; carried into every task's details. */
+  messageId?: string;
   caseId: string;
   resourceName: string;
   resourceAddress?: string;
@@ -43,13 +46,16 @@ const humanize = (key: string) => key.replace(/[_-]+/g, ' ').replace(/([a-z])([A
 const show = (value: unknown) => (typeof value === 'string' ? value : JSON.stringify(value));
 
 function sharedLines(ctx: DraftContext): string {
-  const shared = minimize(ctx.caseRecord, ctx.consent.sharedFields);
-  const lines = Object.entries(shared).map(([k, v]) => `- ${humanize(k)}: ${show(v)}`);
-  return lines.length ? `Information the patient chose to share:\n${lines.join('\n')}` : '';
+  const lines = sharedFieldLines(ctx.caseRecord, ctx.consent.sharedFields).map(line => `- ${line}`);
+  return lines.length ? `Details the patient chose to share:\n${lines.join('\n')}` : '';
 }
 
+/** Opening line of every task letter: who is writing, for whom, and that the patient approved it. */
+export const LETTER_INTRO = "I'm an AI assistant writing on behalf of a patient, who reviewed and approved this message.";
+export const LETTER_REPLY_LINE = 'To respond, just reply to this email.';
+
 function letter(ctx: DraftContext, to: Party | undefined, subject: string, lead: string, extra: string[] = []): TaskLetter {
-  const body = [`Hello${to?.name ? ` ${to.name}` : ''},`, lead, ...extra, sharedLines(ctx), 'Thank you for your help.'].filter(Boolean).join('\n\n');
+  const body = [`Hello${to?.name ? ` ${to.name}` : ''},`, LETTER_INTRO, lead, ...extra, sharedLines(ctx), LETTER_REPLY_LINE, 'Thank you for your help.'].filter(Boolean).join('\n\n');
   return { to: to?.email, toName: to?.name, subject, body: withDisclosure(body) };
 }
 
@@ -61,19 +67,19 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
   let draft: TaskDraft;
   switch (c.class) {
     case 'needs_referral': {
-      const l = letter(ctx, ctx.currentPhysician, `Referral request: ${res}`, `${res} has told me they need a referral before scheduling. Could you please send a referral to ${res}${where}?`);
+      const l = letter(ctx, ctx.currentPhysician, `Referral request for ${res}`, `${res} has said they need a referral before they can schedule the patient. Could you please send a referral to ${res}${where}?`);
       draft = { ...base, kind: 'referral', title: `Request a referral to ${res}`, letter: l, draftBody: l.body };
       break;
     }
     case 'send_slides': {
       const lab = ctx.pathologyLab;
-      const l = letter(ctx, lab, `Pathology slide request for ${res}`, `${res} has asked for the original pathology slides. Please release them to ${res}${where}.`, c.lab?.accession ? [`Accession number: ${c.lab.accession}`] : []);
+      const l = letter(ctx, lab, `Pathology slide request for ${res}`, `${res} has asked for the patient's original pathology slides. Could you please release them to ${res}${where}?`, c.lab?.accession ? [`Accession number: ${c.lab.accession}`] : []);
       draft = { ...base, kind: 'slides', title: `Request slides for ${res}`, letter: l, draftBody: l.body, details: { accession: c.lab?.accession, lab: c.lab?.name ?? lab?.name } };
       break;
     }
     case 'send_records': {
       const checklist = ['Visit and clinic notes', 'Imaging reports and discs', 'Pathology reports', 'Lab results', ...(c.haveReady ?? [])];
-      const l = letter(ctx, ctx.currentPhysician, `Records release request for ${res}`, `${res} has asked for my records. Please send copies of the items below to ${res}${where}.`, [checklist.map(i => `- ${i}`).join('\n')]);
+      const l = letter(ctx, ctx.currentPhysician, `Records release request for ${res}`, `${res} has asked for copies of the patient's records. Could you please send the items below to ${res}${where}?`, [checklist.map(i => `- ${i}`).join('\n')]);
       draft = { ...base, kind: 'records', title: `Send records to ${res}`, letter: l, draftBody: `Records packet checklist for ${res}:\n${checklist.map(i => `[ ] ${i}`).join('\n')}\n\n${l.body}`, details: { checklist } };
       break;
     }
@@ -86,18 +92,18 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
     case 'redirect': {
       const r = c.redirect ?? {};
       const target: Party = { name: r.name ?? r.department ?? 'there', email: r.email };
-      const l = letter(ctx, target, `Introduction on behalf of a patient (via ${res})`, `${res} suggested I contact ${r.department ?? 'your team'} about getting seen. Could you tell me the next step?`);
-      draft = { ...base, kind: 'redirect', title: `Contact ${r.name ?? r.department ?? 'the suggested contact'} instead`, letter: l, draftBody: l.body, details: { redirect: r } };
+      const l = letter(ctx, target, `Introduction on behalf of a patient (via ${res})`, `${res} suggested we contact ${r.department ?? 'your team'} about the patient being seen. Could you tell us the next step, or the right person to contact?`);
+      draft = { ...base, kind: 'redirect', title: `Contact ${r.name ?? r.department ?? 'the suggested contact'} instead`, letter: l, draftBody: l.body, details: { redirect: r, quote: c.quote } };
       break;
     }
     case 'declined': {
       const next = ctx.nextRankedOption;
-      const suggestion = next ? `Suggested next option: ${next.name}` : c.redirect ? 'Consider the contact they suggested.' : 'No next option is ranked yet.';
-      draft = { ...base, kind: 'declined', title: `${res} declined`, draftBody: `Close this contact. ${suggestion}`, details: { closeContact: true, nextRankedOptionId: next?.id } };
+      const suggestion = next ? `Next option on your list: ${next.name}` : c.redirect ? 'You may want to try the contact they suggested.' : 'There is no other option on your list yet.';
+      draft = { ...base, kind: 'declined', title: `${res} is not able to help`, draftBody: `${res} said they can't help with this request. Approving closes this contact. ${suggestion}`, details: { closeContact: true, nextRankedOptionId: next?.id } };
       break;
     }
     default:
-      draft = { ...base, kind: 'unclear', title: `Review the reply from ${res}`, draftBody: `We could not tell what ${res} is asking. Please read the reply and decide what to do.`, details: { quote: c.quote, rationale: c.rationale } };
+      draft = { ...base, kind: 'unclear', title: `Review the reply from ${res}`, draftBody: `We could not tell what ${res} is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.`, details: { quote: c.quote, rationale: c.rationale } };
   }
   // Answer administrative questions only from the current consented record, never retrieved text.
   if (/insurance|insurer|plan\b/i.test(ctx.coordinatorQuestion ?? '')) {
@@ -106,7 +112,7 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
       .map(key => `${humanize(key)}: ${show(shared[key])}`).join('\n') || "I'll have the patient follow up";
     draft.draftBody = `${draft.draftBody ?? ''}\n\nCoordinator Q&A:\n${answer}`;
   }
-  draft.details = { ...draft.details, contextDocIds: draft.contextDocIds };
+  draft.details = { ...draft.details, contextDocIds: draft.contextDocIds, ...(ctx.messageId ? { messageId: ctx.messageId } : {}) };
   // The sender's verbatim quote is not our text, so only generated text is screened.
   const hits = flagMedicalAdvice([draft.title, draft.draftBody ?? '', draft.letter?.subject ?? '', draft.letter?.body ?? '', c.rationale].join('\n'));
   if (hits.flagged) throw new MedicalAdviceInDraft(hits.matches);

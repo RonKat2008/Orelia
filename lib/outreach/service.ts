@@ -1,18 +1,19 @@
 import { search } from '../case-docs';
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
-import { parseAllowlist, normalizeAddress } from '../safety/allowlist';
-import { isRoleEmail } from '../contact-finder';
+import { parseAllowlist } from '../safety/allowlist';
+import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
 import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore } from './types';
-function address(candidate: Candidate): { channel: 'email' | 'voice'; address: string } | undefined {
-  const claims = candidate.evidence.filter(e => {
-    try { return ['https:', 'http:'].includes(new URL(e.sourceUrl).protocol) && /contact|intake|referral|appointment|navigator/i.test(e.claimType + ' ' + e.claim); } catch { return false; }
-  }).map(e => e.claim);
-  const emails = claims.flatMap(text => text.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) ?? []).filter(isRoleEmail);
-  if (emails.length) return { channel: 'email', address: normalizeAddress(emails[0])! };
-  const phones = claims.flatMap(text => text.match(/\+?1?[ (.-]*\d{3}[ ).-]*\d{3}[ .-]*\d{4}\b/g) ?? []).map(normalizeAddress).filter((s): s is string => !!s && s.startsWith('+'));
-  if (phones.length) return { channel: 'voice', address: phones[0] };
+/**
+ * The only addresses outreach may use are contact points stamped by code from tool output (intake-door
+ * classification, NPPES location phone, CT.gov central contact), each with its source URL. Free-text claims are
+ * never searched for addresses: a model-written claim containing an email or phone is not a contact (HARD RULE 2).
+ */
+function address(candidate: Candidate): { channel: 'email' | 'voice'; address: string; sourceUrl: string } | undefined {
+  const points = parseContactPoints(candidate.evidence);
+  const pick = points.find(p => p.channel === 'email') ?? points.find(p => p.channel === 'voice');
+  return pick && { channel: pick.channel, address: pick.address, sourceUrl: pick.sourceUrl };
 }
 export class OutreachService {
   constructor(readonly store: OutreachStore, readonly channels: Channel[], readonly env: Record<string, string | undefined> = process.env, readonly clock = () => new Date()) {}
@@ -25,8 +26,8 @@ export class OutreachService {
     const unavailable: { candidateId: string; channel: 'none'; reason: string }[] = [];
     const proposed = fresh.flatMap(c => {
       const door = address(c);
-      if (!door) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'No evidenced intake email or phone is available.' }); return []; }
-      return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, ...door, state: 'drafted' } satisfies Contact];
+      if (!door) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'No tool-sourced intake email or phone is available.' }); return []; }
+      return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: door.channel, address: door.address, state: 'drafted' } satisfies Contact];
     });
     if (activeContactCount(existing) + proposed.length > MAX_ACTIVE_CONTACTS) throw new OutreachError(422, ['contact_cap']);
     const created = await this.store.select(caseId, proposed, MAX_ACTIVE_CONTACTS);

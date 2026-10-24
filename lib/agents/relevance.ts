@@ -87,8 +87,9 @@ export function mentionStrength(text: string, c: Pick<CaseInput, "diseaseName" |
   return distinctive.some((w) => words.has(w)) ? "family" : "none";
 }
 
-function minimumAgeYears(minimumAge: string | undefined): number | undefined {
-  const m = /^\s*(\d+(?:\.\d+)?)\s*(year|month|week|day|hour|minute)s?\b/i.exec(minimumAge ?? "");
+/** Parses CT.gov ages such as "12 Years", "6 Months", "18 Years"; "N/A", empty or unknown units give undefined. */
+export function parseAgeYears(age: string | undefined): number | undefined {
+  const m = /^\s*(\d+(?:\.\d+)?)\s*(year|month|week|day|hour|minute)s?\b/i.exec(age ?? "");
   if (!m) return undefined;
   const n = Number(m[1]);
   const unit = (m[2] ?? "").toLowerCase();
@@ -96,12 +97,19 @@ function minimumAgeYears(minimumAge: string | undefined): number | undefined {
   return n / (perYear[unit] ?? 1);
 }
 
-/** Adults are enrolled if stdAges lists ADULT, or the minimum age is 18 years or younger. */
-export function enrollsAdults(registry: Pick<TrialRegistry, "stdAges" | "minimumAge">): boolean | undefined {
+/**
+ * Does the study enroll adults (18+)? true / false, or undefined when the registry does not say.
+ *  - a maximum age under 18 excludes adults, whatever stdAges says
+ *  - stdAges naming ADULT or OLDER_ADULT enrolls adults (mixed child+adult studies are kept)
+ *  - stdAges that is only CHILD does not
+ *  - with no stdAges, a parsable age bound decides; an unparsable one ("N/A") leaves it unknown
+ */
+export function enrollsAdults(registry: Pick<TrialRegistry, "stdAges" | "minimumAge"> & { maximumAge?: string }): boolean | undefined {
+  const max = parseAgeYears(registry.maximumAge);
+  if (max !== undefined && max < ADULT_MIN_AGE_YEARS) return false;
   if (registry.stdAges.some((a) => ADULT_AGES.has(a.toUpperCase()))) return true;
-  const min = minimumAgeYears(registry.minimumAge);
-  if (min !== undefined) return min <= ADULT_MIN_AGE_YEARS;
-  return registry.stdAges.length > 0 ? false : undefined;
+  if (registry.stdAges.length > 0) return false;
+  return parseAgeYears(registry.minimumAge) !== undefined || max !== undefined ? true : undefined;
 }
 
 export function isPediatricFocused(title: string, registry: Pick<TrialRegistry, "conditions" | "keywords">): boolean {

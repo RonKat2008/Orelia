@@ -1,10 +1,10 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
-import { AgentCallChannel, parseAgentCallWebhook, transcriptToText, verifyAgentCallSignature } from '../../lib/channels/agentcall';
+import { AgentCallChannel, normalizeTurns, parseAgentCallWebhook, transcriptToText, verifyAgentCallSignature } from '../../lib/channels/agentcall';
 import { ChannelError } from '../../lib/channels/types';
 import { AI_DISCLOSURE_VOICE } from '../../lib/safety/disclosure';
 import { checkOutbound } from '../../lib/safety/outbound-gate';
-import { allowlist, forged, gatedCall, guard, TEST_EMAIL, TEST_PHONE } from './helpers';
+import { allowlist, forged, forgedCall, gatedCall, guard, TEST_EMAIL, TEST_PHONE } from './helpers';
 
 const KEY = 'ac_live_SECRETKEY123';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -64,9 +64,13 @@ describe('AgentCallChannel.send', () => {
   });
 
   it('refuses a script without the disclosure', async () => {
+    const gate = checkOutbound({
+      draft: { channel: 'voice', address: TEST_PHONE, body: 'Hello there.', approvedAt: '2026-10-28T15:00:00Z' },
+      consent: { sharedFields: [] }, caseRecord: {}, contacts: [], allowlist, now: '2026-10-28T16:00:00Z', mode: 'demo',
+    } as Parameters<typeof checkOutbound>[0]);
+    expect(gate).toEqual({ ok: false, reasons: expect.arrayContaining(['missing_disclosure']) });
     const { ch, fetcher } = make();
-    const g = Object.freeze({ ...gatedCall(), body: 'Hello there.' }) as typeof gatedCall extends () => infer G ? G : never;
-    await expect(ch.send(g)).rejects.toThrow(/disclosure/);
+    await expect(ch.send(forgedCall())).rejects.toBeInstanceOf(ChannelError);
     expect(fetcher).not.toHaveBeenCalled();
   });
 
@@ -103,6 +107,17 @@ describe('getCall / getTranscript', () => {
     expect(calls[0]![0]).toBe('https://api.agentcall.co/v1/calls/call_1');
     expect(calls[0]![1].method).toBe('GET');
     expect(calls[1]![0]).toBe('https://api.agentcall.co/v1/calls/call_1/transcript');
+  });
+
+  it('maps documented GET transcript entries (assistant/user) onto ai/human', async () => {
+    const { ch } = make(json({ entries: [{ role: 'assistant', text: 'Hello', timestamp: 't1' }, { role: 'user', text: 'Hi' }], summary: 's' }));
+    expect(await ch.getTranscript('call_1')).toEqual({ callId: 'call_1', transcript: [{ role: 'ai', text: 'Hello', timestamp: 't1' }, { role: 'human', text: 'Hi' }] });
+  });
+});
+
+describe('normalizeTurns', () => {
+  it('reads webhook transcript and drops unknown roles', () => {
+    expect(normalizeTurns({ transcript: [{ role: 'ai', text: 'a' }, { role: 'system', text: 'x' }, { role: 'caller', text: 'b' }] })).toEqual([{ role: 'ai', text: 'a' }, { role: 'human', text: 'b' }]);
   });
 });
 

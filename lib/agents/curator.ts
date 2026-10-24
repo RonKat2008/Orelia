@@ -1,7 +1,7 @@
 import type { CaseInput, Curation, CurationReason, CurationTier, Resource, ScoreBreakdownItem } from "@/lib/contracts";
 import { curationSchema } from "@/lib/contracts";
 import { flagMedicalAdvice } from "@/lib/safety/no-medical-advice";
-import { OPUS } from "./models";
+import { modelFor } from "./models";
 import { resourceName, type RankedEntry } from "./persist";
 import { buildCuratorPrompt, CURATOR_SYSTEM } from "./prompts/curator";
 import type { RunStore } from "./run-store";
@@ -198,8 +198,7 @@ export async function runCurator(
     const input = buildCuratorInput(caseRecord, ranked);
     const raw = await runAgent({
       name: CURATOR_AGENT_NAME,
-      // TODO: switch to config/models.ts role 'curator' once task #25 lands (config/models.ts does not exist yet).
-      model: OPUS,
+      model: modelFor("curator"),
       system: CURATOR_SYSTEM,
       prompt: buildCuratorPrompt(input),
       tools: [],

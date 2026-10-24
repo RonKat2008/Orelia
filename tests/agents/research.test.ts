@@ -65,17 +65,19 @@ describe("provenance enforcement", () => {
   const caseRecord = CASES[0]!;
 
   it("drops evidence (and the records that depend on it) whose URL no tool returned", async () => {
+    let realClaim = "";
     runtime.override = async (opts) => {
       const o = opts as { tools: Array<{ name: string; handler: (i: never) => Promise<unknown> }> };
-      const found = (await o.tools[0]!.handler({ query: "Epithelioid sarcoma advocacy foundation" } as never)) as { results: Array<{ url: string }> };
+      const found = (await o.tools[0]!.handler({ query: "Epithelioid sarcoma advocacy foundation" } as never)) as { results: Array<{ url: string; title: string }> };
       const real = found.results[0]!.url;
+      realClaim = found.results[0]!.title;
       const out: ResearchOutput = {
         records: [
           { kind: "organization", id: "org:real", name: "Real", organizationKind: "advocacy", url: real as never, evidenceRefs: [real] },
           { kind: "organization", id: "org:fake", name: "Fake", organizationKind: "advocacy", url: "https://invented.example.org/" as never, evidenceRefs: ["https://invented.example.org/"] },
         ],
         evidence: [
-          { claimType: "advocacy_organization", claim: "real claim", sourceUrl: real as never },
+          { claimType: "advocacy_organization", claim: realClaim, sourceUrl: real as never },
           { claimType: "advocacy_organization", claim: "invented claim", sourceUrl: "https://invented.example.org/" as never },
         ],
       };
@@ -85,7 +87,7 @@ describe("provenance enforcement", () => {
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
     expect(result.records.map((r) => r.id)).toEqual(["org:real"]);
-    expect(result.evidence.map((e) => e.claim)).toEqual(["real claim"]);
+    expect(result.evidence.map((e) => e.claim)).toEqual([realClaim]);
     expect(result.evidence[0]?.sourceKind).toBe("exa");
   });
 
@@ -118,7 +120,7 @@ describe("provenance enforcement", () => {
           { kind: "expert", id: "expert:a", name: author.name, npi: "1999999999", credentials: "FRCS Made Up", evidenceRefs: [url] },
           { kind: "trial", id: "trial:NCT00000000", nctId: "NCT00000000", title: "Invented", evidenceRefs: [url] },
         ],
-        evidence: [{ claimType: "disease_publications", claim: "c", sourceUrl: url }],
+        evidence: [{ claimType: "disease_publications", claim: `${author.name} is an author of this paper`, sourceUrl: url }],
       };
     };
     const result = await researchRegistry.literature.run(caseRecord, context());

@@ -1,0 +1,8 @@
+{
+  "merges": [{
+    "keys": ["organization:url:rare-support.example/advocacy", "organization:url:rare-support.example/aid"],
+    "reason": "Advocacy and Aid found service pages on the same organization domain.",
+    "evidenceIds": []
+  }],
+  "conflicts": []
+}

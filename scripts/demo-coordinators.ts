@@ -17,6 +17,7 @@ import {
 } from './demo/coordinator-engine';
 import { loadState, saveState, type DemoState } from './demo/state';
 import { createDemoMail } from './demo/agentmail-mail';
+import { guardDemoMail } from './demo/reply-guard';
 
 export interface RunDeps {
   mail: DemoMail;
@@ -58,9 +59,10 @@ export async function runOnce(deps: RunDeps): Promise<RunResult> {
     timeScale: parseTimeScale(deps.env),
   });
 
+  const mail = guardDemoMail(deps.mail, deps.env, coordinators.map((c) => c.address));
   let replied = 0;
   for (const r of plan.due) {
-    await deps.mail.reply(r.inboxId, r.messageId, r.text);
+    await mail.reply(r.inboxId, r.messageId, r.text);
     state.repliedMessageIds.push(r.messageId);
     deps.saveState(state);
     replied++;

@@ -16,6 +16,14 @@ function reasons(input: OutboundInput): string[] {
   return result.ok ? [] : result.reasons;
 }
 describe('OutboundGate', () => {
+  it.each([false, true])('checks standalone state leaks beside a shared plan ID (leak: %s)', leak => {
+    const input = valid();
+    input.caseRecord = { ...input.caseRecord, planId: 'MSS-2290-8815-OH', homeState: 'OH' };
+    input.consent = { sharedFields: ['diseaseName', 'planId'] };
+    input.draft = { ...input.draft, body: withDisclosure(`Plan MSS-2290-8815-OH.${leak ? ' Lives in OH.' : ''}`) };
+    if (leak) expect(reasons(input)).toEqual(['unshared_field']);
+    else expect(checkOutbound(input).ok).toBe(true);
+  });
   it('returns an immutable gated payload for a fully valid draft', () => {
     const input = valid();
     const result = checkOutbound(input);

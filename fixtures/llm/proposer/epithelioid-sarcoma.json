@@ -1,0 +1,8 @@
+{
+  "merges": [{
+    "keys": ["institution:name:harbor sarcoma center", "institution:name:harbor cancer center"],
+    "reason": "Centers and ContactFinder cite the same structured center domain.",
+    "evidenceIds": ["ff44478e-a343-552f-a31f-a1630cbfaa3f", "355f173d-91d8-51ae-a6af-5db8e735dc2e"]
+  }],
+  "conflicts": []
+}

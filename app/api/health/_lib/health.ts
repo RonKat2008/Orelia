@@ -1,0 +1,62 @@
+import { checkEnv, deployStatus, resolveMode } from "@/lib/env";
+
+type Source = Record<string, string | undefined>;
+
+export interface HealthDeps {
+  source: Source;
+  pingDb: () => Promise<void>;
+  timeoutMs?: number;
+}
+
+export type DbStatus = "up" | "down" | "not_configured";
+
+export interface HealthReport {
+  ok: boolean;
+  mode: string;
+  db: DbStatus;
+  gateway: string;
+  modelAccess: string;
+  inngest: string;
+  outbound: string;
+  env: { ok: boolean; missing: string[] };
+  version?: string;
+}
+
+const DEFAULT_TIMEOUT_MS = 1500;
+
+async function checkDb(deps: HealthDeps): Promise<DbStatus> {
+  if (!deps.source.DATABASE_URL) return "not_configured";
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("timeout")), deps.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+    });
+    await Promise.race([deps.pingDb(), timeout]);
+    return "up";
+  } catch {
+    // Never surface the error: it can contain the connection string.
+    return "down";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Builds the health payload. Names and statuses only; never an env value or error text. */
+export async function healthReport(deps: HealthDeps): Promise<HealthReport> {
+  const mode = resolveMode(deps.source);
+  const envCheck = checkEnv(mode, deps.source);
+  const status = deployStatus(deps.source);
+  const db = await checkDb(deps);
+  const sha = deps.source.VERCEL_GIT_COMMIT_SHA;
+  return {
+    ok: db !== "down" && envCheck.ok,
+    mode: envCheck.mode,
+    db,
+    gateway: status.gateway,
+    modelAccess: status.modelAccess,
+    inngest: status.inngest,
+    outbound: status.outbound,
+    env: { ok: envCheck.ok, missing: envCheck.missing.map((m) => m.name) },
+    ...(sha ? { version: sha.slice(0, 7) } : {}),
+  };
+}

@@ -130,18 +130,6 @@
       ]
     },
     {
-      "candidateId": "74bfe7c0-c333-5ec3-a590-8855648434f4",
-      "tier": "best",
-      "reasons": [
-        {
-          "text": "Describes reimbursement for transportation and lodging tied to clinical trial participation, relevant if a trial site is out of state.",
-          "evidenceIds": [
-            "a2360574-5c1b-58d4-afa3-6bd56152f43d"
-          ]
-        }
-      ]
-    },
-    {
       "candidateId": "5adff9bb-5d2d-5335-a531-226213ebedc4",
       "tier": "good",
       "reasons": [
@@ -202,18 +190,6 @@
       ]
     },
     {
-      "candidateId": "94f77951-1d8d-563c-a682-4ef4666ffaad",
-      "tier": "best",
-      "reasons": [
-        {
-          "text": "ClinicalTrials.gov lists it as recruiting with a U.S. site in Phoenix, Arizona, inside the home state, and the ranking notes epithelioid sarcoma among its registered conditions.",
-          "evidenceIds": [
-            "cd0fa12f-a198-5c9b-ac58-ad4ef2720fae"
-          ]
-        }
-      ]
-    },
-    {
       "candidateId": "b5f3ae0c-dfe3-58b3-ab5e-0dd9679c5205",
       "tier": "good",
       "reasons": [
@@ -238,5 +214,5 @@
       ]
     }
   ],
-  "summary": "Closest to home, the University of Arizona Cancer Center in Tucson is an NCI Comprehensive Cancer Center in your state, and a recruiting study with a Phoenix site is listed on ClinicalTrials.gov. Duke Sarcoma Center has a dedicated sarcoma program page, but it is out of state, so the Beat the Odds travel grant and the Sarcoma Foundation of America trial travel reimbursement are worth looking at. The program pages found do not show intake contacts, so the next step is to call each program's main line and ask about new-patient intake and records requirements. Final eligibility for any study is decided by the study team."
+  "summary": "Closest to home, the University of Arizona Cancer Center in Tucson is an NCI Comprehensive Cancer Center in your state. Duke Sarcoma Center has a dedicated sarcoma program page, but it is out of state, so the Beat the Odds travel grant and the Sarcoma Foundation of America trial travel reimbursement are worth looking at. The program pages found do not show intake contacts, so the next step is to call each program's main line and ask about new-patient intake and records requirements. Final eligibility for any study is decided by the study team."
 }

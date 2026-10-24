@@ -6,8 +6,9 @@ import { HAIKU } from "@/lib/agents/models";
 import type { AgentTool } from "@/lib/agents/runtime";
 import { pubmedAuthorsTool } from "./pubmed-tool";
 import { runResearch, trackedTool, type ProvenanceTracker } from "./shared";
-import type { NppesPort } from "./source-ports";
+import type { NppesPort, PubmedAuthorHit } from "./source-ports";
 import type { ResearchAgent } from "./types";
+import { contactPointEvidence, usPhoneToE164 } from "@/lib/contact-finder/contact-points";
 
 export const nppesProviderUrl = (npi: string): string =>
   `https://npiregistry.cms.hhs.gov/provider-view/${npi}`;
@@ -16,6 +17,36 @@ const SEED_AUTHORS = 6;
 
 const normalize = (s: string): string => s.toLowerCase().replace(/[^a-z]/g, "");
 const firstToken = (s: string): string => normalize(s.trim().split(/\s+/)[0] ?? "");
+const middleInitial = (name?: string): string => {
+  const token = (name ?? "").trim().split(/\s+/)[0] ?? "";
+  return token ? token[0]!.toLowerCase() : "";
+};
+
+/**
+ * PubMed often lists the same person once as "Jerad" and again as "Jerad M".
+ * Those rows are one author. Conflicting middle initials stay ambiguous so two namesakes are not verified as one NPI.
+ */
+function mergedAuthor(hits: readonly PubmedAuthorHit[], first: string, last: string): {
+  ambiguous: boolean;
+  papers: PubmedAuthorHit["papers"];
+  author: { firstName: string; lastName: string; middleName?: string; affiliation?: string; affiliations?: string[] };
+} {
+  const initials = new Set(hits.map((h) => middleInitial(h.middleName)).filter(Boolean));
+  const ambiguous = initials.size > 1;
+  const papers = [...new Map(hits.flatMap((h) => h.papers.map((p) => [p.pmid, p] as const))).values()];
+  const affiliations = [...new Set(hits.flatMap((h) => [...(h.affiliations ?? []), ...(h.affiliation ? [h.affiliation] : [])]))];
+  const middleName = hits.find((h) => h.middleName)?.middleName;
+  return {
+    ambiguous,
+    papers,
+    author: {
+      firstName: hits[0]?.firstName ?? first,
+      lastName: hits[0]?.lastName ?? last,
+      ...(!ambiguous && middleName ? { middleName } : {}),
+      ...(affiliations.length ? { affiliation: affiliations[0], affiliations } : {}),
+    },
+  };
+}
 
 const inputSchema = z.object({
   firstName: z.string().min(1),
@@ -70,24 +101,35 @@ For each author you looked up, output one record of kind "expert": {"kind":"expe
 - If verified=false (including rejected taxonomies, missing affiliation corroboration, ambiguous names or incomplete results): NEVER guess. npi = null, id = "expert:<first>-<last lowercased>", no credentials. One evidence item, claimType "identity_unverified", sourceUrl = the lookup's searchUrl, claim saying how many exact name matches the registry returned and that identity was not confirmed.
 - Never combine two registry entries, never pick one of several, never use an NPI the tool did not mark verified.`;
 
+/** The verified provider's practice-location phone from the NPPES record (structured field, never model text). */
+export function nppesContactEvidence(npi: string, provider: RawProvider | undefined, fetchedAt: string) {
+  if (!provider || String(provider.number) !== npi) return null;
+  const location = (provider.addresses ?? []).find((a) => a.address_purpose === "LOCATION" && a.telephone_number);
+  const phone = usPhoneToE164(location?.telephone_number);
+  if (!phone) return null;
+  return contactPointEvidence({ channel: "voice", address: phone, origin: "nppes_location_phone", sourceUrl: nppesProviderUrl(npi), sourceKind: "nppes" }, fetchedAt);
+}
+
 export const identityAgent: ResearchAgent = {
   name: "identity",
   model: HAIKU,
   run: async (c, ctx) => {
-    const assessments = new Map<string, { verdict: IdentityAssessment; provider?: RawProvider }>();
+    const assessments = new Map<string, { verdict: IdentityAssessment; provider?: RawProvider; papers: PubmedAuthorHit["papers"]; name?: string }>();
     const key = (first: string, last: string) => `${firstToken(first)}|${normalize(last)}`;
     const authors = await ctx.ports.pubmed.searchAuthors({ disease: c.diseaseName, limit: 15 });
     const assess = async (first: string, last: string, providers: RawProvider[], truncated: boolean) => {
       const hits = authors.filter((a) => key(a.firstName, a.lastName) === key(first, last));
-      const author = hits.length === 1 ? hits[0] : undefined;
-      const verdict = matchIdentity(author ?? { firstName: first, lastName: last }, providers, c.diseaseName, { truncated: truncated || hits.length !== 1 });
-      assessments.set(key(first, last), { verdict, provider: providers.find((p) => String(p.number) === verdict.npi) });
+      const merged = mergedAuthor(hits, first, last);
+      const verdict = matchIdentity(merged.author, providers, c.diseaseName, { truncated: truncated || merged.ambiguous });
+      const name = hits.slice().sort((a, b) => b.paperCount - a.paperCount)[0]?.name;
+      assessments.set(key(first, last), { verdict, papers: merged.papers, ...(name ? { name } : {}), provider: providers.find((p) => String(p.number) === verdict.npi) });
       return verdict;
     };
     const result = await runResearch({
       name: "identity",
       instructions: INSTRUCTIONS,
-      rules: { allowedKinds: ["expert"], sourceKinds: ["nppes"] },
+      // Every identity claim is rewritten below from the deterministic verdict, so the model's prose is discarded here.
+      rules: { allowedKinds: ["expert"], sourceKinds: ["nppes"], restateClaim: () => "NPPES registry lookup." },
       makeTools: (ports, tracker) => [
         pubmedAuthorsTool(ports.pubmed, tracker),
         lookupNpiTool(ports.nppes, tracker, assess),
@@ -117,8 +159,7 @@ export const identityAgent: ResearchAgent = {
       const parts = r.name.trim().split(/\s+/);
       const item = assessments.get(key(parts[0] ?? "", parts.at(-1) ?? ""));
       const verdict = item?.verdict;
-      const author = authors.find((a) => key(a.firstName, a.lastName) === key(parts[0] ?? "", parts.at(-1) ?? ""));
-      const papers = author?.papers.filter((p) => mentionStrength(p.title, c) === "exact") ?? [];
+      const papers = item?.papers.filter((p) => mentionStrength(p.title, c) === "exact") ?? [];
       const profile = { ...r.profile, paperCount: new Set(papers.map((p) => p.pmid)).size, recentPaperCount: new Set(papers.filter((p) => p.year && p.year >= new Date().getFullYear() - 5).map((p) => p.pmid)).size };
       const npi = verdict?.verified ? verdict.npi : null;
       const refs = r.evidenceRefs.filter((ref) => result.evidence.some((e) => e.sourceUrl === ref || e.id === ref));
@@ -126,7 +167,9 @@ export const identityAgent: ResearchAgent = {
       if (!source) return { ...r, npi: null, verified: false, credentials: undefined, specialty: undefined };
       const stamped = { ...source, id: undefined, claimType: npi ? "identity_verified" : "identity_unverified", claim: `${verdict?.summary ?? "NPI rejected: no corroborated author"}. ${(verdict?.reasons ?? []).join("; ")}`, sourceUrl: npi ? nppesProviderUrl(npi) : source.sourceUrl };
       evidence.push(stamped);
-      return { ...r, name: author?.name ?? r.name, profile, npi, verified: !!npi, credentials: npi && typeof item?.provider?.basic.credential === "string" ? item.provider.basic.credential : undefined, specialty: npi ? item?.provider?.taxonomies?.find((t) => t.primary)?.desc ?? undefined : undefined, evidenceRefs: [stamped.sourceUrl] };
+      const phone = npi ? nppesContactEvidence(npi, item?.provider, stamped.fetchedAt) : null;
+      if (phone) evidence.push(phone);
+      return { ...r, name: item?.name ?? r.name, profile, npi, verified: !!npi, credentials: npi && typeof item?.provider?.basic.credential === "string" ? item.provider.basic.credential : undefined, specialty: npi ? item?.provider?.taxonomies?.find((t) => t.primary)?.desc ?? undefined : undefined, evidenceRefs: [stamped.sourceUrl] };
     });
     return { status: "ok", records, evidence };
   },

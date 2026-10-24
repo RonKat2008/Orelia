@@ -1,3 +1,4 @@
+import { requireCaseOwner } from "@/lib/auth/ownership";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
 
@@ -20,6 +21,8 @@ const TERMINAL_CASE = new Set(["ready", "research_failed"]);
 export async function GET(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, "Invalid case id");
+  const owner = await requireCaseOwner(req, id);
+  if (!owner.ok) return owner.response;
   const { cases, runs } = getServices();
   if (!(await cases.get(id))) return jsonError(404, "Case not found");
 

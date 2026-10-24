@@ -1,12 +1,14 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  doublePrecision,
   index,
   vector,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -88,7 +90,9 @@ const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 };
 
-export const cases = pgTable("cases", {
+export const cases = pgTable(
+  "cases",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
   diseaseName: text("disease_name").notNull(),
   diseaseCodes: jsonb("disease_codes").$type<{
@@ -108,7 +112,20 @@ export const cases = pgTable("cases", {
     .notNull()
     .default(sql`ARRAY[]::goal[]`),
   status: text("status").notNull().default("unconfirmed"),
+  ownerSessionId: text("owner_session_id"),
+  patientEmail: text("patient_email"),
+  patientNotifyOptIn: boolean("patient_notify_opt_in").notNull().default(false),
+  patientNotifyLastAt: timestamp("patient_notify_last_at", { withTimezone: true }),
+  patientNotifyDigestOn: text("patient_notify_digest_on"),
   ...timestamps,
+  },
+  (table) => [index("cases_owner_session_id_idx").on(table.ownerSessionId)],
+);
+
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").notNull().default(0),
 });
 
 export const institutions = pgTable("institutions", {
@@ -164,8 +181,16 @@ export const organizations = pgTable("organizations", {
   contact: jsonb("contact").$type<Record<string, unknown>>(),
 });
 
+/**
+ * Evidence is scoped to the case whose research produced it: the same resource (e.g. one NPI) can appear in many
+ * cases, and one case must never read another case's evidence. `id` is the verifier's deterministic evidence id, so
+ * the key is (case_id, id).
+ */
 export const evidence = pgTable("evidence", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").notNull().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references(() => cases.id),
   targetKind: targetKindEnum("target_kind").notNull(),
   targetId: uuid("target_id").notNull(),
   claimType: text("claim_type").notNull(),
@@ -173,7 +198,7 @@ export const evidence = pgTable("evidence", {
   sourceUrl: text("source_url").notNull(),
   sourceKind: sourceKindEnum("source_kind").notNull(),
   fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
-});
+}, (table) => [primaryKey({ columns: [table.caseId, table.id] })]);
 
 export const caseCandidates = pgTable("case_candidates", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -234,6 +259,7 @@ export const messages = pgTable("messages", {
   sentAt: timestamp("sent_at", { withTimezone: true }),
   receivedAt: timestamp("received_at", { withTimezone: true }),
   classification: text("classification"),
+  approvalFingerprint: text("approval_fingerprint"),
 });
 
 export const calls = pgTable("calls", {
@@ -251,16 +277,24 @@ export const calls = pgTable("calls", {
   outcome: text("outcome"),
 });
 
-export const tasks = pgTable("tasks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  contactId: uuid("contact_id")
-    .notNull()
-    .references(() => contacts.id),
-  kind: taskKindEnum("kind").notNull(),
-  draftBody: text("draft_body"),
-  dueAt: timestamp("due_at", { withTimezone: true }),
-  status: taskStatusEnum("status").notNull().default("open"),
-});
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id),
+    kind: taskKindEnum("kind").notNull(),
+    draftBody: text("draft_body"),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    status: taskStatusEnum("status").notNull().default("open"),
+    title: text("title"),
+    details: jsonb("details").$type<Record<string, unknown>>(),
+    caseId: uuid("case_id").references(() => cases.id),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+  },
+  (table) => [index("tasks_case_id_idx").on(table.caseId)],
+);
 
 export const reviews = pgTable("reviews", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -275,6 +309,11 @@ export const reviews = pgTable("reviews", {
 });
 
 export const agentRuns = pgTable("agent_runs", {
+  tokensIn: integer("tokens_in").default(0).notNull(),
+  tokensOut: integer("tokens_out").default(0).notNull(),
+  cacheRead: integer("cache_read").default(0).notNull(),
+  cacheCreation: integer("cache_creation").default(0).notNull(),
+  costUsd: doublePrecision("cost_usd"),
   id: uuid("id").primaryKey().defaultRandom(),
   caseId: uuid("case_id")
     .notNull()

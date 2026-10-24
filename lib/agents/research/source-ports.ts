@@ -40,10 +40,13 @@ export interface CtgovStudy {
   meshTerms?: string[];
   stdAges?: string[];
   minimumAge?: string;
+  maximumAge?: string;
   /** Overall official names (study leads), as listed. */
   investigators?: string[];
   /** True when the registry lists a central contact. */
   hasContact?: boolean;
+  /** Central contact phone/email exactly as the registry lists them (structured fields, not prose). */
+  centralContacts?: Array<{ phone?: string; email?: string }>;
 }
 
 export interface CtgovPort {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { caseInputSchema } from "@/lib/contracts";
 import { guardCase } from "@/lib/auth/ownership";
 import { fieldPaths, jsonError, parseBody, parseId } from "../_lib/http";
+import { ingestSummarySafely } from "../_lib/case-summary";
 import { getServices } from "../_lib/services";
 
 export const runtime = "nodejs";
@@ -40,7 +41,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!merged.success) return jsonError(400, "Edited case is invalid", z.treeifyError(merged.error), fieldPaths(merged.error));
 
   const updated = await cases.update(id, merged.data, "confirmed");
-  return updated ? NextResponse.json({ case: updated }) : jsonError(404, "Case not found");
+  if (!updated) return jsonError(404, "Case not found");
+  await ingestSummarySafely(updated);
+  return NextResponse.json({ case: updated });
 }
 
 function omit<T extends object, K extends keyof T>(o: T, keys: K[]): Omit<T, K> {

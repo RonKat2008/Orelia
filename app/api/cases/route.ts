@@ -5,6 +5,7 @@ import { rejectCrossOrigin } from "@/lib/auth/origin";
 import { getOwnerStore } from "@/lib/auth/ownership";
 import { ensureSession } from "@/lib/auth/session";
 import { jsonError, parseBody } from "./_lib/http";
+import { ingestSummarySafely } from "./_lib/case-summary";
 import { getServices } from "./_lib/services";
 
 export const runtime = "nodejs";
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     const input = await extractCase(body.data.reportText);
     const created = await getServices().cases.create(input, "draft");
     await getOwnerStore().setOwner(created.id, session.id);
+    await ingestSummarySafely(created);
     const res = NextResponse.json({ case: created }, { status: 201 });
     if (session.setCookie) res.headers.append("Set-Cookie", session.setCookie);
     return res;

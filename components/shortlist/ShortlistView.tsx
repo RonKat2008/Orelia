@@ -54,6 +54,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
     });
   }
 
+  const scoreScale = items.reduce((top, item) => Math.max(top, item.score), 0) || undefined;
   const presentGroups = GROUPS.filter((group) => items.some((item) => item.group === group.id));
   const waypoints = presentGroups.map((group) => ({
     id: group.id,
@@ -92,6 +93,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
                   selected={selected.includes(card.resource.id)}
                   atCap={selected.length >= limit}
                   onToggle={toggle}
+                  scoreScale={scoreScale}
                 />
               )}
             />

@@ -42,8 +42,11 @@ export function ResourceCard({
   selected,
   atCap,
   onToggle,
+  scoreScale,
 }: {
   card: ShortlistCard;
+  /** Shared bar scale (the top score in the list) so bars compare across cards. */
+  scoreScale?: number;
   selected: boolean;
   atCap: boolean;
   onToggle: (id: string) => void;
@@ -56,7 +59,7 @@ export function ResourceCard({
         <h3>{titleOf(card.resource)}</h3>
         <p className="meta">{detailOf(card.resource)}</p>
       </header>
-      <ScoreBar items={card.breakdown} total={card.score} />
+      <ScoreBar items={card.breakdown} total={card.score} max={scoreScale} />
       <div className="resource-card__actions">
         <label className="check">
           <input

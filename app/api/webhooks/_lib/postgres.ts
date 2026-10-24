@@ -1,8 +1,21 @@
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import * as s from '../../../../db/schema';
+import { ingestInbound } from '../../../../lib/inbox/ingest';
 import { inngestSendEvents } from '../../../../lib/workflows/events';
 import type { InboundDeps, Owner } from './inbound';
+
+/** Postgres unique_violation, including when the driver nests it on `cause`. */
+export function isUniqueViolation(err: unknown): boolean {
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (cur && typeof cur === 'object' && !seen.has(cur)) {
+    seen.add(cur);
+    if ((cur as { code?: unknown }).code === '23505') return true;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
 
 /** Lazy: nothing touches the database or credentials until a request arrives (keeps `next build` credential-free). */
 export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: NodeJS.ProcessEnv = process.env): InboundDeps {
@@ -26,12 +39,17 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
       const [existing] = await db().select({ id: s.messages.id }).from(s.messages)
         .where(eq(s.messages.providerMessageId, m.providerMessageId)).limit(1);
       if (existing) return 'duplicate';
-      await db().insert(s.messages).values({
-        contactId: m.contactId, direction: 'inbound', channel: 'email',
-        providerThreadId: m.providerThreadId, providerMessageId: m.providerMessageId,
-        ...(m.subject !== undefined ? { subject: m.subject } : {}), body: m.body,
-        sharedFields: [], receivedAt: m.receivedAt, ...(m.classification !== undefined ? { classification: m.classification } : {}),
-      });
+      try {
+        await db().insert(s.messages).values({
+          contactId: m.contactId, direction: 'inbound', channel: 'email',
+          providerThreadId: m.providerThreadId, providerMessageId: m.providerMessageId,
+          ...(m.subject !== undefined ? { subject: m.subject } : {}), body: m.body,
+          sharedFields: [], receivedAt: m.receivedAt, ...(m.classification !== undefined ? { classification: m.classification } : {}),
+        });
+      } catch (err) {
+        if (isUniqueViolation(err)) return 'duplicate';
+        throw err;
+      }
       await db().update(s.contacts).set({ lastActivityAt: m.receivedAt }).where(eq(s.contacts.id, m.contactId));
       return 'stored';
     },
@@ -43,5 +61,6 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
       }).where(and(eq(s.calls.providerCallId, e.providerCallId), eq(s.calls.contactId, e.contactId)));
     },
     sendEvents: (events) => inngestSendEvents()(events),
+    ingestInbound: (event) => ingestInbound(event),
   };
 }

@@ -17,6 +17,16 @@ export interface InboundDeps {
   }): Promise<'stored' | 'duplicate'>;
   storeCallEvent(e: { contactId: string; providerCallId: string; eventType: string; status?: string; transcript?: string; endedAt?: Date }): Promise<void>;
   sendEvents: SendEvents;
+  /** Called only after signature checks and provider-id dedupe. */
+  ingestInbound(event: {
+    channel: 'email' | 'voice';
+    contactId: string;
+    caseId: string;
+    body: string;
+    providerId: string;
+    subject?: string;
+    from?: string;
+  }): Promise<unknown>;
   now?: () => Date;
 }
 
@@ -62,6 +72,12 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
       ...(tooLarge ? { classification: 'body_too_large' } : {}),
     });
     if (result === 'duplicate') return json(200, { duplicate: true });
+    await deps.ingestInbound({
+      channel: 'email', contactId: owner.contactId, caseId: owner.caseId,
+      body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: parsed.messageId,
+      ...(parsed.subject !== undefined ? { subject: parsed.subject } : {}),
+      ...(parsed.from !== undefined ? { from: parsed.from } : {}),
+    });
     await deps.sendEvents(contactReplyEvent({
       contactId: owner.contactId, caseId: owner.caseId, dedupeKey: parsed.messageId, messageId: parsed.messageId, receivedAt: receivedAt.toISOString(),
     }));
@@ -85,6 +101,10 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
       await deps.storeCallEvent({
         contactId: owner.contactId, providerCallId: parsed.callId, eventType: parsed.eventType,
         transcript: parsed.body, endedAt: receivedAt, ...(parsed.status ? { status: parsed.status } : {}),
+      });
+      await deps.ingestInbound({
+        channel: 'voice', contactId: owner.contactId, caseId: owner.caseId,
+        body: parsed.body, providerId: parsed.callId,
       });
       await deps.sendEvents(contactReplyEvent({
         contactId: owner.contactId, caseId: owner.caseId, dedupeKey: `${parsed.callId}-transcript`, callId: parsed.callId, receivedAt: receivedAt.toISOString(),

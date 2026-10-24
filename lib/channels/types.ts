@@ -16,10 +16,17 @@ export interface ProviderRef {
   readonly status?: string;
 }
 
+/** Existing AgentMail thread a follow-up must reply inside. Still only accepted with a GatedDraft. */
+export interface OutboundThreadRef {
+  readonly inboxId?: string;
+  readonly threadId?: string;
+  readonly messageId: string;
+}
+
 /** Adapters accept only the payload checkOutbound produced; raw drafts do not type-check. */
 export interface Channel {
   readonly kind: ChannelKind;
-  send(gated: GatedDraft): Promise<ProviderRef>;
+  send(gated: GatedDraft, thread?: OutboundThreadRef): Promise<ProviderRef>;
 }
 
 /** Status/body come from the provider; secrets and request bodies are never copied in. */

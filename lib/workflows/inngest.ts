@@ -5,8 +5,10 @@
 import { Inngest } from 'inngest';
 import type { FunctionDefinition, WorkflowStep } from './engine';
 import {
+  createConnectionRestartWorkflow,
   createConnectionWorkflow,
   createFollowUpSendWorkflow,
+  createStalledRevivalWorkflow,
   type ConnectionDeps,
 } from './connection-workflow';
 
@@ -25,5 +27,10 @@ export function toInngestFunction(def: FunctionDefinition) {
 }
 
 export function createWorkflowFunctions(deps: ConnectionDeps) {
-  return [createConnectionWorkflow(deps), createFollowUpSendWorkflow(deps)].map(toInngestFunction);
+  return [
+    createConnectionWorkflow(deps),
+    createFollowUpSendWorkflow(deps),
+    createStalledRevivalWorkflow(deps),
+    createConnectionRestartWorkflow(deps),
+  ].map(toInngestFunction);
 }

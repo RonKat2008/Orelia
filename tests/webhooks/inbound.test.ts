@@ -1,6 +1,8 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { BODY_TOO_LARGE_TEXT, handleAgentCallWebhook, handleAgentMailWebhook, type InboundDeps } from '../../app/api/webhooks/_lib/inbound';
+import { isUniqueViolation } from '../../app/api/webhooks/_lib/postgres';
+import { ingestInbound } from '../../lib/inbox/ingest';
 import { recordingSendEvents } from '../../lib/workflows/events';
 
 const MAIL_SECRET = `whsec_${Buffer.from('mail-test-secret-bytes').toString('base64')}`;
@@ -27,6 +29,7 @@ function setup(secret: string | null = MAIL_SECRET) {
   const { send, events } = recordingSendEvents();
   const stored: Parameters<InboundDeps['storeInboundMessage']>[0][] = [];
   const callEvents: Parameters<InboundDeps['storeCallEvent']>[0][] = [];
+  const ingested: Parameters<InboundDeps['ingestInbound']>[0][] = [];
   const seen = new Set<string>();
   const deps: InboundDeps = {
     secret: secret ?? undefined,
@@ -35,9 +38,27 @@ function setup(secret: string | null = MAIL_SECRET) {
     storeInboundMessage: async m => { if (seen.has(m.providerMessageId)) return 'duplicate'; seen.add(m.providerMessageId); stored.push(m); return 'stored'; },
     storeCallEvent: async e => { callEvents.push(e); },
     sendEvents: send,
+    ingestInbound: async (event) => { ingested.push(event); return { class: 'unclear' }; },
   };
-  return { deps, stored, callEvents, events };
+  return { deps, stored, callEvents, events, ingested };
 }
+
+describe('ingestInbound', () => {
+  it('classifies a verified reply without sending', async () => {
+    const result = await ingestInbound({
+      channel: 'email', contactId: 'c', caseId: 'k', providerId: 'pm', body: 'never seen before',
+    });
+    expect(result.class).toBe('unclear');
+  });
+});
+
+describe('provider message dedupe', () => {
+  it('treats a unique violation as an already-processed insert', () => {
+    expect(isUniqueViolation({ code: '23505' })).toBe(true);
+    expect(isUniqueViolation({ cause: { code: '23505' } })).toBe(true);
+    expect(isUniqueViolation({ code: '23503' })).toBe(false);
+  });
+});
 
 describe('AgentMail webhook', () => {
   it('rejects missing and invalid signatures with 401, storing nothing', async () => {
@@ -85,7 +106,7 @@ describe('AgentMail webhook', () => {
   });
 
   it('stores a reply once and emits exactly one contact reply event', async () => {
-    const { deps, stored, events } = setup();
+    const { deps, stored, events, ingested } = setup();
     const body = mailBody();
     const res = await handleAgentMailWebhook(post(body, svixHeaders(body)), deps);
     expect(res.status).toBe(200);
@@ -94,16 +115,18 @@ describe('AgentMail webhook', () => {
     expect(events).toHaveLength(1);
     const ev = JSON.stringify(events[0]);
     expect(ev).toContain('contact-1'); expect(ev).toContain('case-1'); expect(ev).toContain('contact-reply-pm-1');
+    expect(ingested).toEqual([expect.objectContaining({ channel: 'email', contactId: 'contact-1', caseId: 'case-1', providerId: 'pm-1', body: 'Yes, please call us.' })]);
   });
 
   it('treats a duplicate delivery as 200 duplicate without a second event', async () => {
-    const { deps, stored, events } = setup();
+    const { deps, stored, events, ingested } = setup();
     const body = mailBody();
     await handleAgentMailWebhook(post(body, svixHeaders(body)), deps);
     const res = await handleAgentMailWebhook(post(body, svixHeaders(body, { id: 'msg_2' })), deps);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ duplicate: true });
     expect(stored).toHaveLength(1); expect(events).toHaveLength(1);
+    expect(ingested).toHaveLength(1);
   });
 
   it('stores a placeholder and still emits when the body arrives as body_url', async () => {
@@ -149,7 +172,7 @@ describe('AgentCall webhook', () => {
   });
 
   it('stores the transcript and emits exactly one reply event', async () => {
-    const { deps, callEvents, events } = setup(CALL_SECRET);
+    const { deps, callEvents, events, ingested } = setup(CALL_SECRET);
     const body = transcriptBody();
     const res = await handleAgentCallWebhook(post(body, callHeaders(body)), deps);
     expect(res.status).toBe(200);
@@ -159,6 +182,7 @@ describe('AgentCall webhook', () => {
     expect(events).toHaveLength(1);
     const ev = JSON.stringify(events[0]);
     expect(ev).toContain('contact-reply-call-1-transcript'); expect(ev).toContain('case-1');
+    expect(ingested).toEqual([expect.objectContaining({ channel: 'voice', contactId: 'contact-1', providerId: 'call-1', body: 'AI: Hello\nCallee: Hi there' })]);
   });
 
   it('stores call.status without emitting', async () => {

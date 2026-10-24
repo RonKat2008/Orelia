@@ -15,6 +15,13 @@
       "when": 1792819415745,
       "tag": "0001_contact_follow_up_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792820000000,
+      "tag": "0002_messages_provider_message_id_unique",
+      "breakpoints": true
     }
   ]
 }

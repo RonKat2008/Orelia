@@ -32,6 +32,8 @@ export interface AccountStore {
   listDocuments(accountId: string): Promise<DocumentRow[]>;
   updateDocument(accountId: string, id: string, patch: DocumentPatch): Promise<DocumentRow | undefined>;
   deleteDocument(accountId: string, id: string): Promise<DocumentRow | undefined>;
+  /** Atomically moves the document to 'extracting' unless another run holds it (extracting and touched within staleMs). */
+  claimForProcessing(accountId: string, id: string, staleMs: number): Promise<DocumentRow | undefined>;
   replaceChunks(accountId: string, documentId: string, rows: ChunkRow[]): Promise<void>;
   searchChunks(accountId: string, embedding: number[], embedModel: string, k: number): Promise<ChunkHit[]>;
   countChunks(accountId: string): Promise<number>;
@@ -82,6 +84,12 @@ export class MemoryAccountStore implements AccountStore {
     const next = { ...doc, ...structuredClone(patch), updatedAt: new Date() };
     this.docs.set(id, next);
     return structuredClone(next);
+  }
+  async claimForProcessing(accountId: string, id: string, staleMs: number) {
+    const doc = this.docs.get(id);
+    if (!doc || doc.accountId !== accountId) return undefined;
+    if (doc.status === 'extracting' && Date.now() - doc.updatedAt.getTime() < staleMs) return undefined;
+    return this.updateDocument(accountId, id, { status: 'extracting', statusDetail: null });
   }
   async deleteDocument(accountId: string, id: string) {
     const doc = this.docs.get(id);
@@ -147,6 +155,14 @@ export class PostgresAccountStore implements AccountStore {
   async updateDocument(accountId: string, id: string, patch: DocumentPatch) {
     const [row] = await this.db.update(accountDocuments).set({ ...patch, updatedAt: new Date() })
       .where(and(eq(accountDocuments.accountId, accountId), eq(accountDocuments.id, id))).returning();
+    return row ? fromRow(row) : undefined;
+  }
+  async claimForProcessing(accountId: string, id: string, staleMs: number) {
+    const t = accountDocuments;
+    const cutoff = new Date(Date.now() - staleMs);
+    const [row] = await this.db.update(t).set({ status: 'extracting', statusDetail: null, updatedAt: new Date() })
+      .where(and(eq(t.accountId, accountId), eq(t.id, id), sql`(${t.status} <> 'extracting' OR ${t.updatedAt} < ${cutoff.toISOString()}::timestamptz)`))
+      .returning();
     return row ? fromRow(row) : undefined;
   }
   async deleteDocument(accountId: string, id: string) {

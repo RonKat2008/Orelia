@@ -18,6 +18,10 @@ const SHARED_HOSTS = [
   'exa.ai', 'google.com', 'bing.com', 'wikipedia.org', 'linkedin.com', 'doximity.com', 'healthgrades.com', 'vitals.com',
   'webmd.com', 'zocdoc.com', 'researchgate.net', 'orcid.org', 'facebook.com', 'x.com', 'twitter.com', 'youtube.com',
   'github.io', 'medium.com', 'substack.com', 'wordpress.com', 'blogspot.com', 'sites.google.com', 'agentmail.to',
+  // Self-serve hosting: anyone (including the patient) can own a subdomain or inbox there.
+  'vercel.app', 'netlify.app', 'pages.dev', 'herokuapp.com', 'onrender.com', 'weebly.com', 'wixsite.com', 'wix.com',
+  'squarespace.com', 'godaddysites.com', 'carrd.co', 'notion.site', 'about.me', 'bit.ly', 'web.app', 'firebaseapp.com',
+  'blogger.com', 'tumblr.com', 'ghost.io', 'webflow.io', 'framer.app', 'azurewebsites.net', 'amazonaws.com',
 ];
 
 const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;

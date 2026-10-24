@@ -132,3 +132,11 @@ describe('the review link is single-use and bound to the doctor email', () => {
     expect(view.status).toBe(404);
   });
 });
+
+describe('self-serve hosting domains never vouch for a doctor', () => {
+  it.each(['vercel.app', 'netlify.app', 'wixsite.com', 'notion.site'])('%s', host => {
+    const domains = trustedDoctorDomains([{ claimType: 'institution.page', claim: 'Dr Lee sarcoma', sourceUrl: `https://dr-lee.${host}/about` }]);
+    expect(domains).toEqual([]);
+    expect(emailDomainTrusted(`me@dr-lee.${host}`, [`dr-lee.${host}`])).toBe(false);
+  });
+});

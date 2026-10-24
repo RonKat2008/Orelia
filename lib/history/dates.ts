@@ -28,13 +28,14 @@ const pad = (n: number): string => String(n).padStart(2, '0');
 const validYear = (y: number): boolean => y >= MIN_YEAR && y <= MAX_YEAR;
 const validMonth = (m: number): boolean => m >= 1 && m <= 12;
 const validDay = (d: number): boolean => d >= 1 && d <= 31;
+const daysIn = (y: number, m: number): number => new Date(Date.UTC(y, m, 0)).getUTCDate();
 
 function monthNumber(name: string): number | undefined {
   return MONTHS[name.toLowerCase().replace(/\.$/, '')];
 }
 
 function ymd(y: number, m: number, d: number): string | null {
-  return validYear(y) && validMonth(m) && validDay(d) ? `${y}-${pad(m)}-${pad(d)}` : null;
+  return validYear(y) && validMonth(m) && validDay(d) && d <= daysIn(y, m) ? `${y}-${pad(m)}-${pad(d)}` : null;
 }
 
 function isoFor(g: Record<string, string | undefined>, allowBareYear: boolean): string | null {

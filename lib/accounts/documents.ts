@@ -65,8 +65,11 @@ export async function processLibraryDocument(accountId: string, id: string, deps
   const store = storeOf(deps);
   const row = await store.getDocument(accountId, id);
   if (!row) return undefined;
-  if (row.status === 'extracting' && Date.now() - row.updatedAt.getTime() < 90_000) return toLibraryDocument(row);
-  await store.updateDocument(accountId, id, { status: 'extracting', statusDetail: null });
+  // Atomic claim: two concurrent runs (double click, two tabs) must not both rewrite the document's chunks.
+  if (!(await store.claimForProcessing(accountId, id, 90_000))) {
+    const current = await store.getDocument(accountId, id);
+    return current ? toLibraryDocument(current) : undefined;
+  }
   try {
     const file = await (deps.blob ?? getBlob()).read(row.blobPathname);
     if (!file) {

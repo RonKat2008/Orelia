@@ -107,3 +107,16 @@ describe('flagMedicalAdviceTwoStage', () => {
     expect(await flagMedicalAdviceTwoStage(benign, broken)).toMatchObject({ flagged: true, rules: ['classifier-error'] });
   });
 });
+
+describe('stress-features: advice phrased as statements of fact', () => {
+  it.each([
+    'Imatinib is the standard of care and is recommended for this condition.',
+    'Treatment with corticosteroids is indicated.',
+    'Doctors typically prescribe tacrolimus.',
+    'Consider chemotherapy before radiation.',
+    'Avoid ibuprofen with this condition.',
+    'Rituximab is a good option.',
+  ])('flags: %s', text => {
+    expect(flagMedicalAdvice(text).flagged).toBe(true);
+  });
+});

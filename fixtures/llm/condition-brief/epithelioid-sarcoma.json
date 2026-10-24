@@ -103,7 +103,7 @@
     {
       "id": "s14",
       "section": "studies",
-      "text": "Neo-adjuvant or adjuvant radiotherapy may be recommended for epithelioid sarcoma, as it reduces the local recurrence rate.",
+      "text": "Neo-adjuvant or adjuvant radiotherapy has been associated with a lower local recurrence rate in epithelioid sarcoma.",
       "evidenceLevel": "established",
       "sourceIds": [
         "pubmed:32751241"
@@ -121,7 +121,7 @@
     {
       "id": "s16",
       "section": "research",
-      "text": "Doxorubicin-based regimens are recommended for advanced epithelioid sarcoma.",
+      "text": "Doxorubicin-based regimens have been used in studies of advanced epithelioid sarcoma.",
       "evidenceLevel": "established",
       "sourceIds": [
         "pubmed:32751241"

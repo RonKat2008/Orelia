@@ -56,3 +56,21 @@ describe('stress: library', () => {
     expect(await store.countChunks('B')).toBeGreaterThan(0);
   });
 });
+
+describe('stress: concurrent processing', () => {
+  it('two simultaneous process calls embed once (one run claims, the other returns the current state)', async () => {
+    const store = new MemoryAccountStore();
+    const blob = new MemoryBlob();
+    const { document, pathname } = await createLibraryDocument('A', body() as never, { store });
+    blob.put(pathname, new TextEncoder().encode('hemoglobin 9.1 g/dL'), 'text/plain');
+    let embeds = 0;
+    const embed = async (t: string[]) => { embeds++; await new Promise(r => setTimeout(r, 10)); return fakeEmbed(t); };
+    const [a, b] = await Promise.all([
+      processLibraryDocument('A', document.id, { store, blob, embed }),
+      processLibraryDocument('A', document.id, { store, blob, embed }),
+    ]);
+    expect(embeds).toBe(1);
+    expect([a?.status, b?.status].sort()).toEqual(['embedded', 'extracting']);
+    expect(await store.countChunks('A')).toBe(1);
+  });
+});

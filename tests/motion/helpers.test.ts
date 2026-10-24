@@ -176,6 +176,8 @@ describe("status presentation", () => {
       "Clinical trials: finished, 4 trials.",
     );
     expect(summarizeSwarm(initialSwarm())).toBe("0 of 9 research agents finished, 0 searching now.");
+    const final = buildSwarmSchedule().reduce(applySwarmEvent, initialSwarm());
+    expect(summarizeSwarm(final)).toBe("All 7 research agents have finished. 2 not available yet.");
   });
 });
 

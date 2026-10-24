@@ -180,7 +180,7 @@
 .lab-resource {
   display: grid;
   gap: var(--wf-space-4);
-  padding: var(--wf-space-6);
+  padding: var(--wf-space-4);
   background: var(--wf-paper-raised);
   border: 1px solid var(--wf-rule);
   border-radius: var(--wf-radius-surface);
@@ -189,6 +189,7 @@
 
 @media (min-width: 900px) {
   .lab-resource {
+    padding: var(--wf-space-6);
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
     column-gap: var(--wf-space-8);
   }

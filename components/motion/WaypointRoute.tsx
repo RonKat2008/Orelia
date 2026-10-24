@@ -25,7 +25,7 @@ const HEIGHT = 96;
  */
 export function WaypointRoute({ waypoints, label }: Props) {
   const reduced = useReducedMotionGate();
-  const rootRef = useRef<SVGSVGElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const { d, points } = waypointRoute(waypoints.length, WIDTH, HEIGHT);
 
@@ -33,7 +33,7 @@ export function WaypointRoute({ waypoints, label }: Props) {
     const root = rootRef.current;
     const path = pathRef.current;
     if (!root || !path || reduced) return;
-    const marks = root.querySelectorAll<SVGGElement>(".wf-waypoint__mark");
+    const marks = root.querySelectorAll<HTMLElement>(".wf-waypoint__mark");
     const [drawable] = svg.createDrawable(path, 0, 0);
     const tl = createTimeline({ defaults: { ease: ANIME_EASE.arrive } })
       .add(drawable, { draw: ["0 0", "0 1"], duration: durationMs("crawl"), ease: ANIME_EASE.draw })
@@ -48,25 +48,22 @@ export function WaypointRoute({ waypoints, label }: Props) {
   }, [reduced, d]);
 
   return (
-    <div className="wf-waypoints">
-      <svg
-        ref={rootRef}
-        className="wf-waypoints__svg"
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path ref={pathRef} className="wf-waypoints__route" d={d} />
+    <div ref={rootRef} className="wf-waypoints">
+      <div className="wf-waypoints__track" aria-hidden="true">
+        <svg className="wf-waypoints__svg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none">
+          <path ref={pathRef} className="wf-waypoints__route" d={d} />
+        </svg>
         {points.map((p, i) => (
-          <g key={waypoints[i].id} className="wf-waypoint__mark" style={{ transformOrigin: `${p.x}px ${p.y}px` }}>
-            <circle className="wf-waypoint__outer" cx={p.x} cy={p.y} r={9} />
-            <circle className="wf-waypoint__inner" cx={p.x} cy={p.y} r={3.5} />
-          </g>
+          <span
+            key={waypoints[i].id}
+            className="wf-waypoint__mark"
+            style={{ left: `${(p.x / WIDTH) * 100}%`, top: `${(p.y / HEIGHT) * 100}%` }}
+          />
         ))}
-      </svg>
+      </div>
       <ol className="wf-waypoints__labels" aria-label={label}>
-        {waypoints.map((w) => (
-          <li key={w.id}>
+        {waypoints.map((w, i) => (
+          <li key={w.id} style={{ left: `${(points[i].x / WIDTH) * 100}%` }}>
             <span className="wf-waypoints__name">{w.label}</span>
             {w.count !== undefined ? <span className="wf-waypoints__count">{w.count} found</span> : null}
           </li>

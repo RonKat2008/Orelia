@@ -33,7 +33,7 @@ export function layoutConstellation(count: number, options: ConstellationOptions
  * A gently bowed route from `from` to `to`, like a road on a map rather than a
  * ruler line. `bend` is the control-point offset as a fraction of the length.
  */
-export function routePath(from: Point, to: Point, bend = 0.12): string {
+export function routePath(from: Point, to: Point, bend = 0.07): string {
   const mx = (from.x + to.x) / 2;
   const my = (from.y + to.y) / 2;
   const dx = to.x - from.x;

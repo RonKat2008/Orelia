@@ -255,12 +255,19 @@
 
 .wf-waypoints {
   display: grid;
-  gap: var(--wf-space-2);
+  gap: var(--wf-space-3);
+}
+
+.wf-waypoints__track {
+  position: relative;
+  height: 4.5rem;
 }
 
 .wf-waypoints__svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 4.5rem;
+  height: 100%;
   overflow: visible;
 }
 
@@ -272,35 +279,44 @@
   vector-effect: non-scaling-stroke;
 }
 
-.wf-waypoint__outer {
-  fill: var(--wf-paper);
-  stroke: var(--wf-route);
-  stroke-width: 2;
-  vector-effect: non-scaling-stroke;
-}
-
-.wf-waypoint__inner {
-  fill: var(--wf-route);
+.wf-waypoint__mark {
+  position: absolute;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: -0.5625rem 0 0 -0.5625rem;
+  border-radius: 50%;
+  background: var(--wf-paper);
+  border: 2px solid var(--wf-route);
+  box-shadow: inset 0 0 0 3px var(--wf-paper), inset 0 0 0 9px var(--wf-route);
 }
 
 .wf-waypoints__labels {
+  position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: var(--wf-space-2);
+  min-height: 3rem;
 }
 
 .wf-waypoints__labels li {
+  position: absolute;
+  top: 0;
   display: grid;
   gap: 0.1rem;
   text-align: center;
+  transform: translateX(-50%);
+  max-width: 25%;
 }
 
-.wf-waypoints__labels li:first-child { text-align: left; }
-.wf-waypoints__labels li:last-child { text-align: right; }
+.wf-waypoints__labels li:first-child {
+  text-align: left;
+  transform: translateX(-0.5625rem);
+}
+
+.wf-waypoints__labels li:last-child {
+  text-align: right;
+  transform: translateX(calc(-100% + 0.5625rem));
+}
 
 .wf-waypoints__name {
   font-family: var(--wf-font-display);
@@ -576,4 +592,40 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
   border-radius: 2px;
+}
+
+/* ---------- Narrow screens ---------- */
+
+.wf-score__total {
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .wf-waypoints__labels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--wf-space-2) var(--wf-space-4);
+    min-height: 0;
+  }
+
+  .wf-waypoints__labels li,
+  .wf-waypoints__labels li:first-child,
+  .wf-waypoints__labels li:last-child {
+    position: static;
+    transform: none;
+    max-width: none;
+    text-align: left;
+    display: flex;
+    gap: var(--wf-space-2);
+    align-items: baseline;
+  }
+
+  .wf-score__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .wf-score__row dd {
+    padding-left: calc(0.55rem + var(--wf-space-2));
+  }
 }

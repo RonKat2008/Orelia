@@ -83,8 +83,13 @@ export function announceAgent(agent: SwarmAgent): string {
 }
 
 export function summarizeSwarm(agents: readonly SwarmAgent[]): string {
-  const settled = agents.filter((a) => STATUS_PRESENTATION[a.status].settled).length;
-  const running = agents.filter((a) => a.status === "running").length;
-  if (settled === agents.length) return `All ${agents.length} research agents have finished.`;
-  return `${settled} of ${agents.length} research agents finished, ${running} searching now.`;
+  const available = agents.filter((a) => a.status !== "not_implemented");
+  const unavailable = agents.length - available.length;
+  const settled = available.filter((a) => STATUS_PRESENTATION[a.status].settled).length;
+  const running = available.filter((a) => a.status === "running").length;
+  const tail = unavailable > 0 ? ` ${unavailable} not available yet.` : "";
+  if (available.length > 0 && settled === available.length) {
+    return `All ${available.length} research agents have finished.${tail}`;
+  }
+  return `${settled} of ${available.length} research agents finished, ${running} searching now.${tail}`;
 }

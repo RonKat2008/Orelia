@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, createSpring, createTimeline, svg } from "animejs";
+import { animate, spring, createTimeline, svg } from "animejs";
 import type { AgentRunStatus } from "@/lib/contracts";
 import { ANIME_EASE, ANIME_SPRING, OPACITY, SCALE, durationMs } from "@/lib/motion/tokens";
 
@@ -67,7 +67,7 @@ export function transitionNode(els: NodeElements, from: AgentRunStatus | undefin
       {
         scale: [SCALE.settleFrom, 1],
         opacity: [0, 1],
-        ease: createSpring(ANIME_SPRING.settle),
+        ease: spring(ANIME_SPRING.settle),
       },
       "<<",
     );

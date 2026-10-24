@@ -47,7 +47,7 @@ export const SPRING = {
   layout: { type: "spring", stiffness: 220, damping: 30, mass: 0.9 },
 } as const;
 
-/** anime.js v4 spring parameters (createSpring) for the "settle on done" beat. */
+/** anime.js v4 spring parameters (spring) for the "settle on done" beat. */
 export const ANIME_SPRING = {
   settle: { mass: 1, stiffness: 120, damping: 12, velocity: 0 },
 } as const;

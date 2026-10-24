@@ -9,7 +9,7 @@ export interface CaseDocument {
 }
 export type NewDocument = Omit<CaseDocument, 'id' | 'createdAt'>;
 export interface SearchInput {
-  caseId: string; contactId?: string; query: string; k?: number; allowedFields: readonly string[];
+  caseId: string; contactId?: string; /** Only docs owned by contactId; excludes case-wide (contactId null) docs. */ contactOnly?: boolean; query: string; k?: number; allowedFields: readonly string[];
 }
 export type VectorSearch = SearchInput & { embedding: number[]; embedModel: string };
 export type Snippet = Omit<CaseDocument, 'embedding'> & { score: number };
@@ -47,7 +47,7 @@ export class MemoryDocumentStore implements DocumentStore {
   async search(input: VectorSearch) {
     const allowed = consentFields(input.allowedFields);
     return this.rows.filter(row => row.caseId === input.caseId && row.embedModel === input.embedModel
-      && (row.contactId === null || row.contactId === input.contactId)
+      && (row.contactId === input.contactId || (!input.contactOnly && row.contactId === null))
       && row.kind !== 'intake_report'
       && (row.sharedField === null ? (PUBLIC_KINDS as readonly string[]).includes(row.kind) : allowed.includes(row.sharedField)))
       .map(row => {

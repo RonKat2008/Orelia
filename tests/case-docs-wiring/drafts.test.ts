@@ -13,7 +13,7 @@ describe('consented document context', () => {
   it('retrieves offline context but never copies private or other-contact text into drafts or scripts', async () => {
     const store = new MemoryDocumentStore();
     await ingestCaseSummary({ id: contact.caseId, ...record }, store);
-    const [publicDoc] = await ingest({ caseId: contact.caseId, kind: 'resource_page', title: 'Intake', text: 'Intake hours are Monday mornings.', sourceUrl: 'https://example.test/intake' }, store);
+    const [publicDoc] = await ingest({ caseId: contact.caseId, contactId: contact.id, kind: 'resource_page', title: 'Intake', text: 'Intake hours are Monday mornings.', sourceUrl: 'https://example.test/intake' }, store);
     await ingest({ caseId: contact.caseId, contactId: 'contact-b', kind: 'inbound_message', sharedField: 'diseaseName', title: 'Other reply', text: 'Other contact private reply' }, store);
     const docs = await search({ caseId: contact.caseId, contactId: contact.id, allowedFields: consent.sharedFields, query: 'intake insurance', k: 20 }, store);
     expect(docs.map(d => d.content).join(' ')).not.toContain('SecretPlan');
@@ -33,6 +33,26 @@ describe('consented document context', () => {
     const docs = await ingest({ caseId: contact.caseId, kind: 'resource_page', title: 'Intake', sourceUrl: 'https://example.test', text: 'Insurance accepted: SecretPlan' }, store);
     expect(createDraft(contact, consent, record, docs).contextDocIds).toEqual([]);
     expect(JSON.stringify(createCallScript(contact, consent, record, docs))).not.toContain('SecretPlan');
+  });
+});
+
+describe('draft context is scoped to the contact own target', () => {
+  it('never uses case-wide or other-contact public docs about a different resource', async () => {
+    const store = new MemoryDocumentStore();
+    const trial = { ...contact, targetKind: 'trial' as const, channel: 'voice' as const };
+    const own = await ingest({ caseId: contact.caseId, contactId: contact.id, kind: 'evidence', title: 'Trial', sourceUrl: 'https://clinicaltrials.gov/study/NCT05432466', text: 'Screening for the study runs through the central contact.' }, store);
+    const caseWide = await ingest({ caseId: contact.caseId, kind: 'evidence', title: 'Travel', sourceUrl: 'https://example.test/travel', text: 'UniteRare lists travel grants.' }, store);
+    const other = await ingest({ caseId: contact.caseId, contactId: 'contact-b', kind: 'evidence', title: 'Meds', sourceUrl: 'https://example.test/meds', text: 'NORD provides help with medications.' }, store);
+    const docs = [...own, ...caseWide, ...other];
+    expect(createCallScript(trial, consent, record, docs).contextDocIds).toEqual([own[0].id]);
+    expect(createDraft(trial, consent, record, docs).contextDocIds).toEqual([own[0].id]);
+  });
+  it('store search for a contact returns only that contact docs when scoped', async () => {
+    const store = new MemoryDocumentStore();
+    await ingest({ caseId: contact.caseId, kind: 'evidence', title: 'Travel', sourceUrl: 'https://example.test/travel', text: 'travel grants' }, store);
+    const [own] = await ingest({ caseId: contact.caseId, contactId: contact.id, kind: 'evidence', title: 'Own', sourceUrl: 'https://example.test/own', text: 'own page' }, store);
+    const docs = await search({ caseId: contact.caseId, contactId: contact.id, contactOnly: true, allowedFields: [], query: 'travel grants', k: 5 }, store);
+    expect(docs.map(d => d.id)).toEqual([own.id]);
   });
 });
 

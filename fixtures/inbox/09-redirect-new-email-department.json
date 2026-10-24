@@ -7,7 +7,8 @@
     "from": "info@clearwater-health.example.org",
     "subject": "Re: Patient inquiry",
     "body": "Hello,\n\nWe are not the right team for this. Please write to our Rare Disease Access Office at access@clearwater-health.example.org; Marcus Hale manages those requests.\n\nBest wishes,\nFront Office",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "09-redirect-new-email-department"
   },
   "expected": {
     "class": "redirect",

@@ -1,0 +1,10 @@
+{
+  "class": "redirect",
+  "confidence": 0.92,
+  "rationale": "The callee directed the call to a named coordinator and gave her direct number.",
+  "quote": "You want our sarcoma program coordinator, Alicia Brandt.",
+  "redirect": {
+    "name": "Alicia Brandt",
+    "phone": "202-555-0189"
+  }
+}

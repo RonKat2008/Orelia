@@ -6,7 +6,8 @@
     "providerCallId": "call_redirect_voice_coordinator",
     "from": "+1 202-555-0171",
     "body": "AI: Hello, this is an AI assistant calling on behalf of a patient about a new-patient visit.\nCallee: You want our sarcoma program coordinator, Alicia Brandt. Her direct line is 202-555-0189.\nAI: Thank you. Could you repeat the number?\nCallee: 202-555-0189.\nAI: Thank you, goodbye.",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "10-redirect-voice-coordinator"
   },
   "expected": {
     "class": "redirect",

@@ -1,0 +1,6 @@
+{
+  "class": "unclear",
+  "confidence": 0.4,
+  "rationale": "The reply mixes a records request with a clinical remark, so it needs your review.",
+  "quote": "first send the pathology report and the latest scan report"
+}

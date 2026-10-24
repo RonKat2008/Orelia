@@ -1,0 +1,12 @@
+{
+  "class": "call_to_schedule",
+  "confidence": 0.95,
+  "rationale": "The callee gave a scheduling number, hours, and what to have ready.",
+  "quote": "call our central scheduling at 202-555-0155",
+  "phone": "202-555-0155",
+  "hours": "Monday through Thursday, 7:30 to 3:30 Mountain time",
+  "haveReady": [
+    "Insurance information",
+    "pathology report"
+  ]
+}

@@ -7,7 +7,8 @@
     "from": "records@summitview-cancer.example.org",
     "subject": "Re: Inquiry about visit",
     "body": "Good afternoon,\n\nTo evaluate your request we need your imaging reports and the operative report from your last procedure. Please send those records by reply and we will review them.\n\nBest,\nDenise Alvarado\nClinical Coordinator",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "05-send-records-imaging"
   },
   "expected": {
     "class": "send_records",

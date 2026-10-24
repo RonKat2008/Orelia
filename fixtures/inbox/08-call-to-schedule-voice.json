@@ -6,7 +6,8 @@
     "providerCallId": "call_call_to_schedule_voice",
     "from": "+1 202-555-0128",
     "body": "AI: Hello, this is an AI assistant calling for a patient who would like to schedule a new-patient visit.\nCallee: We handle that through a separate line. You can reach new patient scheduling at 202-555-0163.\nAI: What hours is that line open?\nCallee: Weekdays from 9 to 5 Central.\nAI: Is there anything the patient should have ready?\nCallee: Their insurance card and a photo ID, and the name of their referring doctor.\nAI: Thank you.",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "08-call-to-schedule-voice"
   },
   "expected": {
     "class": "call_to_schedule",

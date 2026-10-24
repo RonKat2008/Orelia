@@ -13,10 +13,10 @@ export interface InboxResult { contactId: string; classification: InboxClassific
 
 export async function processInbound(event: InboxEvent, deps: InboxDeps): Promise<InboxResult> {
   const contactId = await assertWayfinderThread(event, deps.lookupThread);
-  const raw = await deps.classifier.classify({ channel: event.channel, body: event.body, subject: event.subject, from: event.from });
+  const ctx = await deps.loadContext(contactId);
+  const raw = await deps.classifier.classify({ channel: event.channel, body: event.body, subject: event.subject, from: event.from, caseId: ctx.caseId, offlineKey: event.offlineKey });
   const classification: InboxClassification = raw.confidence < MIN_CONFIDENCE && raw.class !== 'unclear'
     ? { ...raw, class: 'unclear', rationale: `Low confidence (${raw.confidence}); needs your review.` }
     : raw;
-  const ctx = await deps.loadContext(contactId);
   return { contactId, classification, tasks: draftTasks(classification, { ...ctx, contactId }) };
 }

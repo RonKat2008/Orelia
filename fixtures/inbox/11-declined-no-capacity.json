@@ -7,7 +7,8 @@
     "from": "office@pinecrest-oncology.example.com",
     "subject": "Re: New patient request",
     "body": "Hello,\n\nThank you for your interest. Unfortunately we are not accepting new patients at this time and cannot offer an appointment.\n\nSincerely,\nPinecrest Oncology Office",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "11-declined-no-capacity"
   },
   "expected": {
     "class": "declined",

@@ -42,10 +42,20 @@ export interface ShortlistItem {
   evidence: ShortlistEvidence[];
 }
 
+/** Row identity and resource fields the shortlist page needs beyond the ranked item. */
+export interface ShortlistMeta {
+  targetKind: ResourceKind;
+  targetId: string;
+  caseCandidateId: string;
+  nctId: string | null;
+  organizationKind: "advocacy" | "financial_aid" | "travel_aid" | null;
+}
+
 export interface Persist {
   /** Replace the case's candidates with these (re-runs overwrite), upserting resources + evidence. */
   saveResults(caseId: string, entries: readonly RankedEntry[]): Promise<void>;
   getShortlist(caseId: string): Promise<ShortlistItem[]>;
+  getShortlistMeta(caseId: string): Promise<ShortlistMeta[]>;
 }
 
 export function resourceName(r: Resource): string {
@@ -64,14 +74,26 @@ function toShortlistEvidence(e: EvidenceWithId): ShortlistEvidence {
 }
 
 /** In-memory implementation for tests and offline demo. */
+function metaFor(resource: Resource, caseCandidateId: string): ShortlistMeta {
+  return {
+    targetKind: resource.kind,
+    targetId: resource.id,
+    caseCandidateId,
+    nctId: resource.kind === "trial" ? resource.nctId : null,
+    organizationKind: resource.kind === "organization" ? (resource.organizationKind ?? null) : null,
+  };
+}
+
 export class MemoryPersist implements Persist {
   constructor(private readonly documents?: DocumentStore) {}
   private readonly byCase = new Map<string, ShortlistItem[]>();
+  private readonly metaByCase = new Map<string, ShortlistMeta[]>();
   /** Every resource seen, by canonical id (mirrors the entity tables). */
   readonly resources = new Map<string, Resource>();
 
   async saveResults(caseId: string, entries: readonly RankedEntry[]): Promise<void> {
     for (const e of entries) this.resources.set(e.record.resource.id, e.record.resource);
+    this.metaByCase.set(caseId, entries.map((e) => metaFor(e.record.resource, crypto.randomUUID())));
     this.byCase.set(
       caseId,
       entries.map((e) => ({
@@ -90,6 +112,10 @@ export class MemoryPersist implements Persist {
 
   async getShortlist(caseId: string): Promise<ShortlistItem[]> {
     return [...(this.byCase.get(caseId) ?? [])];
+  }
+
+  async getShortlistMeta(caseId: string): Promise<ShortlistMeta[]> {
+    return [...(this.metaByCase.get(caseId) ?? [])];
   }
 }
 
@@ -236,5 +262,32 @@ export class DbPersist implements Persist {
           })),
       }))
       .sort((a, b) => a.targetKind.localeCompare(b.targetKind) || a.rank - b.rank);
+  }
+
+  async getShortlistMeta(caseId: string): Promise<ShortlistMeta[]> {
+    const { db } = this;
+    const cands = await db.select().from(caseCandidates).where(eq(caseCandidates.caseId, caseId));
+    if (cands.length === 0) return [];
+    const trialIds = cands.filter((c) => c.targetKind === "trial").map((c) => c.targetId);
+    const orgIds = cands.filter((c) => c.targetKind === "organization").map((c) => c.targetId);
+    const nct = new Map<string, string>();
+    const kinds = new Map<string, ShortlistMeta["organizationKind"]>();
+    if (trialIds.length) {
+      for (const row of await db.select({ id: trials.id, nctId: trials.nctId }).from(trials).where(inArray(trials.id, trialIds))) {
+        nct.set(row.id, row.nctId);
+      }
+    }
+    if (orgIds.length) {
+      for (const row of await db.select({ id: organizations.id, kind: organizations.kind }).from(organizations).where(inArray(organizations.id, orgIds))) {
+        kinds.set(row.id, row.kind);
+      }
+    }
+    return cands.map((c) => ({
+      targetKind: c.targetKind,
+      targetId: c.targetId,
+      caseCandidateId: c.id,
+      nctId: c.targetKind === "trial" ? (nct.get(c.targetId) ?? null) : null,
+      organizationKind: c.targetKind === "organization" ? (kinds.get(c.targetId) ?? null) : null,
+    }));
   }
 }

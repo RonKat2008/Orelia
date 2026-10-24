@@ -1,7 +1,11 @@
 export const THEME_STORAGE_KEY = "wf-theme";
 
-/** Inline, render-blocking script: applies the stored theme before first paint. */
-export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+/**
+ * Inline, render-blocking script: applies the stored theme before first paint.
+ * The server renders data-theme="light", so the white theme is the default even on
+ * dark-mode devices; dark applies only when chosen, and "system" follows the device.
+ */
+export const THEME_BOOT_SCRIPT = `(function(){try{var d=document.documentElement,t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t==="dark")d.setAttribute("data-theme","dark");else if(t==="system")d.removeAttribute("data-theme");}catch(e){}})();`;
 
 /** Class on <html> once the Newsreader serif may be used (app/styles/theme.css). */
 export const SERIF_READY_CLASS = "wf-serif";

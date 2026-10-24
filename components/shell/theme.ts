@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Theme preference store. "system" follows prefers-color-scheme; "light"/"dark"
- * set data-theme on <html>. Persisted in localStorage (a per-viewer convenience;
+ * Theme preference store. "light" (the default) and "dark" set data-theme on <html>;
+ * "system" follows prefers-color-scheme. Persisted in localStorage (a per-viewer convenience;
  * everything renders correctly without it). The pre-paint script in
  * app/layout.tsx applies the stored value before first paint.
  */
@@ -22,9 +22,9 @@ function isPreference(value: unknown): value is ThemePreference {
 function readStored(): ThemePreference {
   try {
     const value = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isPreference(value) ? value : "system";
+    return isPreference(value) ? value : "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 
@@ -36,7 +36,7 @@ export function setThemePreference(preference: ThemePreference): void {
     root.setAttribute("data-theme", preference);
   }
   try {
-    if (preference === "system") window.localStorage.removeItem(THEME_STORAGE_KEY);
+    if (preference === "light") window.localStorage.removeItem(THEME_STORAGE_KEY);
     else window.localStorage.setItem(THEME_STORAGE_KEY, preference);
   } catch {
     // Storage blocked (private mode): the attribute still applies for this visit.
@@ -56,9 +56,9 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** Current preference ("system" on the server). */
+/** Current preference ("light" on the server). */
 export function useThemePreference(): ThemePreference {
-  return useSyncExternalStore(subscribe, readStored, () => "system");
+  return useSyncExternalStore(subscribe, readStored, () => "light");
 }
 
 /** The theme actually showing ("light" on the server). */

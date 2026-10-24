@@ -14,16 +14,13 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfcfd" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b111b" },
-  ],
+  themeColor: "#fbfcfd",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // data-theme is set before paint by THEME_BOOT_SCRIPT, so the server markup can differ.
-    <html lang="en" className={fontVariables} suppressHydrationWarning>
+    // White theme by default; THEME_BOOT_SCRIPT swaps in a stored choice before paint.
+    <html lang="en" className={fontVariables} data-theme="light" suppressHydrationWarning>
       <head>
         {/* Static, first-party string (no user input): applies the saved theme before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />

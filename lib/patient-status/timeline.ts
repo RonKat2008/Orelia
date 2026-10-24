@@ -1,3 +1,4 @@
+import { sourceRuns } from "./status";
 import type { PatientCaseSnapshot, PatientTimelineItem } from "./types";
 
 const TERMINAL = new Set(["done", "failed", "not_implemented"]);
@@ -18,15 +19,16 @@ export function patientTimeline(s: PatientCaseSnapshot, options: { limit?: numbe
   const items: PatientTimelineItem[] = [];
   const nameOf = (id: string | null) => s.contacts.find((c) => c.id === id)?.name ?? "A clinic";
 
-  if (s.runs.length > 0) {
-    const started = earliest(s.runs.map((r) => r.startedAt));
-    const allDone = s.runs.every((r) => TERMINAL.has(r.status));
+  const sources = sourceRuns(s.runs);
+  if (sources.length > 0) {
+    const started = earliest(sources.map((r) => r.startedAt));
+    const allDone = sources.every((r) => TERMINAL.has(r.status));
     if (allDone) {
       const found = s.shortlist?.total ?? 0;
       items.push({
         id: "search-done",
-        text: found > 0 ? `Searched ${s.runs.length} public sources and found ${found} ${found === 1 ? "person or program" : "people and programs"}` : `Searched ${s.runs.length} public sources`,
-        at: latest(s.runs.map((r) => r.finishedAt)),
+        text: found > 0 ? `Searched ${sources.length} public sources and found ${found} ${found === 1 ? "person or program" : "people and programs"}` : `Searched ${sources.length} public sources`,
+        at: latest(sources.map((r) => r.finishedAt)),
       });
     } else {
       items.push({ id: "search-start", text: "Started looking for you", at: started });

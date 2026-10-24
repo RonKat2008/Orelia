@@ -2,7 +2,8 @@ import Link from "next/link";
 import { cn } from "@/lib/ui/cn";
 
 /** The Wayfinder wordmark: the serif (Newsreader) with a waypoint mark (a path reaching a point). */
-export function Wordmark({ className, href = "/" }: { className?: string; href?: string }) {
+/** `compact` hides the word (kept for screen readers) on very narrow screens, where the header also holds the view switch. */
+export function Wordmark({ className, href = "/", compact = false }: { className?: string; href?: string; compact?: boolean }) {
   return (
     <Link
       href={href}
@@ -23,7 +24,7 @@ export function Wordmark({ className, href = "/" }: { className?: string; href?:
         />
         <circle cx="19.4" cy="9.2" r="2.4" className="fill-gold transition-transform duration-300 ease-out-expo group-hover/wordmark:scale-110 motion-reduce:transition-none" style={{ transformOrigin: "19.4px 9.2px" }} />
       </svg>
-      <span className="font-display text-[1.45rem] font-medium leading-none tracking-[-0.015em] display-soft">
+      <span className={cn("font-display text-[1.45rem] font-medium leading-none tracking-[-0.015em] display-soft", compact && "max-[29.99rem]:sr-only")}>
         Wayfinder
       </span>
     </Link>

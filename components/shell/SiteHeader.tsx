@@ -56,7 +56,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
         Skip to content
       </a>
       <div className="page-container flex h-16 items-center gap-3 sm:h-18 sm:gap-6">
-        <Wordmark />
+        <Wordmark compact={viewToggle} />
 
         <nav aria-label="Main" className="ml-auto hidden items-center gap-1 md:flex">
           {nav.map((item) => {

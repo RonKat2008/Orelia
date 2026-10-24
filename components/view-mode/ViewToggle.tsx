@@ -40,7 +40,7 @@ export function ViewToggle({ className }: { className?: string }) {
               if (!active || hrefForView(pathname, value).split("?")[0] !== pathname) setView(value);
             }}
             className={cn(
-              "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-pill px-3 text-small font-semibold text-ink-2",
+              "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-pill px-2.5 text-small font-semibold text-ink-2 sm:px-3",
               "transition-[background-color,color,box-shadow] duration-150 hover:text-ink focus-ring motion-reduce:transition-none",
               active && "bg-card text-ink shadow-sm",
             )}

@@ -7,7 +7,7 @@ import type { Case, CaseInput } from "@/lib/contracts";
 import { Reveal } from "@/components/motion/Reveal";
 import { Button, Checkbox, ChoiceRow, Input, Label, Progress, RadioGroup, RadioGroupItem } from "@/components/ui";
 import type { DemoReport } from "../demos";
-import { confirmAndResearch, extractCase } from "../case-client";
+import { InvalidFields, ScopeRefusal, confirmAndResearch, extractCase } from "../case-client";
 import { NEEDS_REVIEW, checkUpload, fallbackFor } from "../fallback";
 import { GOAL_LABELS, type Goal } from "../goals";
 import { ReportStep } from "../ReportStep";
@@ -41,6 +41,15 @@ const GOAL_CHOICE_TITLES: Record<Goal, string> = {
   support: "Support from people who understand",
   aid: "Help with money or travel",
 };
+const FIELD_NAMES: Record<string, string> = {
+  diseaseName: "your condition",
+  homeCity: "your city",
+  homeState: "your state (a US state)",
+  travelLimitMiles: "how far you can travel",
+  insurer: "your insurance",
+  goals: "what you're hoping for",
+};
+const fieldName = (key: string) => FIELD_NAMES[key] ?? key;
 const START_ERROR = "We could not start your search. Nothing was sent to anyone. Please try again.";
 const FOOTER =
   "Wayfinder helps you find and contact people. It does not give medical advice. If symptoms feel urgent, contact your care team or call 911.";
@@ -403,9 +412,13 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       setRecord(extracted);
       setAnswers(recordToAnswers(extracted));
       setPhase("confirm");
-    } catch {
+    } catch (failure) {
       setPhase("upload");
-      setError("We could not read that report. You can paste the text again, or answer a few questions instead.");
+      setError(
+        failure instanceof ScopeRefusal
+          ? failure.message
+          : "We could not read that report. You can paste the text again, or answer a few questions instead.",
+      );
     }
   }
 
@@ -418,12 +431,20 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
         const own = answersToCaseInput(answers);
         const fallback: CaseInput = { ...own, diseaseName: own.diseaseName ?? answers.condition.trim(), goals: own.goals ?? [] };
         extracted = (await extractCase(answersToReport(answers), fallback)).record;
+        // Keep the created case so a retry after a failed save does not create a second one.
+        setRecord(extracted);
       }
       const merged = mergeExtracted(extracted, answers);
       await confirmAndResearch(merged);
       router.push(`/cases/${merged.id}`);
-    } catch {
-      setError(START_ERROR);
+    } catch (failure) {
+      setError(
+        failure instanceof ScopeRefusal
+          ? failure.message
+          : failure instanceof InvalidFields
+            ? `Please check ${failure.fields.map(fieldName).join(" and ")}. Nothing was sent to anyone.`
+            : START_ERROR,
+      );
       setBusy(false);
     }
   }
@@ -524,12 +545,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   return (
     <div data-testid="patient-intake" className="mx-auto grid w-full max-w-2xl gap-8">
       {showProgress ? (
-        <div className="grid gap-3">
-          <p className="m-0 text-small font-semibold text-ink-2">
-            Question {step + 1} of {TOTAL}
-          </p>
-          <Progress value={step + 1} max={TOTAL} aria-label="Intake progress" valueText={`Question ${step + 1} of ${TOTAL}`} />
-        </div>
+        <Progress value={step + 1} max={TOTAL} label="Your answers" valueText={`Question ${step + 1} of ${TOTAL}`} />
       ) : null}
       <Reveal revealKey={body.key}>{body.node}</Reveal>
       {phase === "questions" ? (

@@ -99,6 +99,28 @@ describe("patientStatus: searching", () => {
     expect(result.headline).toMatch(/putting your list together/i);
   });
 
+  it("ignores the pipeline's own phase rows when counting sources", () => {
+    const withPhases: PatientRun[] = [
+      ...runs(4, "advocacy"),
+      { agent: "research", status: "running" },
+      { agent: "verifier", status: "queued" },
+    ];
+    const result = status(snapshot({ caseStatus: "researching", runs: withPhases, shortlist: null }));
+    expect(result.progress).toEqual({ done: 4, total: 9 });
+    expect(result.headline).toContain("(4 of 9 done)");
+  });
+
+  it.each([
+    ["verifier", /checking every name/i],
+    ["ranker", /sorting/i],
+    ["curator", /picking a few/i],
+  ])("words the %s phase once every source is read", (agent, pattern) => {
+    const all: PatientRun[] = [...runs(9, null), { agent, status: "running" }];
+    const result = status(snapshot({ caseStatus: "researching", runs: all, shortlist: null }));
+    expect(result.headline).toMatch(pattern);
+    expect(result.progress).toEqual({ done: 9, total: 9 });
+  });
+
   it("falls back to a generic phrase when the disease name is unknown", () => {
     const result = status(snapshot({ caseStatus: "researching", diseaseName: null, runs: runs(1), shortlist: null }));
     expect(result.headline).toContain("adults with your condition");

@@ -30,6 +30,18 @@ export const SOURCE_NAMES: Record<string, string> = {
   logistics: "travel and distance details",
 };
 
+/** Rows the pipeline writes after the nine sources (lib/agents/phase-runs), worded while they run. */
+const PHASE_WORDS: Record<string, string> = {
+  verifier: "Checking every name against its public source…",
+  ranker: "Sorting the best matches for you…",
+  curator: "Picking a few to suggest…",
+};
+
+/** Only the research agents' rows are "sources"; phase and heartbeat rows are not counted. */
+export function sourceRuns(runs: readonly PatientRun[]): PatientRun[] {
+  return runs.filter((run) => run.agent in SOURCE_NAMES);
+}
+
 const GOOD_NEWS_ORDER = ["appointment_booked", "connected", "records_sent", "replied", "task_open"];
 
 export interface PatientStatusOptions {
@@ -118,19 +130,21 @@ function pick(ctx: Ctx): PatientStatus {
 
 function searching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
   const { s } = ctx;
-  const total = Math.max(s.expectedSources, s.runs.length);
-  const done = s.runs.filter((run) => TERMINAL_RUN.has(run.status)).length;
+  const sources = sourceRuns(s.runs);
+  const total = Math.max(s.expectedSources, sources.length);
+  const done = sources.filter((run) => TERMINAL_RUN.has(run.status)).length;
   const who = s.diseaseName?.trim() ? s.diseaseName.trim() : "your condition";
-  if (s.runs.length > 0 && done >= total) {
+  if (sources.length > 0 && done >= total) {
+    const phase = s.runs.find((run) => run.status === "running" && PHASE_WORDS[run.agent]);
     return {
-      headline: "Done looking. Putting your list together…",
-      detail: "We check every name against its public source first.",
+      headline: phase ? PHASE_WORDS[phase.agent]! : "Done looking. Putting your list together…",
+      detail: "We check every name against its public source before showing it to you.",
       step: "search",
       tone: "working",
       progress: { done, total },
     };
   }
-  const running = s.runs.find((run) => run.status === "running");
+  const running = sources.find((run) => run.status === "running");
   return {
     headline: `Looking through ${total} public sources for specialists who see adults with ${who}… (${done} of ${total} done)`,
     detail: running ? `Right now: ${sourceName(running)}.` : "This usually takes a few minutes. You can leave this page open.",

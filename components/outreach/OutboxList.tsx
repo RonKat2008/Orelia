@@ -217,30 +217,33 @@ export function OutboxList({ caseId }: { caseId: string }) {
                     <CardTitle id={`draft-${row.contact.id}`} className="break-words">
                       {name}
                     </CardTitle>
-                    {stepCtx ? (
-                      <p className="m-0 text-small font-semibold text-teal" data-plan-step>
-                        {stepContextText(stepCtx)}
-                      </p>
-                    ) : null}
                   </div>
-                  {approved ? (
-                    <Badge tone="ok" size="md">
-                      <CircleCheck aria-hidden /> Approved
-                    </Badge>
-                  ) : row.held ? (
-                    <Badge tone="neutral" size="md">
-                      <Pause aria-hidden /> On hold
-                    </Badge>
-                  ) : draft ? (
-                    <Badge tone="gold" size="md" dot>
-                      Waiting for you
-                    </Badge>
-                  ) : (
-                    <Badge tone="danger" size="md">
-                      No draft
-                    </Badge>
-                  )}
+                  <span className="basis-full sm:basis-auto">
+                    {approved ? (
+                      <Badge tone="ok" size="md">
+                        <CircleCheck aria-hidden /> Approved
+                      </Badge>
+                    ) : row.held ? (
+                      <Badge tone="neutral" size="md">
+                        <Pause aria-hidden /> On hold
+                      </Badge>
+                    ) : draft ? (
+                      <Badge tone="gold" size="md" dot>
+                        Waiting for you
+                      </Badge>
+                    ) : (
+                      <Badge tone="danger" size="md">
+                        No draft
+                      </Badge>
+                    )}
+                  </span>
                 </div>
+
+                {stepCtx ? (
+                  <p className="m-0 -mt-2 mb-6 text-small font-semibold text-teal" data-plan-step>
+                    {stepContextText(stepCtx)}
+                  </p>
+                ) : null}
 
                 {draft ? (
                   <div className="grid grid-cols-[minmax(0,1fr)] gap-6">

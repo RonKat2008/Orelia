@@ -85,16 +85,18 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
           </CardTitle>
           <p className="m-0 break-words text-small text-ink-2">{host}</p>
         </div>
-        <Badge tone={status.tone} size="md" dot={application.status === "draft"}>
-          {application.status === "submitted" ? <CircleCheck aria-hidden /> : null}
-          {status.label}
-        </Badge>
+        <span className="basis-full sm:basis-auto">
+          <Badge tone={status.tone} size="md" dot={application.status === "draft"}>
+            {application.status === "submitted" ? <CircleCheck aria-hidden /> : null}
+            {status.label}
+          </Badge>
+        </span>
       </div>
 
       {stepContext ? <p className="m-0 mb-6 text-small font-semibold text-teal">{stepContext}</p> : null}
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
-        <div className="min-w-0 overflow-x-auto rounded-md border border-line">
+        <div className="min-w-0 self-start overflow-x-auto rounded-md border border-line">
           <table className="w-full border-collapse text-left text-small">
             <caption className="sr-only">What will be typed into the form, and where each value came from</caption>
             <thead className="bg-paper-2 text-micro uppercase text-ink-3">
@@ -116,12 +118,12 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
           </table>
         </div>
         {application.screenshot ? (
-          <figure className="m-0 grid gap-2">
+          <figure className="m-0 grid gap-2 self-start">
             {/* eslint-disable-next-line @next/next/no-img-element -- base64 screenshot of the filled, unsubmitted form */}
             <img
               src={`data:image/png;base64,${application.screenshot}`}
               alt={`The ${host} form as filled in, not yet submitted`}
-              className="w-full rounded-md border border-line bg-card object-contain"
+              className="h-auto max-h-[36rem] w-full rounded-md border border-line bg-card object-contain object-top"
               loading="lazy"
               width={640}
               height={800}

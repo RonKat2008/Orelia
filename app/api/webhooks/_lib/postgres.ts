@@ -7,7 +7,7 @@ import { DbRunStore } from '../../../../lib/agents/run-store';
 import type { DraftContext } from '../../../../lib/inbox/drafts';
 import { isOffline } from '../../../../lib/env';
 import { createWebhookIngest } from './ingest';
-import { inngestSendEvents } from '../../../../lib/workflows/events';
+import { workflowSendEvents } from '../../../../lib/workflows/inline-events';
 import type { InboundDeps, Owner } from './inbound';
 
 /** Postgres unique_violation, including when the driver nests it on `cause`. */
@@ -97,7 +97,7 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
         ...(e.status !== undefined ? { outcome: e.status } : {}),
       }).where(and(eq(s.calls.providerCallId, e.providerCallId), eq(s.calls.contactId, e.contactId)));
     },
-    sendEvents: (events) => inngestSendEvents()(events),
+    sendEvents: (events) => workflowSendEvents(env)(events),
     ingestInbound: (event) => createWebhookIngest({
       inbox: {
         classifier: isOffline(env.WAYFINDER_OFFLINE) ? new FixtureClassifier() : createRuntimeClassifier({ store: new DbRunStore() }),

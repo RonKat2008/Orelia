@@ -51,14 +51,26 @@ function asState(value: string): ContactState {
   return (CONTACT_STATES as readonly string[]).includes(value) ? (value as ContactState) : "drafted";
 }
 
-function followUpNote(contact: ApiContact, state: ContactState): string {
+export const SCHEDULING_PAUSED_NOTE = "Automatic follow-ups are paused until scheduling is connected.";
+
+function followUpNote(contact: ApiContact, state: ContactState, schedulingPaused: boolean): string {
+  if (schedulingPaused && (state === "sent" || state === "replied")) {
+    return `${SCHEDULING_PAUSED_NOTE} Nothing will go out on its own; you can still write and approve a follow-up yourself.`;
+  }
   if (contact.nextFollowUpAt) return `Next follow-up ${formatDay(contact.nextFollowUpAt)}, if there is no reply. You approve it first.`;
   if (state === "drafted") return "No follow-up yet. The schedule starts when the first message is sent.";
   if (state === "sent" || state === "replied") return "Follow-ups are planned for business days 3 and 7 after sending. You approve each one.";
   return "No follow-up needed right now.";
 }
 
-export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: OutreachTask[] }) {
+interface TrackerBoardProps {
+  caseId: string;
+  tasks: OutreachTask[];
+  /** True when durable scheduling (Inngest) is not connected: day-3/day-7 follow-ups are not scheduled. */
+  schedulingPaused?: boolean;
+}
+
+export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: TrackerBoardProps) {
   const raw = useSyncExternalStore(subscribeOutreach, () => outreachSnapshot(caseId), () => null);
   const stored: ApiContact[] = raw ? (readStoredOutreach(caseId)?.contacts ?? []) : [];
   const [liveContacts, setLiveContacts] = useState<ApiContact[] | null>(null);
@@ -133,6 +145,15 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-16">
+      {schedulingPaused ? (
+        <p
+          role="status"
+          className="m-0 flex items-start gap-2 rounded-md border border-gold/60 bg-gold-soft p-4 text-small text-ink"
+        >
+          <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {SCHEDULING_PAUSED_NOTE}
+        </p>
+      ) : null}
       <section aria-labelledby="now-heading" className="grid gap-6">
         <div className="grid gap-2">
           <h3 id="now-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">
@@ -232,7 +253,7 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
                   <p className="m-0 mt-4 max-w-prose text-body text-ink">{STATE_NOTES[state]}</p>
                   <p className="m-0 mt-2 flex items-start gap-2 text-small text-ink-2">
                     <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
-                    {followUpNote(contact, state)}
+                    {followUpNote(contact, state, schedulingPaused)}
                   </p>
 
                   <div className="mt-5 flex flex-wrap items-center gap-3">

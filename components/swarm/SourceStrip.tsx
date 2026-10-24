@@ -1,49 +1,57 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { SourceChip } from "@/components/ui";
-import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
-import { enterVariants } from "@/lib/motion/variants";
+import { Link2 } from "lucide-react";
+import { ListRow, SourceChip } from "@/components/ui";
 import type { SourceRef } from "./stream";
 
-const MAX_CHIPS = 8;
-
-/** The newest sources the swarm has linked, appearing as searches finish. */
-export function SourceStrip({ sources, preview }: { sources: SourceRef[]; preview: boolean }) {
-  const reduced = useReducedMotionGate();
-  const variants = enterVariants(reduced, 8);
-  const shown = sources.slice(0, MAX_CHIPS);
+/** The single "Sources (N)" row in the judge list; opens the full list in the detail pane. */
+export function SourcesRow({
+  count,
+  preview,
+  selected,
+  onSelect,
+}: {
+  count: number;
+  preview: boolean;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <section aria-labelledby="sources-heading" className="grid gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id="sources-heading" className="m-0 font-sans text-h4 font-bold text-ink">
-          Latest sources
-        </h3>
-        {preview ? <span className="text-small text-ink-2">Example links, not real findings</span> : null}
-      </div>
-      {shown.length === 0 ? (
-        <p className="m-0 text-small text-ink-2">
-          Links appear here as searches finish. A claim without a source link never reaches your shortlist.
+    <ListRow
+      title={`Sources (${count})`}
+      leading={<Link2 aria-hidden className="size-4 text-ink-3" />}
+      meta={
+        preview
+          ? "Example links, not real findings"
+          : count === 0
+            ? "Links appear as searches finish"
+            : "Every record keeps its source link"
+      }
+      selected={selected}
+      onSelect={onSelect}
+    />
+  );
+}
+
+/** Every source the swarm has linked so far, shown in the detail pane (or the Sheet below 1024 px). */
+export function SourceStrip({ sources, preview, showTitle = true }: { sources: SourceRef[]; preview: boolean; showTitle?: boolean }) {
+  return (
+    <div className="grid min-w-0 gap-3">
+      {showTitle ? <h3 className="m-0 text-h3 font-semibold text-ink">Sources ({sources.length})</h3> : null}
+      {preview ? <p className="m-0 text-small text-ink-2">Example links, not real findings.</p> : null}
+      {sources.length === 0 ? (
+        <p className="m-0 text-body text-ink-2">
+          Links appear here as searches finish. A claim without a source link never reaches the shortlist.
         </p>
       ) : (
-        <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-          <AnimatePresence initial={false}>
-            {shown.map((source) => (
-              <motion.li
-                key={source.url}
-                layout={reduced ? false : "position"}
-                variants={variants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="min-w-0 max-w-full"
-              >
-                <SourceChip url={source.url} title={source.title} verified={source.verified} />
-              </motion.li>
-            ))}
-          </AnimatePresence>
+        <ul aria-label="Sources found so far" className="m-0 flex list-none flex-wrap gap-2 p-0">
+          {sources.map((source) => (
+            <li key={source.url} className="min-w-0 max-w-full">
+              <SourceChip url={source.url} title={source.title} verified={source.verified} />
+            </li>
+          ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

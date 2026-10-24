@@ -101,7 +101,7 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
   }
 
   return (
-    <div className="grid gap-16">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-16">
       <section aria-labelledby="now-heading" className="grid gap-6">
         <div className="grid gap-2">
           <h3 id="now-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">

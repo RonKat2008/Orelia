@@ -90,7 +90,7 @@ export function ThreadsView({ caseId, focusContactId }: { caseId: string; focusC
                   scroll={false}
                   aria-current={active ? "true" : undefined}
                   className={cn(
-                    "flex min-h-11 items-center gap-2 rounded-md border px-3 text-small font-semibold focus-ring",
+                    "flex min-h-11 items-center gap-2 rounded-md border px-3 text-small font-semibold no-underline focus-ring",
                     "transition-colors duration-150 motion-reduce:transition-none",
                     active
                       ? "border-teal/50 bg-teal-soft text-teal-ink dark:text-teal"

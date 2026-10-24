@@ -170,7 +170,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
 
   return (
     <form
-      className="grid gap-10"
+      className="grid grid-cols-[minmax(0,1fr)] gap-10"
       aria-describedby="consent-note"
       onSubmit={(event) => {
         event.preventDefault();

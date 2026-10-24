@@ -35,7 +35,7 @@ export function LetterSheet({
           <Icon aria-hidden className="size-4" />
           {label}
         </span>
-        <span className="min-w-0 break-words text-small text-ink-2">
+        <span className="min-w-0 [overflow-wrap:anywhere] text-small text-ink-2">
           {channel === "email" ? "To: " : "Calling: "}
           <span className="font-semibold text-ink">{recipient}</span>
         </span>

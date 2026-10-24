@@ -32,7 +32,7 @@ export function OutreachNav({
 }) {
   // The case layout already supplies the header, journey rail and <main>: render content only.
   return (
-    <section className="ds-root grid gap-10" aria-labelledby="outreach-title">
+    <section className="ds-root grid grid-cols-[minmax(0,1fr)] gap-10" aria-labelledby="outreach-title">
       <header className="grid max-w-3xl gap-3 border-b border-line pb-8">
         <p className="m-0 text-micro font-semibold uppercase text-ink-3">{eyebrow}</p>
         <h2

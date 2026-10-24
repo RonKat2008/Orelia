@@ -142,7 +142,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const waiting = rows.filter((row) => row.draft && !row.approvedAt && !row.held).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
       <p role="status" aria-live="polite" className="m-0 text-body text-ink-2">
         {pending
           ? `Writing drafts: ${pending.done} of ${pending.total} ready.`
@@ -150,7 +150,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
             ? `${waiting} ${waiting === 1 ? "draft is" : "drafts are"} waiting for you. Nothing has been sent.`
             : "Nothing is waiting for your approval."}
       </p>
-      <ul className="m-0 grid list-none gap-10 p-0">
+      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-10 p-0">
         {rows.map((row) => {
           const draft = row.draft;
           const text = draft?.body ?? "";
@@ -199,7 +199,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                 </div>
 
                 {draft ? (
-                  <div className="grid gap-6">
+                  <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
                     <LetterSheet
                       channel={draft.channel}
                       recipient={draft.address}
@@ -217,10 +217,10 @@ export function OutboxList({ caseId }: { caseId: string }) {
                       </p>
                     ) : null}
 
-                    <dl className="m-0 grid gap-4 sm:grid-cols-2">
+                    <dl className="m-0 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
                       <div className="grid gap-2">
                         <dt className="text-micro font-semibold uppercase text-ink-3">Details shared</dt>
-                        <dd className="m-0 flex flex-wrap gap-2">
+                        <dd className="m-0 flex min-w-0 flex-wrap gap-2">
                           {keys.length === 0 ? (
                             <span className="text-small text-ink-2">No case details. Just the request.</span>
                           ) : (
@@ -234,12 +234,12 @@ export function OutboxList({ caseId }: { caseId: string }) {
                       </div>
                       <div className="grid gap-2">
                         <dt className="text-micro font-semibold uppercase text-ink-3">Documents used</dt>
-                        <dd className="m-0 flex flex-wrap gap-2">
+                        <dd className="m-0 flex min-w-0 flex-wrap gap-2">
                           {docIds.length === 0 ? (
                             <span className="text-small text-ink-2">None. Written from your ticked details only.</span>
                           ) : (
                             docIds.map((id) => (
-                              <Badge key={id} tone="outline" size="md" className="max-w-full">
+                              <Badge key={id} tone="outline" size="md" className="min-w-0 max-w-full">
                                 <FileText aria-hidden />
                                 <span className="truncate">{docTitles[id] ?? "Case document"}</span>
                               </Badge>

@@ -257,7 +257,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                       channel={draft.channel}
                       recipient={draft.address}
                       subject={draft.channel === "email" ? draft.subject : null}
-                      label={isEmail ? "Email, not yet sent" : "Call script, not yet used"}
+                      label={approved ? (isEmail ? "Email, approved" : "Call script, approved") : isEmail ? "Email, not yet sent" : "Call script, not yet used"}
                       className={row.held ? "opacity-70" : undefined}
                     >
                       <MessageBody text={text} sharedValues={values} />
@@ -356,7 +356,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                     <DialogHeader>
                       <DialogTitle>{isEmail ? "Send this email?" : "Approve this call?"}</DialogTitle>
                       <DialogDescription>
-                        {isEmail ? `To ${draft.address}` : `A call to ${draft.address}`}, as written above.
+                        {isEmail ? `To ${draft.address}` : `A call to ${draft.address}`}, as written above.{" "}
                         <DemoCoordinatorBadge address={draft.address} />
                       </DialogDescription>
                     </DialogHeader>

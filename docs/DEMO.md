@@ -90,6 +90,9 @@ What it does:
 
 - When a patient selects resources, every new contact is an email to one of the demo coordinator inboxes, picked
   stably per resource. The resource's real email or phone is never used while the mode is on. Doorless resources work too.
+- A case uses each coordinator inbox at most once (contacts are unique per case and address). With one coordinator
+  inbox, the first selected resource becomes the contact and the rest are listed on consent as unavailable, with the
+  reason. Add more allowlisted coordinator inboxes to demo several contacts per case.
 - A coordinator address is used only if it is also on `OUTBOUND_ALLOWLIST`. `checkOutbound` still runs on every send.
 - Consent, outbox and threads show a "Demo coordinator" badge on these contacts.
 

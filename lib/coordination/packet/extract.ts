@@ -37,9 +37,19 @@ const STOP = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'from', 'have
 
 /** One sanitized, length-capped line; undefined when nothing meaningful is left. */
 export function cleanLine(raw: string): string | undefined {
-  const t = neutralizeUntrusted(raw).replace(/^[\s\-*•·]+/, '').trim();
+  const t = neutralizeUntrusted(stripMarkdown(raw)).replace(/^[\s\-*•·]+/, '').trim();
   if (t.length < 4) return undefined;
   return t.length > MAX_LINE ? `${t.slice(0, MAX_LINE - 1)}…` : t;
+}
+
+/** Pasted records are often Markdown: drop heading/quote markers and bold/italic/code markers, keep the words. */
+function stripMarkdown(raw: string): string {
+  return raw.replace(/^\s{0,3}(?:#{1,6}\s+|>\s?)/, '').replace(/(\*\*|__|`)/g, '');
+}
+
+/** A Markdown heading line: a record or section title (often carries the patient's name), not summary content. */
+export function isMarkdownHeading(raw: string): boolean {
+  return /^\s{0,3}#{1,6}\s/.test(raw);
 }
 
 export function linesOf(text: string): string[] {
@@ -214,7 +224,7 @@ export function buildSections(input: BuildInput, previousIncluded?: Partial<Reco
       if (seenLines.has(dedupe)) continue;
       seenLines.add(dedupe);
       order++;
-      if (docIndex === 0 && firstLines < LIMITS.summary && !/^\w[\w ]{0,30}:\s*$/.test(line)) { summary.push({ text: line, date: null, sourceDocId: doc.id, sourceUrl: null }); firstLines++; }
+      if (docIndex === 0 && firstLines < LIMITS.summary && !isMarkdownHeading(raw) && !/^\w[\w ]{0,30}:\s*$/.test(line)) { summary.push({ text: line, date: null, sourceDocId: doc.id, sourceUrl: null }); firstLines++; }
       const date = findDates(line)[0]?.date ?? null;
       const score = relevance(line, keywords);
       if (date) timeline.push({ text: line, date, sourceDocId: doc.id, sourceUrl: null, score, order });

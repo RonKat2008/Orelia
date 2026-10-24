@@ -205,3 +205,22 @@ describe('attach', () => {
 });
 
 void SUMMARY_DOC; void OUTSIDE_DOC;
+
+describe('markdown records', () => {
+  const md = {
+    id: 'md-1', title: 'Genetic report',
+    text: '# Clinical genetics report — Jane Q. Sample\n\nLaboratory: Synthetic Lab\n\n## 2025-02-10 — Panel result\n\n**Classification:** Likely pathogenic\n',
+  };
+  const sections = buildSections({ name: 'Center', claims: [], docs: [md], requirements: [], patientQuestions: [] });
+  const items = (key: string) => sections.find(s => s.key === key)!.items.map(i => i.text);
+
+  it('keeps markdown heading lines (often the patient name) out of the summary', () => {
+    expect(items('summary').join('\n')).not.toMatch(/Jane Q\. Sample|#/);
+    expect(items('summary')).toContain('Laboratory: Synthetic Lab');
+  });
+
+  it('strips markdown markers from timeline and test lines', () => {
+    expect(items('timeline')).toEqual(['2025-02-10 — Panel result']);
+    expect(items('tests')).toContain('Classification: Likely pathogenic');
+  });
+});

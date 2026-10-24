@@ -43,7 +43,7 @@ export function LetterSheet({
           <span className="break-words font-display text-h4 font-normal text-ink display-soft">{subject}</span>
         ) : null}
       </figcaption>
-      <div className="grid gap-4 px-5 py-6 text-body leading-relaxed text-ink sm:px-7">{children}</div>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 px-5 py-6 text-body leading-relaxed text-ink sm:px-7">{children}</div>
     </figure>
   );
 }
@@ -69,7 +69,7 @@ export function MessageBody({ text, sharedValues }: { text: string; sharedValues
       {segments.map((segment, index) => {
         if (segment.kind === "disclosure") return <DisclosureLine key={index}>{segment.text}</DisclosureLine>;
         return (
-          <p key={index} className="m-0 whitespace-pre-wrap break-words">
+          <p key={index} className="m-0 whitespace-pre-wrap [overflow-wrap:anywhere]">
             {highlightSharedValues(segment.text.trim(), sharedValues).map((run, runIndex) =>
               run.shared ? (
                 <mark key={runIndex} className="rounded-sm bg-gold-soft px-1 text-ink underline decoration-gold decoration-2 underline-offset-4">

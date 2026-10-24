@@ -35,13 +35,34 @@ const slug = (s: string): string =>
     .filter((w) => w && w !== "the")
     .join("-");
 
+/** Genotype / test-result wording: patient-level findings that never belong in a disease-level cache. */
+const PATIENT_FINDING = /\b(?:hetero|homo|hemi)zygous|\bcompound\b|\bpathogenic\b|\bvariants?\b|\bmutations?\b|\bvus\b|\bexon\b|\bc\.\s?\d|\bp\.\s?\(?[a-z]{1,3}\d|\bdeletion\b|\bduplication\b|\bpositive\b|\bnegative\b|\bstage\b|\bgrade\b/i;
+const FILLER = new Set(["type", "form", "subtype", "variant", "the", "of", "and", "or"]);
+
+/**
+ * Disease-level subtype for the cache (and the needs prompt): keeps a real subtype ("proximal-type"), drops segments
+ * that describe the patient's own findings (variants, zygosity, stage) and tokens that merely restate the disease.
+ * Undefined when nothing disease-level is left.
+ */
+export function cacheSubtype(diseaseName: string, subtype?: string): string | undefined {
+  if (!subtype) return undefined;
+  const disease = new Set(slug(diseaseName).split("-"));
+  for (const segment of subtype.split(/[;,()]|\s-\s/)) {
+    if (!segment.trim() || PATIENT_FINDING.test(segment)) continue;
+    const words = slug(segment).split("-").filter((w) => w && !FILLER.has(w) && !disease.has(w) && !/^(?:[ivx]+|\d+)$/.test(w) && w !== "eds");
+    if (words.length) return words.join(" ").slice(0, 60);
+  }
+  return undefined;
+}
+
 /**
  * Cache key: normalized disease (+ subtype). Case, punctuation, accents and a trailing "syndrome/disease/disorder"
  * do not split the cache; a different subtype does. Personal fields never enter the key.
  */
 export function needsCacheKey(diseaseName: string, subtype?: string): string {
   const disease = slug(diseaseName).replace(/-(syndrome|disease|disorder)$/, "");
-  const sub = subtype ? slug(subtype) : "";
+  const normalized = cacheSubtype(diseaseName, subtype);
+  const sub = normalized ? slug(normalized) : "";
   return `${CACHE_VERSION}:${disease}${sub ? `|${sub}` : ""}`;
 }
 

@@ -17,7 +17,7 @@ import type { RunStore, RunUpdate } from "../run-store";
 import { runAgent, type MessagesClient } from "../runtime";
 import { personalizeNeeds, type DocumentHint } from "./personalize";
 import { collectNeedsSources, promptSources } from "./sources";
-import { getNeedsStore, NEEDS_CACHE_TTL_MS, needsCacheKey, type NeedsStore } from "./store";
+import { cacheSubtype, getNeedsStore, NEEDS_CACHE_TTL_MS, needsCacheKey, type NeedsStore } from "./store";
 import { validateNeeds } from "./validate";
 
 export const NEEDS_AGENT_NAME = "needs";
@@ -77,7 +77,8 @@ async function generate(caseId: string, c: CaseInput, sources: BriefSource[], st
     name: NEEDS_AGENT_NAME,
     model: modelFor("needs"),
     system: NEEDS_SYSTEM,
-    prompt: buildNeedsPrompt({ diseaseName: c.diseaseName, ...(c.subtype ? { subtype: c.subtype } : {}), ...(codes ? { codes } : {}) }, toPromptSources(sources)),
+    // Disease-level subtype only: the patient's own findings (variant, zygosity, stage) never shape cached content.
+    prompt: buildNeedsPrompt({ diseaseName: c.diseaseName, ...(cacheSubtype(c.diseaseName, c.subtype) ? { subtype: cacheSubtype(c.diseaseName, c.subtype) } : {}), ...(codes ? { codes } : {}) }, toPromptSources(sources)),
     tools: [],
     output: generatedNeedsSchema,
     caseId,
@@ -141,7 +142,7 @@ export async function runNeedsAnalyst(caseId: string, c: CaseInput, deps: NeedsD
       ...validated,
       cacheKey,
       diseaseName: c.diseaseName,
-      ...(c.subtype ? { subtype: c.subtype } : {}),
+      ...(cacheSubtype(c.diseaseName, c.subtype) ? { subtype: cacheSubtype(c.diseaseName, c.subtype) } : {}),
       generatedAt: now.toISOString(),
       mode: offline ? "offline" : "live",
     };
@@ -161,7 +162,7 @@ export async function runNeedsAnalyst(caseId: string, c: CaseInput, deps: NeedsD
   }
 }
 
-export { needsCacheKey, getNeedsStore, MemoryNeedsStore, PostgresNeedsStore, setNeedsStoreForTests, NEEDS_CACHE_TTL_MS } from "./store";
+export { cacheSubtype, needsCacheKey, getNeedsStore, MemoryNeedsStore, PostgresNeedsStore, setNeedsStoreForTests, NEEDS_CACHE_TTL_MS } from "./store";
 export type { NeedsStore } from "./store";
 export { validateNeeds, deriveSearchTerms, cleanSearchTerm } from "./validate";
 export { personalizeNeeds } from "./personalize";

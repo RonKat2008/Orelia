@@ -239,3 +239,16 @@ describe("needs cache table: disease-level, outlives any case, TTL", () => {
     expect(await store.findBase(needsCacheKey("Vascular Ehlers-Danlos syndrome"), new Date(0))).toBeNull();
   });
 });
+
+describe("cache subtype is disease-level only", () => {
+  it("drops patient findings and tokens that restate the disease, keeps a real subtype", async () => {
+    const { cacheSubtype } = await import("@/lib/agents/needs");
+    const vEDS = "vascular Ehlers-Danlos syndrome";
+    expect(cacheSubtype(vEDS, "vascular type (EDS type IV); heterozygous pathogenic COL3A1 variant")).toBeUndefined();
+    expect(needsCacheKey(vEDS, "vascular type (EDS type IV); heterozygous pathogenic COL3A1 variant")).toBe(needsCacheKey("Vascular Ehlers-Danlos syndrome"));
+    expect(cacheSubtype("Epithelioid sarcoma", "proximal-type")).toBe("proximal");
+    expect(cacheSubtype("Epithelioid sarcoma", "Proximal type; stage III; INI1 loss positive")).toBe("proximal");
+    expect(needsCacheKey("Epithelioid sarcoma", "proximal-type")).not.toBe(needsCacheKey("Epithelioid sarcoma", "distal (classic) type"));
+    expect(cacheSubtype("IgG4-related disease", "c.1234G>A missense variant")).toBeUndefined();
+  });
+});

@@ -17,7 +17,7 @@ export interface NavItem {
 export const MARKETING_NAV: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/how-it-works", label: "How it works" },
-  { href: "/trust", label: "Trust & safety" },
+  { href: "/trust", label: "Trust" },
   { href: "/about", label: "About" },
 ];
 
@@ -53,6 +53,12 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
         className,
       )}
     >
+      <a
+        href="#main"
+        className="sr-only rounded-sm bg-card px-4 py-2 text-small font-semibold text-ink shadow-md focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus-ring"
+      >
+        Skip to content
+      </a>
       <div className="page-container flex h-16 items-center gap-6 sm:h-18">
         <Wordmark />
 

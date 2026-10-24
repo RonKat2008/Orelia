@@ -29,8 +29,20 @@ export function DemoPanel() {
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let active = true;
+    void fetch("/api/demo/status").then(async (res) => {
+      if (!active) return;
+      if (!res.ok) {
+        setError("This panel is off. Set WAYFINDER_DEMO=1 and restart.");
+        return;
+      }
+      const body = (await res.json()) as DemoStatus;
+      if (active) setStatus(body);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function run(action: string, path: string, done: (body: Record<string, unknown>) => Notice) {
     setBusy(action);

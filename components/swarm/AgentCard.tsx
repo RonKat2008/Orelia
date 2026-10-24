@@ -80,7 +80,7 @@ export function AgentCard({ card, index }: { card: AgentCardState; index: number
       data-status={status}
       aria-labelledby={headingId}
       className={cn(
-        "relative grid content-start gap-4 overflow-hidden rounded-lg border bg-card p-5 shadow-xs",
+        "relative grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4 overflow-hidden rounded-lg border bg-card p-5 shadow-xs",
         "transition-[border-color,box-shadow] duration-300 ease-out-expo hover:border-line-strong hover:shadow-md motion-reduce:transition-none",
         status === "running" ? "border-teal/40 shadow-sm" : "border-line",
         status === "queued" && "bg-paper-2/50",

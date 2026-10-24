@@ -39,6 +39,17 @@ describe('AgentMailChannel', () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
+  it('uses a fixed sender inbox when senderInboxId is set (no inbox is created)', async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    fetcher.mockResolvedValueOnce(json(sendBody));
+    const channel = new AgentMailChannel({ apiKey: API_KEY, fetcher, guard, senderInboxId: 'sender@agentmail.to' });
+    const ref = await channel.send(gated());
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(call(fetcher, 0).url).toBe('https://api.agentmail.to/v0/inboxes/sender%40agentmail.to/messages/send');
+    expect(ref.inboxId).toBe('sender@agentmail.to');
+    expect(await channel.createCaseInbox('case-2')).toEqual({ inboxId: 'sender@agentmail.to', email: 'sender@agentmail.to' });
+  });
+
   it('sends text-only mail to the allowlisted address and returns provider ids', async () => {
     const { fetcher, channel } = setup(json(inboxBody), json(sendBody));
     const g = gated();

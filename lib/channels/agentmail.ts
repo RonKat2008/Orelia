@@ -12,6 +12,11 @@ export interface AgentMailChannelOptions {
   fetcher?: typeof fetch;
   guard: ChannelGuardOptions;
   inboxDomain?: string;
+  /**
+   * Send every case from this one existing inbox (AGENTMAIL_SENDER_INBOX_ID) instead of creating one inbox per case.
+   * For plans with an inbox cap (the free plan allows 3). Replies still route by provider thread id.
+   */
+  senderInboxId?: string;
   now?: () => Date;
 }
 
@@ -36,6 +41,7 @@ export class AgentMailChannel implements Channel {
   async createCaseInbox(caseId: string): Promise<CaseInbox> {
     const cached = this.inboxes.get(caseId);
     if (cached) return cached;
+    if (this.opts.senderInboxId) return { inboxId: this.opts.senderInboxId, email: this.opts.senderInboxId };
     try {
       const inbox = await this.client.inboxes.create({
         clientId: `wayfinder-case-${caseId}`, displayName: 'Wayfinder', metadata: { caseId },

@@ -86,3 +86,34 @@ describe("demo-reset main", () => {
     expect(r.skippedReason).toBeDefined();
   });
 });
+
+describe("seed-demo demo coordinator mode", () => {
+  const inboxes = [
+    { inboxId: "sender@agentmail.to", address: "sender@agentmail.to", displayName: "Sender" },
+    { inboxId: "coord@agentmail.to", address: "coord@agentmail.to", displayName: "Coord" },
+  ];
+  const fakeMail = () => ({
+    mode: "agentmail" as const,
+    createInbox: async () => { throw new Error("inbox limit reached"); },
+    listInboxes: async () => inboxes,
+    deleteInbox: async (id: string) => { deletedIds.push(id); },
+    listReceived: async () => [],
+    reply: async () => ({ messageId: "r" }),
+  });
+  const deletedIds: string[] = [];
+  const env = {
+    AGENTMAIL_API_KEY: "k", WAYFINDER_DEMO_COORDINATORS: "1",
+    OUTBOUND_ALLOWLIST: "sender@agentmail.to,coord@agentmail.to", AGENTMAIL_SENDER_INBOX_ID: "sender@agentmail.to",
+  };
+
+  it("borrows the existing coordinator inboxes, creates none, and reset never deletes them", async () => {
+    const r = await seed(["--live", "--no-case"], env, { mail: fakeMail(), log: () => undefined });
+    expect(r.created).toEqual([]);
+    expect(r.state.caseId).toBeNull();
+    expect(r.state.coordinators).toHaveLength(1);
+    expect(r.state.coordinators[0]).toMatchObject({ address: "coord@agentmail.to", borrowed: true, scenario: "needs_referral" });
+    const out = await reset(["--live"], env, { mail: fakeMail(), log: () => undefined });
+    expect(deletedIds).toEqual([]);
+    expect(out.deleted).toEqual([]);
+  });
+});

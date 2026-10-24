@@ -71,6 +71,8 @@ export interface PlanInput {
   allowlist: string[];
   now: number; // epoch ms
   timeScale: number;
+  /** Ignore messages received before this (epoch ms): a borrowed inbox may hold unrelated older mail. */
+  notBefore?: number;
 }
 
 /**
@@ -100,6 +102,7 @@ export function planReplies(input: PlanInput): ReplyPlan {
     );
     for (const m of msgs) {
       if (replied.has(m.messageId)) continue;
+      if (input.notBefore !== undefined && Date.parse(m.receivedAt) < input.notBefore) continue;
       const base = { coordinatorKey: c.key, inboxId: c.inboxId, messageId: m.messageId };
       if (c.scenario === 'silent' || c.reply === null || c.delaySeconds === null) {
         pending.push({ ...base, reason: 'silent coordinator never replies' });

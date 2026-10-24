@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import { createDemoMail } from "./demo/agentmail-mail";
 import type { DemoMail } from "./demo/mail";
 import { seedCase } from "./demo/seed-case";
+import { demoCoordinatorInboxes } from "../lib/outreach/demo-coordinators";
+import type { CoordinatorSpec } from "./demo/mail";
 import {
   loadCoordinatorSpecs,
   loadState,
@@ -56,7 +58,18 @@ export async function main(
   const coordinators: DemoState["coordinators"] = [];
   const created: string[] = [];
   const reused: string[] = [];
-  for (const spec of specs) {
+  // Demo coordinator mode: borrow our own existing allowlisted inboxes (an inbox-capped plan cannot create more).
+  const borrowedAddresses = mail.mode === "agentmail" ? demoCoordinatorInboxes(env) : [];
+  if (borrowedAddresses.length > 0) {
+    for (const [i, address] of borrowedAddresses.entries()) {
+      const inbox = existing.find((x) => x.address.toLowerCase() === address);
+      if (!inbox) throw new Error(`Demo coordinator inbox ${address} is not one of this AgentMail account's inboxes`);
+      const spec = borrowedPersonas(specs)[i % borrowedPersonas(specs).length];
+      reused.push(spec.key);
+      coordinators.push({ ...spec, key: i < borrowedPersonas(specs).length ? spec.key : `${spec.key}-${i}`, ...inbox, borrowed: true });
+    }
+  }
+  for (const spec of borrowedAddresses.length > 0 ? [] : specs) {
     const fromState = priorUsable?.coordinators.find((c) => c.username === spec.username);
     const fromList = existing.find((i) => i.address.split("@")[0] === spec.username);
     const inbox =
@@ -76,7 +89,7 @@ export async function main(
   const reportName = reportIdx >= 0 ? argv[reportIdx + 1] : undefined;
   let caseId = priorUsable?.caseId ?? null;
   let caseWritten = false;
-  if (!caseId) {
+  if (!caseId && !argv.includes("--no-case")) {
     const res = await seedCase({
       reportName,
       live: wantsLive,
@@ -114,6 +127,14 @@ export async function main(
   return { mode: mail.mode, reason, state, allowlist, caseWritten, created, reused };
 }
 
+
+/** Personas that actually reply, preferring the referral one (it turns into a clear tracker task). */
+export function borrowedPersonas(specs: CoordinatorSpec[]): CoordinatorSpec[] {
+  const order = ["needs_referral", "please_send_slides", "call_to_schedule"];
+  return specs
+    .filter((s) => s.reply !== null && s.delaySeconds !== null)
+    .sort((a, b) => order.indexOf(a.scenario) - order.indexOf(b.scenario));
+}
 
 const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";
 if (invoked === fileURLToPath(import.meta.url)) {

@@ -4,6 +4,8 @@ import { checkOutbound } from '../safety/outbound-gate';
 import { parseAllowlist } from '../safety/allowlist';
 import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
+import { demoCoordinatorFor, demoCoordinatorInboxes } from './demo-coordinators';
+import { isWebFormOnly, type ReachabilityEvidence } from './reachability';
 import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore, type ProviderRef } from './types';
 /**
  * The only addresses outreach may use are contact points stamped by code from tool output (intake-door
@@ -23,9 +25,19 @@ export class OutreachService {
     if (candidates.length !== ids.length) throw new OutreachError(404, ['candidate_not_found']);
     const existing = await this.store.contacts(caseId);
     const fresh = candidates.filter((c, index) => !existing.some(e => e.targetId === c.targetId && e.targetKind === c.targetKind) && candidates.findIndex(other => other.targetId === c.targetId && other.targetKind === c.targetKind) === index);
-    const unavailable: { candidateId: string; channel: 'none'; reason: string }[] = [];
+    const unavailable: { candidateId: string; channel: 'none'; reason: string; route?: 'web_form' }[] = [];
+    // Demo coordinator mode (demo only, see demo-coordinators.ts): every new contact goes to one of our own
+    // allowlisted AgentMail test inboxes instead of the resource's real contact point.
+    const demoInboxes = demoCoordinatorInboxes(this.env);
     const proposed = fresh.flatMap(c => {
+      const demo = demoCoordinatorFor(`${c.targetKind}:${c.targetId}`, demoInboxes);
+      if (demo) return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: 'email' as const, address: demo, state: 'drafted' } satisfies Contact];
       const door = address(c);
+      if (!door && isWebFormOnly(c.evidence as ReachabilityEvidence[])) {
+        // Reachable only through an online intake/application form (Kernel web-application channel), which has no email/phone contact row.
+        unavailable.push({ candidateId: c.id, channel: 'none', route: 'web_form', reason: 'Its only route is an online intake form. That is handled as an online application in the plan step, not sent as email or a call.' });
+        return [];
+      }
       if (!door) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'No tool-sourced intake email or phone is available.' }); return []; }
       return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: door.channel, address: door.address, state: 'drafted' } satisfies Contact];
     });

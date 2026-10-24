@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoCoordinatorBadge } from "@/components/outreach/DemoCoordinators";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Lock, Mail, PhoneCall } from "lucide-react";
@@ -234,6 +235,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
                       </span>
                     </span>
                     <Badge tone="sage">Only route found</Badge>
+                    <DemoCoordinatorBadge address={contact.address} />
                   </p>
                   <p className="m-0 text-small text-ink-2">
                     This is the intake {contact.channel === "email" ? "email" : "number"} listed on their public page.
@@ -312,11 +314,17 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       })}
 
       {unavailable.map((item) => (
-        <Card key={item.candidateId} variant="inset" data-channel="none">
-          <h3 className="m-0 mb-2 font-display text-h4 font-normal text-ink display-soft">{item.name ? <>No way to reach {item.name}</> : "No way to reach this one"}</h3>
+        <Card key={item.candidateId} variant="inset" data-channel={item.route === "web_form" ? "web_form" : "none"}>
+          <h3 className="m-0 mb-2 font-display text-h4 font-normal text-ink display-soft">
+            {item.route === "web_form"
+              ? item.name ? <>{item.name} has an online form</> : "This one has an online form"
+              : item.name ? <>No way to reach {item.name}</> : "No way to reach this one"}
+          </h3>
           <p className="m-0 max-w-prose text-body text-ink-2">
-            This resource has no email or phone number we could verify, so there is nothing to send and no option to
-            send it. {item.reason}
+            {item.route === "web_form"
+              ? "We found an online intake form for this resource, but no email or phone number. Nothing is sent from this step; the form is filled in for your review in the plan. "
+              : "This resource has no email or phone number we could verify, so there is nothing to send and no option to send it. "}
+            {item.route === "web_form" ? null : item.reason}
           </p>
         </Card>
       ))}

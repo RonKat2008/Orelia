@@ -1,0 +1,85 @@
+.panel {
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.panel h2 {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.formula {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.factor {
+  display: grid;
+  gap: 6px;
+}
+
+.factor header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.factor label {
+  font-weight: 600;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.factor input[type="range"] {
+  width: 100%;
+  accent-color: var(--green);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions button {
+  font: inherit;
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: #fbf8f3;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.actions button[type="button"] {
+  background: transparent;
+  color: var(--green-deep);
+}
+
+@media (max-width: 360px) {
+  .panel {
+    padding: 12px;
+  }
+
+  .factor header {
+    flex-direction: column;
+    gap: 2px;
+  }
+}

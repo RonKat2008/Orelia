@@ -12,7 +12,14 @@ export {
   type Evidence,
   type SourceKind,
 } from "./evidence";
-export { resourceSchema, type Resource } from "./resource";
+export {
+  expertProfileSchema,
+  resourceSchema,
+  trialRegistrySchema,
+  type ExpertProfile,
+  type Resource,
+  type TrialRegistry,
+} from "./resource";
 export {
   agentNameSchema,
   agentRunStatusSchema,

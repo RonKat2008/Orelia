@@ -1,0 +1,66 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:fight-veds",
+      "name": "FIGHT vEDS",
+      "organizationKind": "advocacy",
+      "url": "https://www.fightveds.org/",
+      "evidenceRefs": [
+        "https://www.fightveds.org/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:the-veds-movement",
+      "name": "The VEDS Movement",
+      "organizationKind": "advocacy",
+      "url": "https://thevedsmovement.org/research/veds-collaborative/",
+      "evidenceRefs": [
+        "https://thevedsmovement.org/research/veds-collaborative/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:collagen-advocacy-network",
+      "name": "Collagen Advocacy Network",
+      "organizationKind": "advocacy",
+      "url": "https://collagenadvocacynetwork.org/",
+      "evidenceRefs": [
+        "https://collagenadvocacynetwork.org/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:we-are-veds",
+      "name": "We Are vEDS",
+      "organizationKind": "advocacy",
+      "url": "https://www.weareveds.com/",
+      "evidenceRefs": [
+        "https://www.weareveds.com/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "advocacy_organization",
+      "claim": "FIGHT vEDS describes itself as a non-profit organization dedicated to fighting and finding a treatment for vascular Ehlers-Danlos Syndrome.",
+      "sourceUrl": "https://www.fightveds.org/"
+    },
+    {
+      "claimType": "advocacy_organization",
+      "claim": "The VEDS Movement's VEDS Collaborative page describes a group of patients, family members, researchers and clinicians.",
+      "sourceUrl": "https://thevedsmovement.org/research/veds-collaborative/"
+    },
+    {
+      "claimType": "advocacy_organization",
+      "claim": "Collagen Advocacy Network describes advocacy, education and research for people living with genetically defined forms of Ehlers-Danlos Syndrome.",
+      "sourceUrl": "https://collagenadvocacynetwork.org/"
+    },
+    {
+      "claimType": "advocacy_organization",
+      "claim": "We Are vEDS describes resources and support for the vascular Ehlers-Danlos community.",
+      "sourceUrl": "https://www.weareveds.com/"
+    }
+  ]
+}

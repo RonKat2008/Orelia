@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "kind": "institution",
+      "id": "inst:johns-hopkins-cardiovascular-connective-tissue-disorder-clinic",
+      "name": "Johns Hopkins Cardiovascular Connective Tissue Disorder Clinic",
+      "institutionKind": "rare_disease_center",
+      "evidenceRefs": [
+        "https://www.hopkinsmedicine.org/genetic-medicine/patient-care/genetics-clinics/cardiovascular-connective-tissue-disorder-clinic"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "disease_program",
+      "claim": "The Johns Hopkins Institute of Genetic Medicine lists a Cardiovascular Connective Tissue Disorder Clinic.",
+      "sourceUrl": "https://www.hopkinsmedicine.org/genetic-medicine/patient-care/genetics-clinics/cardiovascular-connective-tissue-disorder-clinic"
+    }
+  ]
+}

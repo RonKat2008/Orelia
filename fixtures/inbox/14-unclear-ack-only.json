@@ -1,0 +1,18 @@
+{
+  "id": "14-unclear-ack-only",
+  "description": "Acknowledgement only.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_unclear_ack_only",
+    "from": "j.whitfield@lakeview-sarcoma.example.org",
+    "subject": "Re: Hello",
+    "body": "Received, thank you.\n\nJ. Whitfield",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "unclear",
+    "confidence": 0.8,
+    "rationale": "The message only acknowledges receipt and asks for nothing.",
+    "quote": "Received, thank you."
+  }
+}

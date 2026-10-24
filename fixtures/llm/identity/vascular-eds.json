@@ -1,0 +1,93 @@
+{
+  "records": [
+    {
+      "kind": "expert",
+      "id": "npi:1063591154",
+      "name": "Peter Byers",
+      "npi": "1063591154",
+      "credentials": "M.D.",
+      "specialty": "Medical Genetics, Clinical Molecular Genetics",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1063591154"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:melanie-pepin",
+      "name": "Melanie Pepin",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Melanie&last_name=Pepin&state=WA&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:dru-leistritz",
+      "name": "Dru Leistritz",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dru&last_name=Leistritz&state=WA&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:kenneth-rice",
+      "name": "Kenneth Rice",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kenneth&last_name=Rice&state=WA&limit=10"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "npi:1619930385",
+      "name": "Matthew Eagleton",
+      "npi": "1619930385",
+      "credentials": "MD",
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/provider-view/1619930385"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:mingdong-liu",
+      "name": "Mingdong Liu",
+      "npi": null,
+      "evidenceRefs": [
+        "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mingdong&last_name=Liu&state=WA&limit=10"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1063591154 is registered to PETER BYERS (Medical Genetics, Clinical Molecular Genetics) in SEATTLE, WA; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1063591154"
+    },
+    {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Melanie Pepin (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Melanie&last_name=Pepin&state=WA&limit=10"
+    },
+    {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Dru Leistritz (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Dru&last_name=Leistritz&state=WA&limit=10"
+    },
+    {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Kenneth Rice (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Kenneth&last_name=Rice&state=WA&limit=10"
+    },
+    {
+      "claimType": "identity_verified",
+      "claim": "NPI 1619930385 is registered to MATTHEW EAGLETON in CLEVELAND, OH; it was the only exact name match NPPES returned.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/provider-view/1619930385"
+    },
+    {
+      "claimType": "identity_unverified",
+      "claim": "NPPES returned 0 exact name matches for Mingdong Liu (0 providers returned); identity was not confirmed.",
+      "sourceUrl": "https://npiregistry.cms.hhs.gov/api/?version=2.1&first_name=Mingdong&last_name=Liu&state=WA&limit=10"
+    }
+  ]
+}

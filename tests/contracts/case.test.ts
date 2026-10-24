@@ -26,4 +26,10 @@ describe("Case contracts", () => {
   it("rejects a case without a disease name", () => {
     expect(caseInputSchema.safeParse({ ...input, diseaseName: "" }).success).toBe(false);
   });
+
+  it("accepts null disease codes (extractors emit null for unknown codes)", () => {
+    const parsed = caseInputSchema.parse({ ...input, diseaseCodes: { orpha: null, mesh: "D012509", icd10: null } });
+    expect(parsed.diseaseCodes?.orpha).toBeNull();
+    expect(caseInputSchema.parse({ ...input, diseaseCodes: {} }).diseaseCodes).toEqual({});
+  });
 });

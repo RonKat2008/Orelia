@@ -1,0 +1,23 @@
+{
+  "id": "17-voice-schedule-phone-hours",
+  "description": "Voice transcript with spoken number and hours, plus items to have ready.",
+  "event": {
+    "channel": "voice",
+    "providerCallId": "call_voice_schedule_phone_hours",
+    "from": "+1 202-555-0106",
+    "body": "AI: Hello, this is an AI assistant calling on behalf of a patient. May I ask how to schedule a new-patient visit?\nCallee: Sure, call our central scheduling at 202-555-0155.\nAI: What are the hours?\nCallee: Monday through Thursday, 7:30 to 3:30 Mountain time.\nAI: Should they have anything ready?\nCallee: Insurance information and their pathology report if they have one.\nAI: Thank you very much.",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "call_to_schedule",
+    "confidence": 0.95,
+    "rationale": "The callee gave a scheduling number, hours, and what to have ready.",
+    "quote": "call our central scheduling at 202-555-0155",
+    "phone": "202-555-0155",
+    "hours": "Monday through Thursday, 7:30 to 3:30 Mountain time",
+    "haveReady": [
+      "Insurance information",
+      "pathology report"
+    ]
+  }
+}

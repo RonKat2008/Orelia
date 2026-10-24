@@ -1,0 +1,36 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:the-assistance-fund",
+      "name": "The Assistance Fund",
+      "organizationKind": "financial_aid",
+      "url": "https://tafcares.org/newsroom/press-releases/the-assistance-fund-opens-new-program-for-immunoglobulin-g4-related-disease/",
+      "evidenceRefs": [
+        "https://tafcares.org/newsroom/press-releases/the-assistance-fund-opens-new-program-for-immunoglobulin-g4-related-disease/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:national-organization-for-rare-disorders-nord-patient-assistance-programs",
+      "name": "National Organization for Rare Disorders (NORD) Patient Assistance Programs",
+      "organizationKind": "financial_aid",
+      "url": "https://rarediseases.org/patient-assistance-programs/",
+      "evidenceRefs": [
+        "https://rarediseases.org/patient-assistance-programs/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "financial_aid_program",
+      "claim": "A press release from The Assistance Fund announces a financial assistance program for people living with immunoglobulin G4-related disease, covering out-of-pocket costs such as copays and insurance premiums.",
+      "sourceUrl": "https://tafcares.org/newsroom/press-releases/the-assistance-fund-opens-new-program-for-immunoglobulin-g4-related-disease/"
+    },
+    {
+      "claimType": "financial_aid_program",
+      "claim": "NORD's Patient Assistance Programs page says NORD has helped patients who are struggling to afford their medications and care.",
+      "sourceUrl": "https://rarediseases.org/patient-assistance-programs/"
+    }
+  ]
+}

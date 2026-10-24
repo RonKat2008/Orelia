@@ -1,0 +1,81 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:sarcoma-alliance",
+      "name": "Sarcoma Alliance",
+      "organizationKind": "financial_aid",
+      "url": "https://sarcomaalliance.org/financial-assistance/",
+      "evidenceRefs": [
+        "https://sarcomaalliance.org/financial-assistance/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:sarcoma-alliance-second-opinion-grants",
+      "name": "Sarcoma Alliance Second Opinion Grants",
+      "organizationKind": "financial_aid",
+      "url": "https://sarcomaalliance.org/second-opinion-grants/",
+      "evidenceRefs": [
+        "https://sarcomaalliance.org/second-opinion-grants/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:beat-the-odds-sarcoma-fund",
+      "name": "Beat the Odds Sarcoma Fund",
+      "organizationKind": "travel_aid",
+      "url": "https://beattheoddsfund.org/apply",
+      "evidenceRefs": [
+        "https://beattheoddsfund.org/apply"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:sarcoma-foundation-of-america-clinical-trial-assistance",
+      "name": "Sarcoma Foundation of America Clinical Trial Assistance",
+      "organizationKind": "travel_aid",
+      "url": "https://curesarcoma.org/support-resources/clinical-trials-assistance/",
+      "evidenceRefs": [
+        "https://curesarcoma.org/support-resources/clinical-trials-assistance/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:lmsdr-financial-resources",
+      "name": "LMSDR Financial Resources",
+      "organizationKind": "financial_aid",
+      "url": "https://www.lmsdr.org/financial-resources",
+      "evidenceRefs": [
+        "https://www.lmsdr.org/financial-resources"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "financial_aid_program",
+      "claim": "The Sarcoma Alliance Financial Assistance page lists organizations offering grants, copay help, travel and lodging support.",
+      "sourceUrl": "https://sarcomaalliance.org/financial-assistance/"
+    },
+    {
+      "claimType": "financial_aid_program",
+      "claim": "The Sarcoma Alliance Second Opinion Grants page describes the Suzanne Renee Leider Memorial Assistance Fund, which provides financial assistance for obtaining a second opinion from a sarcoma expert.",
+      "sourceUrl": "https://sarcomaalliance.org/second-opinion-grants/"
+    },
+    {
+      "claimType": "travel_aid_program",
+      "claim": "Beat the Odds Sarcoma Fund hosts an application for a travel grant for people who need to travel to a distant sarcoma center.",
+      "sourceUrl": "https://beattheoddsfund.org/apply"
+    },
+    {
+      "claimType": "travel_aid_program",
+      "claim": "The Sarcoma Foundation of America describes a program providing financial reimbursement for transportation and lodging expenses tied to clinical trial participation.",
+      "sourceUrl": "https://curesarcoma.org/support-resources/clinical-trials-assistance/"
+    },
+    {
+      "claimType": "financial_aid_program",
+      "claim": "LMSDR's Financial Help for Sarcoma Patients page lists funds, including one covering out-of-pocket expenses for patients in clinical trials.",
+      "sourceUrl": "https://www.lmsdr.org/financial-resources"
+    }
+  ]
+}

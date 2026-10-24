@@ -1,0 +1,21 @@
+{
+  "id": "10-redirect-voice-coordinator",
+  "description": "Voice redirect to a named coordinator with a direct number.",
+  "event": {
+    "channel": "voice",
+    "providerCallId": "call_redirect_voice_coordinator",
+    "from": "+1 202-555-0171",
+    "body": "AI: Hello, this is an AI assistant calling on behalf of a patient about a new-patient visit.\nCallee: You want our sarcoma program coordinator, Alicia Brandt. Her direct line is 202-555-0189.\nAI: Thank you. Could you repeat the number?\nCallee: 202-555-0189.\nAI: Thank you, goodbye.",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "redirect",
+    "confidence": 0.92,
+    "rationale": "The callee directed the call to a named coordinator and gave her direct number.",
+    "quote": "You want our sarcoma program coordinator, Alicia Brandt.",
+    "redirect": {
+      "name": "Alicia Brandt",
+      "phone": "202-555-0189"
+    }
+  }
+}

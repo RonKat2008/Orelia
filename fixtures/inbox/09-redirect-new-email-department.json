@@ -1,0 +1,23 @@
+{
+  "id": "09-redirect-new-email-department",
+  "description": "Redirect to a different department with a new email address.",
+  "event": {
+    "channel": "email",
+    "providerThreadId": "thr_redirect_new_email_department",
+    "from": "info@clearwater-health.example.org",
+    "subject": "Re: Patient inquiry",
+    "body": "Hello,\n\nWe are not the right team for this. Please write to our Rare Disease Access Office at access@clearwater-health.example.org; Marcus Hale manages those requests.\n\nBest wishes,\nFront Office",
+    "receivedAt": "2026-10-29T15:04:00Z"
+  },
+  "expected": {
+    "class": "redirect",
+    "confidence": 0.94,
+    "rationale": "The sender points to another department and gives its email address.",
+    "quote": "Please write to our Rare Disease Access Office at access@clearwater-health.example.org",
+    "redirect": {
+      "name": "Marcus Hale",
+      "email": "access@clearwater-health.example.org",
+      "department": "Rare Disease Access Office"
+    }
+  }
+}

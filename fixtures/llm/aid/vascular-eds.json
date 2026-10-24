@@ -1,0 +1,51 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:the-ehlers-danlos-society-financial-assistance",
+      "name": "The Ehlers-Danlos Society (financial assistance)",
+      "organizationKind": "financial_aid",
+      "url": "https://www.ehlers-danlos.com/us-resource-hub/disability-benefits-financial-assistance/",
+      "evidenceRefs": [
+        "https://www.ehlers-danlos.com/us-resource-hub/disability-benefits-financial-assistance/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:national-organization-for-rare-disorders-nord-patient-assistance-programs",
+      "name": "National Organization for Rare Disorders (NORD) Patient Assistance Programs",
+      "organizationKind": "financial_aid",
+      "url": "https://rarediseases.org/patient-assistance-programs/",
+      "evidenceRefs": [
+        "https://rarediseases.org/patient-assistance-programs/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:eds-guardians",
+      "name": "EDS Guardians",
+      "organizationKind": "financial_aid",
+      "url": "https://www.edsguardians.org/",
+      "evidenceRefs": [
+        "https://www.edsguardians.org/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "financial_aid_program",
+      "claim": "The Ehlers-Danlos Society's U.S. resource hub has a Disability Benefits & Financial Assistance page covering disability benefits, financial aid and grants.",
+      "sourceUrl": "https://www.ehlers-danlos.com/us-resource-hub/disability-benefits-financial-assistance/"
+    },
+    {
+      "claimType": "financial_aid_program",
+      "claim": "NORD's Patient Assistance Programs page says NORD has helped patients who are struggling to afford their medications and care.",
+      "sourceUrl": "https://rarediseases.org/patient-assistance-programs/"
+    },
+    {
+      "claimType": "financial_aid_program",
+      "claim": "EDS Guardians describes itself as a 501(c)(3) charity helping EDS patients who lack support and need medical care; its page mentions a Travel Grants & Assistance section.",
+      "sourceUrl": "https://www.edsguardians.org/"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "records": [
+    {
+      "kind": "trial",
+      "id": "trial:NCT05994664",
+      "nctId": "NCT05994664",
+      "title": "Heart Coherence Training on Vascular Ehlers-Danlos Syndrome Patients",
+      "status": "RECRUITING",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT05994664"
+      ]
+    },
+    {
+      "kind": "trial",
+      "id": "trial:NCT04806620",
+      "nctId": "NCT04806620",
+      "title": "Unhide® Project: A Digital Health Platform to Collect Lifestyle Data for Brain Inflammation Research",
+      "status": "RECRUITING",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT04806620"
+      ]
+    },
+    {
+      "kind": "trial",
+      "id": "trial:NCT07464093",
+      "nctId": "NCT07464093",
+      "title": "STABLE Pilates for Hypermobility",
+      "status": "RECRUITING",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT07464093"
+      ]
+    },
+    {
+      "kind": "trial",
+      "id": "trial:NCT02050113",
+      "nctId": "NCT02050113",
+      "title": "Complex Aortic Aneurysm Repair Using Physician Modified Endografts and Custom Made Devices",
+      "status": "RECRUITING",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT02050113"
+      ]
+    },
+    {
+      "kind": "trial",
+      "id": "trial:NCT05432466",
+      "nctId": "NCT05432466",
+      "title": "Clinical Trial to Compare the Efficacy of Celiprolol to Placebo in Patients With Vascular Ehlers-Danlos Syndrome",
+      "status": "RECRUITING",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT05432466"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "trial_recruiting",
+      "claim": "ClinicalTrials.gov lists NCT05994664 as RECRUITING (NA; sponsor Baylor College of Medicine) with U.S. sites in Houston, Texas.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT05994664"
+    },
+    {
+      "claimType": "trial_recruiting",
+      "claim": "ClinicalTrials.gov lists NCT04806620 as RECRUITING (sponsor Brain Inflammation Collaborative) with U.S. sites in Delafield, Wisconsin.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT04806620"
+    },
+    {
+      "claimType": "trial_recruiting",
+      "claim": "ClinicalTrials.gov lists NCT07464093 as RECRUITING (NA; sponsor Brigham and Women's Hospital) with U.S. sites in Chestnut Hill, Massachusetts.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT07464093"
+    },
+    {
+      "claimType": "trial_recruiting",
+      "claim": "ClinicalTrials.gov lists NCT02050113 as RECRUITING (NA; sponsor Andres Schanzer) with U.S. sites in Worcester, Massachusetts.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT02050113"
+    },
+    {
+      "claimType": "trial_recruiting",
+      "claim": "ClinicalTrials.gov lists NCT05432466 as RECRUITING (PHASE3; sponsor Acer Therapeutics Inc.) with U.S. sites in Culver City, California.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT05432466"
+    }
+  ]
+}

@@ -9,9 +9,9 @@ export const goalSchema = z.enum([
 ]);
 
 export const diseaseCodesSchema = z.object({
-  orpha: z.string().optional(),
-  mesh: z.string().optional(),
-  icd10: z.string().optional(),
+  orpha: z.string().nullable().optional(),
+  mesh: z.string().nullable().optional(),
+  icd10: z.string().nullable().optional(),
 });
 
 export const caseInputSchema = z.object({

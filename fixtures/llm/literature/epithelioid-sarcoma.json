@@ -1,0 +1,90 @@
+{
+  "records": [
+    {
+      "kind": "expert",
+      "id": "expert:brielle-blanchard",
+      "name": "Brielle Blanchard",
+      "evidenceRefs": [
+        "lit:brielle-blanchard:37191372"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:jerad-gardner",
+      "name": "Jerad Gardner",
+      "evidenceRefs": [
+        "lit:jerad-gardner:37191372"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:liping-li",
+      "name": "Liping Li",
+      "evidenceRefs": [
+        "lit:liping-li:37191372"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:haijun-zhou",
+      "name": "Haijun Zhou",
+      "evidenceRefs": [
+        "lit:haijun-zhou:31087789"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:richard-moore",
+      "name": "Richard Moore",
+      "evidenceRefs": [
+        "lit:richard-moore:11925150"
+      ]
+    },
+    {
+      "kind": "expert",
+      "id": "expert:ritu-nayar",
+      "name": "Ritu Nayar",
+      "evidenceRefs": [
+        "lit:ritu-nayar:31087789"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "lit:brielle-blanchard:37191372",
+      "claimType": "disease_publications",
+      "claim": "Brielle Blanchard is listed as an author of PMID 37191372. In the PubMed results retrieved for Epithelioid sarcoma, Brielle Blanchard appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37191372/"
+    },
+    {
+      "id": "lit:jerad-gardner:37191372",
+      "claimType": "disease_publications",
+      "claim": "Jerad Gardner is listed as an author of PMID 37191372. In the PubMed results retrieved for Epithelioid sarcoma, Jerad Gardner appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37191372/"
+    },
+    {
+      "id": "lit:liping-li:37191372",
+      "claimType": "disease_publications",
+      "claim": "Liping Li is listed as an author of PMID 37191372. In the PubMed results retrieved for Epithelioid sarcoma, Liping Li appears on 1 paper(s), 1 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/37191372/"
+    },
+    {
+      "id": "lit:haijun-zhou:31087789",
+      "claimType": "disease_publications",
+      "claim": "Haijun Zhou is listed as an author of PMID 31087789. In the PubMed results retrieved for Epithelioid sarcoma, Haijun Zhou appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31087789/"
+    },
+    {
+      "id": "lit:richard-moore:11925150",
+      "claimType": "disease_publications",
+      "claim": "Richard Moore is listed as an author of PMID 11925150. In the PubMed results retrieved for Epithelioid sarcoma, Richard Moore appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/11925150/"
+    },
+    {
+      "id": "lit:ritu-nayar:31087789",
+      "claimType": "disease_publications",
+      "claim": "Ritu Nayar is listed as an author of PMID 31087789. In the PubMed results retrieved for Epithelioid sarcoma, Ritu Nayar appears on 1 paper(s), 0 from the last 5 years.",
+      "sourceUrl": "https://pubmed.ncbi.nlm.nih.gov/31087789/"
+    }
+  ]
+}

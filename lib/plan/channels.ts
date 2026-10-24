@@ -51,6 +51,13 @@ export interface WebFormChannel {
   submitGated(gated: GatedDraft): Promise<SubmitResult>;
 }
 
+/** Server log for a failed browser step: error class and a short message with query strings (tokens) removed. */
+function logBrowserFailure(step: string, error: unknown): void {
+  const name = error instanceof Error ? error.name : 'unknown';
+  const message = error instanceof Error ? error.message.replace(/\?[^\s]*/g, '?…').slice(0, 200) : '';
+  console.error(`[plan-web-form] ${step} failed: ${name}: ${message}`);
+}
+
 const unavailable = (reason: string): NotAvailable => ({ ok: false, status: 'not_available', reason });
 
 /** No browser automation: every call reports 'not_available' and performs no I/O. */
@@ -128,7 +135,8 @@ export class KernelPlanWebForm implements WebFormChannel {
         url, caseId: input.caseId, ...(input.contactId ? { contactId: input.contactId } : {}),
         caseRecord: ctx.caseRecord, sharedFields: ctx.sharedFields, ...(this.deps.docStore ? { docStore: this.deps.docStore } : {}),
       });
-    } catch {
+    } catch (error) {
+      logBrowserFailure('draftFill', error);
       return unavailable(BROWSER_FAILED);
     }
     const draft: WebApplicationDraft = {

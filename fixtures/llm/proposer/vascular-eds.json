@@ -1,0 +1,8 @@
+{
+  "merges": [{
+    "keys": ["expert:name:alex rivera", "expert:npi:1234567890"],
+    "reason": "Literature and Identity cite the same structured NPI.",
+    "evidenceIds": ["e77a7c5f-8d69-579a-a6b2-343fb5160f7e", "7e2cfb8f-2d1f-5b4e-a420-aa6b1b8d0b7b"]
+  }],
+  "conflicts": [{"key": "expert:npi:1234567890", "reason": "The same NPI has two different sourced phone numbers; confirm the intake contact."}]
+}

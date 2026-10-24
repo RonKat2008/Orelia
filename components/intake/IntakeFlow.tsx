@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Case, CaseInput } from "@/lib/contracts";
 import { goalSchema } from "@/lib/contracts";
+import { Reveal } from "@/components/motion/Reveal";
 import type { DemoReport } from "./demos";
 import { confirmAndResearch, extractCase } from "./case-client";
 
@@ -147,6 +148,7 @@ export function IntakeFlow({ demos }: Props) {
         </div>
       </section>
 
+      <Reveal revealKey={draft ? `draft-${draft.id}` : "none"}>
       {draft ? (
         <section className="panel stack" aria-labelledby="fields-heading">
           <h2 id="fields-heading">Extracted case</h2>
@@ -234,8 +236,11 @@ export function IntakeFlow({ demos }: Props) {
           </div>
         </section>
       ) : null}
+      </Reveal>
 
-      {message ? <p className="notice">{message}</p> : null}
+      <div aria-live="polite">
+        <Reveal revealKey={message ?? "none"}>{message ? <p className="notice">{message}</p> : null}</Reveal>
+      </div>
     </div>
   );
 }

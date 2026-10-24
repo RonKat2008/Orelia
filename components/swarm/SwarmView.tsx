@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AgentCard } from "./AgentCard";
+import { StaggerList } from "@/components/motion/StaggerList";
+import { SwarmConstellation } from "@/components/motion/swarm/SwarmConstellation";
+import type { SwarmAgent } from "@/lib/motion/status";
+import { AgentCard, countsFor } from "./AgentCard";
 import {
   applySwarmEvent,
   initialAgents,
@@ -10,6 +13,10 @@ import {
   playMockStream,
   type AgentCardState,
 } from "./stream";
+
+function toSwarmAgents(cards: AgentCardState[]): SwarmAgent[] {
+  return cards.map((card) => ({ name: card.agent, status: card.status, counts: countsFor(card) }));
+}
 
 export function SwarmView({ caseId }: { caseId: string }) {
   const [cards, setCards] = useState<AgentCardState[]>(initialAgents);
@@ -62,11 +69,16 @@ export function SwarmView({ caseId }: { caseId: string }) {
           ? "Showing a typed preview of the research swarm. The live stream connects when the research service is available."
           : "Live updates from the research swarm."}
       </p>
-      <div className="cards">
-        {cards.map((card) => (
-          <AgentCard key={card.agent} card={card} />
-        ))}
-      </div>
+      <SwarmConstellation agents={toSwarmAgents(cards)} />
+      <h2 className="swarm-cards-heading">What each search returned</h2>
+      <StaggerList
+        className="cards"
+        items={cards}
+        getKey={(card) => card.agent}
+        reorder={false}
+        aria-label="Research agents"
+        renderItem={(card) => <AgentCard card={card} />}
+      />
       {finished ? (
         <div className="row">
           <Link className="button" href={`/cases/${caseId}/shortlist`}>

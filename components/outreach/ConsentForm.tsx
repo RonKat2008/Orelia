@@ -20,6 +20,7 @@ import {
   type UnavailableContact,
 } from "./client";
 import type { CaseInput } from "@/lib/contracts";
+import { EmptyState, ErrorState, LoadingSkeleton } from "@/components/threads/states";
 
 export function ConsentForm({ caseId }: { caseId: string }) {
   const [caseRecord, setCaseRecord] = useState<CaseInput | null>(null);
@@ -114,14 +115,17 @@ export function ConsentForm({ caseId }: { caseId: string }) {
         void save();
       }}
     >
-      {status ? <p role="status">{status}</p> : null}
-      {errors.length > 0 ? (
-        <ul>
-          {errors.map((error) => (
-            <li key={error}>{error}</li>
-          ))}
-        </ul>
+      {status === "Loading the case and selected resources." ? <LoadingSkeleton label="Loading consent" /> : null}
+      {status && status !== "Loading the case and selected resources." ? <p role="status">{status}</p> : null}
+      {status?.startsWith("Select up to five") ? (
+        <EmptyState
+          title="Nothing selected"
+          detail="Pick up to five resources before choosing what each contact may see."
+          actionHref={`/cases/${caseId}/shortlist`}
+          actionLabel="Open the shortlist"
+        />
       ) : null}
+      {errors.length > 0 ? <ErrorState title="Consent was not saved" detail={errors.join(" ")} /> : null}
       {unavailable.map((item) => (
         <article key={item.candidateId} data-channel="none">
           <h2>Unavailable</h2>

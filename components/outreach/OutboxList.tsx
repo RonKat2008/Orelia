@@ -14,6 +14,7 @@ import {
   type ApiDraft,
 } from "./client";
 import type { CaseInput } from "@/lib/contracts";
+import { EmptyState, LoadingSkeleton } from "@/components/threads/states";
 
 type Row = {
   contact: ApiContact;
@@ -73,7 +74,17 @@ export function OutboxList({ caseId }: { caseId: string }) {
 
   return (
     <div>
-      {notice ? <p role="status">{notice}</p> : null}
+      {notice === "Loading drafts from the server." ? <LoadingSkeleton label="Loading drafts" /> : null}
+      {notice === "Save contacts on the consent page first. There is nothing to approve." ? (
+        <EmptyState
+          title="No drafts yet"
+          detail={notice}
+          actionHref={`/cases/${caseId}/consent`}
+          actionLabel="Open consent"
+        />
+      ) : notice && notice !== "Loading drafts from the server." ? (
+        <p role="status">{notice}</p>
+      ) : null}
       <ul className="plain">
         {rows.map((row) => {
           const draft = row.draft;

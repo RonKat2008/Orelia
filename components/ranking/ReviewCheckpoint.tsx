@@ -61,7 +61,10 @@ export function ReviewCheckpoint({ caseId, resources, agreement = [], onSubmit }
         />
       </div>
       {resources.length === 0 ? (
-        <p className={styles.empty}>No stored candidates to review for this case yet.</p>
+        <p className={styles.empty}>
+          No stored candidates to review for this case yet.{" "}
+          <a href={`/cases/${caseId}/shortlist`}>Open the shortlist</a> and preview an order first.
+        </p>
       ) : (
         resources.map((resource) => {
           const verdict = verdicts[resource.id] ?? "";

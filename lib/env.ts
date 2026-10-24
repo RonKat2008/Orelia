@@ -36,6 +36,12 @@ const envSchema = z.object({
   KERNEL_API_KEY: optionalEnv,
   OUTBOUND_WEB_ALLOWLIST: optionalEnv,
   // --- end task #58 ---
+  // --- calendar lane: token sealing + optional Google Calendar OAuth ---
+  WAYFINDER_TOKEN_KEY: optionalEnv,
+  GOOGLE_CLIENT_ID: optionalEnv,
+  GOOGLE_CLIENT_SECRET: optionalEnv,
+  GOOGLE_REDIRECT_URI: optionalEnv,
+  // --- end calendar lane ---
 });
 
 export type Env = z.infer<typeof envSchema>;

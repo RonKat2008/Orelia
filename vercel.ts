@@ -58,6 +58,8 @@ export const config: VercelConfig = {
   crons: [
     { path: "/api/cron/follow-ups", schedule: "0 * * * *" },
     { path: "/api/cron/research-watchdog", schedule: "*/10 * * * *" },
+    // In-app appointment reminders (1 day ahead); no patient email/SMS.
+    { path: "/api/cron/appointments", schedule: "15 * * * *" },
   ],
   headers: [{ source: "/(.*)", headers: securityHeaders }],
 };

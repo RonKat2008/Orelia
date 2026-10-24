@@ -9,6 +9,7 @@ const links = [
   { slug: "outbox", label: "Outbox" },
   { slug: "tracker", label: "Tracker" },
   { slug: "threads", label: "Threads" },
+  { slug: "appointments", label: "Appointments" },
 ] as const;
 
 export type OutreachSlug = (typeof links)[number]["slug"];

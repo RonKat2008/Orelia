@@ -24,6 +24,7 @@ export const MARKETING_NAV: NavItem[] = [
 export const CASE_NAV: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/start", label: "Start a case" },
+  { href: "/calendar", label: "Appointments" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/trust", label: "Trust & safety" },
 ];

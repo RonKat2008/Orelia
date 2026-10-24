@@ -1,3 +1,4 @@
+import { ProposedAppointmentsNotice } from "@/components/appointments/ProposedAppointmentsNotice";
 import { OutreachNav } from "@/components/outreach/OutreachNav";
 import { TrackerBoard } from "@/components/outreach/TrackerBoard";
 import { followUpScheduler } from "@/lib/workflows/scheduler";
@@ -16,6 +17,7 @@ export default async function TrackerPage({ params }: { params: Promise<{ id: st
       }
       lede="What needs you comes first. Below it, each contact's journey from first draft to a real connection."
     >
+      <ProposedAppointmentsNotice caseId={id} />
       <TrackerBoard caseId={id} tasks={[]} schedulingPaused={followUpScheduler() === "none"} />
     </OutreachNav>
   );

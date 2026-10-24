@@ -528,3 +528,71 @@ export const accountDocumentChunks = pgTable("account_document_chunks", {
   index("account_document_chunks_document_idx").on(table.documentId),
   index("account_document_chunks_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
 ]);
+
+// ---- calendar lane: appointments, calendar feeds, calendar connections ----
+/**
+ * Appointments, consults, screening interviews and the like. A row captured from a reply starts as `proposed`
+ * (candidate times in `candidates`) and only the patient confirms it; nothing is ever auto-confirmed or sent.
+ */
+export const appointments = pgTable("appointments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  /** Viewer key of the case owner when the row was written (session id today, account id later). */
+  ownerKey: text("owner_key"),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  timezone: text("timezone").notNull(),
+  location: text("location"),
+  telehealthUrl: text("telehealth_url"),
+  phone: text("phone"),
+  withWhom: text("with_whom"),
+  status: text("status").notNull(),
+  source: text("source").notNull(),
+  sourceMessageId: text("source_message_id"),
+  /** Candidate slots for a proposed appointment, each { startsAt, endsAt, text, weekdayMismatch }. */
+  candidates: jsonb("candidates").$type<Record<string, unknown>[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Verbatim (sanitized) snippet of the reply that proposed the time. */
+  quote: text("quote"),
+  /** Patient-written prep: checklist state and their own questions. Never generated advice. */
+  prepNotes: jsonb("prep_notes").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  /** Reminder offsets in minutes before the start (default 1 day and 2 hours). */
+  reminders: jsonb("reminders").$type<number[]>().notNull().default(sql`'[1440,120]'::jsonb`),
+  remindedAt: timestamp("reminded_at", { withTimezone: true }),
+  googleEventId: text("google_event_id"),
+  /** Outbound reschedule/cancel request draft (messages.id), when one is pending. */
+  requestMessageId: uuid("request_message_id"),
+  sequence: integer("sequence").notNull().default(0),
+  ...timestamps,
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("appointments_case_idx").on(table.caseId),
+  index("appointments_owner_idx").on(table.ownerKey),
+  uniqueIndex("appointments_source_unique").on(table.caseId, table.sourceMessageId),
+]);
+
+/** Private ICS subscription feeds. The URL token is HMAC-signed over the id; revoking sets revoked_at. */
+export const calendarFeeds = pgTable("calendar_feeds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerKey: text("owner_key").notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [index("calendar_feeds_owner_idx").on(table.ownerKey)]);
+
+/** Google Calendar OAuth connection per viewer. Tokens are AES-256-GCM sealed with WAYFINDER_TOKEN_KEY. */
+export const calendarConnections = pgTable("calendar_connections", {
+  ownerKey: text("owner_key").notNull(),
+  provider: text("provider").notNull(),
+  scopes: text("scopes").array().notNull().default(sql`ARRAY[]::text[]`),
+  refreshTokenSealed: text("refresh_token_sealed"),
+  accessTokenSealed: text("access_token_sealed"),
+  accessExpiresAt: timestamp("access_expires_at", { withTimezone: true }),
+  calendarId: text("calendar_id").notNull().default("primary"),
+  freeBusyOptIn: boolean("free_busy_opt_in").notNull().default(false),
+  ...timestamps,
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [primaryKey({ columns: [table.ownerKey, table.provider] })]);
+// ---- end calendar lane ----

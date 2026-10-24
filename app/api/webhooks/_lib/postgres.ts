@@ -7,6 +7,8 @@ import { DbRunStore } from '../../../../lib/agents/run-store';
 import type { DraftContext } from '../../../../lib/inbox/drafts';
 import { isOffline } from '../../../../lib/env';
 import { createWebhookIngest, idempotentIngest } from './ingest';
+import { captureAppointment } from '../../../../lib/appointments/capture';
+import { getAppointmentStore } from '../../../../lib/appointments/store';
 import { workflowSendEvents } from '../../../../lib/workflows/inline-events';
 import type { IngestLedger, InboundDeps, Owner } from './inbound';
 
@@ -181,6 +183,16 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
           loadContext: contactId => loadDraftContext(contactId),
           tasks,
         },
+        captureAppointment: (e) => captureAppointment(
+          { channel: e.channel, caseId: e.caseId, contactId: e.contactId, body: e.body, providerId: e.providerId, ...(e.receivedAt ? { receivedAt: e.receivedAt } : {}) },
+          {
+            store: getAppointmentStore(),
+            loadContext: async (contactId) => {
+              const ctx = await loadDraftContext(contactId);
+              return { resourceName: ctx.resourceName, ...(ctx.resourceAddress ? { resourceAddress: ctx.resourceAddress } : {}), homeState: (ctx.caseRecord as { homeState?: string | null }).homeState ?? null };
+            },
+          },
+        ),
       });
       return idempotentIngest(tasks, (e, sourceId) => ingest({ ...e, sourceId }))(event);
     },

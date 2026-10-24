@@ -31,6 +31,9 @@ export interface WebhookIngestDeps {
   storeDocument?: typeof ingestCaseDocument;
   now?: () => Date;
   onDocumentError?: (err: unknown) => void;
+  /** Optional: turn a reply that proposes a time into a proposed appointment (best-effort, never fails ingest). */
+  captureAppointment?: (e: WebhookInboundEvent) => Promise<unknown>;
+  onCaptureError?: (err: unknown) => void;
 }
 
 export function toInboxEvent(e: WebhookInboundEvent, now: () => Date = () => new Date()): InboxEvent {
@@ -76,6 +79,14 @@ export function createWebhookIngest(deps: WebhookIngestDeps) {
       await storeDocument(e.contactId, e.channel === 'voice' ? { transcript: e.body } : { body: e.body, title: e.subject });
     } catch (err) {
       (deps.onDocumentError ?? (x => console.error('Case document ingest failed:', x instanceof Error ? x.name : 'unknown')))(err);
+    }
+    if (deps.captureAppointment) {
+      // Proposed appointments are a convenience on top of the tasks; a failure must not re-trigger the webhook.
+      try {
+        await deps.captureAppointment(e);
+      } catch (err) {
+        (deps.onCaptureError ?? (x => console.error('Appointment capture failed:', x instanceof Error ? x.name : 'unknown')))(err);
+      }
     }
     return result;
   };

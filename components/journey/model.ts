@@ -10,18 +10,29 @@ export const JOURNEY_STAGES = [
 export type JourneyStage = (typeof JOURNEY_STAGES)[number];
 
 export const STAGE_LABELS: Record<JourneyStage, string> = {
-  intake: "Intake",
-  research: "Research",
+  intake: "Case",
+  research: "Search",
   shortlist: "Shortlist",
   consent: "Consent",
-  outreach: "Outreach",
+  outreach: "Outbox",
   tracker: "Tracker",
+};
+
+export const STAGE_HINTS: Record<JourneyStage, string> = {
+  intake: "Confirm your details",
+  research: "Agents read public sources",
+  shortlist: "Pick up to five contacts",
+  consent: "Choose what is shared",
+  outreach: "Approve each draft",
+  tracker: "Replies and follow-up",
 };
 
 const INTAKE_STATUSES = new Set(["draft", "extracted", "unconfirmed"]);
 const RESEARCH_STATUSES = new Set(["confirmed", "researching", "research_failed"]);
 
 export type JourneyContact = {
+  name?: string | null;
+  nextFollowUpAt?: string | null;
   consented?: boolean | null;
   approved?: boolean | null;
   state?: string | null;
@@ -51,7 +62,7 @@ export type JourneyPlan = {
 };
 
 const NEXT: Record<JourneyStage, { label: string; path: (caseId: string) => string }> = {
-  intake: { label: "Finish intake", path: () => "/" },
+  intake: { label: "Finish your case", path: () => "/start" },
   research: { label: "Open the research swarm", path: (id) => `/cases/${id}/swarm` },
   shortlist: { label: "Choose who to contact", path: (id) => `/cases/${id}/shortlist` },
   consent: { label: "Choose fields to share", path: (id) => `/cases/${id}/consent` },
@@ -60,7 +71,7 @@ const NEXT: Record<JourneyStage, { label: string; path: (caseId: string) => stri
 };
 
 export function stageHref(stage: JourneyStage, caseId: string): string {
-  if (stage === "intake") return "/";
+  if (stage === "intake") return "/start";
   if (stage === "research") return `/cases/${caseId}/swarm`;
   if (stage === "shortlist") return `/cases/${caseId}/shortlist`;
   if (stage === "consent") return `/cases/${caseId}/consent`;
@@ -178,6 +189,8 @@ export function readContacts(value: unknown): JourneyContact[] | null {
   return raw.map((item) => {
     const contact = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
     return {
+      name: typeof contact.displayName === "string" ? contact.displayName : typeof contact.name === "string" ? contact.name : null,
+      nextFollowUpAt: typeof contact.nextFollowUpAt === "string" ? contact.nextFollowUpAt : null,
       consented: typeof contact.consented === "boolean" ? contact.consented : null,
       approved: typeof contact.approved === "boolean" ? contact.approved : null,
       state: typeof contact.state === "string" ? contact.state : null,
@@ -191,4 +204,52 @@ export function readOpenTaskCount(value: unknown): number | null {
   if (typeof record.openTaskCount === "number") return record.openTaskCount;
   if (!Array.isArray(record.tasks)) return null;
   return record.tasks.filter((task) => task && typeof task === "object" && (task as { status?: unknown }).status === "open").length;
+}
+
+export type JourneyTask = { id: string; summary: string; contactName: string | null; status: string };
+
+export function readTasks(value: unknown): JourneyTask[] | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = (value as { tasks?: unknown }).tasks;
+  if (!Array.isArray(raw)) return null;
+  return raw.map((item, index) => {
+    const task = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    return {
+      id: typeof task.id === "string" ? task.id : `task-${index}`,
+      summary: typeof task.title === "string" && task.title ? task.title : typeof task.summary === "string" && task.summary ? task.summary : "A task needs a look",
+      contactName: typeof task.contactName === "string" ? task.contactName : null,
+      status: typeof task.status === "string" ? task.status : "open",
+    };
+  });
+}
+
+export type NeedItem = { id: string; text: string; href: string };
+
+/** What needs the person now: the next step first, then each open task. Pure. */
+export function buildNeeds(plan: JourneyPlan, tasks: JourneyTask[] | null, caseId: string): NeedItem[] {
+  const items: NeedItem[] = [{ id: "next", text: plan.nextLabel, href: plan.nextHref }];
+  for (const task of (tasks ?? []).filter((t) => t.status === "open")) {
+    items.push({
+      id: task.id,
+      text: task.contactName ? `${task.summary} (${task.contactName})` : task.summary,
+      href: `/cases/${caseId}/tracker`,
+    });
+  }
+  return items;
+}
+
+export type ActivityItem = { id: string; text: string };
+
+/** Recent activity from contacts and tasks, newest-relevant first. Pure. */
+export function buildActivity(contacts: JourneyContact[] | null, tasks: JourneyTask[] | null): ActivityItem[] {
+  const items: ActivityItem[] = [];
+  (contacts ?? []).forEach((contact, index) => {
+    if (!contact.state) return;
+    const who = contact.name ?? "A contact";
+    items.push({ id: `c-${index}`, text: `${who}: ${contact.state.replaceAll("_", " ")}` });
+  });
+  for (const task of tasks ?? []) {
+    items.push({ id: `t-${task.id}`, text: `Task ${task.status}: ${task.summary}` });
+  }
+  return items.slice(0, 6);
 }

@@ -23,7 +23,7 @@ describe("resolveJourney", () => {
   it("starts at intake until the case is confirmed", () => {
     expect(plan(null).current).toBe("intake");
     expect(plan("extracted").current).toBe("intake");
-    expect(plan("unconfirmed").nextHref).toBe("/");
+    expect(plan("unconfirmed").nextHref).toBe("/start");
   });
 
   it("stays on research while the swarm is running or failed", () => {

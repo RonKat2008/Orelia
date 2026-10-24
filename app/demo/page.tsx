@@ -12,8 +12,6 @@ export const metadata = {
 export default function DemoPage() {
   if (!demoEnabled(process.env)) notFound();
   return (
-    <main className="shell">
-      <DemoPanel />
-    </main>
+    <DemoPanel />
   );
 }

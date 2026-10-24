@@ -13,7 +13,14 @@ export function recallCase(id: string): Case | null {
   return parsed.success ? parsed.data : null;
 }
 
-function asCase(value: unknown, fallback: CaseInput): Case | null {
+/** POST /api/cases answers { case: {...} }; accept a bare case too. */
+function unwrap(value: unknown): unknown {
+  if (value && typeof value === "object" && "case" in value) return (value as { case: unknown }).case;
+  return value;
+}
+
+function asCase(body: unknown, fallback: CaseInput): Case | null {
+  const value = unwrap(body);
   const full = caseSchema.safeParse(value);
   if (full.success) return full.data;
   const input = caseInputSchema.safeParse(value);
@@ -25,6 +32,10 @@ function asCase(value: unknown, fallback: CaseInput): Case | null {
     status: "extracted",
     createdAt: new Date().toISOString(),
   };
+}
+
+function isOfflinePreview(): boolean {
+  return ["1", "true"].includes((process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "").trim().toLowerCase());
 }
 
 export async function extractCase(reportText: string, fallback: CaseInput): Promise<{ record: Case; preview: boolean }> {
@@ -43,8 +54,9 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
       }
     }
   } catch {
-    // The cases API is owned by the agents task and may not be running yet.
+    // Fall through: only the explicit offline preview may continue without the API.
   }
+  if (!isOfflinePreview()) throw new Error("The cases API did not return a case.");
   const local = caseSchema.parse({
     ...fallback,
     id: crypto.randomUUID(),
@@ -58,10 +70,13 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
 export async function confirmAndResearch(record: Case): Promise<void> {
   const input = caseInputSchema.parse(record);
   rememberCase({ ...record, ...input, status: "confirmed" });
-  await fetch(`/api/cases/${record.id}`, {
+  const offline = isOfflinePreview();
+  const patch = await fetch(`/api/cases/${record.id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
   }).catch(() => undefined);
-  await fetch(`/api/cases/${record.id}/research`, { method: "POST" }).catch(() => undefined);
+  if (!offline && !patch?.ok) throw new Error("The case details were not saved.");
+  const research = await fetch(`/api/cases/${record.id}/research`, { method: "POST" }).catch(() => undefined);
+  if (!offline && !research?.ok) throw new Error("The search did not start.");
 }

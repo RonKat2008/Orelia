@@ -6,7 +6,7 @@ import { BriefHeader } from "@/components/condition-brief/BriefHeader";
 import { buildBrief, getBrief } from "@/components/condition-brief/client";
 import { LevelLegend } from "@/components/condition-brief/LevelLegend";
 import {
-  chipAriaLabel,
+  chipDetail,
   ceilingFor,
   filterStatements,
   indexSources,
@@ -129,11 +129,11 @@ describe("evidence markers and chips", () => {
     expect(html).toContain("Uncertain");
     expect(html).toContain('data-level="established"');
   });
-  it("names chips with number, kind, design and year", () => {
+  it("names chips by their visible text plus kind and design", () => {
     const src = sampleBrief.sources[1];
-    expect(chipAriaLabel(2, src)).toBe("2 PubMed 2021, PubMed review");
-    expect(doc("all")).toContain('aria-label="2 PubMed 2021, PubMed review"');
-    expect(chipAriaLabel(1, sampleBrief.sources[0])).toBe("1 Orphanet 2024, Orphanet");
+    expect(chipDetail(src)).toBe("PubMed review");
+    expect(doc("all")).toContain(">, PubMed review</span>");
+    expect(chipDetail(sampleBrief.sources[0])).toBe("Orphanet");
   });
   it("opens the drawer: clicking a chip hands its source to onOpen", () => {
     const onOpen = vi.fn();
@@ -196,7 +196,7 @@ describe("patient view", () => {
   it("keeps the evidence words and every source chip", () => {
     const html = patientDoc();
     expect(html).toContain('data-level="established"');
-    expect(html).toContain('aria-label="1 ');
+    expect(html).toContain('<ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label="Sources"');
   });
 });
 

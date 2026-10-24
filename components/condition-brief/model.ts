@@ -134,12 +134,11 @@ export function chipText(source: BriefSource): string {
   return [kindAbbr(source.kind), source.year].filter(Boolean).join(" ");
 }
 
-/** Accessible name. It starts with the visible text ("2 PubMed 2021") so voice control works, e.g. "2 PubMed 2021, PubMed review". */
-export function chipAriaLabel(n: number, source: BriefSource): string {
+/** What kind of source it is, e.g. "PubMed review". Read after the visible chip text (number and short name). */
+export function chipDetail(source: BriefSource): string {
   const label = kindLabel(source.kind);
   const noun = designNoun(source.design);
-  const what = noun && !label.toLowerCase().includes(noun.toLowerCase()) ? `${label} ${noun}` : label;
-  return `${n} ${chipText(source)}, ${what}`;
+  return noun && !label.toLowerCase().includes(noun.toLowerCase()) ? `${label} ${noun}` : label;
 }
 
 export function fetchedDate(source: BriefSource): string | null {

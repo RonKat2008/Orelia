@@ -4,6 +4,7 @@
  * Safety: coordinators reply ONLY to senders on an explicit allowlist (our own
  * Wayfinder case inboxes). An empty allowlist means they reply to nobody.
  */
+import { parseTimeScale as parseWorkflowTimeScale } from '../../lib/workflows/clock';
 import type { CoordinatorSpec, DemoInbox, DemoMessage } from './mail';
 
 export type Coordinator = CoordinatorSpec & DemoInbox;
@@ -58,13 +59,9 @@ export function parseReplyAllowlist(
   return [...new Set(fallback)];
 }
 
-/**
- * Equivalent of parseTimeScale in lib/workflows/clock.ts (not merged in this
- * worktree yet): WAYFINDER_SIM_TIME_SCALE, a positive finite number, default 1.
- */
+/** WAYFINDER_SIM_TIME_SCALE, read the same way as the follow-up workflow's clock. */
 export function parseTimeScale(env: Record<string, string | undefined>): number {
-  const n = Number(env.WAYFINDER_SIM_TIME_SCALE);
-  return Number.isFinite(n) && n > 0 ? n : 1;
+  return parseWorkflowTimeScale(env.WAYFINDER_SIM_TIME_SCALE);
 }
 
 export interface PlanInput {

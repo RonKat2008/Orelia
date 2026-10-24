@@ -11,7 +11,11 @@ import { getHistoryStore } from './store';
 import { vectorTitle } from './vector';
 import { buildTimeline } from './timeline';
 
-export type AddRecordDeps = { store?: HistoryStore; docs?: DocumentStore; llm?: boolean; now?: Date };
+export type AddRecordDeps = {
+  store?: HistoryStore; docs?: DocumentStore; llm?: boolean; now?: Date;
+  /** Set only by the account-library import (never from a request body): links the copy to its library document. */
+  sourceDocumentId?: string;
+};
 
 export class HistoryLimitError extends Error {
   constructor(readonly reason: 'too_many_documents' | 'empty_after_sanitize', message: string) { super(message); this.name = 'HistoryLimitError'; }
@@ -34,6 +38,7 @@ export async function addRecord(caseId: string, body: AddRecordBody, deps: AddRe
   const doc: HistoryDocument = {
     id: randomUUID(), caseId, title: body.title, docType: body.docType ?? inferDocType(body.title, text),
     text, createdAt: (deps.now ?? new Date()).toISOString(), extractedBy: 'rules',
+    ...(deps.sourceDocumentId ? { sourceDocumentId: deps.sourceDocumentId } : {}),
   };
   const extraction = await extractEvents(doc, { llm: deps.llm === true });
   const stored: HistoryDocument = { ...doc, extractedBy: extraction.extractedBy };

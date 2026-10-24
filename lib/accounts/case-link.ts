@@ -32,16 +32,18 @@ export async function importLibraryIntoCase(caseId: string, accountId: string, d
 }> {
   const store = deps.store ?? getAccountStore();
   const history = deps.history ?? getHistoryStore();
-  const existing = new Set((await history.listDocuments(caseId)).map(d => d.title));
+  // Dedup by the library document id: two documents may share a title and date, and titles can be edited.
+  const existing = new Set((await history.listDocuments(caseId)).flatMap(d => d.sourceDocumentId ? [d.sourceDocumentId] : []));
   const docs = (await store.listDocuments(accountId)).filter(d => d.accountId === accountId && d.status === 'embedded' && d.text);
   let imported = 0;
   let skipped = 0;
   for (const doc of docs.slice().reverse()) {
-    const title = historyTitleFor(doc);
-    if (existing.has(title)) { skipped++; continue; }
+    if (existing.has(doc.id)) { skipped++; continue; }
     try {
-      await addRecord(caseId, { title, text: doc.text!, docType: DOC_TYPE_MAP[doc.docType] }, { store: history, llm: deps.llm });
-      existing.add(title);
+      await addRecord(caseId, { title: historyTitleFor(doc), text: doc.text!, docType: DOC_TYPE_MAP[doc.docType] }, {
+        store: history, llm: deps.llm, sourceDocumentId: doc.id,
+      });
+      existing.add(doc.id);
       imported++;
     } catch (err) {
       if (err instanceof HistoryLimitError) { skipped++; continue; }
@@ -61,18 +63,22 @@ export async function searchCaseLibrary(caseId: string, query: string, k = 5, de
   return { available: true, results };
 }
 
-/** When a library document is deleted, its copies in the account's case histories go too (timeline + vectors). */
-export async function removeFromCases(accountId: string, doc: { title: string; dateOfService: string | null }, deps: {
+/**
+ * When a library document is deleted, its copies in the account's case histories go too (timeline + vectors).
+ * Copies are matched by source document id only, so same-title documents and renamed documents behave correctly and
+ * records the patient added on the case page are never touched. Call this BEFORE deleting the library row: the
+ * history_documents FK cascades, which would otherwise remove the rows without their vector chunks.
+ */
+export async function removeFromCases(accountId: string, doc: { id: string }, deps: {
   owners?: OwnerStore; history?: HistoryStore;
 } = {}): Promise<number> {
   const { removeRecord } = await import('@/lib/history/ingest');
   const history = deps.history ?? getHistoryStore();
   const caseIds = (await (deps.owners ?? getOwnerStore()).casesForAccount?.(accountId)) ?? [];
-  const title = historyTitleFor(doc);
   let removed = 0;
   for (const caseId of caseIds) {
     for (const h of await history.listDocuments(caseId)) {
-      if (h.title === title && await removeRecord(caseId, h.id, { store: history })) removed++;
+      if (h.sourceDocumentId === doc.id && await removeRecord(caseId, h.id, { store: history })) removed++;
     }
   }
   return removed;

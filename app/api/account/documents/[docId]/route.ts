@@ -47,8 +47,10 @@ export async function DELETE(req: Request, ctx: Ctx) {
   if (!id) return notFound();
   try {
     const row = await getAccountStore().getDocument(guard.account.id, id);
-    if (!row || !(await deleteLibraryDocument(guard.account.id, id))) return notFound();
+    if (!row) return notFound();
+    // Case copies first (with their vectors); the FK cascade on history_documents is the backstop if this fails.
     try { await removeFromCases(guard.account.id, row); } catch (err) { console.error("[accounts] case copy cleanup failed", err instanceof Error ? err.name : "error"); }
+    if (!(await deleteLibraryDocument(guard.account.id, id))) return notFound();
     return new Response(null, { status: 204 });
   } catch (err) {
     return fail(500, "delete_failed", "We could not delete this document. Please try again.", err);

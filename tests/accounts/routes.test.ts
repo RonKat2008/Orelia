@@ -136,6 +136,14 @@ describe("account routes", () => {
     expect(blob.files.size).toBe(0);
     expect((await accountDelete(req("/api/account", { method: "DELETE", account: "A", body: {} }))).status).toBe(400);
   });
+  it("delete account expires the Neon Auth session + cached session cookies, so a deleted user is not still signed in", async () => {
+    const res = await accountDelete(req("/api/account", { method: "DELETE", account: "A", body: { confirm: "DELETE" } }));
+    expect(res.status).toBe(200);
+    const cookies = res.headers.getSetCookie();
+    for (const name of ["__Secure-neon-auth.session_token", "__Secure-neon-auth.local.session_data", "wf_session"]) {
+      expect(cookies.some(c => c.startsWith(`${name}=;`) && /Max-Age=0/.test(c))).toBe(true);
+    }
+  });
   it("case routes: claim, then the case library is the owning account's only", async () => {
     await uploadText("A", "COL3A1 vascular ehlers danlos note");
     const caseId = "00000000-0000-4000-8000-0000000000aa";

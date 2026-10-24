@@ -219,8 +219,46 @@ describe("importing the library into a case", () => {
     expect(again).toMatchObject({ imported: 0, skipped: 1 });
     const owners = new MemoryOwnerStore();
     owners.registerCase("case-a", "s1", "A");
-    expect(await removeFromCases("A", { title: "Genetics letter", dateOfService: "2026-03-14" }, { owners, history })).toBe(1);
+    expect(await removeFromCases("A", { id: first.timeline.documents[0].sourceDocumentId! }, { owners, history })).toBe(1);
     expect(await history.listDocuments("case-a")).toEqual([]);
     void deps;
+  });
+});
+
+describe("library copies are linked by source document id, not title", () => {
+  async function twoSameTitle() {
+    const { store, addDoc } = setup();
+    const d1 = await addDoc("A", "CBC", "cbc1.pdf", ["Hemoglobin 13.2 g/dL on 2026-01-05."], { dateOfService: "2026-01-05" });
+    const d2 = await addDoc("A", "CBC", "cbc2.pdf", ["Platelets 250 on 2026-01-05."], { dateOfService: "2026-01-05" });
+    const history = new MemoryHistoryStore();
+    const owners = new MemoryOwnerStore();
+    owners.registerCase("case-a", "s1", "A");
+    return { store, history, owners, d1, d2 };
+  }
+  it("imports two documents that share a title and date as two records, and re-import skips both", async () => {
+    const { store, history, d1, d2 } = await twoSameTitle();
+    expect(await importLibraryIntoCase("case-a", "A", { store, history })).toMatchObject({ imported: 2, skipped: 0 });
+    expect((await history.listDocuments("case-a")).map(d => d.sourceDocumentId).sort()).toEqual([d1.id, d2.id].sort());
+    expect(await importLibraryIntoCase("case-a", "A", { store, history })).toMatchObject({ imported: 0, skipped: 2 });
+  });
+  it("deleting one of two same-title documents removes only its own case copy", async () => {
+    const { store, history, owners, d1, d2 } = await twoSameTitle();
+    await importLibraryIntoCase("case-a", "A", { store, history });
+    expect(await removeFromCases("A", { id: d1.id }, { owners, history })).toBe(1);
+    expect((await history.listDocuments("case-a")).map(d => d.sourceDocumentId)).toEqual([d2.id]);
+  });
+  it("renaming a document then deleting it still removes its case copy (no orphan)", async () => {
+    const { store, history, owners, d1 } = await twoSameTitle();
+    await importLibraryIntoCase("case-a", "A", { store, history });
+    await store.updateDocument("A", d1.id, { title: "Renamed CBC" } as never);
+    expect(await removeFromCases("A", { id: d1.id }, { owners, history })).toBe(1);
+    expect((await history.listDocuments("case-a")).some(d => d.sourceDocumentId === d1.id)).toBe(false);
+  });
+  it("records added by hand never carry a source document id and are never removed by a library delete", async () => {
+    const { history, owners, d1 } = await twoSameTitle();
+    const { addRecord } = await import("../../lib/history/ingest");
+    await addRecord("case-a", { title: "CBC (2026-01-05)", text: "Hemoglobin 13.2 g/dL on 2026-01-05." }, { store: history, docs: new MemoryDocumentStore() });
+    expect(await removeFromCases("A", { id: d1.id }, { owners, history })).toBe(0);
+    expect(await history.listDocuments("case-a")).toHaveLength(1);
   });
 });

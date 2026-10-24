@@ -57,6 +57,8 @@ export const historyDocumentSchema = z.object({
   text: z.string().max(MAX_RECORD_CHARS),
   createdAt: z.string(),
   extractedBy: z.enum(['rules', 'llm']),
+  /** Account library document this record was copied from (lib/accounts); absent for records added on the case. */
+  sourceDocumentId: z.string().min(1).optional(),
 }).strict();
 export type HistoryDocument = z.infer<typeof historyDocumentSchema>;
 

@@ -33,3 +33,16 @@ export async function readJson(req: Request): Promise<{ ok: true; value: unknown
     return { ok: false, response: fail(400, "invalid_json", "Body must be valid JSON") };
   }
 }
+
+/**
+ * Neon Auth cookies (from @neondatabase/auth server constants). The session_data cookie is a signed ~5 minute cache of
+ * the session, so after a delete or sign-out it must be expired explicitly or getSession() keeps returning the user.
+ */
+const NEON_AUTH_COOKIES = ["__Secure-neon-auth.session_token", "__Secure-neon-auth.local.session_data"] as const;
+
+/** Expires the account session cookies and the anonymous owner-session cookie on a response. */
+export function clearSessionCookies(res: Response, sessionCookie: string): Response {
+  for (const name of NEON_AUTH_COOKIES) res.headers.append("Set-Cookie", `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
+  res.headers.append("Set-Cookie", `${sessionCookie}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`);
+  return res;
+}

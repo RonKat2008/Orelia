@@ -403,8 +403,13 @@ export const historyDocuments = pgTable("history_documents", {
   text: text("text").notNull(),
   extractedBy: text("extracted_by").notNull(),
   events: jsonb("events").$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Account library document this copy came from (drizzle/0047). Cascade: deleting the library doc removes the copy. */
+  sourceDocumentId: uuid("source_document_id").references(() => accountDocuments.id, { onDelete: "cascade" }),
   ...timestamps,
-}, table => [index("history_documents_case_idx").on(table.caseId)]);
+}, table => [
+  index("history_documents_case_idx").on(table.caseId),
+  index("history_documents_source_document_idx").on(table.sourceDocumentId),
+]);
 
 /** Revocable, expiring share links for the medical history summary. The token is HMAC-signed; only the id is stored. */
 export const historyShares = pgTable("history_shares", {

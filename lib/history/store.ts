@@ -63,6 +63,7 @@ export class PostgresHistoryStore implements HistoryStore {
     await this.db.insert(historyDocuments).values({
       id: valid.doc.id, caseId: valid.doc.caseId, title: valid.doc.title, docType: valid.doc.docType,
       text: valid.doc.text, extractedBy: valid.doc.extractedBy, events: valid.events,
+      sourceDocumentId: valid.doc.sourceDocumentId ?? null,
       createdAt: new Date(valid.doc.createdAt),
     });
   }
@@ -73,6 +74,7 @@ export class PostgresHistoryStore implements HistoryStore {
     return parseDoc({
       id: row.id, caseId: row.caseId, title: row.title, docType: row.docType, text: row.text,
       createdAt: row.createdAt.toISOString(), extractedBy: row.extractedBy,
+      ...(row.sourceDocumentId ? { sourceDocumentId: row.sourceDocumentId } : {}),
     });
   }
   async listDocuments(caseId: string): Promise<HistoryDocument[]> {

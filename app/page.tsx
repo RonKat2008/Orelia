@@ -17,6 +17,12 @@ export default function HomePage() {
         Wayfinder reads a report, then looks for specialists, centers, trials, advocacy groups, and
         aid. You confirm every field before research starts.
       </p>
+      <ol className="journey" aria-label="How Wayfinder works">
+        <li>Share a report</li>
+        <li>Confirm the details</li>
+        <li>Nine searches run at once</li>
+        <li>You choose who to contact</li>
+      </ol>
       <IntakeFlow demos={demos} />
     </main>
   );

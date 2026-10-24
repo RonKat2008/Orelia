@@ -12,11 +12,11 @@ import {
   PubMedClient,
   RateLimiter,
   aggregateAuthors,
-  loadNciCenters,
   type NciDataset,
   type PubmedArticle,
   type Transport,
 } from "@/lib/sources";
+import nciCentersData from "../../../data/nci-centers.json";
 import { CANCER_WORDS, stateDistanceMiles, stateFromAffiliation } from "./geo";
 import type {
   CentersPort,
@@ -180,12 +180,12 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
     },
   };
 
-  let dataset: NciDataset | undefined = options.nciDataset;
+  // Statically imported so the bundler includes it (no dynamic filesystem tracing).
+  const dataset: NciDataset = options.nciDataset ?? (nciCentersData as NciDataset);
   const centers: CentersPort = {
     async match({ diseaseName, homeState, travelLimitMiles }) {
       // The NCI list covers cancer centers only; other diseases get nothing from this port.
       if (!CANCER_WORDS.test(diseaseName) || !homeState) return [];
-      dataset ??= await loadNciCenters();
       return dataset.centers
         .filter((c) => c.designation === "Comprehensive Cancer Center")
         .flatMap((c) => {

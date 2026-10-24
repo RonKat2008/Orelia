@@ -4,6 +4,8 @@ export interface InboxEvent {
   providerCallId?: string;
   from?: string;
   subject?: string;
+  /** Stored messages.id (uuid) of the inbound reply. */
+  messageId?: string;
   body: string;
   receivedAt: string;
   /** Fixture stem under fixtures/llm/inbox/ for offline replay. */

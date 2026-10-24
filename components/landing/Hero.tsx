@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowDown, ArrowRight } from "lucide-react";
+import { ZebraMark } from "@/components/rare/Zebra";
 import { Button } from "@/components/ui/button";
 import { HERO_PROMISE, HERO_REASSURANCE, HOW_IT_WORKS_ID, START_HREF } from "./content";
 import { FieldPoster } from "./field/FieldPoster";
@@ -36,6 +37,7 @@ export function Hero() {
         <div className="page-container relative flex flex-col items-center pb-24 pt-28 text-center sm:pt-32 lg:min-h-[min(56rem,calc(100svh-6.5rem))] lg:justify-center lg:pb-24 lg:pt-36">
           <p className="m-0 flex items-center gap-2.5 text-small font-semibold text-ink-2">
             <span aria-hidden className="h-px w-8 bg-terracotta" />
+            <ZebraMark />
             For adults with a rare disease
             <span aria-hidden className="h-px w-8 bg-terracotta" />
           </p>

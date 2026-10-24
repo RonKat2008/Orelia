@@ -11,7 +11,7 @@ import { HowPageAdapts } from "@/components/landing/info/HowPageAdapts";
 export const metadata = {
   title: "How Wayfinder works",
   description:
-    "Four steps from your report to a real conversation. What we do, and what we never send on our own.",
+    "How Wayfinder finds the few specialists who know a rare disease, in four steps. What we do, and what we never send on our own.",
 };
 
 const LINK =
@@ -25,7 +25,7 @@ export default function HowItWorksPage() {
         <div className="page-container pt-14 sm:pt-20">
           <PageHeader
             title="How Wayfinder works"
-            lede="Four steps, from your report to a real conversation. You approve every message."
+            lede="Most doctors may never have seen a case. We find the ones who have. Four steps, and you approve every message."
             action={
               <Button asChild size="lg">
                 <Link href={START_HREF}>Start your case</Link>

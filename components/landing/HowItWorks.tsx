@@ -1,5 +1,5 @@
 import { ClipboardList, ListChecks, Search, Send, type LucideIcon } from "lucide-react";
-import { HOW_IT_WORKS_ID, HOW_STEPS } from "./content";
+import { HOW_IT_WORKS_ID, HOW_LEDE, HOW_STEPS } from "./content";
 
 const STEP_ICONS: Record<string, LucideIcon> = {
   tell: ClipboardList,
@@ -23,6 +23,7 @@ export function HowItWorks() {
         >
           How it works
         </h2>
+        <p className="m-0 mt-4 max-w-prose text-body text-pretty text-ink-2">{HOW_LEDE}</p>
         <ol className="m-0 mt-12 grid list-none grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-10 p-0 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
           {HOW_STEPS.map((step, i) => {
             const Icon = STEP_ICONS[step.id] ?? ClipboardList;

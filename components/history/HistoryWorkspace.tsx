@@ -27,7 +27,7 @@ const CASE_PAGE_HEADING = "h1" as const;
 const HEADER_COPY = {
   eyebrow: "Medical history",
   title: "Your records",
-  lede: "Add letters and test results once. We'll use them when we contact people.",
+  lede: "Add letters and test results once, so specialists never ask you to start over. We'll use them when we contact people.",
 } as const;
 
 function SamplePicker({ onLoad }: { onLoad: (slug: SampleSlug) => Promise<"ok" | "missing" | string> }) {

@@ -12,6 +12,10 @@ export const HOW_IT_WORKS_ID = "how-it-works";
 /** The one quiet promise under the hero buttons (the full list lives in "What we never do"). */
 export const HERO_REASSURANCE = "Nothing is sent without your OK." as const;
 
+/** Landing "How it works" lede and the closing line for people still looking for a diagnosis. */
+export const HOW_LEDE = "Most doctors may never have seen a case. We find the ones who have." as const;
+export const NO_DIAGNOSIS_LINE = "No diagnosis yet? We can help you look for one too." as const;
+
 export const HERO_PROMISE = "Expert finders tell you who the expert is. Wayfinder gets you seen." as const;
 
 export interface HowStep {
@@ -28,21 +32,21 @@ export const HOW_STEPS: readonly HowStep[] = [
   {
     id: "tell",
     title: "Tell us",
-    body: "Share a report or answer a few questions. You check every detail first.",
+    body: "Share a report. No diagnosis yet? Tell us your symptoms. You check every detail first.",
     behind:
       "Your report is read into fields. You confirm each one before any research starts, and you choose which fields a contact may ever see.",
   },
   {
     id: "search",
     title: "We search",
-    body: "We look through public records, studies, clinics and patient groups. Every claim is checked against its source.",
+    body: "We look for the few specialists, studies and patient groups who know your condition. Every claim is checked against its source.",
     behind:
       "Nine search agents run at once across registries, trial listings, medical papers, advocacy groups and aid programs. A verifier drops any claim it cannot source. A curator keeps the best fits.",
   },
   {
     id: "choose",
     title: "You choose",
-    body: "Pick up to 5 people or groups. Tick what each one may see.",
+    body: "Pick up to 5 people or groups. You may have to travel, so we show how far each one is. Tick what each one may see.",
     behind:
       "A case keeps at most five active contacts. A planner picks the way in for each one: call, email, an online form, or a mix.",
   },
@@ -134,7 +138,7 @@ export const PROMISES: readonly SafetyPromise[] = [
   {
     id: "advice",
     title: "Never medical advice",
-    body: "We find people and groups and help you reach them. We do not read your results or suggest treatments.",
+    body: "We find people and groups and help you reach them. We never guess a diagnosis, read your results or suggest treatments.",
     more: "Wayfinder does not interpret reports, recommend treatments or choose care for you. Every fact about a person or group links to the public page it came from, and anything without a source is dropped.",
   },
   {

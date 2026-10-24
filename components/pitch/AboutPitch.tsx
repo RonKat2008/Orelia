@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button, PageHeader } from "@/components/ui";
 import { PATIENT_STEP_COUNT } from "@/components/landing/content";
+import { RareFacts } from "./RareFacts";
 
 const LINK =
   "inline-flex min-h-11 items-center rounded-sm font-semibold text-teal underline decoration-teal/35 underline-offset-4 hover:text-teal-ink focus-ring";
@@ -13,7 +14,7 @@ export function AboutPitch() {
       <div className="page-container pt-14 sm:pt-20">
         <PageHeader
           title="Why we built Wayfinder"
-          lede="When a disease is rare, the hardest part is finding someone who has seen it before."
+          lede="When a disease is rare, the hardest part is finding the few specialists who have seen it before."
         />
       </div>
 
@@ -26,8 +27,9 @@ export function AboutPitch() {
         </h2>
         <div className="grid max-w-prose gap-5 text-body text-pretty text-ink-2">
           <p className="m-0">
-            A name on a list is not an appointment. Specialists, studies,
-            patient groups and travel help live in different places. Every new
+            Most doctors may never have seen a case. A name on a list is not an
+            appointment. Specialists, studies, patient groups and travel help
+            live in different places. Every new
             office asks you to start from zero.
           </p>
           <p className="m-0">
@@ -35,6 +37,7 @@ export function AboutPitch() {
             sources and check every claim. You choose who to contact, and you
             approve every message. Then we reach out and follow up, until there
             is an appointment, a screening or an answer.
+            No diagnosis yet? We can help you look for one too.
           </p>
           <p className="m-0 text-small">
             <Link href="/how-it-works" className={LINK}>
@@ -49,6 +52,8 @@ export function AboutPitch() {
           </p>
         </div>
       </section>
+
+      <RareFacts />
 
       <section
         aria-labelledby="try-heading"

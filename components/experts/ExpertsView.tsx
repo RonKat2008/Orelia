@@ -94,8 +94,8 @@ export function ExpertsView({ caseId }: { caseId: string }) {
     <PageHeader
       as={CASE_PAGE_HEADING}
       eyebrow="Experts"
-      title="Experts who study your condition"
-      lede="We follow each author to where they work and how to reach them. We contact no one here."
+      title="The few specialists who know your condition"
+      lede="Most doctors may never have seen a case. These authors study yours. We follow each one to where they work. We contact no one here."
       action={action}
     />
   );

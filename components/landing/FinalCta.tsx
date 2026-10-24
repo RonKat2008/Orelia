@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HERO_REASSURANCE, START_HREF } from "./content";
+import { HERO_REASSURANCE, NO_DIAGNOSIS_LINE, START_HREF } from "./content";
 
 /** Landing section 4: one line and the primary button. */
 export function FinalCta() {
@@ -10,6 +10,7 @@ export function FinalCta() {
       <h2 id="cta-heading" className="m-0 font-display text-h2 font-light text-balance text-ink display-soft">
         Ready when you are.
       </h2>
+      <p className="m-0 mt-4 max-w-prose text-body text-pretty text-ink-2">{NO_DIAGNOSIS_LINE}</p>
       <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
         <Button asChild size="lg" className="group/cta">
           <Link href={START_HREF}>

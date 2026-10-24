@@ -1,0 +1,20 @@
+{
+  "facts": [
+    {
+      "id": "condition-count",
+      "claim": "Experts estimate that more than 10,000 rare diseases exist.",
+      "url": "https://rarediseases.info.nih.gov/diseases/pages/31/faqs-about-rare-diseases",
+      "title": "About | GARD",
+      "fetchedAt": "2026-10-24T23:29:29.260Z",
+      "excerpt": "Progress in data science and an increased understanding of disease genetics lead experts to agree that more than an estimated 10,000 rare diseases are affecting millions of people in the United States. 1 Most rare diseases pose serious health risks, often threatening lives and causing major illness."
+    },
+    {
+      "id": "time-to-diagnosis",
+      "claim": "Getting a diagnosis can take nearly five years.",
+      "url": "https://www.eurordis.org/publications/rb-diagnosis-odyssey/",
+      "title": "The diagnosis odyssey of people living with a rare disease - EURORDIS-Rare Diseases Europe",
+      "fetchedAt": "2026-10-24T23:29:29.592Z",
+      "excerpt": "The survey’s findings reveal an average diagnostic journey of nearly five years, with marked variations depending on demographic and geographic factors."
+    }
+  ]
+}

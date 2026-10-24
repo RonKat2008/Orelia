@@ -6,10 +6,11 @@ vi.mock('@/lib/plan', () => planner);
 import { MemoryOwnerStore } from '@/lib/auth/ownership';
 import { signSession } from '@/lib/auth/session';
 import { setPlanApprovedEmitterForTests } from '@/lib/plan/approved-event';
+import { setPlanMaterializerForTests } from '@/lib/plan/materialize-wiring';
 import { setPlanInputLoaderForTests } from '@/lib/plan/inputs';
 import { MemoryPlanStore, setPlanStoreForTests } from '@/lib/plan/store';
 import { GET, PATCH, POST } from '@/app/api/cases/[id]/plan/route';
-import { makePlan } from './plan-fixture';
+import { makePlan, step } from './plan-fixture';
 
 const SECRET = 'test-secret';
 const ORIGIN = 'http://localhost';
@@ -28,6 +29,9 @@ const call = (fn: typeof GET | typeof POST | typeof PATCH, o: { method?: string;
 const post = (o: Parameters<typeof call>[1] = {}) => call(POST, { method: 'POST', origin: ORIGIN, body: { llm: false }, ...o });
 const patch = (o: Parameters<typeof call>[1] = {}) => call(PATCH, { method: 'PATCH', origin: ORIGIN, ...o });
 
+const EV = { id: 'ev-1', claimType: 'contact_point.email.new_patient_line', claim: 'intake@example.org', sourceUrl: 'https://example.org/intake', sourceKind: 'exa' };
+const materialized = vi.fn(async () => [{ resourceKey: 'expert:e1', stepId: 's1', channel: 'email', status: 'drafted', draftId: 'd1' }]);
+
 let plans: MemoryPlanStore;
 let selected: unknown[];
 const emitted = vi.fn(async () => undefined);
@@ -42,10 +46,12 @@ beforeEach(() => {
   holder.__wayfinderOwnerStore = owners;
   plans = new MemoryPlanStore();
   setPlanStoreForTests(plans);
-  selected = [{ targetKind: 'expert', targetId: 'e1', name: 'Synthetic Expert', contactId: null, evidence: [] }];
+  selected = [{ targetKind: 'expert', targetId: 'e1', name: 'Synthetic Expert', contactId: null, evidence: [EV] }];
   setPlanInputLoaderForTests({ load: async () => selected as never });
   emitted.mockClear();
   setPlanApprovedEmitterForTests(emitted);
+  materialized.mockClear();
+  setPlanMaterializerForTests(materialized as never);
   planner.buildContactPlan.mockReset().mockImplementation(async (caseId: string) => makePlan(caseId));
   planner.applyPlanEdits.mockReset();
 });
@@ -55,6 +61,7 @@ afterEach(() => {
   setPlanStoreForTests(undefined);
   setPlanInputLoaderForTests(undefined);
   setPlanApprovedEmitterForTests(undefined);
+  setPlanMaterializerForTests(undefined);
 });
 
 describe('plan routes: guards', () => {
@@ -148,7 +155,60 @@ describe('plan routes: behaviour', () => {
     expect(res.status).toBe(200);
     expect(await plans.latest(CASE)).toMatchObject({ status: 'approved', approvedAt });
     expect(emitted).toHaveBeenCalledExactlyOnceWith(CASE, 2);
+    expect(materialized).toHaveBeenCalledOnce();
   });
+
+  it('PATCH approve returns what was drafted; a failing materializer does not fail the approval', async () => {
+    const current = makePlan(CASE);
+    await plans.save(current);
+    planner.applyPlanEdits.mockReturnValue({ ok: true, plan: { ...current, version: 2, status: 'approved', approvedAt: '2026-10-24T13:00:00.000Z' } });
+    const res = await patch({ body: { version: 1, edits: [{ type: 'approve' }] } });
+    expect((await res.json()).materialized).toEqual([expect.objectContaining({ status: 'drafted', draftId: 'd1' })]);
+    await plans.save({ ...current, version: 5 });
+    materialized.mockRejectedValueOnce(new Error('db down'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    planner.applyPlanEdits.mockReturnValue({ ok: true, plan: { ...current, version: 6, status: 'approved', approvedAt: '2026-10-24T13:00:00.000Z' } });
+    const second = await patch({ body: { version: 5, edits: [{ type: 'approve' }] } });
+    expect(second.status).toBe(200);
+    expect((await second.json()).materialized).toEqual([]);
+    spy.mockRestore();
+  });
+
+  it('toggles do not draft anything', async () => {
+    const current = makePlan(CASE);
+    await plans.save(current);
+    planner.applyPlanEdits.mockReturnValue({ ok: true, plan: { ...current, version: 2 } });
+    await patch({ body: { version: 1, edits: [{ type: 'toggle', resourceKey: 'expert:e1', stepId: 's2', enabled: false }] } });
+    expect(materialized).not.toHaveBeenCalled();
+  });
+});
+
+describe('plan routes: validatePlanAgainstInputs', () => {
+  it('POST refuses a plan whose step targets evidence that is not a verified contact point of the resource', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    planner.buildContactPlan.mockImplementation(async (caseId: string) => makePlan(caseId, {
+      resources: [{ ...makePlan(caseId).resources[0], steps: [step('s1', 1, { targetRef: 'ev-invented', evidenceIds: ['ev-invented'] })] }],
+    }));
+    const res = await post();
+    expect(res.status).toBe(422);
+    expect(await plans.latest(CASE)).toBeNull();
+    spy.mockRestore();
+  });
+
+  it('PATCH refuses to save or approve a plan for a resource that is no longer selected', async () => {
+    const current = makePlan(CASE);
+    await plans.save(current);
+    selected = [];
+    planner.applyPlanEdits.mockReturnValue({ ok: true, plan: { ...current, version: 2, status: 'approved', approvedAt: '2026-10-24T13:00:00.000Z' } });
+    const res = await patch({ body: { version: 1, edits: [{ type: 'approve' }] } });
+    expect(res.status).toBe(422);
+    expect((await plans.latest(CASE))?.status).toBe('draft');
+    expect(emitted).not.toHaveBeenCalled();
+    expect(materialized).not.toHaveBeenCalled();
+  });
+});
+
+describe('plan routes: more', () => {
 
   it('a failing event emitter does not fail the approval', async () => {
     const current = makePlan(CASE);

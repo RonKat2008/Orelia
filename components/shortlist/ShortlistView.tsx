@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button, EmptyState, JudgeOnly, PatientOnly } from "@/components/ui";
+import { Button, EmptyState } from "@/components/ui";
 import { loadNeedsJudge, type NeedsJudgeResult } from "@/components/judge/client";
 import { CasePage } from "@/components/outreach/CasePage";
 import type { VerificationsResponse } from "@/lib/verification/contract";
@@ -16,7 +16,6 @@ import {
   type ShortlistCard,
 } from "./data";
 import { ShortlistConsole } from "./ShortlistConsole";
-import { ShortlistPlain } from "./ShortlistPlain";
 import { ShortlistSkeleton } from "./ShortlistSkeleton";
 import { SelectionTray } from "./SelectionTray";
 import { loadInsurer, loadVerifications } from "./verify-client";
@@ -78,8 +77,8 @@ function Notices({ loaded }: { loaded: Loaded }) {
 
 /**
  * Shortlist (docs/DESIGN-v2.md 7.6). Container: loads the shortlist, the needs/judge result, phone verifications and
- * the insurer once, owns the selection (session storage, as before), and renders the judge console or the plain
- * patient list. The selection limit, suggested pre-selection and stored-selection rules are unchanged.
+ * the insurer once, owns the selection (session storage, as before), and renders the judge console. Patient view
+ * is lane C's PatientShortlist (switched in the page file). The selection limit, suggested pre-selection and stored-selection rules are unchanged.
  */
 export function ShortlistView({ caseId }: { caseId: string }) {
   const router = useRouter();
@@ -168,19 +167,10 @@ export function ShortlistView({ caseId }: { caseId: string }) {
 
   const items = useMemo(() => loaded?.items ?? [], [loaded]);
   const chosen = selected.flatMap((id) => items.filter((card) => selectionKey(card) === id));
-  const judge = judgeResult?.ok ? judgeResult.judge : null;
-  const found = items.filter((card) => card.tier !== "exclude").length;
-
-  const title = <JudgeOnly fallback="Choose who we contact">Shortlist</JudgeOnly>;
-  const lede = loaded ? (
-    <JudgeOnly fallback={found > 0 ? `We found ${found}. You can pick up to ${limit}.` : undefined}>
-      {items.length > 0 ? `${items.length} found, ranked with sources. Pick up to ${limit} to contact.` : null}
-    </JudgeOnly>
-  ) : null;
+  const lede = loaded && items.length > 0 ? `${items.length} found, ranked with sources. Pick up to ${limit} to contact.` : undefined;
 
   return (
-    // LANE C SWITCH POINT: pass patient={<PatientShortlist caseId={caseId} />} once components/patient/views ships it.
-    <CasePage title={title} lede={lede} className="pb-28">
+    <CasePage title="Shortlist" lede={lede} className="pb-28">
       {!loaded ? (
         <ShortlistSkeleton />
       ) : (
@@ -191,15 +181,14 @@ export function ShortlistView({ caseId }: { caseId: string }) {
               title="No one to choose from yet"
               description="When the search finishes, the best fits appear here, each with its sources."
               action={
-                <Button asChild variant="secondary">
+                <Button asChild>
                   <Link href={`/cases/${caseId}/swarm`}>Check the search</Link>
                 </Button>
               }
             />
           ) : (
             <>
-              <JudgeOnly>
-                <ShortlistConsole
+              <ShortlistConsole
                   caseId={caseId}
                   items={items}
                   filters={filters}
@@ -220,18 +209,6 @@ export function ShortlistView({ caseId }: { caseId: string }) {
                   limit={limit}
                   onRemove={(id) => choose(selected.filter((item) => item !== id))}
                 />
-              </JudgeOnly>
-              <PatientOnly>
-                <ShortlistPlain
-                  caseId={caseId}
-                  items={items}
-                  suggested={loaded.suggested}
-                  selected={selected}
-                  limit={limit}
-                  judge={judge}
-                  onToggle={toggle}
-                />
-              </PatientOnly>
             </>
           )}
         </>

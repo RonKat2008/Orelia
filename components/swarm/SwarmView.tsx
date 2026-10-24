@@ -3,17 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, CircleCheck, RefreshCw, TriangleAlert } from "lucide-react";
+import { ArrowRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { SwarmConstellation } from "@/components/motion/swarm/SwarmConstellation";
 import { CasePage } from "@/components/outreach/CasePage";
 import {
   Badge,
   Button,
   Details,
-  JudgeOnly,
   List,
-  ListRow,
-  PatientOnly,
   Progress,
   Separator,
   Stepper,
@@ -156,52 +153,6 @@ function useStillWaiting(cards: AgentCardState[]) {
   return { stale, timers };
 }
 
-/* ------------------------------ patient view ------------------------------ */
-
-const PLAIN_FINDING: Record<AgentName, [string, string]> = {
-  literature: ["research paper", "research papers"],
-  trials: ["clinical trial", "clinical trials"],
-  identity: ["specialist", "specialists"],
-  centers: ["care center", "care centers"],
-  advocacy: ["support group", "support groups"],
-  aid: ["help program", "help programs"],
-  contact_finder: ["contact", "contacts"],
-  network: ["insurance detail", "insurance details"],
-  logistics: ["travel option", "travel options"],
-};
-
-const MAX_PATIENT_ROWS = 3;
-
-function PatientProgress({ cards, done, total, preview }: { cards: AgentCardState[]; done: number; total: number; preview: boolean }) {
-  const found = cards
-    .filter((card) => card.status === "done" && (card.counts?.records ?? 0) > 0)
-    .sort((a, b) => (b.finishedAt ?? "").localeCompare(a.finishedAt ?? ""))
-    .slice(0, MAX_PATIENT_ROWS);
-  return (
-    <div className="grid max-w-prose gap-6">
-      {preview ? <p className="m-0 text-small text-ink-2">This is an example. No real search is running.</p> : null}
-      <Progress label="Places checked" valueText={`${done} of ${total} done`} value={done} max={total} tone={done === total ? "ok" : "teal"} />
-      {found.length > 0 ? (
-        <List label="What we found so far">
-          {found.map((card) => {
-            const records = card.counts?.records ?? 0;
-            const [one, many] = PLAIN_FINDING[card.agent];
-            return (
-              <ListRow
-                key={card.agent}
-                title={`Found ${records} ${records === 1 ? one : many}`}
-                leading={<CircleCheck aria-hidden className="size-4 text-ok" />}
-              />
-            );
-          })}
-        </List>
-      ) : null}
-    </div>
-  );
-}
-
-/* ------------------------------- judge view ------------------------------- */
-
 type Selection = AgentName | "sources" | null;
 
 function RunOverview({
@@ -307,31 +258,14 @@ export function SwarmView({ caseId }: { caseId: string }) {
 
   const shortlistHref = `/cases/${caseId}/shortlist`;
   const action = ready ? (
-    <JudgeOnly
-      fallback={
-        <Button asChild>
-          <Link href={shortlistHref}>
-            See who we found
-            <ArrowRight aria-hidden />
-          </Link>
-        </Button>
-      }
-    >
-      <Button asChild>
-        <Link href={shortlistHref}>
-          Review the shortlist
-          <ArrowRight aria-hidden />
-        </Link>
-      </Button>
-    </JudgeOnly>
+    <Button asChild>
+      <Link href={shortlistHref}>
+        Review the shortlist
+        <ArrowRight aria-hidden />
+      </Link>
+    </Button>
   ) : undefined;
 
-  const patientTitle = failed ? "We could not finish looking" : ready ? `We finished looking in ${total} places` : `We're looking in ${total} places`;
-  const patientLede = ready
-    ? "Your list is ready. Nothing is sent until you approve it."
-    : failed
-      ? undefined
-      : "This usually takes 2 to 4 minutes. You can close this page. We'll keep going.";
   const judgeLede = ready
     ? `${totals.records} records kept, each with a source link; nothing is sent until you approve it.`
     : "Each search runs at the same time, and every record keeps its source link.";
@@ -397,11 +331,10 @@ export function SwarmView({ caseId }: { caseId: string }) {
   return (
     <CasePage
       width="judge"
-      title={<JudgeOnly fallback={patientTitle}>Agent swarm</JudgeOnly>}
-      lede={patientLede === undefined ? <JudgeOnly>{judgeLede}</JudgeOnly> : <JudgeOnly fallback={patientLede}>{judgeLede}</JudgeOnly>}
+      title="Agent swarm"
+      lede={judgeLede}
       action={action}
     >
-      {/* LANE C SWITCH POINT: patient={<PatientSwarm… />} */}
       <div className="grid min-w-0 gap-8" aria-busy={!ready && !failed}>
         {timers}
         <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -435,12 +368,7 @@ export function SwarmView({ caseId }: { caseId: string }) {
           ) : null}
         </AnimatePresence>
 
-        <PatientOnly>
-          <PatientProgress cards={available} done={done} total={total} preview={preview} />
-        </PatientOnly>
-
-        <JudgeOnly>
-          {wide ? null : overview}
+        {wide ? null : overview}
           <TwoPane
             listLabel="Searches"
             detailLabel="Run detail"
@@ -466,7 +394,6 @@ export function SwarmView({ caseId }: { caseId: string }) {
             onDetailOpenChange={setDetailOpen}
             detailTitle={detailTitle}
           />
-        </JudgeOnly>
       </div>
     </CasePage>
   );

@@ -1,5 +1,6 @@
 import { ProposedAppointmentsNotice } from "@/components/appointments/ProposedAppointmentsNotice";
-import { CasePage } from "@/components/outreach/CasePage";
+import { CASE_PAGE_HEADING, CasePage } from "@/components/outreach/CasePage";
+import { PatientTracker } from "@/components/patient/views";
 import { TrackerBoard } from "@/components/outreach/TrackerBoard";
 import { followUpScheduler } from "@/lib/workflows/scheduler";
 
@@ -14,8 +15,8 @@ export default async function TrackerPage({
   const query = await searchParams;
   const contact = typeof query.contact === "string" ? query.contact : null;
   return (
-    <CasePage title="Replies and follow-ups" lede="See who answered, what they asked for, and when we follow up next." eyebrow="Tracker">
-      {/* LANE C SWITCH POINT: patient={<PatientTracker… />} ("Who we've contacted") */}
+    <CasePage
+      patient={<PatientTracker caseId={id} titleAs={CASE_PAGE_HEADING} focusContactId={contact} />} title="Replies and follow-ups" lede="See who answered, what they asked for, and when we follow up next." eyebrow="Tracker">
       <ProposedAppointmentsNotice caseId={id} />
       <TrackerBoard caseId={id} tasks={[]} schedulingPaused={followUpScheduler() === "none"} focusContactId={contact} />
     </CasePage>

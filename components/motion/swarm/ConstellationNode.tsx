@@ -5,6 +5,7 @@ import type { AgentRunStatus } from "@/lib/contracts";
 import type { Point } from "@/lib/motion/constellation";
 import { routePath } from "@/lib/motion/constellation";
 import { AGENT_SHORT_LABEL, STATUS_PRESENTATION, totalCount, type SwarmAgent } from "@/lib/motion/status";
+import { cn } from "@/lib/ui/cn";
 import { useIsomorphicLayoutEffect } from "../useIsomorphicLayoutEffect";
 import { primeRoute, pulseNode, transitionNode, type NodeElements } from "./choreography";
 
@@ -63,16 +64,80 @@ export function ConstellationNode({ agent, point, center, reduced }: Constellati
     return els ? pulseNode(els) : undefined;
   }, [total, reduced, status]);
 
+  const box = "[transform-box:fill-box] origin-center";
   return (
-    <g className="wf-node" data-status={status} data-tone={tone}>
-      <path className="wf-node__planned" d={d} />
-      <path ref={liveRef} className="wf-node__live" d={d} />
-      <g ref={groupRef} className="wf-node__body">
-        <circle ref={haloRef} className="wf-node__halo" cx={point.x} cy={point.y} r={15} />
-        <circle ref={pingRef} className="wf-node__ping" cx={point.x} cy={point.y} r={11} />
-        <circle className="wf-node__ring" cx={point.x} cy={point.y} r={10} />
-        <circle ref={coreRef} className="wf-node__core" cx={point.x} cy={point.y} r={5} />
-        <text className="wf-node__label" x={label.x} y={label.y} textAnchor={label.anchor}>
+    <g className="group/node" data-status={status} data-tone={tone}>
+      <title>{`${AGENT_SHORT_LABEL[agent.name]}: ${STATUS_PRESENTATION[status].label.toLowerCase()}`}</title>
+      <path
+        className="fill-none stroke-line-strong stroke-[1.25] [stroke-dasharray:1.5_5] [stroke-linecap:round] group-data-[status=failed]/node:stroke-danger/60"
+        d={d}
+      />
+      <path
+        ref={liveRef}
+        className={cn(
+          "fill-none stroke-2 [stroke-linecap:round] transition-opacity duration-300 motion-reduce:transition-none",
+          "stroke-teal opacity-0 group-data-[status=running]/node:opacity-100",
+          "group-data-[status=done]/node:stroke-ok group-data-[status=done]/node:opacity-100",
+        )}
+        d={d}
+      />
+      <g
+        ref={groupRef}
+        className={cn(
+          box,
+          "group-data-[status=failed]/node:opacity-70 group-data-[status=not_implemented]/node:opacity-50",
+        )}
+      >
+        <circle
+          ref={haloRef}
+          className={cn(box, "fill-teal opacity-0 group-data-[status=running]/node:opacity-20")}
+          cx={point.x}
+          cy={point.y}
+          r={15}
+        />
+        <circle
+          ref={pingRef}
+          className={cn(box, "fill-none stroke-teal stroke-[1.5] opacity-0")}
+          cx={point.x}
+          cy={point.y}
+          r={11}
+        />
+        <circle
+          className={cn(
+            "fill-card stroke-line-strong stroke-[1.75]",
+            "group-data-[status=running]/node:stroke-teal group-data-[status=done]/node:stroke-ok",
+            "group-data-[status=failed]/node:stroke-danger group-data-[status=not_implemented]/node:[stroke-dasharray:3_3]",
+          )}
+          cx={point.x}
+          cy={point.y}
+          r={10}
+        />
+        <circle
+          ref={coreRef}
+          className={cn(
+            box,
+            "fill-teal opacity-0 group-data-[status=running]/node:opacity-50 group-data-[status=running]/node:scale-[0.6]",
+            "group-data-[status=done]/node:fill-ok group-data-[status=done]/node:opacity-100",
+            "group-data-[status=failed]/node:fill-danger group-data-[status=failed]/node:opacity-100 group-data-[status=failed]/node:scale-50",
+          )}
+          cx={point.x}
+          cy={point.y}
+          r={5}
+        />
+        <path
+          aria-hidden
+          d={`M ${point.x - 3.2} ${point.y} l 2.2 2.4 l 4.2 -4.8`}
+          className="fill-none stroke-on-teal stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] opacity-0 group-data-[status=done]/node:opacity-100"
+        />
+        <text
+          className={cn(
+            "fill-ink-2 text-[15px] max-sm:hidden",
+            "group-data-[status=running]/node:fill-ink group-data-[status=done]/node:fill-ink",
+          )}
+          x={label.x}
+          y={label.y}
+          textAnchor={label.anchor}
+        >
           {AGENT_SHORT_LABEL[agent.name]}
         </text>
       </g>

@@ -13,7 +13,14 @@ export function recallCase(id: string): Case | null {
   return parsed.success ? parsed.data : null;
 }
 
-function asCase(value: unknown, fallback: CaseInput): Case | null {
+/** POST /api/cases answers { case: {...} }; accept a bare case too. */
+function unwrap(value: unknown): unknown {
+  if (value && typeof value === "object" && "case" in value) return (value as { case: unknown }).case;
+  return value;
+}
+
+function asCase(body: unknown, fallback: CaseInput): Case | null {
+  const value = unwrap(body);
   const full = caseSchema.safeParse(value);
   if (full.success) return full.data;
   const input = caseInputSchema.safeParse(value);

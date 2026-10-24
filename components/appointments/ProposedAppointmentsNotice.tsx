@@ -21,9 +21,9 @@ export function ProposedAppointmentsNotice({ caseId }: { caseId: string }) {
     <Link
       href={`/cases/${caseId}/appointments`}
       data-testid="proposed-appointments-notice"
-      className="flex flex-wrap items-center gap-3 rounded-md border border-gold/70 bg-gold-soft p-4 text-ink no-underline shadow-xs focus-ring transition-shadow duration-150 hover:shadow-sm motion-reduce:transition-none"
+      className="flex flex-wrap items-center gap-3 border-l-2 border-gold py-2 pl-4 text-ink no-underline focus-ring motion-reduce:transition-none"
     >
-      <Badge tone="gold" dot>Needs you</Badge>
+      <Badge tone="warn" dot>Needs you</Badge>
       <CalendarClock aria-hidden className="size-4 text-ink-2" />
       <span className="font-semibold">{count === 1 ? "An office proposed a time." : `${count} proposed times are waiting.`}</span>
       <span className="text-small text-ink-2 underline decoration-ink-3/40 underline-offset-4">Review and confirm</span>

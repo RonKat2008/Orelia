@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { CalendarDays } from "lucide-react";
-import { Badge, EmptyState, Skeleton } from "@/components/ui";
+import { Badge, EmptyState, List, ListRow, Skeleton } from "@/components/ui";
 import { KIND_LABELS } from "@/lib/appointments/schema";
 import { loadCaseAppointments, loadMyAppointments } from "./client";
 import { countdown, groupAppointments, longDate, type ApptView } from "./model";
@@ -48,24 +47,21 @@ export function UpcomingAppointments({ caseId, limit = 5, heading = "Upcoming", 
       {items.length === 0 ? (
         <EmptyState icon={<CalendarDays />} title="Nothing scheduled" description="Times offices propose appear here for you to confirm." />
       ) : (
-        <ul className="m-0 grid list-none gap-2 p-0">
+        <List>
           {items.map((a) => (
-            <li key={a.id}>
-              <Link
-                href={`/cases/${a.caseId}/appointments`}
-                className="grid gap-1 rounded-md border border-line bg-card p-4 text-ink no-underline shadow-xs focus-ring transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-sm motion-reduce:transition-none"
-              >
-                <span className="flex flex-wrap items-center gap-2">
-                  {a.status === "proposed" ? <Badge tone="gold" dot>Needs you</Badge> : <Badge tone="ok">Confirmed</Badge>}
-                  <span className="text-small text-ink-3">{KIND_LABELS[a.kind]}</span>
-                  {a.status === "confirmed" && a.startsAt && now > 0 ? <span className="text-small font-semibold text-teal-ink">{countdown(a.startsAt, now)}</span> : null}
-                </span>
-                <span className="font-semibold">{a.title}</span>
-                {a.startsAt ? <span className="text-small text-ink-2">{a.status === "proposed" ? "Proposed: " : ""}{longDate(a.startsAt, a.timezone)}</span> : null}
-              </Link>
-            </li>
+            <ListRow
+              key={a.id}
+              href={`/cases/${a.caseId}/appointments`}
+              title={a.title}
+              meta={[
+                KIND_LABELS[a.kind],
+                a.startsAt ? `${a.status === "proposed" ? "Proposed: " : ""}${longDate(a.startsAt, a.timezone)}` : null,
+              ].filter(Boolean).join(" · ")}
+              badges={a.status === "proposed" ? [<Badge key="n" tone="warn" dot>Needs you</Badge>] : undefined}
+              trailing={a.status === "confirmed" && a.startsAt && now > 0 ? <span className="font-semibold text-teal-ink">{countdown(a.startsAt, now)}</span> : undefined}
+            />
           ))}
-        </ul>
+        </List>
       )}
     </section>
   );

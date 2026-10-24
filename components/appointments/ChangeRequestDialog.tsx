@@ -70,7 +70,7 @@ export function ChangeRequestDialog({ appointment, onChange }: { appointment: Ap
   return (
     <Dialog open={open} onOpenChange={reset}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">Reschedule or cancel</Button>
+        <Button variant="link" className="min-h-11 text-small">Reschedule or cancel</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -80,7 +80,7 @@ export function ChangeRequestDialog({ appointment, onChange }: { appointment: Ap
           </DialogDescription>
         </DialogHeader>
         {draft ? (
-          <div className="grid gap-2 rounded-md bg-paper-2 p-4 shadow-inset">
+          <div className="grid gap-2 rounded-md bg-paper-2 p-4">
             <p className="m-0 text-small font-semibold text-ink">{draft.subject}</p>
             <p className="m-0 whitespace-pre-wrap break-words text-small text-ink-2">{draft.body}</p>
           </div>
@@ -100,7 +100,7 @@ export function ChangeRequestDialog({ appointment, onChange }: { appointment: Ap
           </div>
         )}
         {problem ? (
-          <p role="alert" className="m-0 rounded-md border border-danger/30 bg-danger-soft p-3 text-small text-ink">{problem}</p>
+          <p role="alert" className="m-0 border-l-2 border-danger pl-3 text-small text-ink">{problem}</p>
         ) : null}
         {tel ? (
           <p className="m-0 text-small text-ink-2">

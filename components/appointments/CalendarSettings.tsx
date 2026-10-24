@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Link2, ShieldCheck, Unplug } from "lucide-react";
-import { Badge, Button, Card, Input, Label, toast } from "@/components/ui";
+import { Copy, ShieldCheck, Unplug } from "lucide-react";
+import { Button, Input, Label, toast } from "@/components/ui";
 import { createFeed, disconnectGoogle, loadFeeds, loadGoogleStatus, revokeFeed, type FeedView, type GoogleStatus } from "./client";
 
 const GOOGLE_MESSAGES: Record<string, string> = {
@@ -64,63 +64,66 @@ export function CalendarSettings({ googleResult }: { googleResult?: string }) {
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <Card variant="raised" padding="lg" className="grid gap-5">
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-14">
+      <section aria-labelledby="feed-heading" className="grid content-start gap-5">
         <div className="grid gap-2">
-          <Badge tone="teal"><Link2 aria-hidden /> Works with every calendar</Badge>
-          <h2 className="m-0 font-display text-h3 font-normal text-ink display-soft">Subscribe by link</h2>
+          <h2 id="feed-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">Subscribe by link</h2>
           <p className="m-0 max-w-prose text-body text-ink-2">
-            A private link your calendar app checks for updates: Apple Calendar, Outlook, or Google (Other calendars, then From URL).
-            Event titles never include your diagnosis. Anyone with the link can see your appointment times, so keep it private and revoke it if it leaks.
+            A private link your calendar app checks for updates. It works with Apple Calendar, Outlook and Google (Other calendars, then
+            From URL). Event titles never include your diagnosis. Anyone with the link can see your appointment times, so keep it private
+            and revoke it if it leaks.
           </p>
         </div>
         {feeds === null ? null : live.length ? (
           <ul className="m-0 grid list-none gap-4 p-0">
             {live.map((f) => (
-              <li key={f.id} className="grid gap-2 rounded-md bg-paper-2 p-4 shadow-inset">
+              <li key={f.id} className="grid gap-2">
                 <Label htmlFor={`feed-${f.id}`} className="text-small">Your private link</Label>
-                <Input id={`feed-${f.id}`} readOnly value={f.url} onFocus={(e) => e.currentTarget.select()} className="font-mono text-mono" />
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => void copy(f.url!)}><Copy aria-hidden /> Copy link</Button>
-                  {f.webcalUrl ? <Button size="sm" variant="secondary" asChild><a href={f.webcalUrl}>Open in calendar app</a></Button> : null}
-                  <Button size="sm" variant="ghost" loading={busy === f.id} loadingText="Revoking" onClick={() => void revoke(f.id)}>Revoke</Button>
+                <Input id={`feed-${f.id}`} readOnly value={f.url} onFocus={(e) => e.currentTarget.select()} className="font-mono text-small" />
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+                  <Button variant="link" className="min-h-11 text-small" onClick={() => void copy(f.url!)}><Copy aria-hidden /> Copy link</Button>
+                  {f.webcalUrl ? <Button variant="link" className="min-h-11 text-small" asChild><a href={f.webcalUrl}>Open in calendar app</a></Button> : null}
+                  <Button variant="link" className="min-h-11 text-small" loading={busy === f.id} loadingText="Revoking" onClick={() => void revoke(f.id)}>Revoke</Button>
                 </div>
               </li>
             ))}
           </ul>
         ) : (
-          <Button className="w-fit" loading={busy === "mint"} loadingText="Creating" onClick={() => void mint()}>Create my private link</Button>
+          <div>
+            <Button size="lg" loading={busy === "mint"} loadingText="Creating" onClick={() => void mint()}>Create my private link</Button>
+          </div>
         )}
-      </Card>
+      </section>
 
-      <Card padding="lg" className="grid content-start gap-4">
-        <h2 className="m-0 font-display text-h3 font-normal text-ink display-soft">Google Calendar</h2>
-        {googleResult && GOOGLE_MESSAGES[googleResult] ? <p role="status" className="m-0 rounded-md bg-teal-soft p-3 text-small text-ink">{GOOGLE_MESSAGES[googleResult]}</p> : null}
+      <section aria-labelledby="google-heading" className="grid content-start gap-4">
+        <h2 id="google-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">Google Calendar</h2>
+        {googleResult && GOOGLE_MESSAGES[googleResult] ? <p role="status" className="m-0 border-l-2 border-teal pl-3 text-small text-ink">{GOOGLE_MESSAGES[googleResult]}</p> : null}
         {google === null ? null : !google.available ? (
           <>
-            <Badge tone="neutral">Not available yet</Badge>
+            <p className="m-0 text-body font-semibold text-ink-2">Not available yet</p>
             <p className="m-0 text-body text-ink-2">Direct Google sync is not switched on for this site. Use the private link: Google Calendar can subscribe to it.</p>
-            <Button variant="secondary" disabled className="w-fit">Connect Google Calendar</Button>
           </>
         ) : google.connected ? (
           <>
-            <Badge tone="ok"><ShieldCheck aria-hidden /> Connected</Badge>
+            <p className="m-0 inline-flex items-center gap-2 text-body font-semibold text-ok"><ShieldCheck aria-hidden className="size-4" /> Connected</p>
             <p className="m-0 text-body text-ink-2">When you confirm an appointment it is added with reminders a day and two hours before. Wayfinder can only manage the events it creates.</p>
             {!google.freeBusy ? (
-              <div className="grid gap-2 rounded-md bg-paper-2 p-4 shadow-inset">
+              <div className="grid gap-1">
                 <p className="m-0 text-small text-ink-2">Optional: let Wayfinder see when you are busy (not event details) so reschedule requests can suggest times you are free.</p>
-                <Button size="sm" variant="secondary" asChild className="w-fit"><a href="/api/integrations/google/connect?scope=freebusy">Allow free/busy</a></Button>
+                <Button variant="link" className="min-h-11 w-fit text-small" asChild><a href="/api/integrations/google/connect?scope=freebusy">Allow free/busy</a></Button>
               </div>
-            ) : <p className="m-0 text-small text-ink-3">Free/busy is on: reschedule requests suggest times you are free.</p>}
-            <Button variant="ghost" className="w-fit" loading={busy === "google"} loadingText="Disconnecting" onClick={() => void unplug()}><Unplug aria-hidden /> Disconnect</Button>
+            ) : <p className="m-0 text-small text-ink-2">Free/busy is on: reschedule requests suggest times you are free.</p>}
+            <Button variant="link" className="min-h-11 w-fit text-small" loading={busy === "google"} loadingText="Disconnecting" onClick={() => void unplug()}><Unplug aria-hidden /> Disconnect</Button>
           </>
         ) : (
           <>
             <p className="m-0 text-body text-ink-2">Adds confirmed appointments to your Google Calendar. Wayfinder asks only to manage events, nothing else.</p>
-            <Button asChild variant="secondary" className="w-fit"><a href="/api/integrations/google/connect">Connect Google Calendar</a></Button>
+            <div>
+              <Button asChild variant="secondary"><a href="/api/integrations/google/connect">Connect Google Calendar</a></Button>
+            </div>
           </>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

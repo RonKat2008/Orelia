@@ -41,7 +41,7 @@ export function PrepChecklist({ id, appointment, onChange }: { id: string; appoi
   return (
     <div id={id} className="grid gap-6 md:grid-cols-2" aria-busy={saving}>
       <fieldset className="m-0 grid content-start gap-3 border-0 p-0">
-        <legend className="mb-1 p-0 text-small font-semibold text-ink">Bring or do</legend>
+        <legend className="mb-1 p-0 text-small font-semibold text-ink">Bring or do (practical items, not medical advice)</legend>
         {items.map((item) => (
           <div key={item.id} className="flex items-start gap-3">
             <Checkbox
@@ -56,7 +56,7 @@ export function PrepChecklist({ id, appointment, onChange }: { id: string; appoi
                   Open your document library
                 </Link>
               ) : item.hint ? (
-                <span className="text-small text-ink-3">{item.hint}</span>
+                <span className="text-small text-ink-2">{item.hint}</span>
               ) : null}
             </Label>
           </div>
@@ -64,7 +64,7 @@ export function PrepChecklist({ id, appointment, onChange }: { id: string; appoi
       </fieldset>
       <div className="grid content-start gap-3">
         <Label htmlFor={`${id}-q`} className="text-small font-semibold text-ink">My questions</Label>
-        <p className="m-0 text-small text-ink-3">In your words, for you to ask. Added to the calendar event.</p>
+        <p className="m-0 text-small text-ink-2">In your words, for you to ask. Added to the calendar event.</p>
         {prep.questions.length ? (
           <ol className="m-0 grid gap-2 p-0 pl-5">
             {prep.questions.map((q, i) => (

@@ -62,7 +62,7 @@ export function AddAppointmentSheet({ caseId, onCreated }: { caseId: string; onC
       onOpenChange={setOpen}
       title="Add an appointment"
       description="One you booked yourself. Nothing is sent to anyone."
-      trigger={<Button variant="secondary"><Plus aria-hidden /> Add an appointment</Button>}
+      trigger={<Button variant="link" className="min-h-11"><Plus aria-hidden /> Add an appointment</Button>}
     >
       <form className="grid gap-5 pb-6" onSubmit={(e) => void submit(e)} noValidate>
         <Field label="What is it?" htmlFor="appt-kind">
@@ -95,8 +95,8 @@ export function AddAppointmentSheet({ caseId, onCreated }: { caseId: string; onC
         <Field label="Address" htmlFor="appt-location" optional><Input id="appt-location" name="location" maxLength={300} /></Field>
         <Field label="Video visit link" htmlFor="appt-url" optional hint="https:// links only."><Input id="appt-url" name="telehealthUrl" type="url" maxLength={500} /></Field>
         <Field label="Office phone" htmlFor="appt-phone" optional><Input id="appt-phone" name="phone" type="tel" maxLength={40} /></Field>
-        {error ? <p role="alert" className="m-0 rounded-md border border-danger/30 bg-danger-soft p-3 text-small text-ink">{error}</p> : null}
-        <Button type="submit" loading={busy} loadingText="Saving">Save appointment</Button>
+        {error ? <p role="alert" className="m-0 border-l-2 border-danger pl-3 text-small text-ink">{error}</p> : null}
+        <Button type="submit" size="lg" loading={busy} loadingText="Saving">Save appointment</Button>
       </form>
     </Sheet>
   );

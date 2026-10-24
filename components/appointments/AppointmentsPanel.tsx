@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CalendarDays } from "lucide-react";
 import Link from "next/link";
-import { Button, EmptyState, Skeleton } from "@/components/ui";
+import { Button, EmptyState, LoadingState, PageHeader, Skeleton } from "@/components/ui";
 import { AddAppointmentSheet } from "./AddAppointmentSheet";
 import { AppointmentCard } from "./AppointmentCard";
 import { loadCaseAppointments } from "./client";
 import { groupAppointments, type ApptView } from "./model";
 import { ProposedAppointmentCard } from "./ProposedAppointmentCard";
 import { useNow } from "./use-now";
+
+const CASE_PAGE_HEADING = "h2" as const;
 
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; list: ApptView[] };
 
@@ -29,17 +31,35 @@ export function AppointmentsPanel({ caseId }: { caseId: string }) {
   const replace = (next: ApptView) =>
     setState((s) => (s.status === "ready" ? { status: "ready", list: s.list.some((a) => a.id === next.id) ? s.list.map((a) => (a.id === next.id ? next : a)) : [...s.list, next] } : s));
 
+  /** Heading level of the page title: h2 while the case shell still prints the h1 (lane A part 2 flips this). */
+  const header = (action?: ReactNode) => (
+    <PageHeader
+      as={CASE_PAGE_HEADING}
+      eyebrow="Appointments"
+      title="Visits and calls"
+      lede="Times offices suggest wait here for you to confirm."
+      action={action}
+    />
+  );
+
   if (state.status === "loading") {
     return (
-      <div role="status" aria-busy="true" className="grid gap-4">
-        <span className="sr-only">Loading appointments</span>
-        <Skeleton className="h-40 w-full rounded-lg" />
-        <Skeleton className="h-28 w-full rounded-lg" />
-      </div>
+      <>
+        {header()}
+        <LoadingState label="Loading your appointments">
+          <Skeleton className="h-28 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+        </LoadingState>
+      </>
     );
   }
   if (state.status === "error") {
-    return <p role="alert" className="m-0 rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">Appointments could not load. Refresh to try again.</p>;
+    return (
+      <>
+        {header()}
+        <p role="alert" className="m-0 border-l-2 border-danger pl-4 text-body text-ink">We could not load your appointments. Refresh to try again.</p>
+      </>
+    );
   }
 
   const groups = groupAppointments(state.list, now);
@@ -47,23 +67,24 @@ export function AppointmentsPanel({ caseId }: { caseId: string }) {
 
   return (
     <div className="grid gap-section">
+      {header(
+        <>
+          <AddAppointmentSheet caseId={caseId} onCreated={replace} />
+          <Button asChild variant="link" className="min-h-11"><Link href="/calendar">Calendar sync</Link></Button>
+        </>,
+      )}
+
       {groups.proposed.length ? (
-        <section aria-labelledby="proposed-heading" className="grid gap-5">
-          <h3 id="proposed-heading" className="m-0 text-h4 font-bold text-ink">Times to confirm</h3>
-          {groups.proposed.map((a) => <ProposedAppointmentCard key={a.id} appointment={a} onChange={replace} />)}
+        <section aria-labelledby="proposed-heading" className="grid gap-6">
+          <h2 id="proposed-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">Times to confirm</h2>
+          {groups.proposed.map((a, i) => <ProposedAppointmentCard key={a.id} appointment={a} onChange={replace} primary={i === 0} />)}
         </section>
       ) : null}
 
-      <section aria-labelledby="upcoming-heading" className="grid gap-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h3 id="upcoming-heading" className="m-0 font-display text-h2 font-light text-ink display-soft">Coming up</h3>
-          <div className="flex flex-wrap gap-2">
-            <AddAppointmentSheet caseId={caseId} onCreated={replace} />
-            <Button asChild variant="ghost"><Link href="/calendar">Calendar sync</Link></Button>
-          </div>
-        </div>
+      <section aria-labelledby="upcoming-heading" className="grid gap-2">
+        <h2 id="upcoming-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">Coming up</h2>
         {next ? (
-          <div className="grid gap-4">
+          <div className="grid">
             <AppointmentCard appointment={next} featured onChange={replace} />
             {later.map((a) => <AppointmentCard key={a.id} appointment={a} onChange={replace} />)}
           </div>
@@ -71,14 +92,14 @@ export function AppointmentsPanel({ caseId }: { caseId: string }) {
           <EmptyState
             icon={<CalendarDays />}
             title="No appointments yet"
-            description="When an office replies with a time, it shows up here for you to confirm. You can also add one you booked yourself."
+            description="When an office replies with a time, it shows up here. You can also add one you booked yourself."
           />
         )}
       </section>
 
       {groups.past.length ? (
-        <section aria-labelledby="past-heading" className="grid gap-4">
-          <h3 id="past-heading" className="m-0 text-h4 font-bold text-ink-2">Earlier and cancelled</h3>
+        <section aria-labelledby="past-heading" className="grid gap-2">
+          <h2 id="past-heading" className="m-0 font-display text-h3 font-normal text-ink-2 display-soft">Earlier and cancelled</h2>
           {groups.past.map((a) => <AppointmentCard key={a.id} appointment={a} onChange={replace} />)}
         </section>
       ) : null}

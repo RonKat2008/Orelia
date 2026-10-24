@@ -11,7 +11,16 @@ import { longDate, reasonText, type ApptView } from "./model";
  * A time an office proposed in a reply. Wayfinder never confirms it on its own: the patient picks the slot they are
  * keeping (or says "not this one"). Confirming only updates the patient's own record and calendars; it sends nothing.
  */
-export function ProposedAppointmentCard({ appointment, onChange }: { appointment: ApptView; onChange: (next: ApptView) => void }) {
+export function ProposedAppointmentCard({
+  appointment,
+  onChange,
+  primary = true,
+}: {
+  appointment: ApptView;
+  onChange: (next: ApptView) => void;
+  /** Only one confirm button per screen is primary; the rest are secondary. */
+  primary?: boolean;
+}) {
   const [choice, setChoice] = useState("0");
   const [busy, setBusy] = useState<"confirm" | "dismiss" | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -36,12 +45,13 @@ export function ProposedAppointmentCard({ appointment, onChange }: { appointment
     <article
       aria-labelledby={`proposed-${appointment.id}`}
       data-appointment-status="proposed"
-      className="grid gap-5 rounded-lg border border-gold/70 bg-card p-5 shadow-md sm:p-7"
+      className="grid gap-5 border-l-2 border-gold pl-5"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="gold" dot size="md">Needs you</Badge>
-        <Badge tone="outline">{KIND_LABELS[appointment.kind]}</Badge>
-        <span className="text-small text-ink-3">{appointment.source === "call_transcript" ? "From a call" : "From a reply"}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Badge tone="warn" dot>Needs you</Badge>
+        <span className="text-small text-ink-2">
+          {KIND_LABELS[appointment.kind]} · {appointment.source === "call_transcript" ? "From a call" : "From a reply"}
+        </span>
       </div>
       <div className="grid gap-1">
         <h3 id={`proposed-${appointment.id}`} className="m-0 font-display text-h3 font-normal text-ink display-soft text-balance">
@@ -50,7 +60,7 @@ export function ProposedAppointmentCard({ appointment, onChange }: { appointment
         <p className="m-0 text-body text-ink-2">Check it against your own schedule, then confirm the one you are keeping.</p>
       </div>
       {appointment.quote ? (
-        <blockquote className="m-0 flex gap-3 rounded-md bg-paper-2 p-4 text-body text-ink-2 shadow-inset">
+        <blockquote className="m-0 flex gap-3 rounded-md bg-paper-2 p-4 text-body text-ink-2">
           <Quote aria-hidden className="mt-1 size-4 shrink-0 text-ink-3" />
           <span className="break-words">
             <span className="sr-only">Their words: </span>
@@ -79,17 +89,17 @@ export function ProposedAppointmentCard({ appointment, onChange }: { appointment
       ) : null}
       {appointment.location ? <p className="m-0 text-small text-ink-2">Where: {appointment.location}</p> : null}
       {problem ? (
-        <p role="alert" className="m-0 rounded-md border border-danger/30 bg-danger-soft p-3 text-small text-ink">{problem}</p>
+        <p role="alert" className="m-0 border-l-2 border-danger pl-3 text-small text-ink">{problem}</p>
       ) : null}
       <div className="flex flex-wrap items-center gap-3">
-        <Button loading={busy === "confirm"} loadingText="Confirming" disabled={busy !== null || slots.length === 0} onClick={() => void run("confirm")}>
+        <Button variant={primary ? "primary" : "secondary"} size={primary ? "lg" : "md"} loading={busy === "confirm"} loadingText="Confirming" disabled={busy !== null || slots.length === 0} onClick={() => void run("confirm")}>
           <CalendarClock aria-hidden /> Confirm this time
         </Button>
-        <Button variant="ghost" loading={busy === "dismiss"} loadingText="Dismissing" disabled={busy !== null} onClick={() => void run("dismiss")}>
+        <Button variant="link" className="min-h-11" loading={busy === "dismiss"} loadingText="Dismissing" disabled={busy !== null} onClick={() => void run("dismiss")}>
           Not this one
         </Button>
       </div>
-      <p className="m-0 text-small text-ink-3">Confirming adds it to your list and calendars. It does not reply to the office.</p>
+      <p className="m-0 text-small text-ink-2">Confirming adds it to your list and calendars. It does not reply to the office.</p>
     </article>
   );
 }

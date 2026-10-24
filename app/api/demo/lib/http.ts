@@ -1,3 +1,4 @@
+import { jsonError } from "@/app/api/cases/_lib/http";
 import { NextResponse } from "next/server";
 import { httpStatus } from "./actions";
 
@@ -7,6 +8,5 @@ export function demoJson(data: unknown, status = 200) {
 
 export function demoError(error: unknown) {
   const status = httpStatus(error);
-  const message = error instanceof Error ? error.message : "Demo request failed";
-  return NextResponse.json({ error: status === 404 ? "Not found" : message }, { status });
+  return jsonError(status, status === 404 ? "Not found" : "Demo request failed", error);
 }

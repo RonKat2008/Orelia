@@ -49,7 +49,8 @@ describe("canAccess", () => {
     expect(canAccess("a", null, {})).toBe(false);
     expect(canAccess(undefined, "a", { WAYFINDER_DEMO: "1" })).toBe(false);
     expect(canAccess(null, "a", {})).toBe(false);
-    expect(canAccess(null, null, { WAYFINDER_DEMO: "true" })).toBe(true);
+    expect(canAccess(null, null, { WAYFINDER_DEMO: "true" })).toBe(false);
+    expect(canAccess(null, null, { WAYFINDER_DEMO: "1" })).toBe(true);
     expect(canAccess(null, "a", { WAYFINDER_DEMO: "0" })).toBe(false);
   });
   it("getOwnerStore returns the memory singleton without DATABASE_URL", () => {

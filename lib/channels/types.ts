@@ -1,3 +1,4 @@
+import { isGatedDraft } from '../safety/outbound-gate';
 import { isAllowed, normalizeAddress } from '../safety/allowlist';
 import type { GatedDraft } from '../safety/outbound-gate';
 export type { GatedDraft } from '../safety/outbound-gate';
@@ -48,7 +49,7 @@ export interface ChannelGuardOptions {
  * hand-built or cast object is rejected here before any network call.
  */
 export function assertGated(gated: GatedDraft, kind: ChannelKind, provider: ProviderName, guard: ChannelGuardOptions): string {
-  if (!gated || typeof gated !== 'object' || !Object.isFrozen(gated) || typeof gated.approvedAt !== 'string') {
+  if (!isGatedDraft(gated)) {
     throw new ChannelError(provider, 'Refusing payload that did not come from checkOutbound');
   }
   if (gated.channel !== kind) throw new ChannelError(provider, `Refusing ${gated.channel} payload on ${kind} channel`);

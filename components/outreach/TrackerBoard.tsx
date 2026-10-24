@@ -44,7 +44,11 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
     <div>
       <section aria-labelledby="states-heading">
         <h2 id="states-heading">Contacts</h2>
-        {contacts.length === 0 ? <p>No contacts yet. Choose resources and save consent first.</p> : null}
+        {contacts.length === 0 ? (
+          <p>
+            No contacts yet. <a href={`/cases/${caseId}/shortlist`}>Choose resources</a>, then save consent.
+          </p>
+        ) : null}
         <ul className="plain">
           {contacts.map((contact) => {
             const state = asState(contact.state);
@@ -66,6 +70,9 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
                     ))}
                   </ol>
                   <p>Next follow-up: {formatWhen(null)}</p>
+                  <p>
+                    <a href={`/cases/${caseId}/threads?contact=${encodeURIComponent(contact.id)}`}>Open conversation</a>
+                  </p>
                 </article>
               </li>
             );

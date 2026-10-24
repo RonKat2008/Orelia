@@ -5,6 +5,7 @@ const links = [
   { slug: "consent", label: "Consent" },
   { slug: "outbox", label: "Outbox" },
   { slug: "tracker", label: "Tracker" },
+  { slug: "threads", label: "Threads" },
 ] as const;
 
 export function OutreachNav({

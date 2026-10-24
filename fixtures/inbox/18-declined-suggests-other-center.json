@@ -7,7 +7,8 @@
     "from": "intake@westmoor-health.example.org",
     "subject": "Re: New patient inquiry",
     "body": "Hello,\n\nWe are unable to take on this case at Westmoor. You may wish to contact the Lakeview University Sarcoma Center, which can be reached at lakeview-intake@example.org.\n\nKind regards,\nWestmoor Intake",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "18-declined-suggests-other-center"
   },
   "expected": {
     "class": "declined",

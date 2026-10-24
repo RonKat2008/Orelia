@@ -27,6 +27,8 @@ interface Options {
   root?: string;
   /** Year used for "recent" paper counts (fixed so recorded outputs are stable). */
   asOfYear?: number;
+  /** Use the strict PubMed/NPPES recordings when present (default). false pins the original 50-paper sample. */
+  strict?: boolean;
 }
 
 const slugPart = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -63,8 +65,11 @@ class FixtureReader {
   }
 }
 
-function nppesFile(slug: string, firstName: string, lastName: string): string {
-  return `nppes/${slug}/${slugPart(lastName)}-${slugPart(firstName)}.json`;
+/** Strict-mode recording (strict-<last>-<first>.json) wins over the original small-sample recording. */
+function nppesFile(slug: string, firstName: string, lastName: string, exists?: (rel: string) => boolean): string {
+  const base = `${slugPart(lastName)}-${slugPart(firstName)}.json`;
+  const strict = `nppes/${slug}/strict-${base}`;
+  return exists?.(strict) ? strict : `nppes/${slug}/${base}`;
 }
 
 function parseArticles(xml: string): Array<{
@@ -99,16 +104,29 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
   const root = options.root ?? process.cwd();
   const asOfYear = options.asOfYear ?? new Date().getFullYear();
   const reader = new FixtureReader(root);
+  const strictMode = options.strict ?? true;
+
+  const nppesPath = (slug: string, first: string, last: string): string =>
+    nppesFile(slug, first, last, (r) => strictMode && reader.exists(r));
+
+  /** Strict recording (efetch-strict-<n>.xml, 100 papers each) when present, else the original efetch.xml. */
+  const pubmedXmlFiles = (slug: string): string[] => {
+    const strict: string[] = [];
+    while (strictMode && reader.exists(`pubmed/${slug}/efetch-strict-${strict.length + 1}.xml`)) {
+      strict.push(`pubmed/${slug}/efetch-strict-${strict.length + 1}.xml`);
+    }
+    return strict.length > 0 ? strict : [`pubmed/${slug}/efetch.xml`];
+  };
 
   const pubmed: PubmedPort = {
     async searchAuthors({ disease, limit = 6 }) {
       const slug = caseSlug({ diseaseName: disease });
-      const articles = parseArticles(reader.text(`pubmed/${slug}/efetch.xml`));
+      const articles = pubmedXmlFiles(slug).flatMap((f) => parseArticles(reader.text(f)));
       const byAuthor = new Map<string, PubmedAuthorHit>();
       for (const article of articles) {
         for (const a of article.authors) {
           // Fixture mode only offers authors that have a recorded NPPES response, so identity can run offline.
-          if (!reader.exists(nppesFile(slug, a.first, a.last))) continue;
+          if (!reader.exists(nppesPath(slug, a.first, a.last))) continue;
           const key = `${a.first} ${a.last}`.toLowerCase();
           const hit: PubmedAuthorHit = byAuthor.get(key) ?? {
             name: `${a.first} ${a.last}`,
@@ -178,10 +196,10 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
     async lookup({ firstName, lastName }) {
       // The recorder keyed NPPES files by "<last>-<first>"; find the case folder that has this person.
       const slug = ["epithelioid-sarcoma", "vascular-eds", "igg4-related-disease"].find((s) =>
-        reader.exists(nppesFile(s, firstName, lastName)),
+        reader.exists(nppesPath(s, firstName, lastName)),
       );
       if (!slug) throw new Error(`No NPPES fixture recorded for ${firstName} ${lastName}`);
-      const rel = nppesFile(slug, firstName, lastName);
+      const rel = nppesPath(slug, firstName, lastName);
       const body = reader.json<{ result_count: number; results: RawNppesProvider[] }>(rel);
       return {
         searchUrl: reader.manifestUrl(rel),

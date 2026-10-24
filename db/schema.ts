@@ -200,6 +200,8 @@ export const contacts = pgTable("contacts", {
   state: contactStateEnum("state").notNull().default("drafted"),
   nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),
   lastActivityAt: timestamp("last_activity_at", { withTimezone: true }),
+  firstSentAt: timestamp("first_sent_at", { withTimezone: true }),
+  followUpsSent: integer("follow_ups_sent").notNull().default(0),
 });
 
 export const consents = pgTable("consents", {

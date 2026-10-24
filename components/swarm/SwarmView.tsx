@@ -63,7 +63,7 @@ export function SwarmView({ caseId }: { caseId: string }) {
   const finished = cards.every((card) => card.status !== "queued" && card.status !== "running");
 
   return (
-    <div className="stack">
+    <div className="stack" aria-busy={!finished} aria-live="polite">
       <p className="notice">
         {source === "preview"
           ? "Showing a typed preview of the research swarm. The live stream connects when the research service is available."

@@ -1,0 +1,6 @@
+{
+  "class": "needs_referral",
+  "confidence": 0.8,
+  "rationale": "A referral is required before booking, and it blocks the records step, so referral comes first.",
+  "quote": "a referral from your treating physician is required before we can open a new-patient file"
+}

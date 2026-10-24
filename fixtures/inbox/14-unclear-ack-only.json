@@ -7,7 +7,8 @@
     "from": "j.whitfield@lakeview-sarcoma.example.org",
     "subject": "Re: Hello",
     "body": "Received, thank you.\n\nJ. Whitfield",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "14-unclear-ack-only"
   },
   "expected": {
     "class": "unclear",

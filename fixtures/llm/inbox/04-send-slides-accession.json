@@ -1,0 +1,10 @@
+{
+  "class": "send_slides",
+  "confidence": 0.95,
+  "rationale": "The sender asks for pathology slides and gives the lab and accession number to reference.",
+  "quote": "We would like the pathology slides for review.",
+  "lab": {
+    "name": "Maple Street Pathology Associates",
+    "accession": "S26-04417"
+  }
+}

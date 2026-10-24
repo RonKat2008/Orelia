@@ -1,18 +1,19 @@
 {
   "id": "20-clinical-question-asks-records",
-  "description": "Sender offers a treatment opinion and clinical remarks; classify by the actual request (records), keep rationale non-clinical.",
+  "description": "Sender offers a treatment opinion and clinical remarks alongside a records request; clinical content makes it unclear so the patient reviews it. Rationale stays non-clinical.",
   "event": {
     "channel": "email",
     "providerThreadId": "thr_clinical_question_asks_records",
     "from": "dr.sorensen@fairhaven-oncology.example.com",
     "subject": "Re: Case question",
     "body": "Hello,\n\nI have some thoughts on which therapy might suit this patient, and I'd be glad to discuss, but first send the pathology report and the latest scan report so I can look at the file.\n\nDr. Ingrid Sorensen",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "20-clinical-question-asks-records"
   },
   "expected": {
-    "class": "send_records",
-    "confidence": 0.85,
-    "rationale": "The sender asks for the pathology and scan reports before anything else.",
+    "class": "unclear",
+    "confidence": 0.4,
+    "rationale": "The reply mixes a records request with a clinical remark, so it needs your review.",
     "quote": "first send the pathology report and the latest scan report"
   }
 }

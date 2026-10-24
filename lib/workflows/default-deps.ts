@@ -1,19 +1,34 @@
 /**
- * Default dependencies for the served workflows until the channel adapters
- * (task #7) and a durable contact store land.
+ * Dependencies for the served workflows.
  *
- * - send() always refuses: nothing can leave the system from here. The real
- *   implementation must run lib/safety checkOutbound and pass only its ok
- *   payload to a channel adapter.
- * - draftFollowUp() returns a draft id only; drafts are never sent without
- *   a FOLLOW_UP_APPROVED event carrying approvedAt.
- * - Contact contexts live in memory, so they do not survive a restart.
+ * - createDefaultDeps(env): without DATABASE_URL, in-memory contexts and a send()
+ *   that always refuses. With DATABASE_URL, durable (Postgres) deps whose only
+ *   send path is the injected follow-up sender from lib/outreach/channel-wiring.
+ * - Nothing in lib/workflows can send except through the injected `send`.
  */
 import { systemClock } from './clock';
 import { initialContext, type ContactContext } from './connection-machine';
 import type { ConnectionDeps } from './connection-workflow';
+import { PostgresContactContextStore, type ContactContextStore } from './contact-store';
 
-export function createDefaultDeps(env: Record<string, string | undefined> = process.env): ConnectionDeps {
+type Env = Record<string, string | undefined>;
+
+export function createDurableDeps(opts: {
+  store: ContactContextStore;
+  send: ConnectionDeps['send'];
+  env?: Env;
+}): ConnectionDeps {
+  const { store, send } = opts;
+  return {
+    clock: systemClock(opts.env ?? process.env),
+    send,
+    loadContext: (contactId) => store.load(contactId),
+    saveContext: (contactId, ctx) => store.save(contactId, ctx),
+    draftFollowUp: (input) => store.createFollowUpDraft(input),
+  };
+}
+
+function createInMemoryDeps(env: Env): ConnectionDeps {
   const contexts = new Map<string, ContactContext>();
   let draftSeq = 0;
   return {
@@ -32,4 +47,27 @@ export function createDefaultDeps(env: Record<string, string | undefined> = proc
       return { messageId: `draft-${contactId}-${followUpNumber}-${draftSeq}` };
     },
   };
+}
+
+export function createDefaultDeps(env: Env = process.env): ConnectionDeps {
+  if (!env.DATABASE_URL) return createInMemoryDeps(env);
+  return createDurableDeps({
+    store: new PostgresContactContextStore(),
+    env,
+    async send(input) {
+      // Dynamic import avoids a module cycle and keeps this package free of channel imports.
+      let mod: { createFollowUpSender?: (opts?: { env?: Env }) => ConnectionDeps['send'] };
+      try {
+        mod = await import('../outreach/channel-wiring');
+      } catch (err) {
+        throw new Error(
+          `Follow-up sender unavailable: lib/outreach/channel-wiring could not be loaded (${err instanceof Error ? err.message : String(err)})`,
+        );
+      }
+      if (typeof mod.createFollowUpSender !== 'function') {
+        throw new Error('Follow-up sender unavailable: lib/outreach/channel-wiring does not export createFollowUpSender');
+      }
+      return mod.createFollowUpSender({ env })(input);
+    },
+  });
 }

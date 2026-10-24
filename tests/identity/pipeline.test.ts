@@ -18,7 +18,7 @@ afterEach(() => { runtime.override = null; vi.unstubAllEnvs(); });
 
 it("rejects Li, corroborates Gardner's actual pathology identity, and keeps both out of the shortlist", async () => {
   const c = { diseaseName: "Epithelioid sarcoma", goals: [] };
-  const ctx = { ports: createFixturePorts(), store: new MemoryRunStore(), caseId: "identity-regression" };
+  const ctx = { ports: createFixturePorts({ strict: false }), store: new MemoryRunStore(), caseId: "identity-regression" };
   const identity = await identityAgent.run(c, ctx);
   expect(researchResultSchema.safeParse(identity).success).toBe(true);
   const literature = await literatureAgent.run(c, ctx);
@@ -37,7 +37,7 @@ it("rejects Li, corroborates Gardner's actual pathology identity, and keeps both
 });
 
 it("returns only code-stamped identity claims, never the old model trainee verification", async () => {
-  const result = await identityAgent.run({ diseaseName: "Epithelioid sarcoma", goals: [] }, { ports: createFixturePorts(), store: new MemoryRunStore(), caseId: "identity-claims" });
+  const result = await identityAgent.run({ diseaseName: "Epithelioid sarcoma", goals: [] }, { ports: createFixturePorts({ strict: false }), store: new MemoryRunStore(), caseId: "identity-claims" });
   expect(result.status).toBe("ok");
   if (result.status !== "ok") return;
   const li = result.records.find((r) => r.kind === "expert" && r.name === "Liping Li")!;
@@ -50,10 +50,22 @@ it("returns only code-stamped identity claims, never the old model trainee verif
 it("cannot transfer another author's verified NPI or credential through model output", async () => {
   const url = "https://npiregistry.cms.hhs.gov/provider-view/1568608651";
   runtime.override = () => ({ records: [{ kind: "expert", id: "forged", name: "Liping Li", npi: "1568608651", credentials: "MD", evidenceRefs: [url] }], evidence: [{ claimType: "identity_verified", claim: "Verified expert", sourceUrl: url }] });
-  const result = await identityAgent.run({ diseaseName: "Epithelioid sarcoma", goals: [] }, { ports: createFixturePorts(), store: new MemoryRunStore(), caseId: "identity-transfer" });
+  const result = await identityAgent.run({ diseaseName: "Epithelioid sarcoma", goals: [] }, { ports: createFixturePorts({ strict: false }), store: new MemoryRunStore(), caseId: "identity-transfer" });
   expect(result.status).toBe("ok");
   if (result.status !== "ok") return;
   expect(result.records[0]).toMatchObject({ npi: null, verified: false });
   expect(result.records[0]?.kind === "expert" && result.records[0].credentials).toBeUndefined();
   expect(result.evidence.every((e) => e.claimType === "identity_unverified")).toBe(true);
 });
+
+it.each(["Epithelioid sarcoma", "Vascular Ehlers-Danlos syndrome", "IgG4-related disease"])(
+  "strict recorded sample yields shortlist-eligible, identity-verified experts for %s",
+  async (diseaseName) => {
+    const c = { diseaseName, goals: [] };
+    const ctx = { ports: createFixturePorts(), store: new MemoryRunStore(), caseId: "strict-sample" };
+    const output = verify([await literatureAgent.run(c, ctx), await identityAgent.run(c, ctx)], c);
+    const eligible = output.kept.filter((r) => r.resource.kind === "expert" && r.shortlistEligibility?.eligible);
+    expect(eligible.length).toBeGreaterThan(0);
+    for (const r of eligible) expect(r.resource).toMatchObject({ verified: true });
+  },
+);

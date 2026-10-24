@@ -14,6 +14,8 @@ const envSchema = z.object({
   AGENTMAIL_WEBHOOK_SECRET: optionalEnv,
   AGENTCALL_API_KEY: optionalEnv,
   AGENTCALL_WEBHOOK_SECRET: optionalEnv,
+  AGENTCALL_FROM_NUMBER_ID: optionalEnv,
+  OUTBOUND_ALLOW_REAL: optionalEnv,
   OUTBOUND_ALLOWLIST: optionalEnv,
   INNGEST_EVENT_KEY: optionalEnv,
   INNGEST_SIGNING_KEY: optionalEnv,

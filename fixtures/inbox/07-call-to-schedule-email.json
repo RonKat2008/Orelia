@@ -7,7 +7,8 @@
     "from": "scheduling@riverbend-medical.example.org",
     "subject": "Re: Appointment request",
     "body": "Hello,\n\nWe do not book new patients by email. Please call our scheduling line at +1 202-555-0147, Monday to Friday, 8:00 am to 4:30 pm Eastern, and a scheduler will help you.\n\nThank you,\nRiverbend Scheduling Office",
-    "receivedAt": "2026-10-29T15:04:00Z"
+    "receivedAt": "2026-10-29T15:04:00Z",
+    "offlineKey": "07-call-to-schedule-email"
   },
   "expected": {
     "class": "call_to_schedule",

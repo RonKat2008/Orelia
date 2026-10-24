@@ -5,6 +5,7 @@ import Link from "next/link";
 import { StaggerList } from "@/components/motion/StaggerList";
 import { WaypointRoute } from "@/components/motion/WaypointRoute";
 import { ResourceCard, selectionLimit } from "./ResourceCard";
+import { EmptyState, LoadingSkeleton } from "@/components/threads/states";
 import { bandShortlist, initialSelection, loadShortlist, type ShortlistCard } from "./data";
 
 function readStoredSelection(caseId: string): string[] | null {
@@ -61,6 +62,7 @@ const GROUPS: { id: ShortlistCard["group"]; title: string; short: string }[] = [
 ];
 
 export function ShortlistView({ caseId }: { caseId: string }) {
+  const [loaded, setLoaded] = useState(false);
   const [items, setItems] = useState<ShortlistCard[]>([]);
   const [summary, setSummary] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -75,6 +77,7 @@ export function ShortlistView({ caseId }: { caseId: string }) {
       setItems(result.payload.items);
       setSummary(result.payload.curationSummary);
       setPreview(result.preview);
+      setLoaded(true);
       setSelected(initialSelection(stored, result.payload.suggested, limit));
     });
     return () => {
@@ -102,8 +105,18 @@ export function ShortlistView({ caseId }: { caseId: string }) {
     count: items.filter((item) => item.group === group.id).length,
   }));
 
+  if (!loaded) return <LoadingSkeleton label="Loading the shortlist" />;
+
   return (
     <div className="stack">
+      {items.length === 0 ? (
+        <EmptyState
+          title="No ranked resources yet"
+          detail="Research has not returned a shortlist for this case."
+          actionHref={`/cases/${caseId}/swarm`}
+          actionLabel="Check the swarm"
+        />
+      ) : null}
       {waypoints.length > 0 ? (
         <WaypointRoute
           waypoints={waypoints}

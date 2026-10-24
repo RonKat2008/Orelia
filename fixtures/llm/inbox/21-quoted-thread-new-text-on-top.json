@@ -1,0 +1,8 @@
+{
+  "class": "call_to_schedule",
+  "confidence": 0.93,
+  "rationale": "The new text asks the patient to call during stated hours; the quoted message is ignored.",
+  "quote": "Please call us at +1 202-555-0192 on weekdays between 10 am and 2 pm to book.",
+  "phone": "+1 202-555-0192",
+  "hours": "weekdays between 10 am and 2 pm"
+}

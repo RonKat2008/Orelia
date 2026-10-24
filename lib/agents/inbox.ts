@@ -36,5 +36,5 @@ export async function processInbound(event: InboxEvent, deps: InboxDeps): Promis
   const classification: InboxClassification = raw.confidence < MIN_CONFIDENCE && raw.class !== 'unclear'
     ? { ...raw, class: 'unclear', rationale: `Low confidence (${raw.confidence}); needs your review.` }
     : raw;
-  return { contactId, classification, tasks: draftTasks(classification, { ...ctx, contactId, contextDocIds: [...contextDocIds], coordinatorQuestion: event.body }) };
+  return { contactId, classification, tasks: draftTasks(classification, { ...ctx, contactId, messageId: event.messageId, contextDocIds: [...contextDocIds], coordinatorQuestion: event.body }) };
 }

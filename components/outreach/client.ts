@@ -57,6 +57,11 @@ export const REFUSAL_LABELS: Record<string, string> = {
   candidate_not_found: "One of the selected resources was not found.",
   contact_not_found: "This contact was not found.",
   draft_not_found: "This draft was not found.",
+  address_confirmation_required: "Please confirm the exact email address before approving.",
+  address_confirmation_mismatch: "The address doesn't match the one in their reply.",
+  redirect_address_not_in_reply: "We couldn't find that address in their reply, so it can't be used.",
+  redirect_unverified: "We couldn't verify which reply this came from.",
+  recipient_missing: "This task has no recipient address, so it can't be approved.",
 };
 
 export function readSelectedCandidateIds(caseId: string, storage: Pick<Storage, "getItem"> = sessionStorage): string[] {
@@ -204,13 +209,17 @@ export type TaskApproval =
   | { available: false; reasons: string[] };
 
 /** Feature-detects POST /api/tasks/[id]/approve. A missing route is not an approval. */
-export async function approveTask(taskId: string, fetchImpl: typeof fetch = fetch): Promise<TaskApproval> {
+export async function approveTask(
+  taskId: string,
+  fetchImpl: typeof fetch = fetch,
+  opts: { confirmAddress?: string } = {},
+): Promise<TaskApproval> {
   let response: Response;
   try {
     response = await fetchImpl(`/api/tasks/${taskId}/approve`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify(opts.confirmAddress !== undefined ? { confirmAddress: opts.confirmAddress } : {}),
     });
   } catch {
     return { available: false, reasons: ["Task approval is not available yet. This task is still open."] };
@@ -221,6 +230,25 @@ export async function approveTask(taskId: string, fetchImpl: typeof fetch = fetc
   const data = await readJson(response);
   if (!response.ok) return { available: true, approved: false, reasons: refusalMessages(data.reasons) };
   return { available: true, approved: true };
+}
+
+export type TaskConfirmation = { address: string; quote: string | null };
+
+/** Loads the address a redirect task asks the user to confirm. Null when there is nothing to confirm. */
+export async function loadTaskConfirmation(taskId: string, fetchImpl: typeof fetch = fetch): Promise<TaskConfirmation | null> {
+  let response: Response;
+  try {
+    response = await fetchImpl(`/api/tasks/${taskId}`);
+  } catch {
+    return null;
+  }
+  if (!response.ok) return null;
+  const data = await readJson(response);
+  const confirm = data.confirm;
+  if (!confirm || typeof confirm !== "object") return null;
+  const { address, quote } = confirm as { address?: unknown; quote?: unknown };
+  if (typeof address !== "string" || address.length === 0) return null;
+  return { address, quote: typeof quote === "string" && quote.length > 0 ? quote : null };
 }
 
 export async function loadCase(caseId: string, fetchImpl: typeof fetch = fetch): Promise<CaseInput | null> {

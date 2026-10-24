@@ -1,22 +1,25 @@
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { normalizeAddress } from '../safety/allowlist';
 import { OutreachError, type Contact, type Draft, type OutreachStore } from '../outreach/types';
+import { inboundReplyContactPoint } from './contact-point';
+import type { InboundMessageStore } from './inbound-store';
 import type { StoredTask, TaskStore } from './task-store';
 
-export interface ApproveDeps { tasks: TaskStore; outreach: OutreachStore; clock?: () => Date; newId?: () => string }
+export interface ApproveInput { confirmAddress?: string }
+export interface ApproveDeps { tasks: TaskStore; outreach: OutreachStore; inbound: InboundMessageStore; clock?: () => Date; newId?: () => string }
 
 /**
  * Approving a task prepares the next step; it never sends. Draft-bearing tasks produce an unapproved outreach
  * Draft for the recipient contact. The patient must still give per-contact consent and POST /api/contacts/[id]/approve,
  * which runs checkOutbound (allowlist, disclosure, minimization, cap, consent). No Channel is touched here.
  */
-export async function approveTask(taskId: string, deps: ApproveDeps) {
+export async function approveTask(taskId: string, deps: ApproveDeps, input: ApproveInput = {}) {
   const { tasks } = deps;
   const now = (deps.clock?.() ?? new Date()).toISOString();
   const task = await tasks.task(taskId);
   if (!task) throw new OutreachError(404, ['task_not_found']);
   if (task.status !== 'open') throw new OutreachError(409, ['already_approved']);
-  if (['referral', 'slides', 'records', 'redirect'].includes(task.kind)) return approveLetter(task, now, deps);
+  if (['referral', 'slides', 'records', 'redirect'].includes(task.kind)) return approveLetter(task, now, deps, input);
   if (!await tasks.markApproved(taskId, now)) throw new OutreachError(409, ['already_approved']);
   const done = { ...task, status: 'done' as const, approvedAt: now };
   if (task.kind === 'declined') {
@@ -32,17 +35,26 @@ export async function approveTask(taskId: string, deps: ApproveDeps) {
   return { task: done };
 }
 
-async function approveLetter(task: StoredTask, now: string, deps: ApproveDeps) {
+async function approveLetter(task: StoredTask, now: string, deps: ApproveDeps, input: ApproveInput) {
   const { tasks, outreach } = deps;
   const newId = deps.newId ?? (() => crypto.randomUUID());
   const to = task.letter?.to ? normalizeAddress(task.letter.to) : null;
   if (!task.letter || !to || !to.includes('@')) throw new OutreachError(422, ['recipient_missing']);
-  let evidence: Record<string, unknown> | undefined;
+  let evidence: ReturnType<typeof inboundReplyContactPoint> | undefined;
   if (task.kind === 'redirect') {
     const r = (task.details?.redirect ?? {}) as { email?: string };
     const replyEmail = r.email ? normalizeAddress(r.email) : null;
     if (!replyEmail || replyEmail !== to) throw new OutreachError(422, ['recipient_missing']);
-    evidence = { redirect: r, quote: task.details?.quote, messageId: task.details?.messageId };
+    // HARD RULE 2: a model never invents a contact. The address must be literally in a stored reply on this
+    // contact's thread, and the patient must retype/confirm it.
+    const messageId = typeof task.details?.messageId === 'string' ? task.details.messageId : undefined;
+    if (!messageId) throw new OutreachError(422, ['redirect_unverified']);
+    const message = await deps.inbound.get(messageId);
+    if (!message || message.contactId !== task.contactId) throw new OutreachError(422, ['redirect_unverified']);
+    if (!addressInText(replyEmail, message.body)) throw new OutreachError(422, ['redirect_address_not_in_reply']);
+    if (input.confirmAddress == null || !input.confirmAddress.trim()) throw new OutreachError(422, ['address_confirmation_required']);
+    if (normalizeAddress(input.confirmAddress) !== replyEmail) throw new OutreachError(422, ['address_confirmation_mismatch']);
+    evidence = inboundReplyContactPoint({ channel: 'email', address: replyEmail, messageId, receivedAt: now });
   }
   const original = await outreach.contact(task.contactId);
   if (!original) throw new OutreachError(404, ['contact_not_found']);
@@ -65,10 +77,22 @@ async function approveLetter(task: StoredTask, now: string, deps: ApproveDeps) {
     };
     await outreach.saveDraft(draft);
     const hasConsent = !!(await outreach.consent(recipient.id));
-    await tasks.markDone(task.id);
+    await tasks.markDone(task.id, evidence ? { evidence } : undefined);
     return { task: { ...task, status: 'done' as const, approvedAt: now }, contact: recipient, draft, evidence, next: hasConsent ? ['approve'] : ['consent', 'approve'] };
   } catch (error) {
     await tasks.reopen(task.id);
     throw error;
   }
+}
+
+const EMAIL_TOKEN = /[^\s<>()[\]{},;:"'|\\]+@[^\s<>()[\]{},;:"'|\\]+/g;
+/** True only if `address` appears as a whole email token in `body` (case-insensitive). Substrings of longer tokens do not match. */
+export function addressInText(address: string, body: string): boolean {
+  const want = normalizeAddress(address);
+  if (!want) return false;
+  const text = body.replace(/\s+/g, ' ');
+  for (const m of text.matchAll(EMAIL_TOKEN)) {
+    if (normalizeAddress(m[0].replace(/\.+$/, '')) === want) return true;
+  }
+  return false;
 }

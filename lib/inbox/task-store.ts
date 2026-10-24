@@ -19,7 +19,8 @@ export interface TaskStore {
   markApproved(id: string, at: string): Promise<boolean>;
   /** Undo markApproved (approved -> open) when a later step fails. */
   reopen(id: string): Promise<void>;
-  markDone(id: string): Promise<void>;
+  /** Optionally merges extra keys into the task's details (used to keep grounding evidence). */
+  markDone(id: string, detailsPatch?: Record<string, unknown>): Promise<void>;
   /** Highest-ranked case candidate that has no contact yet. */
   nextCandidate(caseId: string): Promise<NextCandidate | undefined>;
   closeContact(contactId: string): Promise<void>;
@@ -43,7 +44,7 @@ export class MemoryTaskStore implements TaskStore {
     r.status = 'approved'; r.approvedAt = at; return true;
   }
   async reopen(id: string) { const r = this.rows.get(id); if (r?.status === 'approved') { r.status = 'open'; r.approvedAt = null; } }
-  async markDone(id: string) { const r = this.rows.get(id); if (r) r.status = 'done'; }
+  async markDone(id: string, patch?: Record<string, unknown>) { const r = this.rows.get(id); if (r) { r.status = 'done'; if (patch) r.details = { ...r.details, ...patch }; } }
   async nextCandidate() { return this.next; }
   async closeContact(contactId: string) { this.closed.push(contactId); }
 }
@@ -99,7 +100,13 @@ export class PostgresTaskStore implements TaskStore {
     return rows.length === 1;
   }
   async reopen(id: string) { await this.db.update(s.tasks).set({ status: 'open', approvedAt: null }).where(and(eq(s.tasks.id, id), eq(s.tasks.status, 'approved'))); }
-  async markDone(id: string) { await this.db.update(s.tasks).set({ status: 'done' }).where(eq(s.tasks.id, id)); }
+  async markDone(id: string, patch?: Record<string, unknown>) {
+    if (!patch) { await this.db.update(s.tasks).set({ status: 'done' }).where(eq(s.tasks.id, id)); return; }
+    const [row] = await this.db.select().from(s.tasks).where(eq(s.tasks.id, id));
+    const env = (row?.details ?? {}) as Record<string, unknown>;
+    const details = { ...env, details: { ...((env.details as Record<string, unknown> | null) ?? {}), ...patch } };
+    await this.db.update(s.tasks).set({ status: 'done', details }).where(eq(s.tasks.id, id));
+  }
   async nextCandidate(caseId: string) {
     const [row] = await this.db.select().from(s.caseCandidates).where(and(eq(s.caseCandidates.caseId, caseId), notExists(
       this.db.select({ one: sql`1` }).from(s.contacts).where(and(eq(s.contacts.caseId, caseId), eq(s.contacts.targetId, s.caseCandidates.targetId), eq(s.contacts.targetKind, s.caseCandidates.targetKind))),

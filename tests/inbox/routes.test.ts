@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { inboxHandlers } from '../../lib/inbox/http';
+import { MemoryInboundMessageStore } from '../../lib/inbox/inbound-store';
 import { MemoryTaskStore } from '../../lib/inbox/task-store';
 import type { OutreachStore } from '../../lib/outreach/types';
 
@@ -19,7 +20,7 @@ describe('task routes', () => {
     await GET(req, context); expect(guards.requireTaskOwner).toHaveBeenCalledWith(req, 'x'); expect(handlers.get).toHaveBeenCalledWith(req, 'x');
   });
   it('handlers: bad uuid 400, unknown 404', async () => {
-    const api = inboxHandlers({ tasks: new MemoryTaskStore(), outreach: {} as OutreachStore });
+    const api = inboxHandlers({ tasks: new MemoryTaskStore(), outreach: {} as OutreachStore, inbound: new MemoryInboundMessageStore() });
     const req = new Request('http://localhost', { method: 'POST' });
     expect((await api.approve(req, 'nope')).status).toBe(400);
     const res = await api.approve(req, crypto.randomUUID());

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { approveTask, contactLabel, outreachSnapshot, readStoredOutreach, subscribeOutreach, type ApiContact } from "./client";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { approveTask, contactLabel, loadTaskConfirmation, type TaskConfirmation, outreachSnapshot, readStoredOutreach, subscribeOutreach, type ApiContact } from "./client";
 import { CONTACT_STATES, STATE_LABELS, TASK_KIND_LABELS, type ContactState, type OutreachTask } from "./types";
 
 function formatWhen(iso: string | null): string {
@@ -17,6 +17,55 @@ function asState(value: string): ContactState {
   return (CONTACT_STATES as readonly string[]).includes(value) ? (value as ContactState) : "drafted";
 }
 
+function RedirectTaskActions({
+  task,
+  onApprove,
+}: {
+  task: OutreachTask;
+  onApprove: (task: OutreachTask, confirmAddress: string) => Promise<void>;
+}) {
+  const [confirmation, setConfirmation] = useState<TaskConfirmation | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const checkId = `confirm-address-${task.id}`;
+
+  useEffect(() => {
+    let active = true;
+    void loadTaskConfirmation(task.id).then((value) => {
+      if (!active) return;
+      setConfirmation(value);
+      setLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [task.id]);
+
+  if (!loaded) return <p role="status">Loading the address from their reply...</p>;
+  if (!confirmation) {
+    return <p role="status">We couldn&apos;t load the address from their reply, so this task can&apos;t be approved yet.</p>;
+  }
+  return (
+    <div>
+      <p>They suggested contacting this address. Check it matches their reply exactly.</p>
+      <p>
+        <code style={{ fontFamily: "monospace", userSelect: "all", wordBreak: "break-all" }}>{confirmation.address}</code>
+      </p>
+      {confirmation.quote ? <blockquote>{confirmation.quote}</blockquote> : null}
+      <p className="note">This counts toward your 5 active contacts.</p>
+      <p>
+        <input id={checkId} type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />{" "}
+        <label htmlFor={checkId}>I confirm this is the address in their reply</label>
+      </p>
+      <div className="actions">
+        <button type="button" disabled={!confirmed} onClick={() => void onApprove(task, confirmation.address)}>
+          Approve task
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: OutreachTask[] }) {
   const raw = useSyncExternalStore(subscribeOutreach, () => outreachSnapshot(caseId), () => null);
   const contacts: ApiContact[] = raw ? (readStoredOutreach(caseId)?.contacts ?? []) : [];
@@ -24,9 +73,9 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
   const [taskNote, setTaskNote] = useState<string | null>(null);
   const [taskErrors, setTaskErrors] = useState<string[]>([]);
 
-  async function approve(task: OutreachTask) {
+  async function approve(task: OutreachTask, confirmAddress?: string) {
     setTaskErrors([]);
-    const result = await approveTask(task.id);
+    const result = await approveTask(task.id, fetch, confirmAddress !== undefined ? { confirmAddress } : {});
     if (!result.available) {
       setTaskNote(result.reasons.join(" "));
       return;
@@ -101,7 +150,9 @@ export function TrackerBoard({ caseId, tasks }: { caseId: string; tasks: Outreac
                 <p className="note">
                   {task.contactName} · due {formatWhen(task.dueAt)} · {task.status}
                 </p>
-                {task.status === "open" ? (
+                {task.status === "open" && task.kind === "redirect" ? (
+                  <RedirectTaskActions task={task} onApprove={approve} />
+                ) : task.status === "open" ? (
                   <div className="actions">
                     <button type="button" onClick={() => void approve(task)}>
                       Approve task

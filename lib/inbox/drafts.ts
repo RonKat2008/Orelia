@@ -7,6 +7,8 @@ export interface DraftContext {
   contextDocIds?: string[];
   coordinatorQuestion?: string;
   contactId: string;
+  /** Stored inbound message this event came from; carried into every task's details. */
+  messageId?: string;
   caseId: string;
   resourceName: string;
   resourceAddress?: string;
@@ -87,7 +89,7 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
       const r = c.redirect ?? {};
       const target: Party = { name: r.name ?? r.department ?? 'there', email: r.email };
       const l = letter(ctx, target, `Introduction on behalf of a patient (via ${res})`, `${res} suggested I contact ${r.department ?? 'your team'} about getting seen. Could you tell me the next step?`);
-      draft = { ...base, kind: 'redirect', title: `Contact ${r.name ?? r.department ?? 'the suggested contact'} instead`, letter: l, draftBody: l.body, details: { redirect: r } };
+      draft = { ...base, kind: 'redirect', title: `Contact ${r.name ?? r.department ?? 'the suggested contact'} instead`, letter: l, draftBody: l.body, details: { redirect: r, quote: c.quote } };
       break;
     }
     case 'declined': {
@@ -106,7 +108,7 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
       .map(key => `${humanize(key)}: ${show(shared[key])}`).join('\n') || "I'll have the patient follow up";
     draft.draftBody = `${draft.draftBody ?? ''}\n\nCoordinator Q&A:\n${answer}`;
   }
-  draft.details = { ...draft.details, contextDocIds: draft.contextDocIds };
+  draft.details = { ...draft.details, contextDocIds: draft.contextDocIds, ...(ctx.messageId ? { messageId: ctx.messageId } : {}) };
   // The sender's verbatim quote is not our text, so only generated text is screened.
   const hits = flagMedicalAdvice([draft.title, draft.draftBody ?? '', draft.letter?.subject ?? '', draft.letter?.body ?? '', c.rationale].join('\n'));
   if (hits.flagged) throw new MedicalAdviceInDraft(hits.matches);

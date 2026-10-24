@@ -1,38 +1,15 @@
 import Link from "next/link";
+import { ArrowRight, BellRing, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter, SiteHeader } from "@/components/shell";
+import { START_HREF } from "@/components/landing/content";
+import { HowPageAdapts } from "@/components/landing/info/HowPageAdapts";
+import { HowPageSteps } from "@/components/landing/info/HowPageSteps";
 
 export const metadata = {
   title: "How Wayfinder works",
   description: "What the research and contact agents do, and what they never send on their own.",
 };
-
-const STEPS = [
-  {
-    title: "You share the details",
-    body: "Paste a report. Wayfinder pulls out the case fields and asks you to confirm each one before anything runs.",
-  },
-  {
-    title: "A swarm of research agents searches",
-    body: "Agents look in public sources at the same time for specialists and centers, recruiting trials, advocacy organizations, and financial or travel aid.",
-  },
-  {
-    title: "Every claim is validated against its source",
-    body: "A verifier checks each claim and drops any that has no source. What you see links back to where it came from.",
-  },
-  {
-    title: "You choose, and get a contact plan per resource",
-    body: "Pick at most five contacts and tick the case fields that may be shared. For each one, Wayfinder drafts a plan: email, a call, a web-form application, or a combination.",
-  },
-  {
-    title: "Wayfinder reaches out after you approve",
-    body: "Nothing goes out until you approve the draft. Then Wayfinder emails, calls, or applies through the web form, and turns replies into tasks you approve.",
-  },
-  {
-    title: "It follows up, and you stay in charge",
-    body: "If nobody answers, a follow-up draft appears for your approval. The tracker shows each contact's state and anything still waiting on you.",
-  },
-];
 
 const LIMITS = [
   "Every claim shown about a resource links to its source.",
@@ -47,54 +24,93 @@ export default function HowItWorksPage() {
   return (
     <div className="ds-root min-h-dvh bg-paper text-ink">
       <SiteHeader />
-      <main id="main" className="page-container pb-section pt-10 sm:pt-14">
-        <div className="mb-12 grid max-w-3xl gap-3 border-b border-line pb-10">
-          <p className="m-0 text-micro font-semibold uppercase text-ink-3">How it works</p>
-          <h1 className="m-0 max-w-none font-display text-h1 font-light display-soft text-balance">
-            From a report to a real conversation
-          </h1>
-          <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">
-            Wayfinder looks up specialists, centers, recruiting trials, advocacy groups, and aid, then helps you reach
-            the ones you pick. You approve every step.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link href="/start">Start a case</Link>
-            </Button>
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/trust">What Wayfinder will not do</Link>
-            </Button>
+      <main id="main">
+        <header className="grain relative overflow-hidden">
+          <div className="page-container grid grid-cols-[minmax(0,1fr)] gap-6 pb-section pt-14 sm:pt-20">
+            <p className="m-0 text-micro font-semibold uppercase text-ink-3">How it works</p>
+            <h1 className="m-0 max-w-4xl font-display text-display font-light text-balance display-soft">
+              From a report to a real <em className="emph">conversation</em>.
+            </h1>
+            <p className="m-0 max-w-prose text-lead text-pretty text-ink-2">
+              Wayfinder looks up specialists, centers, recruiting trials, advocacy groups, and aid, then helps you reach
+              the ones you pick. You approve every step.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Button asChild size="lg">
+                <Link href={START_HREF}>Start a case</Link>
+              </Button>
+              <Link
+                href="/trust"
+                className="inline-flex items-center gap-2 rounded-sm text-body font-semibold text-teal no-underline underline-offset-4 hover:text-teal-ink hover:underline focus-ring"
+              >
+                What Wayfinder will not do
+                <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            </div>
           </div>
-        </div>
+        </header>
 
-        <section aria-labelledby="agents-heading" className="grid gap-6">
-          <h2 id="agents-heading" className="m-0 font-display text-h2 font-light display-soft">
-            What happens, in order
-          </h2>
-          <ol className="m-0 grid max-w-3xl list-none gap-4 p-0">
-            {STEPS.map((step, index) => (
-              <li key={step.title} className="grid grid-cols-[2.5rem_1fr] gap-4 rounded-lg border border-line bg-card p-5 shadow-sm">
-                <span aria-hidden className="grid size-10 place-items-center rounded-full bg-teal-soft font-display text-h4 text-teal">
-                  {index + 1}
-                </span>
-                <div className="grid gap-1">
-                  <h3 className="m-0 font-sans text-h4 text-ink">{step.title}</h3>
-                  <p className="m-0 text-body text-ink-2">{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+        <HowPageSteps />
+        <HowPageAdapts />
+
+        <section aria-labelledby="followup-heading" className="page-container pb-section">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 rounded-lg border border-line bg-card p-6 shadow-md sm:p-10 lg:grid-cols-12 lg:gap-12">
+            <div className="grid min-w-0 content-start gap-4 lg:col-span-7">
+              <p className="m-0 text-micro font-semibold uppercase text-teal">Walk away</p>
+              <h2 id="followup-heading" className="m-0 font-display text-h2 font-light text-balance display-soft">
+                You can walk away. It keeps <em className="emph">following up</em>.
+              </h2>
+              <p className="m-0 max-w-prose text-body text-ink-2">
+                Follow-ups are approved up front. If nobody answers, agents follow up on business day 3 and day 7, and the tracker
+                shows each contact&rsquo;s state and anything still waiting on you.
+              </p>
+            </div>
+            <ul className="m-0 grid min-w-0 list-none content-center gap-4 p-0 lg:col-span-5">
+              {[
+                { Icon: CalendarClock, text: "Business day 3 and day 7 follow-ups, pre-approved by you." },
+                { Icon: BellRing, text: "You are notified when something needs you." },
+              ].map(({ Icon, text }) => (
+                <li key={text} className="flex items-center gap-4 rounded-md border border-line bg-paper-2 p-4">
+                  <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-md border border-line bg-card text-teal shadow-xs">
+                    <Icon className="size-5" strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0 text-body text-ink">{text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
 
-        <section aria-labelledby="limits-heading" className="mt-16 grid gap-6">
-          <h2 id="limits-heading" className="m-0 font-display text-h2 font-light display-soft">
-            Limits you can count on
-          </h2>
-          <ul className="m-0 grid max-w-3xl list-disc gap-2 pl-6 text-body text-ink-2 marker:text-teal">
-            {LIMITS.map((limit) => (
-              <li key={limit}>{limit}</li>
-            ))}
-          </ul>
+        <section aria-labelledby="limits-heading" className="border-t border-line bg-paper-2">
+          <div className="page-container grid grid-cols-[minmax(0,1fr)] gap-8 py-section lg:grid-cols-12 lg:gap-12">
+            <div className="lg:col-span-4">
+              <p className="m-0 text-micro font-semibold uppercase text-ink-3">Limits</p>
+              <h2 id="limits-heading" className="m-0 mt-4 font-display text-h2 font-light text-balance display-soft">
+                Limits you can <em className="emph">count</em> on.
+              </h2>
+            </div>
+            <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-x-10 p-0 sm:grid-cols-2 lg:col-span-8">
+              {LIMITS.map((limit) => (
+                <li key={limit} className="min-w-0 border-t border-line-strong py-4 text-body text-ink-2">
+                  {limit}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section aria-labelledby="how-cta-heading" className="page-container py-section">
+          <div className="grain relative overflow-hidden rounded-lg border border-line bg-card px-6 py-14 shadow-xl sm:px-12 lg:px-16">
+            <h2 id="how-cta-heading" className="m-0 max-w-2xl font-display text-h1 font-light text-balance display-soft">
+              Ready to knock on every <em className="emph">door</em>?
+            </h2>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <Button asChild size="lg">
+                <Link href={START_HREF}>Start your case</Link>
+              </Button>
+              <p className="m-0 text-small text-ink-2">Nothing is sent until you approve it.</p>
+            </div>
+          </div>
         </section>
       </main>
       <SiteFooter />

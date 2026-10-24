@@ -10,7 +10,7 @@ export default function AboutPage() {
   return (
     <div className="ds-root min-h-dvh bg-paper text-ink">
       <SiteHeader />
-      <main id="main" className="shell pitch">
+      <main id="main">
         <AboutPitch />
       </main>
       <SiteFooter />

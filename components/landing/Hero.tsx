@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AgentRunPanel } from "./AgentRunPanel";
 import { HERO_PROMISE, HOW_IT_WORKS_ID, START_HREF, TRUST_LINE } from "./content";
@@ -76,9 +76,9 @@ export function Hero() {
               aria-label="Our promises"
               className="m-0 mt-7 flex max-w-[36rem] list-none flex-wrap gap-x-4 gap-y-2 p-0 text-small text-ink-2"
             >
-              {TRUST_LINE.map((item, i) => (
-                <li key={item} className="flex items-center gap-4">
-                  {i > 0 ? <span aria-hidden className="size-1 rounded-pill bg-gold" /> : null}
+              {TRUST_LINE.map((item) => (
+                <li key={item} className="flex items-center gap-1.5">
+                  <Check aria-hidden className="size-3.5 shrink-0 text-teal" strokeWidth={2.5} />
                   {item}
                 </li>
               ))}

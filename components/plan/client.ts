@@ -1,6 +1,17 @@
 import { contactPlanSchema, type ContactPlan, type PlanEdit } from '@/lib/plan/contract';
+import type { PlanEvidenceMeta } from '@/lib/plan/evidence-meta';
 
-export type PlanResult = { ok: true; plan: ContactPlan; /** PATCH approve only: raw `materialized` from the response. */ materialized?: unknown } | { ok: false; status: number; message: string };
+function evidenceOf(raw: unknown): PlanEvidenceMeta | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out: PlanEvidenceMeta = {};
+  for (const [id, m] of Object.entries(raw as Record<string, unknown>)) {
+    const v = m as { host?: unknown; sourceKind?: unknown; label?: unknown } | null;
+    if (v && typeof v.label === 'string' && typeof v.sourceKind === 'string') out[id] = { label: v.label, sourceKind: v.sourceKind, host: typeof v.host === 'string' ? v.host : null };
+  }
+  return out;
+}
+
+export type PlanResult = { ok: true; plan: ContactPlan; /** PATCH approve only: raw `materialized` from the response. */ materialized?: unknown; /** Source host/kind per cited evidence id. */ evidence?: PlanEvidenceMeta } | { ok: false; status: number; message: string };
 
 type Fetch = typeof fetch;
 
@@ -16,7 +27,7 @@ async function read(res: Response): Promise<PlanResult> {
   if (res.ok && (body as { plan?: unknown } | null)?.plan === null) return { ok: false, status: 404, message: 'No contact plan yet' };
   if (res.ok) {
     const parsed = contactPlanSchema.safeParse((body as { plan?: unknown } | null)?.plan);
-    if (parsed.success) return { ok: true, plan: parsed.data, materialized: (body as { materialized?: unknown } | null)?.materialized };
+    if (parsed.success) return { ok: true, plan: parsed.data, materialized: (body as { materialized?: unknown } | null)?.materialized, evidence: evidenceOf((body as { evidence?: unknown } | null)?.evidence) };
     return { ok: false, status: 502, message: 'The plan came back in an unexpected shape.' };
   }
   const error = (body as { error?: unknown } | null)?.error;

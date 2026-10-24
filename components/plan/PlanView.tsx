@@ -8,6 +8,7 @@ import type { ContactPlan, PlanEdit } from '@/lib/plan/contract';
 import { buildPlan, getOrBuildPlan, patchPlan, type PlanResult } from './client';
 import { approveOutcome, type ApproveOutcome, movedIds, parseMaterialized, toggleEdit, withOrder, withToggle } from './model';
 import { PlanBoard } from './PlanBoard';
+import type { PlanEvidenceMeta } from '@/lib/plan/evidence-meta';
 
 type Phase = 'loading' | 'ready' | 'error';
 
@@ -18,6 +19,7 @@ export function PlanView({ caseId }: { caseId: string }) {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<ApproveOutcome | null>(null);
   const [editing, setEditing] = useState(false);
+  const [evidence, setEvidence] = useState<PlanEvidenceMeta>({});
   const planRef = useRef<ContactPlan | null>(null);
   useEffect(() => {
     planRef.current = plan;
@@ -26,6 +28,7 @@ export function PlanView({ caseId }: { caseId: string }) {
   const apply = useCallback((res: PlanResult) => {
     if (res.ok) {
       setPlan(res.plan);
+      if (res.evidence) setEvidence(res.evidence);
       setPhase('ready');
     } else {
       setError(res.message);
@@ -57,6 +60,7 @@ export function PlanView({ caseId }: { caseId: string }) {
       setBusy(false);
       if (res.ok) {
         setPlan(res.plan);
+        if (res.evidence) setEvidence(res.evidence);
         return res;
       }
       setPlan(before);
@@ -104,6 +108,7 @@ export function PlanView({ caseId }: { caseId: string }) {
     setBusy(false);
     if (res.ok) {
       setPlan(res.plan);
+      if (res.evidence) setEvidence(res.evidence);
       toast.success('Plan rebuilt');
     } else if (res.status === 409) {
       toast.info('Plan changed, reloading');
@@ -154,7 +159,7 @@ export function PlanView({ caseId }: { caseId: string }) {
           </Button>
         </section>
       ) : null}
-      <PlanBoard plan={plan} busy={busy} caseId={caseId} draftCount={outcome?.count ?? null} editing={editing} onEdit={() => setEditing(true)} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />
+      <PlanBoard plan={plan} evidence={evidence} busy={busy} caseId={caseId} draftCount={outcome?.count ?? null} editing={editing} onEdit={() => setEditing(true)} onToggle={onToggle} onMove={onMove} onApprove={() => void onApprove()} onRebuild={() => void onRebuild()} />
     </div>
   );
 }

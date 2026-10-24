@@ -2,8 +2,6 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { caseCandidates, contacts, evidence, experts, institutions, organizations, trials } from '@/db/schema';
 import { getServices } from '@/app/api/cases/_lib/services';
-import { demoCoordinatorEvidence } from './contact-points';
-import { isDemoCoordinatorAddress } from '../outreach/demo-coordinators';
 import type { PlanEvidence, PlanResourceInput, PlanTargetKind } from './contract';
 
 export interface PlanInputLoader {
@@ -34,8 +32,8 @@ export class PostgresPlanInputLoader implements PlanInputLoader {
       const [meta, rows] = await Promise.all([this.meta(t), this.db.select().from(evidence)
         .where(and(eq(evidence.caseId, caseId), eq(evidence.targetKind, t.targetKind), eq(evidence.targetId, t.targetId)))]);
       const ev: PlanEvidence[] = rows.map(r => ({ id: r.id, claimType: r.claimType, claim: r.claim, sourceUrl: r.sourceUrl, sourceKind: r.sourceKind }));
-      // Demo coordinator mode: a contact mapped to a demo inbox gets a code-stamped email point for that inbox.
-      if (t.contactId && isDemoCoordinatorAddress(t.address, process.env)) ev.push(demoCoordinatorEvidence(t.contactId, t.address!.trim().toLowerCase()));
+      // Demo mode never changes what the planner sees: it plans from the resource's real contact points, and only
+      // the destination of each channel is swapped at contact/draft time (lib/outreach/demo-destinations.ts).
       const { address: _address, ...target } = t;
       return { ...target, name: meta.name ?? t.targetId, subKind: meta.subKind, evidence: ev };
     }));

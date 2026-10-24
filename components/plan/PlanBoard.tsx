@@ -7,11 +7,14 @@ import { Badge, Button, Card, CardEyebrow, CardTitle, IconButton, Switch } from 
 import { useReducedMotionGate } from '@/lib/motion/MotionPreference';
 import { DURATION, EASE, STAGGER } from '@/lib/motion/tokens';
 import type { ContactPlan, PlanChannel, PlanStep, ResourcePlan } from '@/lib/plan/contract';
+import type { PlanEvidenceMeta } from '@/lib/plan/evidence-meta';
+import { useDemoDestinations } from '@/components/outreach/DemoCoordinators';
 import {
   KIND_LABELS,
   enabledStepCount,
+  demoStepLabel,
+  evidenceBadgeText,
   isHttpUrl,
-  shortEvidenceId,
   stepLabel,
   sortedSteps,
   waitText,
@@ -21,6 +24,8 @@ const CHANNEL_ICONS: Record<PlanChannel, LucideIcon> = { voice: Phone, email: Ma
 
 export interface PlanBoardProps {
   plan: ContactPlan;
+  /** Source host/kind per cited evidence id (from the plan API); ids without metadata fall back to a short id. */
+  evidence?: PlanEvidenceMeta;
   busy?: boolean;
   onToggle: (resourceKey: string, stepId: string, enabled: boolean) => void;
   onMove: (resourceKey: string, stepId: string, delta: -1 | 1) => void;
@@ -35,7 +40,7 @@ export interface PlanBoardProps {
   onEdit?: () => void;
 }
 
-export function PlanBoard({ plan, busy = false, onToggle, onMove, onApprove, onRebuild, caseId, draftCount, editing = false, onEdit }: PlanBoardProps) {
+export function PlanBoard({ plan, evidence = {}, busy = false, onToggle, onMove, onApprove, onRebuild, caseId, draftCount, editing = false, onEdit }: PlanBoardProps) {
   const enabled = enabledStepCount(plan);
   const showApproved = plan.status === 'approved' && !editing;
   return (
@@ -49,7 +54,7 @@ export function PlanBoard({ plan, busy = false, onToggle, onMove, onApprove, onR
       <ul className="m-0 flex list-none flex-col gap-6 p-0">
         {plan.resources.map(resource => (
           <li key={resource.resourceKey}>
-            <ResourceCard resource={resource} busy={busy} onToggle={onToggle} onMove={onMove} />
+            <ResourceCard resource={resource} evidence={evidence} busy={busy} onToggle={onToggle} onMove={onMove} />
           </li>
         ))}
       </ul>
@@ -94,11 +99,13 @@ export function approvedText(draftCount: number | null | undefined): string {
 
 function ResourceCard({
   resource,
+  evidence,
   busy,
   onToggle,
   onMove,
 }: {
   resource: ResourcePlan;
+  evidence: PlanEvidenceMeta;
   busy: boolean;
   onToggle: PlanBoardProps['onToggle'];
   onMove: PlanBoardProps['onMove'];
@@ -121,6 +128,7 @@ function ResourceCard({
             <StepRow
               key={step.id}
               step={step}
+              evidence={evidence}
               index={index}
               total={steps.length}
               resourceName={resource.name}
@@ -137,6 +145,7 @@ function ResourceCard({
 
 function StepRow({
   step,
+  evidence,
   index,
   total,
   resourceName,
@@ -145,6 +154,7 @@ function StepRow({
   onMove,
 }: {
   step: PlanStep;
+  evidence: PlanEvidenceMeta;
   index: number;
   total: number;
   resourceName: string;
@@ -153,6 +163,8 @@ function StepRow({
   onMove: (delta: -1 | 1) => void;
 }) {
   const reduced = useReducedMotionGate();
+  const demo = useDemoDestinations();
+  const demoLabel = demo.enabled ? demoStepLabel(step.channel, demo.callsRingTestNumber) : null;
   const Icon = CHANNEL_ICONS[step.channel];
   const label = stepLabel(step);
   const isLast = index === total - 1;
@@ -198,10 +210,15 @@ function StepRow({
         <p className="m-0 mt-1 text-body text-ink-2 text-pretty">{step.reason}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {step.evidenceIds.map(id => (
-            <Badge key={id} tone="outline" size="sm" title={id}>
-              {shortEvidenceId(id)}
+            <Badge key={id} tone="outline" size="sm" title={evidence[id]?.host ? `Source: ${evidence[id]!.host}` : id}>
+              {evidenceBadgeText(id, evidence[id])}
             </Badge>
           ))}
+          {demoLabel ? (
+            <Badge tone="accent" size="sm" title="Demo mode: this real contact point is not used. Delivery goes to Wayfinder's own test destination.">
+              {demoLabel}
+            </Badge>
+          ) : null}
           {step.channel === 'web_form' && isHttpUrl(step.targetRef) ? (
             <a
               href={step.targetRef}

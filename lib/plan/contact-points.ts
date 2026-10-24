@@ -103,11 +103,10 @@ function parseWebForm(e: PlanEvidence): PlanContactPoint | null {
  * claim must BE the address/URL, and the source kind must be one that can vouch for the origin.
  */
 export function parsePlanContactPoints(evidence: readonly PlanEvidence[]): PlanContactPoint[] {
-  const demo = evidence.flatMap((e) => { const cp = parseDemoCoordinator(e); return cp ? [cp] : []; });
-  // Demo mode: a resource mapped to a demo coordinator never exposes its real contact points to the planner.
-  if (demo.length > 0) return demo;
   return evidence.flatMap((e): PlanContactPoint[] => {
     if (!e.id || !e.claimType.startsWith(`${PREFIX}.`)) return [];
+    // Legacy rows from the old demo planner override (plans made before demo destinations); never written anymore.
+    if (e.claimType === DEMO_COORDINATOR_CLAIM_TYPE) { const cp = parseDemoCoordinator(e); return cp ? [cp] : []; }
     if (e.claimType.startsWith(`${PREFIX}.web_form.`)) {
       const wf = parseWebForm(e);
       return wf ? [wf] : [];

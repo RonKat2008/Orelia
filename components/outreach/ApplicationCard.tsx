@@ -19,6 +19,8 @@ import {
 } from "@/components/ui";
 import { approveApplicationRequest, displayValue, docIdsOf, requiredMissing, sourceLabel, type ApiApplication } from "./applications";
 import { formatWhen } from "./format";
+import { DemoCoordinatorBadge } from "./DemoCoordinators";
+import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 
 function hostOf(url: string): string {
   try {
@@ -52,6 +54,7 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[] | null>(null);
   const host = hostOf(application.url);
+  const demoForm = isDemoFormUrl(application.url);
   const status = STATUS_COPY[application.status];
   const open = requiredMissing(application.missing);
   const canApprove = application.status === "draft" && application.fields.length > 0;
@@ -69,7 +72,9 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
     }
     setErrors(null);
     onChange({ ...application, status: "submitted", submittedAt: result.submittedAt, approvedAt: result.submittedAt });
-    toast.success("Application submitted", { description: `Sent to ${host} after the safety check.` });
+    toast.success("Application submitted", {
+      description: demoForm ? "Demo: delivered to Wayfinder test form after the safety check." : `Sent to ${host} after the safety check.`,
+    });
   }
 
   return (
@@ -83,7 +88,10 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
           <CardTitle id={titleId} className="break-words">
             Review application
           </CardTitle>
-          <p className="m-0 break-words text-small text-ink-2">{host}</p>
+          <p className="m-0 flex flex-wrap items-center gap-2 break-words text-small text-ink-2">
+            {demoForm ? "Wayfinder demo intake form" : host}
+            <DemoCoordinatorBadge address={application.url} />
+          </p>
         </div>
         <span className="basis-full sm:basis-auto">
           <Badge tone={status.tone} size="md" dot={application.status === "draft"}>

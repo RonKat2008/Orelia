@@ -76,7 +76,7 @@ async function materializeResource(caseId: string, resource: ResourcePlan, deps:
       continue;
     }
     if (s.channel === 'web_form') {
-      const fill = await deps.webForm.draftFill({ caseId, contactId: resource.contactId, url: s.targetRef });
+      const fill = await deps.webForm.draftFill({ caseId, contactId: resource.contactId, url: s.targetRef, resourceKey: resource.resourceKey });
       out.push(fill.ok ? { ...base, status: 'application_drafted', applicationId: fill.draft.applicationId } : { ...base, status: 'not_available', detail: fill.reason });
       continue;
     }

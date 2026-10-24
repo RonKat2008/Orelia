@@ -11,6 +11,8 @@ import { parseAffiliationEvidence } from '@/lib/identity/affiliation-evidence';
 import { parsePaperEvidence } from '@/lib/identity/paper-evidence';
 import { classifyIntakeDoors } from '@/lib/contact-finder';
 import { contactPointEvidence, contactPointsFromDoors, usPhoneToE164 } from '@/lib/contact-finder/contact-points';
+import { webFormsOnPage } from '@/lib/contact-finder/web-forms';
+import { webFormEvidence } from '@/lib/plan/contact-points';
 
 export const MAX_AUTHORS = 6;
 export const MAX_PAPERS_PER_AUTHOR = 5;
@@ -187,7 +189,7 @@ interface InstitutionFacts {
 const NO_FACTS: InstitutionFacts = { institutionPage: null, consultation: null, contacts: [] };
 const MAX_INSTITUTION_CONTACTS = 3;
 
-/** Intake contact points (phone / role email) on result pages that belong to the institution. */
+/** Intake contact points (phone / role email / online intake form) on result pages that belong to the institution. */
 export function institutionContacts(institution: string, results: readonly { url: string; title?: string; text?: string }[], fetchedAt: string): InstitutionFacts['contacts'] {
   const out: InstitutionFacts['contacts'] = [];
   for (const r of results) {
@@ -195,6 +197,10 @@ export function institutionContacts(institution: string, results: readonly { url
     for (const cp of contactPointsFromDoors(classifyIntakeDoors({ url: r.url, title: r.title, text: r.text }))) {
       const row = contactPointEvidence(cp, fetchedAt);
       if (row?.id && !out.some((o) => o.evidence.id === row.id) && out.length < MAX_INSTITUTION_CONTACTS) out.push({ evidence: row as Evidence & { id: string }, origin: cp.origin });
+    }
+    for (const wf of webFormsOnPage({ url: r.url, title: r.title, text: r.text })) {
+      const row = webFormEvidence(wf, fetchedAt);
+      if (row?.id && !out.some((o) => o.evidence.id === row.id) && out.length < MAX_INSTITUTION_CONTACTS) out.push({ evidence: row as Evidence & { id: string }, origin: wf.origin });
     }
   }
   return out;
@@ -368,6 +374,9 @@ const ROUTE_LABELS: Record<string, string> = {
   second_opinion_program: 'Second-opinion program contact',
   pathology_consult: 'Pathology consultation contact',
   nurse_navigator: 'Nurse navigator contact',
+  intake_form: 'Online appointment / intake form on the institution site',
+  referral_form: 'Online referral form on the institution site',
+  application_form: 'Online application form',
 };
 
 /** howToReach: only code-stamped contact_point.* rows on the expert / its institution, plus accepted pages. */

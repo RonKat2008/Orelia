@@ -7,7 +7,7 @@
  * Provider errors are reduced to fixed reason codes before they reach the caller or the stored result.
  */
 import { PageChangedError } from '../channels/web-form';
-import { parseWebAllowlist } from '../safety/web-allowlist';
+import { webAllowlist } from '../outreach/demo-destinations';
 import { checkOutbound, type GatedDraft } from '../safety/outbound-gate';
 import type { CaseRecord, SafetyContact, WebFormDraftPayload } from '../safety/types';
 import type { ApplicationStore } from './store';
@@ -84,7 +84,8 @@ export async function approveApplication(id: string, input: ApproveApplicationIn
     consent: { sharedFields: consent.sharedFields, sharedDocIds },
     contacts,
     allowlist: [],
-    webAllowlist: parseWebAllowlist(env.OUTBOUND_WEB_ALLOWLIST ?? ''),
+    // OUTBOUND_WEB_ALLOWLIST, plus (demo mode only) this deployment's own host for the demo intake form.
+    webAllowlist: webAllowlist(env),
     now,
     mode: env.NODE_ENV === 'production' ? 'prod' : 'dev',
     outboundAllowReal: env.OUTBOUND_ALLOW_REAL,

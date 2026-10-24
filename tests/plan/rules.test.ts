@@ -228,13 +228,26 @@ describe('demo coordinator mode', () => {
     expect(rp.unavailableReason).toBeNull();
   });
 
-  it('never plans the real contact points of a demo-mapped resource, and the plan validates', () => {
+  it('plans from the REAL contact points in demo mode, exactly as with the mode off (adaptive mix, combinations)', () => {
+    const inputs = [
+      resource('organization', 'a1', [E(), F()], 'financial_aid'),
+      resource('trial', 't1', [P()]),
+      resource('institution', 'i1', [P(), F()]),
+    ];
+    const off = buildDeterministicPlan('case-1', inputs, { now: NOW });
     envOn();
-    const input = resource('organization', 'd1', [E(), P(), F(), demo('demo-a@example.org')], 'advocacy');
-    const rp = only(input);
-    expect(rp.steps.map(s => s.channel)).toEqual(['email']);
-    const plan = buildDeterministicPlan('case-1', [input], { now: NOW });
-    expect(validatePlanAgainstInputs(plan, [input])).toEqual([]);
+    const on = buildDeterministicPlan('case-1', inputs, { now: NOW });
+    expect(on.resources).toEqual(off.resources);
+    const channels = new Set(on.resources.flatMap(r => r.steps.filter(st => st.enabled).map(st => st.channel)));
+    expect(channels).toEqual(new Set(['email', 'voice', 'web_form']));
+    expect(on.resources.map(r => r.rule)).toEqual(['aid_form_then_email', 'trial_call_only', 'specialist_form_then_call_verify']);
+    expect(validatePlanAgainstInputs(on, inputs)).toEqual([]);
+  });
+
+  it('prefers a real email over a legacy demo coordinator row', () => {
+    envOn();
+    const input = resource('organization', 'd1', [E(), P(), demo('demo-a@example.org')], 'advocacy');
+    expect(only(input).steps[0].evidenceIds).not.toEqual(['contact_point:demo_coordinator:contact-d1']);
   });
 
   it('ignores the demo row when the mode is off or the address is not an allowlisted demo inbox', () => {

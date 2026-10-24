@@ -6,6 +6,7 @@ import {
   isDemoCoordinatorAddress,
 } from '../../lib/outreach/demo-coordinators';
 import { OutreachService } from '../../lib/outreach/service';
+import { DEMO_CALL_SINK } from '../../lib/outreach/demo-destinations';
 import { MockChannel } from '../../lib/outreach/mock-channel';
 import { activeContactCount } from '../../lib/safety/caps';
 import { OutreachError, type Candidate, type Contact, type OutreachStore } from '../../lib/outreach/types';
@@ -73,27 +74,29 @@ function service(env: Record<string, string>) {
 }
 
 describe('OutreachService.select in demo coordinator mode', () => {
-  it('routes every selected resource (even doorless ones) to a distinct demo inbox, never the real address', async () => {
-    const { svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to,demo2@agentmail.to' });
-    const res = await svc.select('case-1', ['c1', 'c2']);
-    expect(res.unavailable).toEqual([]);
-    expect(res.contacts.map(c => c.channel)).toEqual(['email', 'email']);
-    expect(new Set(res.contacts.map(c => c.address))).toEqual(new Set(['demo@agentmail.to', 'demo2@agentmail.to']));
+  it('keeps the real channel of each resource and only swaps the destination; doorless resources stay unavailable', async () => {
+    const { store, svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to,demo2@agentmail.to' });
+    store.choices.push({ id: 'c3', caseId: 'case-1', targetId: 't3', targetKind: 'trial', evidence: [{ claim: '+15075550100', claimType: 'contact_point.voice.ctgov_central_contact', sourceUrl: 'https://clinicaltrials.gov/study/NCT1', sourceKind: 'ctgov' } as Candidate['evidence'][number]] });
+    const res = await svc.select('case-1', ['c1', 'c2', 'c3']);
+    expect(res.unavailable.map(u => u.candidateId)).toEqual(['c1']);
+    expect(res.contacts.map(c => [c.targetId, c.channel])).toEqual([['t2', 'email'], ['t3', 'voice']]);
+    expect(['demo@agentmail.to', 'demo2@agentmail.to']).toContain(res.contacts[0].address);
+    // No test phone is allowlisted: the call goes to the reserved, never-dialed demo sink, not the trial's number.
+    expect(res.contacts[1].address).toBe(DEMO_CALL_SINK);
   });
 
-  it('lets several contacts share the single demo inbox (one contact per resource), up to the cap of 5', async () => {
+  it('lets several contacts share the single demo inbox and the call sink (one contact per resource), up to the cap of 5', async () => {
     const { store, svc } = service({ WAYFINDER_DEMO_COORDINATORS: '1', OUTBOUND_ALLOWLIST: 'demo@agentmail.to' });
-    for (let i = 3; i <= 7; i++) store.choices.push({ id: `c${i}`, caseId: 'case-1', targetId: `t${i}`, targetKind: 'institution', evidence: [] });
-    const res = await svc.select('case-1', ['c1', 'c2']);
+    const door = store.choices[1].evidence;
+    for (let i = 3; i <= 7; i++) store.choices.push({ id: `c${i}`, caseId: 'case-1', targetId: `t${i}`, targetKind: 'institution', evidence: door });
+    const res = await svc.select('case-1', ['c2', 'c3']);
     expect(res.unavailable).toEqual([]);
     expect(res.contacts.map(c => c.address)).toEqual(['demo@agentmail.to', 'demo@agentmail.to']);
     expect(new Set(res.contacts.map(c => c.id)).size).toBe(2);
-    // Re-selecting is idempotent: still one contact per resource.
-    expect((await svc.select('case-1', ['c1', 'c2'])).contacts).toHaveLength(2);
-    // Contacts 3-5 fit; the sixth active contact is refused by the cap, never silently dropped.
-    await svc.select('case-1', ['c3', 'c4', 'c5']);
+    expect((await svc.select('case-1', ['c2', 'c3'])).contacts).toHaveLength(2);
+    await svc.select('case-1', ['c4', 'c5', 'c6']);
     expect(store.people).toHaveLength(5);
-    await expect(svc.select('case-1', ['c6'])).rejects.toMatchObject({ status: 422, reasons: ['contact_cap'] });
+    await expect(svc.select('case-1', ['c7'])).rejects.toMatchObject({ status: 422, reasons: ['contact_cap'] });
   });
 
   it('reports a resource whose only real address is already used by another contact', async () => {

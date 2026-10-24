@@ -1,6 +1,6 @@
 "use client";
 
-import { DemoCoordinatorBadge } from "@/components/outreach/DemoCoordinators";
+import { DemoCoordinatorBadge, demoDestinationLabel, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CircleCheck, FileText, Pause, Pencil, Play, Send, TriangleAlert } from "lucide-react";
@@ -60,6 +60,7 @@ function sharedLabels(keys: readonly string[]): string[] {
 }
 
 export function OutboxList({ caseId }: { caseId: string }) {
+  const demo = useDemoDestinations();
   const [caseRecord, setCaseRecord] = useState<CaseInput | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [docTitles, setDocTitles] = useState<Record<string, string>>({});
@@ -131,8 +132,11 @@ export function OutboxList({ caseId }: { caseId: string }) {
     }
     patch(row.contact.id, { approvedAt: result.approvedAt, sentAt: result.sentAt, error: null });
     setConfirming(null);
+    const demoNote = demoDestinationLabel(row.contact.address, demo);
     toast.success(row.contact.channel === "email" ? "Email approved" : "Call approved", {
-      description: "The server confirmed your approval. You can follow it in the tracker.",
+      description: demoNote
+        ? `${demoNote}. The safety check ran as usual; follow it in the tracker.`
+        : "The server confirmed your approval. You can follow it in the tracker.",
     });
   }
 

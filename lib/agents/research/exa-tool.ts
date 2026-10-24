@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AgentTool } from "@/lib/agents/runtime";
 import { classifyIntakeDoors } from "@/lib/contact-finder";
 import { contactPointsFromDoors } from "@/lib/contact-finder/contact-points";
+import { webFormsOnPage } from "@/lib/contact-finder/web-forms";
 import type { ExaPort } from "./source-ports";
 import { trackedTool, type ProvenanceTracker } from "./shared";
 import { UNTRUSTED_NOTICE, cleanField, wrapUntrusted } from "./untrusted";
@@ -26,7 +27,10 @@ export function exaSearchTool(exa: ExaPort, tracker: ProvenanceTracker): AgentTo
     run: async ({ query, numResults }) => {
       const results = await exa.search({ query, numResults: numResults ?? DEFAULT_RESULTS });
       // Intake addresses come from the deterministic classifier over the fetched page text, never from the model.
-      for (const r of results) tracker.rememberContactPoints(contactPointsFromDoors(classifyIntakeDoors(r)));
+      for (const r of results) {
+        tracker.rememberContactPoints(contactPointsFromDoors(classifyIntakeDoors(r)));
+        tracker.rememberWebForms(webFormsOnPage(r));
+      }
       return {
         query,
         notice: UNTRUSTED_NOTICE,

@@ -1,10 +1,9 @@
 import { ingest, search } from '../case-docs';
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
-import { parseAllowlist } from '../safety/allowlist';
 import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
-import { demoCoordinatorInboxes, demoCoordinatorFor } from './demo-coordinators';
+import { demoDestinationFor, outboundAllowlist, sharedDemoAddresses } from './demo-destinations';
 import { isWebFormOnly, type ReachabilityEvidence } from './reachability';
 import { OutreachError, type Candidate, type Channel, type Contact, type OutreachStore, type ProviderRef } from './types';
 /**
@@ -26,16 +25,10 @@ export class OutreachService {
     const existing = await this.store.contacts(caseId);
     const fresh = candidates.filter((c, index) => !existing.some(e => e.targetId === c.targetId && e.targetKind === c.targetKind) && candidates.findIndex(other => other.targetId === c.targetId && other.targetKind === c.targetKind) === index);
     const unavailable: { candidateId: string; channel: 'none'; reason: string; route?: 'web_form' }[] = [];
-    // Demo coordinator mode (demo only, see demo-coordinators.ts): every new contact goes to one of our own
-    // allowlisted AgentMail test inboxes instead of the resource's real contact point.
-    const demoInboxes = demoCoordinatorInboxes(this.env);
-        const proposed = fresh.flatMap(c => {
-      if (demoInboxes.length > 0) {
-        // Several contacts on a case may share one coordinator inbox (free AgentMail plans have a single one).
-        // Replies are routed back by provider thread id, never by the from-address; the <=5 cap still applies.
-        const demo = demoCoordinatorFor(`${c.targetKind}:${c.targetId}`, demoInboxes)!;
-        return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: 'email' as const, address: demo, state: 'drafted' } satisfies Contact];
-      }
+    // Demo mode (demo only, see demo-destinations.ts): the channel is chosen from the resource's REAL contact points
+    // exactly as without demo mode; only the destination is swapped for our own test inbox / test phone / sink.
+    const shared = sharedDemoAddresses(this.env);
+    const proposed = fresh.flatMap(c => {
       const door = address(c);
       if (!door && isWebFormOnly(c.evidence as ReachabilityEvidence[])) {
         // Reachable only through an online intake/application form (Kernel web-application channel), which has no email/phone contact row.
@@ -43,10 +36,12 @@ export class OutreachService {
         return [];
       }
       if (!door) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'No tool-sourced intake email or phone is available.' }); return []; }
-      return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: door.channel, address: door.address, state: 'drafted' } satisfies Contact];
+      const demo = demoDestinationFor(this.env, door.channel, `${c.targetKind}:${c.targetId}`);
+      if (shared.length > 0 && !demo) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'Demo mode has no test destination configured for this channel.' }); return []; }
+      return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: door.channel, address: demo ?? door.address, state: 'drafted' } satisfies Contact];
     });
     if (activeContactCount(existing) + proposed.length > MAX_ACTIVE_CONTACTS) throw new OutreachError(422, ['contact_cap']);
-    const created = await this.store.select(caseId, proposed, MAX_ACTIVE_CONTACTS, demoInboxes.length > 0 ? { sharedAddresses: demoInboxes } : undefined);
+    const created = await this.store.select(caseId, proposed, MAX_ACTIVE_CONTACTS, shared.length > 0 ? { sharedAddresses: shared } : undefined);
     // Own-target evidence is stored under the contact so drafts never draw on other resources' docs.
     // Best effort: contacts already exist, so a failed embed must not fail selection (drafts then just get less context).
     const stored = await Promise.allSettled(created.flatMap(contact => fresh.filter(c => c.targetId === contact.targetId && c.targetKind === contact.targetKind)
@@ -101,7 +96,7 @@ export class OutreachService {
     if (!record) throw new OutreachError(404, ['case_not_found']);
     const now = this.clock().toISOString();
     const contacts = await this.store.contacts(contact.caseId);
-    const gate = checkOutbound({ draft: { ...draft, approvedAt: now }, caseRecord: record, consent, contacts, allowlist: parseAllowlist(this.env.OUTBOUND_ALLOWLIST ?? ''), now, mode: this.env.NODE_ENV === 'production' ? 'prod' : 'dev' });
+    const gate = checkOutbound({ draft: { ...draft, approvedAt: now }, caseRecord: record, consent, contacts, allowlist: outboundAllowlist(this.env), now, mode: this.env.NODE_ENV === 'production' ? 'prod' : 'dev' });
     const reasons = gate.ok ? [] : [...gate.reasons];
     if (activeContactCount(contacts) > MAX_ACTIVE_CONTACTS && !reasons.includes('contact_cap')) reasons.push('contact_cap');
     if (reasons.length || !gate.ok) throw new OutreachError(422, reasons);

@@ -1,4 +1,5 @@
 import type { ContactPlan, PlanChannel, PlanEdit, PlanStep, ResourcePlan, StepPurpose, WaitFor } from '@/lib/plan/contract';
+import { DEMO_LABELS, isDemoFormFor } from '@/lib/outreach/demo-destinations-shared';
 
 export const CHANNEL_LABELS: Record<PlanChannel, string> = {
   voice: 'Phone call',
@@ -53,6 +54,19 @@ export function shortEvidenceId(id: string): string {
   if (id.startsWith(DEMO_COORDINATOR_EVIDENCE_PREFIX)) return 'Demo coordinator (test inbox)';
   const tail = id.replace(/[^A-Za-z0-9]/g, '').slice(-6);
   return `Source ${tail || id.slice(0, 6)}`;
+}
+
+/** Evidence badge text: the source site (or registry) when known, else the short id. */
+export function evidenceBadgeText(id: string, meta?: { label: string } | null): string {
+  if (id.startsWith(DEMO_COORDINATOR_EVIDENCE_PREFIX)) return shortEvidenceId(id);
+  return meta?.label ? `Source: ${meta.label}` : shortEvidenceId(id);
+}
+
+/** Honest note on a plan step while demo mode swaps its destination for a Wayfinder test one. */
+export function demoStepLabel(channel: PlanChannel, callsRingTestNumber: boolean): string {
+  if (channel === 'email') return DEMO_LABELS.email;
+  if (channel === 'web_form') return DEMO_LABELS.web_form;
+  return callsRingTestNumber ? DEMO_LABELS.voiceTestNumber : DEMO_LABELS.voice;
 }
 
 export function sortedSteps(resource: ResourcePlan): PlanStep[] {
@@ -124,7 +138,7 @@ export function draftStepContext(plan: ContactPlan | null, draft: { contactId: s
 export function applicationStepContext(plan: ContactPlan | null, app: { contactId: string | null; url: string }): StepContext | null {
   for (const resource of plan?.resources ?? []) {
     if (app.contactId && resource.contactId && resource.contactId !== app.contactId) continue;
-    const ctx = contextFor(resource, s => s.channel === 'web_form' && s.targetRef === app.url);
+    const ctx = contextFor(resource, s => s.channel === 'web_form' && (s.targetRef === app.url || isDemoFormFor(app.url, resource.resourceKey, s.targetRef)));
     if (ctx) return ctx;
   }
   return null;

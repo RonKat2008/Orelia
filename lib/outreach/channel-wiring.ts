@@ -8,7 +8,8 @@ import { defaultMockPages, MockBrowserProvider } from '../channels/mock-browser'
 import { KernelBrowserProvider } from '../channels/kernel-web';
 import { WebFormChannel, type LoadUpload } from '../channels/web-form';
 import type { BrowserProvider } from '../channels/browser-types';
-import { parseWebAllowlist } from '../safety/web-allowlist';
+import { DemoCallSimulator, completeSimulatedCall, type SimulatedCallIngest } from './demo-call';
+import { demoDestinationsEnabled, outboundAllowlist, webAllowlist } from './demo-destinations';
 import type { ChannelGuardOptions, ProviderName } from '../channels/types';
 import { parseAllowlist } from '../safety/allowlist';
 import { FOLLOW_UP_BUSINESS_DAYS } from '../safety/caps';
@@ -30,7 +31,8 @@ export function guardFromEnv(env: Env): ChannelGuardOptions {
     allowlist: parseAllowlist(env.OUTBOUND_ALLOWLIST ?? ''),
     mode: env.NODE_ENV === 'production' ? 'prod' : 'dev',
     outboundAllowReal: env.OUTBOUND_ALLOW_REAL,
-    webAllowlist: parseWebAllowlist(env.OUTBOUND_WEB_ALLOWLIST ?? ''),
+    // Demo mode adds only this deployment's own host (the demo intake form); see demo-destinations.ts.
+    webAllowlist: webAllowlist(env),
   };
 }
 
@@ -56,12 +58,14 @@ export function selectChannels(env: Env = process.env, deps: { now?: () => Date;
   const email = !offline && mailKey
     ? new AgentMailChannel({ apiKey: mailKey, guard, ...(env.AGENTMAIL_SENDER_INBOX_ID?.trim() ? { senderInboxId: env.AGENTMAIL_SENDER_INBOX_ID.trim() } : {}), ...(deps.now ? { now: deps.now } : {}), ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
     : new MockMailer(guard, deps.now);
-  const voice = !offline && callKey && fromNumberId
+  const caller = !offline && callKey && fromNumberId
     ? new AgentCallChannel({ apiKey: callKey, fromNumberId, guard, ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
     : new MockCaller(guard, deps.now);
+  // Demo mode: calls to the reserved demo sink are simulated in front of the caller (which would refuse the sink).
+  const voice: Channel = demoDestinationsEnabled(env) ? new DemoCallSimulator(caller) : caller;
   const providers = {
     email: email instanceof AgentMailChannel ? 'agentmail' as const : 'mock-mailer' as const,
-    voice: voice instanceof AgentCallChannel ? 'agentcall' as const : 'mock-caller' as const,
+    voice: caller instanceof AgentCallChannel ? 'agentcall' as const : 'mock-caller' as const,
   };
   const key = `${providers.email}/${providers.voice}`;
   if (!loggedChoices.has(key)) { loggedChoices.add(key); console.info(`[outreach] channels: email=${providers.email} voice=${providers.voice}`); }
@@ -185,6 +189,8 @@ export class WiredOutreachService extends OutreachService {
     env: Env = process.env,
     clock: () => Date = () => new Date(),
     private readonly followUps: FollowUpDraftReader,
+    /** DEMO ONLY: ingests the scripted transcript of a simulated demo call (see demo-call.ts). */
+    private readonly simulatedCallIngest?: SimulatedCallIngest,
   ) { super(store, channels, env, clock); }
 
   override async approve(id: string, draftId: string): Promise<WiredApproveResult> {
@@ -205,6 +211,11 @@ export class WiredOutreachService extends OutreachService {
     } catch (error) {
       console.error('Post-send workflow hand-off failed (email was sent):', error instanceof Error ? error.name : 'unknown');
       return { ...result, workflow: 'pending' };
+    }
+    // DEMO ONLY: a simulated call has no provider webhook; its scripted transcript is ingested now, after the
+    // contact/approved hand-off, so the reply -> task flow runs in the usual order. Never fails the approval.
+    if (this.simulatedCallIngest && result.provider.callId) {
+      await completeSimulatedCall(this.simulatedCallIngest, { contactId: id, caseId: contact.caseId, callId: result.provider.callId, at: result.sentAt });
     }
     return result;
   }
@@ -287,7 +298,7 @@ export function createFollowUpSender(opts: FollowUpSenderOptions = {}) {
     if (!await db.reserve(input.messageId, input.contactId, approvedAt)) throw new DuplicateSendError(input.messageId);
     const gate = checkOutbound({
       draft: { channel: contact.channel, address: contact.address, body: message.body, ...(message.subject ? { subject: message.subject } : {}), contactId: contact.id, caseId: input.caseId, approvedAt, isFollowUp: true },
-      consent, caseRecord, contacts: withAnchor, allowlist: guardFromEnv(env).allowlist, now: now.toISOString(), mode,
+      consent, caseRecord, contacts: withAnchor, allowlist: outboundAllowlist(env), now: now.toISOString(), mode,
       outboundAllowReal: env.OUTBOUND_ALLOW_REAL,
     });
     if (!gate.ok) {

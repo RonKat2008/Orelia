@@ -218,3 +218,29 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
     return json(200, { ignored: true });
   } catch (err) { return errorResponse(err, 'agentcall'); }
 }
+
+/**
+ * DEMO ONLY: a simulated call (demo destinations, no allowlisted test number) has no provider and no webhook, so its
+ * scripted transcript enters here, through the same steps as a verified AgentCall transcript: stored on the calls
+ * row, ingested once under the ledger (classifier -> tasks, case document), then the contact reply event.
+ */
+export async function ingestSimulatedCallTranscript(
+  deps: Pick<InboundDeps, 'storeCallEvent' | 'ingestLedger' | 'ingestInbound' | 'sendEvents'>,
+  input: { contactId: string; caseId: string; callId: string; transcript: string; status: string; receivedAt: string },
+): Promise<void> {
+  await deps.storeCallEvent({
+    contactId: input.contactId, providerCallId: input.callId, eventType: 'call.transcript',
+    transcript: input.transcript, endedAt: new Date(input.receivedAt), status: input.status,
+  });
+  const key: IngestKey = { kind: 'call', providerCallId: input.callId, contactId: input.contactId };
+  const claim = await deps.ingestLedger.claim(key);
+  if (claim !== 'claimed') return;
+  try {
+    await deps.ingestInbound({ channel: 'voice', contactId: input.contactId, caseId: input.caseId, body: input.transcript, providerId: input.callId, receivedAt: input.receivedAt });
+    await deps.sendEvents(contactReplyEvent({ contactId: input.contactId, caseId: input.caseId, dedupeKey: `${input.callId}-transcript`, callId: input.callId, receivedAt: input.receivedAt }));
+  } catch (err) {
+    await deps.ingestLedger.release(key).catch(() => undefined);
+    throw err;
+  }
+  await deps.ingestLedger.complete(key);
+}

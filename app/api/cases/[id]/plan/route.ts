@@ -8,6 +8,17 @@ import { getPlanStore } from '@/lib/plan/store';
 import { emitPlanApproved } from '@/lib/plan/approved-event';
 import { materializePlan } from '@/lib/plan/materialize-wiring';
 import { validatePlanAgainstInputs } from '@/lib/plan/validate';
+import { planEvidenceMeta } from '@/lib/plan/evidence-meta';
+import type { ContactPlan, PlanResourceInput } from '@/lib/plan/contract';
+
+/** Evidence display metadata (source host / kind); best effort, never fails the request. */
+async function metaFor(caseId: string, plan: ContactPlan, inputs?: readonly PlanResourceInput[]) {
+  try {
+    return planEvidenceMeta(plan, inputs ?? await loadPlanInputs(caseId));
+  } catch {
+    return {};
+  }
+}
 import { jsonError, parseBody, parseId } from '../../_lib/http';
 
 export const runtime = 'nodejs';
@@ -25,7 +36,7 @@ export async function GET(req: Request, { params }: Ctx) {
   if (denied) return denied;
   try {
     const plan = await getPlanStore().latest(id);
-    if (plan) return NextResponse.json({ plan });
+    if (plan) return NextResponse.json({ plan, evidence: await metaFor(id, plan) });
     return new URL(req.url).searchParams.get('optional') === '1' ? NextResponse.json({ plan: null }) : jsonError(404, 'No contact plan yet');
   } catch (err) {
     return jsonError(500, 'Unable to load the contact plan', err);
@@ -52,7 +63,7 @@ export async function POST(req: Request, { params }: Ctx) {
     const plan = existing ? { ...built, version: existing.version + 1, createdAt: existing.createdAt } : built;
     const saved = await store.save(plan, existing?.version);
     if (!saved) return jsonError(409, 'The contact plan changed; reload and try again');
-    return NextResponse.json({ plan: saved }, { status: 201 });
+    return NextResponse.json({ plan: saved, evidence: await metaFor(id, saved, inputs) }, { status: 201 });
   } catch (err) {
     return jsonError(500, 'Unable to build the contact plan', err);
   }
@@ -73,16 +84,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (body.data.version !== current.version) return jsonError(409, 'The contact plan changed; reload and try again');
     const applied = applyPlanEdits(current, body.data.edits, new Date());
     if (!applied.ok) return jsonError(400, applied.error);
-    const problems = validatePlanAgainstInputs(applied.plan, await loadPlanInputs(id));
+    const inputs = await loadPlanInputs(id);
+    const problems = validatePlanAgainstInputs(applied.plan, inputs);
     if (problems.length) return jsonError(422, 'Your selection changed since this plan was built; rebuild the plan', problems.join('; '));
     const saved = await store.save(applied.plan, current.version);
     if (!saved) return jsonError(409, 'The contact plan changed; reload and try again');
     if (current.status !== 'approved' && saved.status === 'approved') {
       await emitPlanApproved(id, saved.version);
       // Writes outbox drafts / application drafts for the steps that are ready now. Nothing is sent.
-      return NextResponse.json({ plan: saved, materialized: await materializePlan(saved) });
+      return NextResponse.json({ plan: saved, materialized: await materializePlan(saved), evidence: await metaFor(id, saved, inputs) });
     }
-    return NextResponse.json({ plan: saved });
+    return NextResponse.json({ plan: saved, evidence: await metaFor(id, saved, inputs) });
   } catch (err) {
     return jsonError(500, 'Unable to update the contact plan', err);
   }

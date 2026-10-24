@@ -1,27 +1,51 @@
 import type { ExaPort } from "./research/source-ports";
 import { deterministicUuid, type EvidenceWithId, type VerifiedRecord, type VerifyOutput } from "./verifier";
-import { enrichInstitutions } from "@/lib/contact-finder/enrich";
+import { enrichInstitutions, type EnrichTarget } from "@/lib/contact-finder/enrich";
 
 const DEFAULT_BUDGET_MS = 30_000;
 
 const evidenceKey = (e: { sourceUrl: string; claimType: string; claim: string }) => `${e.sourceUrl}|${e.claimType}|${e.claim}`;
 
+const ORG_KINDS = new Set(["advocacy", "financial_aid", "travel_aid"]);
+
+/** Enrichment targets: kept institutions, and kept advocacy / financial / travel aid organizations (with their own url). */
+function targetsOf(kept: readonly VerifiedRecord[]): EnrichTarget[] {
+  return kept.flatMap((k): EnrichTarget[] => {
+    const r = k.resource;
+    if (r.kind === "institution") return [{ targetKind: "institution", targetId: r.id, name: r.name, evidence: k.evidence }];
+    if (r.kind === "organization" && r.organizationKind && ORG_KINDS.has(r.organizationKind)) {
+      return [{ targetKind: "organization", targetId: r.id, name: r.name, evidence: k.evidence, ...(r.url ? { siteUrl: r.url } : {}) }];
+    }
+    return [];
+  });
+}
+
 /**
- * After verification, give kept institutions without a phone a code-stamped intake contact point from their own
- * site (see lib/contact-finder/enrich). Ids follow the verifier's scheme. Bounded in time; on timeout or error the
+ * After verification, give kept institutions (no phone, or a phone but no email / online form) and kept aid /
+ * advocacy organizations without an email code-stamped contact points from their own site (see
+ * lib/contact-finder/enrich). Ids follow the verifier's scheme. Bounded in time; on timeout or error the
  * verified output is returned unchanged, so research never fails because of this step.
  */
 export async function enrichVerified(verified: VerifyOutput, exa: ExaPort, now: Date, budgetMs = DEFAULT_BUDGET_MS): Promise<VerifyOutput> {
-  const institutions = verified.kept.filter((k) => k.resource.kind === "institution");
-  if (institutions.length === 0) return verified;
+  let targets: EnrichTarget[];
+  try { targets = targetsOf(verified.kept); } catch { return verified; }
+  if (targets.length === 0) return verified;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), budgetMs); });
   const rows = await Promise.race([
-    enrichInstitutions(institutions.map((k) => ({ targetKind: "institution" as const, targetId: k.resource.id, name: "name" in k.resource ? k.resource.name : "", evidence: k.evidence })), exa, now.toISOString()).catch(() => null),
+    enrichInstitutions(targets, exa, now.toISOString()).catch(() => null),
     timeout,
   ]).finally(() => clearTimeout(timer));
   if (!rows || rows.size === 0) return verified;
-  const kept = verified.kept.map((k): VerifiedRecord => {
+  try {
+    return { ...verified, kept: mergeRows(verified.kept, rows) };
+  } catch {
+    return verified;
+  }
+}
+
+function mergeRows(keptIn: readonly VerifiedRecord[], rows: ReadonlyMap<string, ReadonlyArray<Omit<EvidenceWithId, "id"> & { id?: string }>>): VerifiedRecord[] {
+  return keptIn.map((k): VerifiedRecord => {
     const added = rows.get(k.resource.id);
     if (!added?.length) return k;
     const known = new Set(k.evidence.map(evidenceKey));
@@ -29,5 +53,4 @@ export async function enrichVerified(verified: VerifyOutput, exa: ExaPort, now: 
     const evidence = [...k.evidence, ...fresh];
     return { ...k, evidence, resource: { ...k.resource, evidenceRefs: evidence.map((e) => e.id) } };
   });
-  return { ...verified, kept };
 }

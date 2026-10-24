@@ -43,7 +43,7 @@ describe('PostgresPlanInputLoader', () => {
     expect(out[0].evidence).toEqual([{ id: 'e1', claimType: 'contact_point.email', claim: 'a@example.org', sourceUrl: 'https://example.org', sourceKind: 'exa' }]);
   });
 
-  it('stamps a demo coordinator email point for a contact mapped to a demo inbox (demo mode only)', async () => {
+  it('never adds demo evidence in demo mode: the planner sees only the real rows', async () => {
     vi.stubEnv('WAYFINDER_DEMO_COORDINATORS', '1');
     vi.stubEnv('OUTBOUND_ALLOWLIST', 'demo-a@example.org');
     vi.stubEnv('AGENTMAIL_SENDER_INBOX_ID', 'sender@example.org');
@@ -53,7 +53,7 @@ describe('PostgresPlanInputLoader', () => {
     fake.queue('select:organizations', [{ name: 'Org1', kind: 'advocacy' }], [{ name: 'Org2', kind: 'advocacy' }]);
     fake.queue('select:evidence', [], []);
     const out = await loader.load(CASE);
-    expect(out[0].evidence.map((e) => [e.claimType, e.claim])).toEqual([['contact_point.email.demo_coordinator', 'demo-a@example.org']]);
+    expect(out[0].evidence).toEqual([]);
     expect(out[1].evidence).toEqual([]);
     expect(out[0]).not.toHaveProperty('address');
   });

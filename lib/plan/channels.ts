@@ -18,6 +18,8 @@ import type { CaseRecord } from '../safety/types';
 import { getApplicationStore, type ApplicationStore } from '../web-application/store';
 import { selectWebChannel } from '../outreach/channel-wiring';
 import type { ApplicationStatus, WebApplicationDraft } from '../web-application/types';
+import { demoDestinationsEnabled, demoFormUrl } from '../outreach/demo-destinations';
+import { isDemoFormFor } from '../outreach/demo-destinations-shared';
 
 export type NotAvailable = { ok: false; status: 'not_available'; reason: string };
 
@@ -38,6 +40,8 @@ export interface DraftFillInput {
   contactId: string | null;
   /** The plan step's targetRef: a code-stamped form URL of this resource. */
   url: string;
+  /** `${targetKind}:${targetId}` of the plan resource; demo mode uses it to name the stand-in demo form. */
+  resourceKey?: string;
 }
 
 export interface WebFormChannel {
@@ -71,6 +75,8 @@ export interface KernelPlanWebFormDeps {
   docStore?: DocumentStore;
   now?: () => Date;
   newId?: () => string;
+  /** Defaults to process.env; read for demo destinations (the demo intake form). */
+  env?: Record<string, string | undefined>;
 }
 
 /** Draft states that mean "this form was already prepared for this resource": never draft it twice. */
@@ -105,23 +111,29 @@ export class KernelPlanWebForm implements WebFormChannel {
     const channel = this.ready();
     if (!channel) return unavailable('Online forms are not configured (no cloud browser key)');
     const store = this.deps.applications();
+    const env = this.deps.env ?? process.env;
+    // Demo mode: the real form URL stays in the plan; the application is filled on Wayfinder's own demo intake form.
+    const demo = demoDestinationsEnabled(env) && !!input.resourceKey;
+    const sameForm = (a: WebApplicationDraft) => a.url === input.url || (!!input.resourceKey && isDemoFormFor(a.url, input.resourceKey, input.url));
     const existing = (await store.listByCase(input.caseId))
-      .find(a => a.url === input.url && a.contactId === input.contactId && LIVE_STATES.has(a.status));
+      .find(a => sameForm(a) && a.contactId === input.contactId && LIVE_STATES.has(a.status));
     if (existing) return { ok: true, draft: ref(existing) };
     const ctx = await this.deps.context({ caseId: input.caseId, contactId: input.contactId });
     if (!ctx) return unavailable('Choose what this contact may see before an application is filled');
+    const id = this.deps.newId?.() ?? crypto.randomUUID();
+    const url = demo ? demoFormUrl(env, { caseId: input.caseId, applicationId: id, resourceKey: input.resourceKey!, realUrl: input.url }) : input.url;
     let filled: Awaited<ReturnType<typeof draftFillWebForm>>;
     try {
       filled = await draftFillWebForm(channel, {
-        url: input.url, caseId: input.caseId, ...(input.contactId ? { contactId: input.contactId } : {}),
+        url, caseId: input.caseId, ...(input.contactId ? { contactId: input.contactId } : {}),
         caseRecord: ctx.caseRecord, sharedFields: ctx.sharedFields, ...(this.deps.docStore ? { docStore: this.deps.docStore } : {}),
       });
     } catch {
       return unavailable(BROWSER_FAILED);
     }
     const draft: WebApplicationDraft = {
-      id: this.deps.newId?.() ?? crypto.randomUUID(),
-      caseId: input.caseId, contactId: input.contactId, url: input.url,
+      id,
+      caseId: input.caseId, contactId: input.contactId, url,
       fields: filled.filled, missing: filled.missing, formFingerprint: filled.formFingerprint, screenshot: filled.screenshot,
       sharedFields: [...ctx.sharedFields], sharedDocIds: [...filled.usedDocIds],
       status: 'draft', approvedAt: null, submittedAt: null, result: null,

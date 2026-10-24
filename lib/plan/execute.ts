@@ -150,7 +150,7 @@ async function runVerify(caseId: string, resource: ResourcePlan, s: PlanStep, de
 
 async function runWebForm(caseId: string, resource: ResourcePlan, s: PlanStep, deps: PlanExecDeps) {
   // draftFill is idempotent per case + contact + url, so the approval-time drafting and this run never duplicate.
-  const fill = await deps.webForm.draftFill({ caseId, contactId: resource.contactId, url: s.targetRef });
+  const fill = await deps.webForm.draftFill({ caseId, contactId: resource.contactId, url: s.targetRef, resourceKey: resource.resourceKey });
   if (!fill.ok) return { status: 'not_available' as const, detail: fill.reason };
   if (fill.draft.status === 'submitted') return { status: 'submitted' as const };
   // Submitting needs a GatedDraft from checkOutbound, minted only when the patient approves the reviewed application.

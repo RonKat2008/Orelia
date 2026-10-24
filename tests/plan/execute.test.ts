@@ -155,7 +155,7 @@ describe('executePlan', () => {
     const first = (await executePlan(new FakeStep(), plan, makeDeps({ webForm }).deps))[0];
     expect(first).toMatchObject({ status: 'awaiting_approval' });
     expect(first.detail).toMatch(/review/i);
-    expect(draftFill).toHaveBeenCalledWith({ caseId: 'case-1', contactId: 'contact-e1', url: 'https://example.org/apply' });
+    expect(draftFill).toHaveBeenCalledWith(expect.objectContaining({ caseId: 'case-1', contactId: 'contact-e1', url: 'https://example.org/apply', resourceKey: expect.any(String) }));
     status = 'submitted';
     expect((await executePlan(new FakeStep(), plan, makeDeps({ webForm }).deps))[0].status).toBe('submitted');
     expect(submit).not.toHaveBeenCalled();

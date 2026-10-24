@@ -85,7 +85,7 @@ describe('materializeApprovedPlan', () => {
     const form = step('s1', 1, { channel: 'web_form', purpose: 'apply', targetRef: 'https://aid.example.org/apply' });
     const ok = await materializeApprovedPlan(approved([resource('a', [form])]), deps({ webForm }).d);
     expect(ok[0]).toEqual({ resourceKey: 'expert:a', stepId: 's1', channel: 'web_form', status: 'application_drafted', applicationId: 'app-1' });
-    expect(webForm.draftFill).toHaveBeenCalledWith({ caseId: 'case-1', contactId: 'contact-a', url: 'https://aid.example.org/apply' });
+    expect(webForm.draftFill).toHaveBeenCalledWith(expect.objectContaining({ caseId: 'case-1', contactId: 'contact-a', url: 'https://aid.example.org/apply', resourceKey: expect.any(String) }));
     expect(webForm.submitGated).not.toHaveBeenCalled();
     const none = await materializeApprovedPlan(approved([resource('a', [form])]), deps().d);
     expect(none[0]).toMatchObject({ status: 'not_available', detail: 'no browser' });

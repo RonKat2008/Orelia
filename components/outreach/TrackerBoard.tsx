@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, Mail, MessageSquareText, PhoneCall } from "lucide-react";
+import { ArrowRight, CalendarClock, ClipboardList, Mail, MessageSquareText, PhoneCall } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -25,6 +25,9 @@ import { contactLabel, outreachSnapshot, readStoredOutreach, subscribeOutreach, 
 import { loadCaseContacts, loadCaseTasks } from "./case-activity";
 import { formatDay, titleCase } from "./format";
 import { TaskCard } from "./TaskCard";
+import { loadApplications, type ApiApplication } from "./applications";
+import { DemoCoordinatorBadge } from "./DemoCoordinators";
+import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 import { CONTACT_STATES, STATE_LABELS, type ContactState, type OutreachTask } from "./types";
 import { cn } from "@/lib/ui/cn";
 
@@ -83,6 +86,18 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
 
   const [plan, setPlan] = useState<ContactPlan | null>(null);
   const [threadTasks, setThreadTasks] = useState<OutreachTask[]>([]);
+  const [applications, setApplications] = useState<ApiApplication[]>([]);
+
+  // Online applications (web_form channel) are tracked next to the email and call journeys.
+  useEffect(() => {
+    let active = true;
+    void loadApplications(caseId).then((rows) => {
+      if (active) setApplications(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, [caseId]);
 
   useEffect(() => {
     let active = true;
@@ -235,6 +250,7 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
                       <CardEyebrow className="flex items-center gap-1.5">
                         <ChannelIcon aria-hidden className={cn("size-3.5", contact.channel === "email" ? "text-ch-email" : "text-ch-call")} /> {contact.channel === "email" ? "Email" : "Phone"}
                       </CardEyebrow>
+                      <DemoCoordinatorBadge address={contact.address} />
                       <CardTitle id={`journey-${contact.id}`} className="break-words text-h4">
                         {name}
                       </CardTitle>
@@ -309,6 +325,58 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false }: Tracke
           })}
         </ul>
       </section>
+
+      {applications.length > 0 ? (
+        <section aria-labelledby="applications-heading" className="grid gap-6" data-testid="tracker-applications">
+          <h3 id="applications-heading" className="m-0 font-display text-h2 font-light text-ink display-soft text-balance">
+            Online <em className="emph">applications</em>
+          </h3>
+          <ul className="m-0 grid list-none gap-3 p-0">
+            {applications.map((application) => {
+              const owner = contacts.find((contact) => contact.id === application.contactId);
+              const name = owner ? titleCase(contactLabel(owner)) : "Online form";
+              return (
+                <li key={application.id}>
+                  <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-line bg-card p-4 shadow-xs sm:p-5" data-application-status={application.status}>
+                    <div className="grid min-w-0 gap-1">
+                      <span className="flex items-center gap-1.5 text-micro font-semibold uppercase text-ink-3">
+                        <ClipboardList aria-hidden className="size-3.5 text-teal" /> Online application
+                      </span>
+                      <span className="break-words font-semibold text-ink">{name}</span>
+                      <span className="flex flex-wrap items-center gap-2 text-small text-ink-2">
+                        {applicationNote(application)}
+                        <DemoCoordinatorBadge address={application.url} />
+                      </span>
+                    </div>
+                    <Badge tone={application.status === "submitted" ? "ok" : application.status === "draft" ? "gold" : "neutral"} size="md">
+                      {APPLICATION_STATUS[application.status] ?? application.status}
+                    </Badge>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
+}
+
+const APPLICATION_STATUS: Record<string, string> = {
+  draft: "Needs your review",
+  approved: "Approved",
+  submitting: "Submitting",
+  submitted: "Submitted",
+  stale: "Form changed",
+  refused: "Refused",
+  failed: "Not submitted",
+};
+
+function applicationNote(application: ApiApplication): string {
+  const where = isDemoFormUrl(application.url) ? "the Wayfinder demo intake form" : "their online form";
+  if (application.status === "submitted") {
+    return `Submitted to ${where}${application.submittedAt ? ` on ${formatDay(application.submittedAt)}` : ""}.`;
+  }
+  if (application.status === "draft") return `Filled in on ${where} and waiting for your review. Nothing was submitted.`;
+  return `Application to ${where}.`;
 }

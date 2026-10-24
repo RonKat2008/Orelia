@@ -1,6 +1,7 @@
 "use client";
 
-import { DemoCoordinatorBadge, useIsDemoCoordinator } from "@/components/outreach/DemoCoordinators";
+import { DemoCoordinatorBadge, demoDestinationLabel, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
+import { DEMO_LABELS } from "@/lib/outreach/demo-destinations-shared";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Lock, Mail, PhoneCall } from "lucide-react";
@@ -450,11 +451,12 @@ export function ConsentForm({ caseId }: { caseId: string }) {
 
 /** Where the route came from. A demo coordinator is our own test inbox, never the resource's public contact. */
 function ReachedNote({ channel, address }: { channel: "email" | "voice"; address: string }) {
-  const demo = useIsDemoCoordinator(address);
+  const demo = demoDestinationLabel(address, useDemoDestinations());
+  const stand = channel === "email" ? "our own test inbox" : demo === DEMO_LABELS.voiceTestNumber ? "our own test phone" : "a simulated call (no number is dialed)";
   return (
     <p className="m-0 text-small text-ink-2">
       {demo
-        ? "Demo mode: a synthetic intake coordinator (our own test inbox) stands in for this resource. Their real contact is not used."
+        ? `Demo mode: the plan uses this resource's real ${channel === "email" ? "email" : "phone"} contact point, but delivery goes to ${stand}. Their real contact is never used.`
         : `This is the intake ${channel === "email" ? "email" : "number"} listed on their public page.`}
       {channel === "email" ? " We will not phone them." : " The call opens by saying an AI assistant is calling for you."}
     </p>

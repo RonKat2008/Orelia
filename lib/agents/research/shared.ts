@@ -15,6 +15,7 @@ import {
   type SourceKind,
 } from "@/lib/contracts";
 import { contactPointEvidence, isContactPointClaimType, type ContactPoint } from "@/lib/contact-finder/contact-points";
+import { webFormEvidence, type WebFormPoint } from "@/lib/plan/contact-points";
 import { checkClaimGrounding } from "./grounding";
 import { isAffiliationClaimType } from "@/lib/identity/affiliation-evidence";
 import { isPaperClaimType } from "@/lib/identity/paper-evidence";
@@ -72,6 +73,7 @@ export class ProvenanceTracker {
   private readonly authorPapers = new Map<string, { name: string; disease: string; pmids: Set<string> }>();
   private readonly recordTexts = new Map<string, string>();
   private readonly contactPoints = new Map<string, ContactPoint[]>();
+  private readonly webForms = new Map<string, WebFormPoint[]>();
   private readonly paperAffiliations = new Map<string, string>();
   private readonly papers = new Map<string, { title: string; journal?: string; year?: number }>();
   private corpus = "";
@@ -111,6 +113,18 @@ export class ProvenanceTracker {
 
   contactPointsFor(url: string): ContactPoint[] {
     return this.contactPoints.get(url) ?? [];
+  }
+
+  /** Remember online forms the deterministic detector found on fetched pages (lib/contact-finder/web-forms). */
+  rememberWebForms(forms: readonly WebFormPoint[]): void {
+    for (const wf of forms) {
+      const known = this.webForms.get(wf.sourceUrl) ?? [];
+      if (!known.some((k) => k.url === wf.url && k.origin === wf.origin)) this.webForms.set(wf.sourceUrl, [...known, wf]);
+    }
+  }
+
+  webFormsFor(url: string): WebFormPoint[] {
+    return this.webForms.get(url) ?? [];
   }
 
   /** Lowercased text of the tool record(s) that carried this URL; empty when no tool returned it. */
@@ -297,7 +311,11 @@ export function finalizeOutput(
     const urls = new Set([...refs.flatMap((ref) => resolve(ref).map((e) => e.sourceUrl)), ...(sanitized.kind === "organization" && sanitized.url ? [sanitized.url] : [])]);
     const contacts = [...urls].flatMap((url) => {
       const source = tracker.sourceFor(url);
-      return source ? tracker.contactPointsFor(url).flatMap((cp) => contactPointEvidence(cp, source.fetchedAt) ?? []) : [];
+      if (!source) return [];
+      return [
+        ...tracker.contactPointsFor(url).flatMap((cp) => contactPointEvidence(cp, source.fetchedAt) ?? []),
+        ...tracker.webFormsFor(url).flatMap((wf) => webFormEvidence(wf, source.fetchedAt) ?? []),
+      ];
     });
     const cited = [...new Set(refs.flatMap(resolve))];
     const stamped = (rules.stampEvidence?.(sanitized, cited, tracker) ?? []).filter((e) => !!e.id);

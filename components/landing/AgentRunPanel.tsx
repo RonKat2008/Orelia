@@ -22,6 +22,15 @@ import {
   type AgentStatus,
 } from "./run-script";
 
+/** Searching dots match the hero field's source-type colours (src-* tokens). */
+const SOURCE_DOT: Record<string, string> = {
+  literature: "bg-src-paper",
+  trials: "bg-src-trial",
+  centers: "bg-src-center",
+  advocacy: "bg-src-aid",
+  aid: "bg-src-aid",
+};
+
 const RESOLVED = PLAN_EXAMPLES.slice(0, 3);
 
 const reveal =
@@ -155,7 +164,7 @@ export function AgentRunPanel({ className }: { className?: string }) {
                     aria-hidden
                     className={cn(
                       "size-2 shrink-0 rounded-pill transition-colors duration-500",
-                      status === "done" ? "bg-ok" : status === "searching" ? "bg-teal" : "bg-line-strong",
+                      status === "done" ? "bg-ok" : status === "searching" ? SOURCE_DOT[agent.id] ?? "bg-teal" : "bg-line-strong",
                     )}
                   />
                   <span className="min-w-0 flex-1 truncate text-small">
@@ -227,7 +236,7 @@ export function AgentRunPanel({ className }: { className?: string }) {
         className={cn(reveal, "relative z-20 -mt-4 mr-3 rounded-lg border border-line-strong/70 bg-card p-4 shadow-xl sm:mr-8")}
       >
         <div className="flex items-center gap-2 text-small text-ink-2">
-          <Mail aria-hidden className="size-4 text-teal" />
+          <Mail aria-hidden className="size-4 text-ch-email" />
           <span className="truncate">
             Draft to <span className="font-semibold text-ink">intake@example.org</span>
           </span>

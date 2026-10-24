@@ -1,34 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Button, EmptyState, LoadingState, Skeleton } from "@/components/ui";
-import { DeleteCaseControl } from "@/components/journey/DeleteCaseControl";
+import { Button, LoadingState, PageHeader, Skeleton } from "@/components/ui";
+import { ManageCase } from "@/components/journey/JourneyShell";
+import { PatientProgress } from "@/components/shell/PatientProgress";
 import { PATIENT_HOME_COPY as COPY } from "./copy";
 import { LiveStatus } from "./LiveStatus";
 import { NextActionCard } from "./NextActionCard";
-import { PatientSteps } from "./PatientSteps";
 import { usePatientStatus } from "./usePatientStatus";
 import { WhatsHappened } from "./WhatsHappened";
 
-const QUIET_LINK =
-  "inline-flex min-h-11 items-center rounded-sm text-small font-semibold text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink focus-ring";
 
-/** "Manage case": the quiet footer for the judge view link and Delete case (inside its confirm dialog). */
-function ManageCase({ caseId }: { caseId: string }) {
-  return (
-    <footer aria-labelledby="manage-heading" className="grid gap-2 border-t border-line pt-6">
-      <h2 id="manage-heading" className="m-0 text-small font-semibold text-ink-2">
-        {COPY.manage.title}
-      </h2>
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <Link href={`/cases/${caseId}?view=judge`} className={QUIET_LINK}>
-          {COPY.manage.judgeView}
-        </Link>
-        <DeleteCaseControl caseId={caseId} className="min-h-11" />
-      </div>
-    </footer>
-  );
-}
 
 /**
  * Patient case home (docs/DESIGN-v2.md 7.4): status line, h1, the 4-step line, ONE ActionCard with the next action,
@@ -39,29 +21,27 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
 
   if (missing) {
     return (
-      <EmptyState
-        title={COPY.missing.title}
-        description={COPY.missing.description}
-        action={
+      <div className="grid max-w-patient gap-6">
+        <PageHeader title={COPY.missing.title} lede={COPY.missing.description} className="mb-0" />
+        <div>
           <Button asChild size="lg">
             <Link href="/start">{COPY.missing.action}</Link>
           </Button>
-        }
-      />
+        </div>
+      </div>
     );
   }
 
   if (!body && error) {
     return (
-      <EmptyState
-        title={COPY.loadFailed.title}
-        description={error}
-        action={
+      <div className="grid max-w-patient gap-6">
+        <PageHeader title={COPY.loadFailed.title} lede={error} className="mb-0" />
+        <div>
           <Button size="lg" onClick={() => void refresh()}>
             {COPY.loadFailed.action}
           </Button>
-        }
-      />
+        </div>
+      </div>
     );
   }
 
@@ -85,7 +65,7 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
           {error}
         </p>
       ) : null}
-      <PatientSteps current={status.step} />
+      <PatientProgress current={status.step} />
       <NextActionCard caseId={caseId} status={status} onDone={refresh} />
       <WhatsHappened items={timeline} seeAllHref={`/cases/${caseId}/tracker`} />
       <ManageCase caseId={caseId} />

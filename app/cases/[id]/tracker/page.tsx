@@ -4,12 +4,17 @@ import { TrackerBoard } from "@/components/outreach/TrackerBoard";
 export default async function TrackerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <OutreachNav caseId={id} current="tracker">
-      <h1>Connection tracker</h1>
-      <p className="lede">
-        Contacts opened from your shortlist, and tasks when the inbox agent has created them. A task stays open until
-        the task approval API confirms it.
-      </p>
+    <OutreachNav
+      caseId={id}
+      current="tracker"
+      eyebrow="Where things stand"
+      title={
+        <>
+          Every <em className="emph">conversation</em>, one calm view
+        </>
+      }
+      lede="What needs you comes first. Below it, each contact's journey from first draft to a real connection."
+    >
       <TrackerBoard caseId={id} tasks={[]} />
     </OutreachNav>
   );

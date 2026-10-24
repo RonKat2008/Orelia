@@ -117,6 +117,9 @@ function parseEntry(value: unknown, fallbackId: string): ThreadEntry | null {
 }
 
 function parseClassification(value: unknown): ThreadEntry["classification"] {
+  if (typeof value === "string" && value.length > 0) {
+    return { label: CLASS_LABELS[value] ?? value.replaceAll("_", " "), rationale: "" };
+  }
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
   const name = typeof record.class === "string" ? record.class : typeof record.label === "string" ? record.label : "";

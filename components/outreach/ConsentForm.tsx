@@ -1,6 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Lock, Mail, PhoneCall } from "lucide-react";
+import {
+  AvatarInitials,
+  Badge,
+  Button,
+  Card,
+  CardEyebrow,
+  CardTitle,
+  Checkbox,
+  ChoiceRow,
+  toast,
+} from "@/components/ui";
+import { EmptyState, ErrorState, LoadingSkeleton } from "@/components/threads/states";
+import type { CaseInput } from "@/lib/contracts";
 import {
   SHAREABLE_FIELDS,
   defaultSharedFields,
@@ -11,25 +26,44 @@ import {
 import {
   contactLabel,
   loadCase,
+  loadFollowUpPlan,
   readSelectedCandidateIds,
   readStoredOutreach,
   saveContactConsent,
+  saveFollowUpChoice,
   selectOutreach,
   writeStoredOutreach,
   type ApiContact,
+  type FollowUpMessage,
   type UnavailableContact,
 } from "./client";
-import type { CaseInput } from "@/lib/contracts";
-import { EmptyState, ErrorState, LoadingSkeleton } from "@/components/threads/states";
+import { loadCaseContacts } from "./case-activity";
+import { buildLetterPreview } from "./letter";
+import { LetterSheet } from "./LetterSheet";
+
+type Phase =
+  | { kind: "loading" }
+  | { kind: "nothing" }
+  | { kind: "failed"; reasons: string[] }
+  | { kind: "ready" };
+
+function titleCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export function ConsentForm({ caseId }: { caseId: string }) {
   const [caseRecord, setCaseRecord] = useState<CaseInput | null>(null);
   const [contacts, setContacts] = useState<ApiContact[]>([]);
   const [unavailable, setUnavailable] = useState<UnavailableContact[]>([]);
   const [sharedByContact, setSharedByContact] = useState<Record<string, ShareableFieldKey[]>>({});
-  const [status, setStatus] = useState<string | null>("Loading the case and selected resources.");
-  const [errors, setErrors] = useState<string[]>([]);
+  const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [consentSavedAt, setConsentSavedAt] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [followUps, setFollowUps] = useState<FollowUpMessage[] | null>(null);
+  const [followUpNote, setFollowUpNote] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -38,25 +72,26 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       if (!active) return;
       setCaseRecord(record);
       const ids = readSelectedCandidateIds(caseId);
+      const plan = await loadFollowUpPlan(caseId);
+      if (active) setFollowUps(plan);
       if (ids.length === 0) {
         const stored = readStoredOutreach(caseId);
-        if (stored) {
-          setContacts(stored.contacts);
-          setUnavailable(stored.unavailable);
-          setSharedByContact(Object.fromEntries(stored.contacts.map((contact) => [contact.id, defaultSharedFields()])));
+        const live = await loadCaseContacts(caseId);
+        const people = live && live.length > 0 ? live : stored?.contacts ?? [];
+        if (people.length === 0) {
+          setPhase({ kind: "nothing" });
+          return;
         }
-        setStatus(
-          ids.length === 0 && !stored
-            ? "Select up to five resources on the shortlist first. Nothing is contacted until you save consent and approve a draft."
-            : null,
-        );
+        setContacts(people);
+        setUnavailable(stored?.unavailable ?? []);
+        setSharedByContact(Object.fromEntries(people.map((contact) => [contact.id, defaultSharedFields()])));
+        setPhase({ kind: "ready" });
         return;
       }
       const selected = await selectOutreach(caseId, ids);
       if (!active) return;
       if (!selected.ok) {
-        setErrors(selected.reasons);
-        setStatus("Those resources could not be opened as contacts.");
+        setPhase({ kind: "failed", reasons: selected.reasons });
         return;
       }
       writeStoredOutreach(caseId, selected.value);
@@ -65,20 +100,24 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       setSharedByContact(
         Object.fromEntries(selected.value.contacts.map((contact) => [contact.id, defaultSharedFields()])),
       );
-      setStatus(null);
+      setPhase({ kind: "ready" });
     })();
     return () => {
       active = false;
     };
-  }, [caseId]);
+  }, [caseId, attempt]);
 
   const summary = useMemo(
     () =>
-      contacts.map((contact) => ({
-        contact,
-        preview: caseRecord ? sharedPreview(caseRecord, sharedByContact[contact.id] ?? []) : [],
-        withheld: withheldLabels(sharedByContact[contact.id] ?? []),
-      })),
+      contacts.map((contact) => {
+        const shared = sharedByContact[contact.id] ?? [];
+        return {
+          contact,
+          shared,
+          preview: caseRecord ? sharedPreview(caseRecord, shared) : [],
+          withheld: withheldLabels(shared),
+        };
+      }),
     [caseRecord, contacts, sharedByContact],
   );
 
@@ -92,100 +131,309 @@ export function ConsentForm({ caseId }: { caseId: string }) {
   }
 
   async function save() {
-    setErrors([]);
+    setSaveErrors([]);
     setSaved(false);
+    setSaving(true);
     const failures: string[] = [];
     for (const contact of contacts) {
       const result = await saveContactConsent(contact.id, sharedByContact[contact.id] ?? []);
-      if (!result.ok) failures.push(`${contactLabel(contact)}: ${result.reasons.join(" ")}`);
+      if (!result.ok) failures.push(`${titleCase(contactLabel(contact))}: ${result.reasons.join(" ")}`);
     }
+    setSaving(false);
     if (failures.length > 0) {
-      setErrors(failures);
-      setStatus("Consent was not saved for every contact.");
+      setSaveErrors(failures);
+      toast.error("Your choices were not saved for everyone", { description: "Nothing was sent. You can try again." });
       return;
     }
     setSaved(true);
-    setStatus("Consent saved. The server recorded which fields each contact may see.");
+    setConsentSavedAt(new Date().toISOString());
+    toast.success("Your choices are saved", { description: "Next, read the drafts. Nothing is sent until you approve." });
   }
+
+  if (phase.kind === "loading") return <LoadingSkeleton label="Loading your selected contacts" />;
+
+  if (phase.kind === "nothing") {
+    return (
+      <EmptyState
+        title="No one is selected yet"
+        detail="Pick up to five resources on your shortlist. Then come back here to choose exactly what each one may see."
+        actionHref={`/cases/${caseId}/shortlist`}
+        actionLabel="Open the shortlist"
+      />
+    );
+  }
+
+  if (phase.kind === "failed") {
+    return (
+      <ErrorState
+        title="Those resources could not be opened as contacts"
+        detail={`${phase.reasons.join(" ")} Nothing was contacted.`}
+        onRetry={() => {
+          setPhase({ kind: "loading" });
+          setAttempt((value) => value + 1);
+        }}
+        actionHref={`/cases/${caseId}/shortlist`}
+        actionLabel="Back to the shortlist"
+      />
+    );
+  }
+
+  const totalShared = summary.reduce((count, item) => count + item.shared.length, 0);
 
   return (
     <form
+      className="grid grid-cols-[minmax(0,1fr)] gap-10"
+      aria-describedby="consent-note"
       onSubmit={(event) => {
         event.preventDefault();
         void save();
       }}
     >
-      {status === "Loading the case and selected resources." ? <LoadingSkeleton label="Loading consent" /> : null}
-      {status && status !== "Loading the case and selected resources." ? <p role="status">{status}</p> : null}
-      {status?.startsWith("Select up to five") ? (
-        <EmptyState
-          title="Nothing selected"
-          detail="Pick up to five resources before choosing what each contact may see."
-          actionHref={`/cases/${caseId}/shortlist`}
-          actionLabel="Open the shortlist"
-        />
-      ) : null}
-      {errors.length > 0 ? <ErrorState title="Consent was not saved" detail={errors.join(" ")} /> : null}
+      <p id="consent-note" className="m-0 flex max-w-prose items-start gap-3 text-body text-ink-2 text-pretty">
+        <Lock aria-hidden className="mt-1 size-5 shrink-0 text-teal" />
+        Each contact gets its own choices. Changing one never changes another, and you can come back and change them
+        before anything is approved.
+      </p>
+
+      {summary.map(({ contact, shared, preview, withheld }, index) => {
+        const name = titleCase(contactLabel(contact));
+        const ChannelIcon = contact.channel === "email" ? Mail : PhoneCall;
+        const letter = buildLetterPreview(contact.channel, preview);
+        return (
+          <Card key={contact.id} variant="raised" padding="lg" data-contact-state={contact.state} aria-labelledby={`contact-${contact.id}`}>
+            <div className="mb-8 flex flex-wrap items-center gap-4">
+              <AvatarInitials name={name.replace(/[()]/g, "")} size="lg" />
+              <div className="grid min-w-0 gap-1">
+                <CardEyebrow>
+                  Contact {index + 1} of {summary.length}
+                </CardEyebrow>
+                <CardTitle id={`contact-${contact.id}`} className="break-words">
+                  {name}
+                </CardTitle>
+              </div>
+            </div>
+
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-12">
+              <div className="grid min-w-0 gap-8">
+                <section aria-label="How they will be reached" className="grid gap-3">
+                  <h4 className="m-0 text-micro font-semibold uppercase text-ink-3">How we will reach them</h4>
+                  <p className="m-0 flex flex-wrap items-center gap-3 rounded-md bg-paper-2 px-4 py-3 shadow-inset">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <ChannelIcon aria-hidden className="size-5 shrink-0 text-teal" />
+                      <span className="min-w-0 break-words text-body font-semibold text-ink">
+                        {contact.channel === "email" ? "Email" : "Phone call"} · {contact.address}
+                      </span>
+                    </span>
+                    <Badge tone="sage">Only route found</Badge>
+                  </p>
+                  <p className="m-0 text-small text-ink-2">
+                    This is the intake {contact.channel === "email" ? "email" : "number"} listed on their public page.
+                    {contact.channel === "email"
+                      ? " We will not phone them."
+                      : " The call opens by saying an AI assistant is calling for you."}
+                  </p>
+                </section>
+
+                <fieldset className="m-0 grid min-w-0 gap-3 border-0 p-0">
+                  <legend className="mb-1 p-0 font-display text-h4 font-normal text-ink display-soft">
+                    What may {name.toLowerCase()} see?
+                  </legend>
+                  <p className="m-0 text-small text-ink-2">Tick a detail to include it. Leave it blank to keep it private.</p>
+                  <div className="grid gap-2">
+                    {SHAREABLE_FIELDS.map((field) => {
+                      const checked = shared.includes(field.key);
+                      return (
+                        <ChoiceRow
+                          key={field.key}
+                          title={field.label}
+                          description={field.personal ? `More personal. ${field.hint}` : field.hint}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggle(contact.id, field.key)}
+                            aria-label={`Share ${field.label} with ${name}`}
+                          />
+                        </ChoiceRow>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              </div>
+
+              <section aria-label={`Preview for ${name}`} className="grid min-w-0 content-start gap-4 lg:sticky lg:top-28 lg:self-start">
+                <div className="grid gap-1">
+                  <h4 className="m-0 text-micro font-semibold uppercase text-ink-3">What they would read</h4>
+                  <p className="m-0 text-small text-ink-2">
+                    Updates as you tick. The real draft is written after you save, and you approve it in the outbox.
+                  </p>
+                </div>
+                {!caseRecord ? (
+                  <p className="m-0 rounded-md bg-paper-2 p-4 text-small text-ink-2 shadow-inset">
+                    Your case details did not load, so the preview is hidden. Your choices still save.
+                  </p>
+                ) : (
+                  <LetterSheet
+                    channel={contact.channel}
+                    recipient={contact.address}
+                    label={contact.channel === "email" ? "Preview of the email" : "Preview of the call"}
+                    subject={contact.channel === "email" ? "Patient intake inquiry" : null}
+                  >
+                    {letter.opening ? <p className="m-0">{letter.opening}</p> : null}
+                    {letter.lines.map((line) => (
+                      <p key={line} className="m-0 break-words">
+                        {line}
+                      </p>
+                    ))}
+                    {letter.closing ? <p className="m-0">{letter.closing}</p> : null}
+                  </LetterSheet>
+                )}
+                <p className="m-0 text-small text-ink-2" data-testid="withheld">
+                  {withheld.length === 0 ? (
+                    "Every detail is included."
+                  ) : (
+                    <>
+                      <span className="font-semibold text-ink">Stays private:</span> {withheld.join(", ")}.
+                    </>
+                  )}
+                </p>
+              </section>
+            </div>
+          </Card>
+        );
+      })}
+
       {unavailable.map((item) => (
-        <article key={item.candidateId} data-channel="none">
-          <h2>Unavailable</h2>
-          <p>
-            This resource has no evidenced intake email or phone, so its channel is none. There is no send option.{" "}
-            {item.reason}
+        <Card key={item.candidateId} variant="inset" data-channel="none">
+          <h3 className="m-0 mb-2 font-display text-h4 font-normal text-ink display-soft">No way to reach this one</h3>
+          <p className="m-0 max-w-prose text-body text-ink-2">
+            This resource has no email or phone number we could verify, so there is nothing to send and no option to
+            send it. {item.reason}
           </p>
-        </article>
+        </Card>
       ))}
-      {summary.map(({ contact, preview, withheld }) => (
-        <article key={contact.id} data-contact-state={contact.state}>
-          <h2>{contactLabel(contact)}</h2>
-          <p className="note">
-            {contact.channel === "email" ? "Email" : "Phone"} · {contact.address}
-          </p>
-          <fieldset>
-            <legend>Fields this contact may receive</legend>
-            {SHAREABLE_FIELDS.map((field) => {
-              const id = `${contact.id}-${field.key}`;
-              const checked = (sharedByContact[contact.id] ?? []).includes(field.key);
-              return (
-                <label key={field.key} htmlFor={id}>
-                  <input
-                    id={id}
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(contact.id, field.key)}
-                  />
-                  <span>{field.label}</span>
-                </label>
-              );
-            })}
-          </fieldset>
-          <h3>What will be shared</h3>
-          {!caseRecord ? (
-            <p>Case details are not loaded, so the preview is hidden.</p>
-          ) : preview.length === 0 ? (
-            <p>Nothing. This draft would include no case details.</p>
-          ) : (
-            <dl>
-              {preview.map((item) => (
-                <span key={item.key} style={{ display: "contents" }}>
-                  <dt>{item.label}</dt>
-                  <dd>{item.value}</dd>
+
+      <section
+        data-slot="follow-up-plan"
+        aria-labelledby="follow-up-heading"
+        className="grid gap-4 rounded-lg border border-line bg-paper-2/60 p-6 sm:p-9"
+      >
+        <h3 id="follow-up-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+          Follow-ups while you&apos;re away
+        </h3>
+        <p className="m-0 max-w-prose text-body text-ink-2">
+          Business day 3 and day 7 messages are saved here only after you approve the exact text. Nothing in this
+          section is sent on its own.
+        </p>
+        {followUps === null ? (
+          <p role="status" className="m-0 text-small text-ink-2">Follow-up messages could not be loaded.</p>
+        ) : followUps.length === 0 ? (
+          <p className="m-0 text-small text-ink-2">No follow-up text is approved yet.</p>
+        ) : (
+          <ul className="m-0 grid list-none gap-3 p-0">
+            {followUps.map((item) => (
+              <li key={item.messageId} className="grid gap-1 rounded-md border border-line bg-card p-4">
+                <span className="text-micro font-semibold uppercase text-ink-3">
+                  {item.classification.replaceAll("_", " ")} · {item.approvedAt ? "Approved" : "Not approved"}
                 </span>
-              ))}
-            </dl>
-          )}
-          <p className="note">
-            {withheld.length === 0 ? "Every listed field is included." : `Stays private: ${withheld.join(", ")}.`}
-          </p>
-        </article>
-      ))}
-      <div className="actions">
-        <button type="submit" disabled={contacts.length === 0}>
-          Save consent
-        </button>
-        <a href={`/cases/${caseId}/outbox`}>Review drafts</a>
-      </div>
-      {saved ? <p role="status">Saved on the server for each contact.</p> : null}
+                <p className="m-0 whitespace-pre-wrap text-small text-ink">{item.body}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+        {contacts.length > 0 && caseRecord && !consentSavedAt ? (
+          <p className="m-0 text-small text-ink-2">Save your choices above, then you can approve follow-up text for each contact.</p>
+        ) : null}
+        {contacts.length > 0 && caseRecord && consentSavedAt ? (
+          <div className="flex flex-wrap gap-3">
+            {contacts.map((contact) => (
+              <Button
+                key={contact.id}
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const shared = sharedByContact[contact.id] ?? [];
+                  void saveFollowUpChoice(caseId, {
+                    action: "approve",
+                    contactId: contact.id,
+                    channel: contact.channel,
+                    contactState: contact.state,
+                    sharedFields: shared,
+                    consentApprovedAt: consentSavedAt,
+                    snapshot: {
+                      diseaseName: caseRecord.diseaseName,
+                      subtype: caseRecord.subtype ?? null,
+                      stageSummary: caseRecord.stageSummary ?? null,
+                      homeCity: caseRecord.homeCity ?? null,
+                      homeState: caseRecord.homeState ?? null,
+                      insurer: caseRecord.insurer ?? null,
+                      travelLimitMiles: caseRecord.travelLimitMiles ?? null,
+                      goals: caseRecord.goals ?? [],
+                    },
+                  }).then((result) => {
+                    if (!result.ok) {
+                      setFollowUpNote(result.reasons.join(" "));
+                      return;
+                    }
+                    setFollowUps(result.followUps);
+                    setFollowUpNote("Follow-up text saved for this contact. It still waits for the send window.");
+                  });
+                }}
+              >
+                Approve day 3 and day 7 for {contactLabel(contact)}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        {followUpNote ? <p role="status" className="m-0 text-small text-ink-2">{followUpNote}</p> : null}
+      </section>
+
+      <section aria-labelledby="summary-heading" className="grid gap-5 rounded-lg border border-line bg-sage-soft/60 p-6 sm:p-9">
+        <h3 id="summary-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+          Your choices at a glance
+        </h3>
+        <ul className="m-0 grid list-none gap-4 p-0">
+          {summary.map(({ contact, shared, withheld }) => (
+            <li key={contact.id} className="grid gap-1 border-t border-line-strong pt-4 first:border-t-0 first:pt-0">
+              <span className="break-words font-semibold text-ink">{titleCase(contactLabel(contact))}</span>
+              <span className="text-body text-ink-2">
+                {shared.length === 0
+                  ? "Sees no case details."
+                  : `Sees ${SHAREABLE_FIELDS.filter((field) => shared.includes(field.key))
+                      .map((field) => field.label.toLowerCase())
+                      .join(", ")}.`}{" "}
+                {withheld.length > 0 ? `${withheld.length} stay private.` : "Nothing is held back."}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {saveErrors.length > 0 ? (
+          <ErrorState title="Your choices were not saved for everyone" detail={saveErrors.join(" ")} />
+        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="submit"
+            variant={saved ? "secondary" : "primary"}
+            loading={saving}
+            loadingText="Saving"
+            disabled={contacts.length === 0}
+          >
+            {saved ? "Saved. Save again" : "Save my choices"}
+          </Button>
+          {saved ? (
+            <Button asChild>
+              <Link href={`/cases/${caseId}/outbox`}>
+                Review the drafts <ArrowRight aria-hidden />
+              </Link>
+            </Button>
+          ) : null}
+          <span role="status" className="text-small text-ink-2">
+            {saved
+              ? "Saved on the server for each contact."
+              : `Sharing ${totalShared} detail${totalShared === 1 ? "" : "s"} across ${contacts.length} contact${contacts.length === 1 ? "" : "s"}. Nothing is sent.`}
+          </span>
+        </div>
+      </section>
     </form>
   );
 }

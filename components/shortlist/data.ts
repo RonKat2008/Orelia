@@ -1,4 +1,10 @@
-import { evidenceSchema, resourceSchema, scoreBreakdownItemSchema, type Evidence, type Resource } from "@/lib/contracts";
+import {
+  evidenceSchema,
+  resourceSchema,
+  scoreBreakdownItemSchema,
+  type Evidence,
+  type Resource,
+} from "@/lib/contracts";
 import { z } from "zod";
 
 export const tierSchema = z.enum(["best", "good", "backup", "exclude"]);
@@ -18,11 +24,20 @@ export const shortlistCardSchema = z.object({
   tierReasons: z.array(tierReasonSchema).optional(),
 });
 
-export type ShortlistCard = z.infer<typeof shortlistCardSchema>;
+export type ShortlistCard = z.infer<typeof shortlistCardSchema> & {
+  /** Case candidate row id. Consent and outreach select this, not the resource id. */
+  caseCandidateId?: string | null;
+};
+
+export function selectionKey(card: ShortlistCard): string {
+  return card.caseCandidateId || card.resource.id;
+}
 
 const fetchedAt = "2026-10-23T12:00:00.000Z";
 
-function evidence(partial: Pick<Evidence, "claimType" | "claim" | "sourceUrl" | "sourceKind">): Evidence {
+function evidence(
+  partial: Pick<Evidence, "claimType" | "claim" | "sourceUrl" | "sourceKind">,
+): Evidence {
   return evidenceSchema.parse({ ...partial, fetchedAt });
 }
 
@@ -62,7 +77,8 @@ export const previewShortlist: ShortlistCard[] = [
       evidence({
         claimType: "designation",
         claim: "NCI cancer centers directory.",
-        sourceUrl: "https://www.cancer.gov/research/infrastructure/cancer-centers/find",
+        sourceUrl:
+          "https://www.cancer.gov/research/infrastructure/cancer-centers/find",
         sourceKind: "nci",
       }),
     ],
@@ -91,7 +107,8 @@ export const previewShortlist: ShortlistCard[] = [
       evidence({
         claimType: "designation",
         claim: "Center listing on the NCI find-a-center page.",
-        sourceUrl: "https://www.cancer.gov/research/infrastructure/cancer-centers/find",
+        sourceUrl:
+          "https://www.cancer.gov/research/infrastructure/cancer-centers/find",
         sourceKind: "nci",
       }),
     ],
@@ -211,7 +228,8 @@ export const previewShortlist: ShortlistCard[] = [
 ];
 
 export function groupOf(resource: Resource): ShortlistCard["group"] {
-  if (resource.kind === "expert" || resource.kind === "institution") return "specialists";
+  if (resource.kind === "expert" || resource.kind === "institution")
+    return "specialists";
   if (resource.kind === "trial") return "trials";
   if (resource.organizationKind === "advocacy") return "advocacy";
   return "aid";
@@ -238,15 +256,128 @@ export type ShortlistPayload = {
   suggested: string[];
 };
 
+const apiItemSchema = z.object({
+  targetKind: z.enum(["expert", "institution", "trial", "organization"]),
+  targetId: z.string().min(1),
+  name: z.string().min(1),
+  score: z.number(),
+  breakdown: z.array(scoreBreakdownItemSchema),
+  evidence: z.array(z.unknown()),
+  tier: tierSchema.optional(),
+  tierReasons: z.array(tierReasonSchema).optional(),
+  caseCandidateId: z.string().nullable().optional(),
+  nctId: z.string().nullable().optional(),
+  organizationKind: z.enum(["advocacy", "financial_aid", "travel_aid"]).nullable().optional(),
+});
+
+const apiResponseSchema = z.object({
+  groups: z.record(z.string(), z.array(apiItemSchema)),
+  curationSummary: z.string().nullish(),
+  suggested: z.array(z.object({ targetId: z.string() })).optional(),
+});
+
+function organizationKindOf(
+  evidence: Evidence[],
+): "advocacy" | "financial_aid" | "travel_aid" {
+  const types = evidence.map((item) => item.claimType);
+  if (types.some((type) => type.includes("travel"))) return "travel_aid";
+  if (types.some((type) => type.includes("aid"))) return "financial_aid";
+  return "advocacy";
+}
+
+/**
+ * The live route returns slim rows (name, score, evidence) rather than full resources.
+ * Rebuild just enough of a Resource for display; kind-specific detail the route does not carry stays absent.
+ */
+function resourceFromApiRow(
+  row: z.infer<typeof apiItemSchema>,
+  evidence: Evidence[],
+): Resource {
+  const base = {
+    id: row.targetId,
+    evidenceRefs: evidence.flatMap((item) => (item.id ? [item.id] : [])),
+  };
+  if (row.targetKind === "expert")
+    return resourceSchema.parse({ ...base, kind: "expert", name: row.name });
+  if (row.targetKind === "institution")
+    return resourceSchema.parse({
+      ...base,
+      kind: "institution",
+      name: row.name,
+    });
+  if (row.targetKind === "trial") {
+    const nct = row.nctId
+      ?? evidence.map((item) => /NCT\d{8}/i.exec(item.sourceUrl)?.[0]).find(Boolean);
+    return resourceSchema.parse({
+      ...base,
+      kind: "trial",
+      title: row.name,
+      nctId: nct?.toUpperCase() ?? row.targetId,
+    });
+  }
+  return resourceSchema.parse({
+    ...base,
+    kind: "organization",
+    name: row.name,
+    organizationKind: row.organizationKind ?? organizationKindOf(evidence),
+  });
+}
+
+function normalizeApiShortlist(value: unknown): ShortlistPayload | null {
+  const parsed = apiResponseSchema.safeParse(value);
+  if (!parsed.success) return null;
+  const items: ShortlistCard[] = [];
+  for (const rows of Object.values(parsed.data.groups)) {
+    for (const row of rows) {
+      const evidence = row.evidence.flatMap((raw) => {
+        const result = evidenceSchema.safeParse(raw);
+        return result.success ? [result.data] : [];
+      });
+      try {
+        const resource = resourceFromApiRow(row, evidence);
+        items.push({
+          resource,
+          score: row.score,
+          breakdown: row.breakdown,
+          evidence,
+          group: groupOf(resource),
+          tier: row.tier,
+          tierReasons: row.tierReasons,
+          caseCandidateId: row.caseCandidateId ?? null,
+        });
+      } catch {
+        // A row that cannot be shown with a source is dropped, never guessed.
+      }
+    }
+  }
+  const byTarget = new Map(items.map((item) => [item.resource.id, item]));
+  const suggested = (parsed.data.suggested ?? [])
+    .flatMap((pick) => {
+      const card = byTarget.get(pick.targetId);
+      return card ? [selectionKey(card)] : [];
+    })
+    .filter((id, index, all) => all.indexOf(id) === index);
+  return {
+    items,
+    curationSummary: parsed.data.curationSummary ?? null,
+    suggested,
+  };
+}
+
 export function normalizeShortlist(value: unknown): ShortlistPayload | null {
   const parsed = shortlistResponseSchema.safeParse(value);
-  if (!parsed.success) return null;
-  const items = parsed.data.items.map((item) => ({ ...item, group: groupOf(item.resource) }));
+  if (!parsed.success) return normalizeApiShortlist(value);
+  const items = parsed.data.items.map((item) => ({
+    ...item,
+    group: groupOf(item.resource),
+  }));
   const known = new Set(items.map((item) => item.resource.id));
   return {
     items,
     curationSummary: parsed.data.curationSummary ?? null,
-    suggested: (parsed.data.suggested ?? []).filter((id, index, all) => known.has(id) && all.indexOf(id) === index),
+    suggested: (parsed.data.suggested ?? []).filter(
+      (id, index, all) => known.has(id) && all.indexOf(id) === index,
+    ),
   };
 }
 
@@ -260,38 +391,114 @@ export type ShortlistBands = {
 /** Older shortlists have no tier. Those stay in one ranked list. */
 export function bandShortlist(cards: ShortlistCard[]): ShortlistBands {
   const curated = cards.some((card) => card.tier !== undefined);
-  if (!curated) return { curated: false, best: [], listed: cards, excluded: [] };
+  if (!curated)
+    return { curated: false, best: [], listed: cards, excluded: [] };
   return {
     curated: true,
     best: cards.filter((card) => card.tier === "best"),
-    listed: cards.filter((card) => card.tier !== "best" && card.tier !== "exclude"),
+    listed: cards.filter(
+      (card) => card.tier !== "best" && card.tier !== "exclude",
+    ),
     excluded: cards.filter((card) => card.tier === "exclude"),
   };
 }
 
-export function evidenceForReason(card: ShortlistCard, evidenceIds: string[]): Evidence[] {
+export function evidenceForReason(
+  card: ShortlistCard,
+  evidenceIds: string[],
+): Evidence[] {
   const wanted = new Set(evidenceIds);
-  return card.evidence.filter((item) => item.id !== undefined && wanted.has(item.id));
+  return card.evidence.filter(
+    (item) => item.id !== undefined && wanted.has(item.id),
+  );
 }
 
 /** A saved choice wins. Otherwise pre-check the curator's suggestions, capped at the contact limit. */
-export function initialSelection(stored: string[] | null, suggested: string[], limit: number): string[] {
+export function initialSelection(
+  stored: string[] | null,
+  suggested: string[],
+  limit: number,
+): string[] {
   const source = stored ?? suggested;
-  return source.filter((id, index) => source.indexOf(id) === index).slice(0, limit);
+  return source
+    .filter((id, index) => source.indexOf(id) === index)
+    .slice(0, limit);
 }
 
-export async function loadShortlist(caseId: string): Promise<{ payload: ShortlistPayload; preview: boolean }> {
+const emptyShortlist: ShortlistPayload = { items: [], curationSummary: null, suggested: [] };
+
+function offlinePreview(): boolean {
+  const raw = process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "";
+  return ["1", "true"].includes(raw.trim().toLowerCase());
+}
+
+export async function loadShortlist(
+  caseId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ payload: ShortlistPayload; preview: boolean; error: string | null }> {
   try {
-    const response = await fetch(`/api/cases/${caseId}/shortlist`);
+    const response = await fetchImpl(`/api/cases/${caseId}/shortlist`);
     if (response.ok) {
       const payload = normalizeShortlist(await response.json());
-      if (payload) return { payload, preview: false };
+      if (payload) return { payload, preview: false, error: null };
+      return { payload: emptyShortlist, preview: false, error: "The shortlist came back in an unexpected shape." };
     }
+    if (offlinePreview()) {
+      return { payload: { items: previewShortlist, curationSummary: null, suggested: [] }, preview: true, error: null };
+    }
+    return { payload: emptyShortlist, preview: false, error: "The shortlist could not be loaded." };
   } catch {
-    // Research API is owned by another task and may be absent.
+    if (offlinePreview()) {
+      return { payload: { items: previewShortlist, curationSummary: null, suggested: [] }, preview: true, error: null };
+    }
+    return { payload: emptyShortlist, preview: false, error: "The shortlist could not be loaded." };
   }
-  return {
-    payload: { items: previewShortlist, curationSummary: null, suggested: [] },
-    preview: true,
+}
+
+/** Home state from the case, used by the in-state filter. Absent or failed reads simply leave the filter unavailable. */
+export async function loadHomeState(caseId: string): Promise<string | null> {
+  try {
+    const response = await fetch(`/api/cases/${caseId}`);
+    if (!response.ok) return null;
+    const body = (await response.json()) as { case?: { homeState?: unknown } };
+    const state = body.case?.homeState;
+    return typeof state === "string" && state.trim() ? state.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+export type OrderPreview = Record<string, number>;
+
+/** Re-rank preview from the existing ranking API: target id -> rank. Never changes the saved shortlist. */
+export async function previewOrder(
+  caseId: string,
+  weights: Record<string, number>,
+): Promise<OrderPreview> {
+  const response = await fetch("/api/ranking/preview", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ caseId, weights }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    candidates?: { targetId: string; rank: number }[];
   };
+  if (!response.ok)
+    throw new Error(payload.error ?? "Preview ranking is unavailable.");
+  return Object.fromEntries(
+    (payload.candidates ?? []).map((row) => [row.targetId, row.rank]),
+  );
+}
+
+export function orderByPreview(
+  cards: ShortlistCard[],
+  preview: OrderPreview | null,
+): ShortlistCard[] {
+  if (!preview) return cards;
+  return [...cards].sort(
+    (a, b) =>
+      (preview[a.resource.id] ?? Number.MAX_SAFE_INTEGER) -
+      (preview[b.resource.id] ?? Number.MAX_SAFE_INTEGER),
+  );
 }

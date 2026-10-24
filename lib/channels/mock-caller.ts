@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { AI_DISCLOSURE_VOICE } from '../safety/disclosure';
 import { assertGated, ChannelError, type Channel, type ChannelGuardOptions, type GatedDraft, type ProviderRef } from './types';
 
@@ -17,14 +18,13 @@ export interface MockCall {
 export class MockCaller implements Channel {
   readonly kind = 'voice' as const;
   readonly calls: MockCall[] = [];
-  private seq = 0;
   constructor(private guard: ChannelGuardOptions, private now = () => new Date()) {}
 
   async send(gated: GatedDraft): Promise<ProviderRef> {
     const to = assertGated(gated, 'voice', 'mock-caller', this.guard);
     // The gate already checks this; the mock keeps the same contract as the real caller.
     if (!gated.body.trimStart().startsWith(AI_DISCLOSURE_VOICE)) throw new ChannelError('mock-caller', 'Script must begin with the spoken AI disclosure');
-    const ref: ProviderRef = { provider: 'mock-caller', channel: 'voice', callId: `mock-call-${++this.seq}`, status: 'queued' };
+    const ref: ProviderRef = { provider: 'mock-caller', channel: 'voice', callId: `mock-call-${randomUUID()}`, status: 'queued' };
     this.calls.push({
       to, script: gated.body, approvedAt: gated.approvedAt, ref, placedAt: this.now().toISOString(), status: 'queued',
       ...(gated.contactId !== undefined ? { contactId: gated.contactId } : {}),

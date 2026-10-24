@@ -54,6 +54,20 @@ export async function loadDraftContext(contactId: string): Promise<DraftContext>
   };
 }
 
+/** Verification calls: matched by provider call id in verification_requests, ingested by VerificationService. */
+function verificationInboundDeps(): InboundDeps['verification'] {
+  const service = async () => (await import('../../../../lib/verification/server')).getVerificationService();
+  return {
+    async isVerificationCall(callId) {
+      const { getVerificationStore } = await import('../../../../lib/verification/store');
+      return (await getVerificationStore().byCallId(callId)) !== null;
+    },
+    ingest: async (callId, transcript, receivedAt) => (await service()).ingest(callId, transcript, receivedAt),
+    status: async (callId, status) => (await service()).callStatus(callId, status),
+    hasPendingCall: async () => (await service()).hasPendingCall(),
+  };
+}
+
 /** Lazy: nothing touches the database or credentials until a request arrives (keeps `next build` credential-free). */
 export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: NodeJS.ProcessEnv = process.env): InboundDeps {
   const db = () => getDb();
@@ -98,6 +112,7 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: No
       }).where(and(eq(s.calls.providerCallId, e.providerCallId), eq(s.calls.contactId, e.contactId)));
     },
     sendEvents: (events) => workflowSendEvents(env)(events),
+    ...(provider === 'agentcall' ? { verification: verificationInboundDeps() } : {}),
     ingestInbound: (event) => createWebhookIngest({
       inbox: {
         classifier: isOffline(env.WAYFINDER_OFFLINE) ? new FixtureClassifier() : createRuntimeClassifier({ store: new DbRunStore() }),

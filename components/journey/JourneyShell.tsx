@@ -14,6 +14,7 @@ const waiting: JourneyPlan = {
   nextHref: "/start",
   documentsHref: "/cases/pending/documents",
   historyHref: "/cases/pending/history",
+  expertsHref: "/cases/pending/experts",
   notes: [],
 };
 

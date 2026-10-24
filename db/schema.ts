@@ -48,6 +48,7 @@ export const sourceKindEnum = pgEnum("source_kind", [
   "nppes",
   "nci",
   "exa",
+  "phone_call",
 ]);
 
 export const channelEnum = pgEnum("channel", ["email", "voice"]);
@@ -404,3 +405,39 @@ export const historyShares = pgTable("history_shares", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   ...timestamps,
 }, table => [index("history_shares_case_idx").on(table.caseId)]);
+
+// ---- research-to-care (rd-experts lane): expert_traces ----
+/** One row per tracer run; the full ExpertTrace (chains + code-stamped evidence) lives in `trace`. Latest by traced_at wins. */
+export const expertTraces = pgTable("expert_traces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  tracedAt: timestamp("traced_at", { withTimezone: true }).notNull().defaultNow(),
+  trace: jsonb("trace").$type<Record<string, unknown>>().notNull(),
+}, (table) => [index("expert_traces_case_idx").on(table.caseId)]);
+// ---- end research-to-care ----
+
+// --- rd-experts: verification calls (lib/verification) ---
+/** AI verification calls (six fixed questions). Nothing is dialed until approved_at is set and checkOutbound passes. */
+export const verificationRequests = pgTable("verification_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  resourceKey: text("resource_key").notNull(),
+  targetKind: targetKindEnum("target_kind").notNull(),
+  targetId: text("target_id").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  phoneEvidenceId: text("phone_evidence_id").notNull(),
+  sharedFields: jsonb("shared_fields").$type<string[]>().notNull(),
+  script: text("script").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  callId: text("call_id"),
+  result: jsonb("result").$type<Record<string, unknown>>(),
+  evidenceIds: jsonb("evidence_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  blockedReasons: jsonb("blocked_reasons").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+}, (table) => [
+  index("verification_requests_case_idx").on(table.caseId),
+  uniqueIndex("verification_requests_call_id_unique").on(table.callId),
+]);
+// --- end rd-experts: verification calls ---

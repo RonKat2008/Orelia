@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const sourceKindSchema = z.enum(["pubmed", "ctgov", "nppes", "nci", "exa"]);
+export const sourceKindSchema = z.enum(["pubmed", "ctgov", "nppes", "nci", "exa", "phone_call"]);
 
 export const evidenceSchema = z.object({
   /** Optional stable id; assigned by code (never a model) so records can cite one specific claim. */

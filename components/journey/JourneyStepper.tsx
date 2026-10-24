@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, ScrollText } from "lucide-react";
+import { FileText, Route, ScrollText } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/feedback";
 import { Stepper, type StepperStep } from "@/components/ui/display";
@@ -61,6 +61,13 @@ export function JourneyStepper({ plan }: { plan: JourneyPlan }) {
           </AccordionItem>
         </Accordion>
       )}
+      <Link
+        href={plan.expertsHref}
+        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"
+      >
+        <Route aria-hidden className="size-4" />
+        From research to care
+      </Link>
       <Link
         href={plan.documentsHref}
         className="inline-flex min-h-11 items-center gap-2 rounded-sm text-small font-semibold text-teal no-underline hover:underline underline-offset-4 focus-ring"

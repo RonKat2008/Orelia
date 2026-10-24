@@ -9,7 +9,7 @@ import { executePlan, isExecutable, type PlanExecDeps, type StepOutcome } from '
 import type { ContactPlan, PlanStore } from '../plan/contract';
 import { PLAN_APPROVED, type FunctionDefinition } from './engine';
 import type { ConnectionDeps } from './connection-workflow';
-import { defaultCreateDraft } from '../plan/materialize-wiring';
+import { defaultCreateDraft, defaultCreateVerification } from '../plan/materialize-wiring';
 
 /** Contact states in which the contact has engaged or declined: remaining plan steps stop. */
 const STOP_STATES = new Set(['replied', 'task_open', 'records_sent', 'appointment_booked', 'connected', 'declined']);
@@ -53,6 +53,7 @@ export function createDefaultPlanExecDeps(conn: ConnectionDeps, opts: DefaultPla
     clock: conn.clock,
     ...(conn.tz ? { tz: conn.tz } : {}),
     webForm: getWebFormChannel(),
+    createVerification: defaultCreateVerification,
     async hasReply(contactId) {
       return STOP_STATES.has((await conn.loadContext(contactId)).state);
     },

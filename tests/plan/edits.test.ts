@@ -17,16 +17,17 @@ const ok = (r: ReturnType<typeof applyPlanEdits>): ContactPlan => {
 describe('applyPlanEdits', () => {
   it('toggle disables a step, bumps version, keeps draft and does not mutate input', () => {
     const before = structuredClone(plan);
-    const out = ok(applyPlanEdits(plan, [{ type: 'toggle', resourceKey: 'expert:e1', stepId: 's2', enabled: false }], LATER));
-    expect(out.resources[0].steps[1].enabled).toBe(false);
+    // s1 is the opt-in verification call (disabled by default); s3 is the follow-up call.
+    const out = ok(applyPlanEdits(plan, [{ type: 'toggle', resourceKey: 'expert:e1', stepId: 's3', enabled: false }], LATER));
+    expect(out.resources[0].steps[2].enabled).toBe(false);
     expect(out).toMatchObject({ version: 2, status: 'draft', approvedAt: null, updatedAt: LATER.toISOString(), createdAt: plan.createdAt });
     expect(out.summary).toBe('2 resources: 1 email. 1 has no contact channel yet.');
     expect(plan).toEqual(before);
   });
 
   it('reorder applies a permutation and renumbers orders', () => {
-    const out = ok(applyPlanEdits(plan, [{ type: 'reorder', resourceKey: 'expert:e1', stepIds: ['s2', 's1'] }], LATER));
-    expect(out.resources[0].steps.map(s => [s.id, s.order])).toEqual([['s2', 1], ['s1', 2]]);
+    const out = ok(applyPlanEdits(plan, [{ type: 'reorder', resourceKey: 'expert:e1', stepIds: ['s2', 's3', 's1'] }], LATER));
+    expect(out.resources[0].steps.map(s => [s.id, s.order])).toEqual([['s2', 1], ['s3', 2], ['s1', 3]]);
   });
 
   it.each([
@@ -62,8 +63,8 @@ describe('applyPlanEdits', () => {
 
   it('approve is rejected when no step is enabled anywhere', () => {
     const r = applyPlanEdits(plan, [
-      { type: 'toggle', resourceKey: 'expert:e1', stepId: 's1', enabled: false },
       { type: 'toggle', resourceKey: 'expert:e1', stepId: 's2', enabled: false },
+      { type: 'toggle', resourceKey: 'expert:e1', stepId: 's3', enabled: false },
       { type: 'approve' },
     ], LATER);
     expect(r).toEqual({ ok: false, error: expect.stringMatching(/at least one/i) });

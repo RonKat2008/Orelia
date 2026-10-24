@@ -8,7 +8,9 @@ import {
   type AgentName,
   type CaseInput,
   type Evidence,
+  type ExpertProfile,
   type Resource,
+  type TrialRegistry,
   type ResearchResult,
   type SourceKind,
 } from "@/lib/contracts";
@@ -22,6 +24,8 @@ type OrganizationKind = NonNullable<Extract<Resource, { kind: "organization" }>[
  * fetch time are stamped by code from the tool call that produced the URL (HARD RULE 2), never by the model.
  */
 export const modelEvidenceSchema = z.object({
+  /** Optional handle so a record can cite this specific claim instead of every claim at the same URL. */
+  id: z.string().min(1).optional(),
   claimType: z.string().min(1),
   claim: z.string().min(1),
   sourceUrl: z.url(),
@@ -36,11 +40,15 @@ export type ResearchOutput = z.infer<typeof researchOutputSchema>;
 
 const URL_PATTERN = /^https?:\/\//i;
 
+const nameKey = (name: string): string => name.toLowerCase().replace(/[^a-z]/g, "");
+
 /** Records every URL, NCT id and unique NPI that tool handlers returned during ONE agent run. */
 export class ProvenanceTracker {
   private readonly urls = new Map<string, { kind: SourceKind; fetchedAt: string }>();
   private readonly nctIds = new Set<string>();
   private readonly verifiedNpis = new Set<string>();
+  private readonly trialFacts = new Map<string, TrialRegistry>();
+  private readonly authorFacts = new Map<string, ExpertProfile>();
   private corpus = "";
 
   constructor(private readonly now: () => Date = () => new Date()) {}
@@ -60,6 +68,24 @@ export class ProvenanceTracker {
 
   allowNctId(nctId: string): void {
     this.nctIds.add(nctId);
+  }
+
+  /** Remember registry facts a tool returned for a trial; also allows the NCT id. */
+  rememberTrial(nctId: string, registry: TrialRegistry): void {
+    this.nctIds.add(nctId);
+    this.trialFacts.set(nctId, registry);
+  }
+
+  trialRegistry(nctId: string): TrialRegistry | undefined {
+    return this.trialFacts.get(nctId);
+  }
+
+  rememberAuthor(name: string, profile: ExpertProfile): void {
+    this.authorFacts.set(nameKey(name), profile);
+  }
+
+  authorProfile(name: string): ExpertProfile | undefined {
+    return this.authorFacts.get(nameKey(name));
   }
 
   allowVerifiedNpi(npi: string): void {
@@ -102,6 +128,7 @@ export function finalizeOutput(
   rules: FinalizeRules,
 ): { records: Resource[]; evidence: Evidence[] } {
   const evidenceByUrl = new Map<string, Evidence[]>();
+  const evidenceById = new Map<string, Evidence>();
   const seenClaims = new Set<string>();
   for (const item of raw.evidence) {
     const source = tracker.sourceFor(item.sourceUrl);
@@ -111,31 +138,38 @@ export function finalizeOutput(
     if (seenClaims.has(key)) continue;
     seenClaims.add(key);
     const stamped: Evidence = {
+      ...(item.id && !evidenceById.has(item.id) ? { id: item.id } : {}),
       claimType: item.claimType,
       claim: item.claim,
       sourceUrl: item.sourceUrl,
       sourceKind: source.kind,
       fetchedAt: source.fetchedAt,
     };
+    if (stamped.id) evidenceById.set(stamped.id, stamped);
     evidenceByUrl.set(item.sourceUrl, [...(evidenceByUrl.get(item.sourceUrl) ?? []), stamped]);
   }
 
+  // A ref is an evidence id (cites exactly that claim) or a sourceUrl (cites every claim at that URL).
+  const resolve = (ref: string): Evidence[] => {
+    const byId = evidenceById.get(ref);
+    return byId ? [byId] : (evidenceByUrl.get(ref) ?? []);
+  };
+
   const records: Resource[] = [];
   const seenIds = new Set<string>();
+  const referenced = new Set<Evidence>();
   for (const candidate of raw.records) {
     if (!rules.allowedKinds.includes(candidate.kind) || seenIds.has(candidate.id)) continue;
-    const refs = [...new Set(candidate.evidenceRefs.filter((ref) => evidenceByUrl.has(ref)))];
+    const refs = [...new Set(candidate.evidenceRefs.filter((ref) => resolve(ref).length > 0))];
     if (refs.length === 0) continue;
     const sanitized = sanitizeRecord(candidate, refs, tracker, rules);
     if (!sanitized) continue;
     seenIds.add(sanitized.id);
     records.push(sanitized);
+    for (const ref of refs) resolve(ref).forEach((e) => referenced.add(e));
   }
 
-  const referenced = new Set(records.flatMap((r) => r.evidenceRefs));
-  const evidence = [...evidenceByUrl.entries()]
-    .filter(([url]) => referenced.has(url))
-    .flatMap(([, items]) => items);
+  const evidence = [...evidenceByUrl.values()].flat().filter((e) => referenced.has(e));
   return { records, evidence };
 }
 
@@ -150,12 +184,28 @@ function sanitizeRecord(
       const npi = record.npi && tracker.hasVerifiedNpi(record.npi) ? record.npi : null;
       const credentials =
         record.credentials && tracker.mentions(record.credentials) ? record.credentials : undefined;
-      const { credentials: _dropped, ...rest } = record;
-      void _dropped;
-      return { ...rest, ...(credentials ? { credentials } : {}), npi, evidenceRefs };
+      // verified / profile are stamped from tool output only; anything the model supplied is discarded.
+      const { credentials: _c, verified: _v, profile: _p, ...rest } = record;
+      void _c;
+      void _v;
+      void _p;
+      const profile = tracker.authorProfile(record.name);
+      return {
+        ...rest,
+        ...(credentials ? { credentials } : {}),
+        npi,
+        ...(npi ? { verified: true } : {}),
+        ...(profile ? { profile } : {}),
+        evidenceRefs,
+      };
     }
-    case "trial":
-      return tracker.hasNctId(record.nctId) ? { ...record, evidenceRefs } : null;
+    case "trial": {
+      if (!tracker.hasNctId(record.nctId)) return null;
+      const { registry: _r, ...rest } = record;
+      void _r;
+      const registry = tracker.trialRegistry(record.nctId);
+      return { ...rest, ...(registry ? { registry } : {}), evidenceRefs };
+    }
     case "organization": {
       if (rules.organizationKinds && !(record.organizationKind && rules.organizationKinds.includes(record.organizationKind))) {
         return null;
@@ -243,7 +293,7 @@ export function runResearch(spec: ResearchAgentSpec) {
         `Case: ${JSON.stringify(caseBrief(c))}`,
         `Initial tool results (already fetched; call tools again only if you need more):\n${seeded}`,
         `Return ONLY JSON: {"records": Resource[], "evidence": {"claimType": string, "claim": string, "sourceUrl": string}[]}.`,
-        `Every record's evidenceRefs must be sourceUrl strings of evidence items you return.`,
+        `Every record's evidenceRefs must be the "id" (if you gave the item one) or the sourceUrl of evidence items you return.`,
       ].join("\n\n");
 
       const raw = await runAgent({

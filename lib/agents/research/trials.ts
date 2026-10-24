@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { HAIKU } from "@/lib/agents/models";
+import { toStateCode } from "./geo";
 import { runResearch, trackedTool } from "./shared";
-import type { CtgovPort } from "./source-ports";
+import type { TrialRegistry } from "@/lib/contracts";
+import type { CtgovPort, CtgovStudy } from "./source-ports";
 import type { ResearchAgent } from "./types";
 import type { AgentTool } from "@/lib/agents/runtime";
 import type { ProvenanceTracker } from "./shared";
@@ -11,6 +13,28 @@ export const ctgovUrl = (nctId: string): string => `https://clinicaltrials.gov/s
 const MAX_TRIALS = 12;
 const MAX_SITES = 5;
 const US = /^(united states|usa|us)$/i;
+
+const RECRUITING_SITE = /^recruiting$/i;
+
+/** Registry facts for filters and ranking, taken from the port response (US sites only). */
+export function registryFacts(study: CtgovStudy, usSites: CtgovStudy["sites"]): TrialRegistry {
+  const recruiting = usSites.filter((s) => s.status && RECRUITING_SITE.test(s.status));
+  return {
+    conditions: study.conditions ?? [],
+    keywords: study.keywords ?? [],
+    meshTerms: study.meshTerms ?? [],
+    stdAges: study.stdAges ?? [],
+    ...(study.minimumAge ? { minimumAge: study.minimumAge } : {}),
+    phases: study.phases ?? [],
+    usSiteCount: usSites.length,
+    usRecruitingSiteCount: recruiting.length,
+    recruitingSiteStates: [
+      ...new Set(recruiting.flatMap((s) => toStateCode(s.state) ?? [])),
+    ].sort(),
+    investigators: study.investigators ?? [],
+    hasContact: study.hasContact ?? false,
+  };
+}
 
 const inputSchema = z.object({
   condition: z.string().min(1).describe("Condition to search"),
@@ -31,7 +55,7 @@ function trialsTool(ctgov: CtgovPort, tracker: ProvenanceTracker): AgentTool {
         .map((s) => ({ ...s, sites: s.sites.filter((site) => site.country && US.test(site.country)) }))
         .filter((s) => s.sites.length > 0)
         .slice(0, MAX_TRIALS);
-      for (const s of usStudies) tracker.allowNctId(s.nctId);
+      for (const s of usStudies) tracker.rememberTrial(s.nctId, registryFacts(s, s.sites));
       return {
         trials: usStudies.map((s) => ({
           nctId: s.nctId,

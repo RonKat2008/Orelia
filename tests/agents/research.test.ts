@@ -53,7 +53,7 @@ describe.each(CASES)("live agents with fake ports + offline replay: $diseaseName
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
     expect(result.records.length).toBeGreaterThan(0);
-    const urls = new Set(result.evidence.map((e) => e.sourceUrl));
+    const urls = new Set(result.evidence.flatMap((e) => [e.sourceUrl, ...(e.id ? [e.id] : [])]));
     for (const r of result.records) {
       expect(r.evidenceRefs.length).toBeGreaterThan(0);
       for (const ref of r.evidenceRefs) expect(urls.has(ref)).toBe(true);

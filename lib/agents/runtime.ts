@@ -40,7 +40,7 @@ export class MedicalAdviceError extends Error {
   }
 }
 
-function useOffline(): boolean {
+function replayOffline(): boolean {
   return isOffline(process.env.WAYFINDER_OFFLINE) || !process.env.ANTHROPIC_API_KEY;
 }
 
@@ -175,7 +175,7 @@ export async function runAgent<T>(opts: RunAgentOptions<T>): Promise<T> {
   const runId = await opts.store.create(opts.caseId, opts.name);
   await opts.store.update(runId, { status: "running", startedAt: new Date() });
   try {
-    const offline = useOffline();
+    const offline = replayOffline();
     const output = offline
       ? await loadFixture(opts.name, opts.offlineKey, opts.output)
       : await runLive(opts);

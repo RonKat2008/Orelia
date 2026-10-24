@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { MemoryCaseStore } from "@/lib/agents/case-store";
 import { runResearch } from "@/lib/agents/orchestrator";
 import { MemoryPersist } from "@/lib/agents/persist";
-import { placeholderRank } from "@/lib/agents/placeholder-rank";
 import type { SourcePorts } from "@/lib/agents/research/source-ports";
 import type { ResearchAgent } from "@/lib/agents/research/types";
 import { MemoryRunStore } from "@/lib/agents/run-store";
@@ -22,7 +21,7 @@ async function setup(agents: ResearchAgent[]) {
   const persist = new MemoryPersist();
   const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
   const summary = await runResearch(c.id, {
-    store, persist, cases, rank: placeholderRank, ports: {} as SourcePorts, agents,
+    store, persist, cases, ports: {} as SourcePorts, agents,
   });
   const runs = await store.listByCase(c.id);
   return { c, cases, persist, summary, runs, status: (n: string) => runs.find((r) => r.agent === n)?.status };
@@ -64,7 +63,7 @@ describe("runResearch", () => {
     const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
     let seenAtStart = 0;
     await runResearch(c.id, {
-      store, persist: new MemoryPersist(), cases, rank: placeholderRank, ports: {} as SourcePorts,
+      store, persist: new MemoryPersist(), cases, ports: {} as SourcePorts,
       agents: [
         agent("literature", async () => {
           seenAtStart = (await store.listByCase(c.id)).length;
@@ -80,7 +79,7 @@ describe("runResearch", () => {
     const store = new MemoryRunStore();
     const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
     await runResearch(c.id, {
-      store, persist: new MemoryPersist(), cases, rank: placeholderRank, ports: {} as SourcePorts,
+      store, persist: new MemoryPersist(), cases, ports: {} as SourcePorts,
       agentTimeoutMs: 20,
       agents: [agent("aid", () => new Promise(() => {}))],
     });

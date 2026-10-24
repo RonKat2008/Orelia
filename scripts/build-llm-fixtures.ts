@@ -209,10 +209,13 @@ async function literature(c: Case, ports: SourcePorts): Promise<ResearchOutput> 
   const records: Resource[] = [];
   const evidence: Evidence[] = [];
   for (const a of authors) {
-    const urls = a.papers.slice(0, 2).map((p) => pubmedUrl(p.pmid));
-    records.push({ kind: "expert", id: `expert:${slug(a.name)}`, name: a.name, evidenceRefs: urls });
-    a.papers.slice(0, 2).forEach((p) =>
+    // Evidence ids keep co-authors of the same paper from sharing each other's claims (refs cite ids, not URLs).
+    const evidenceId = (pmid: string): string => `lit:${slug(a.name)}:${pmid}`;
+    const picked = a.papers.slice(0, 2);
+    records.push({ kind: "expert", id: `expert:${slug(a.name)}`, name: a.name, evidenceRefs: picked.map((p) => evidenceId(p.pmid)) });
+    picked.forEach((p) =>
       evidence.push({
+        id: evidenceId(p.pmid),
         claimType: "disease_publications",
         claim: `${a.name} is listed as an author of PMID ${p.pmid}. In the PubMed results retrieved for ${c.diseaseName}, ${a.name} appears on ${a.paperCount} paper(s), ${a.recentPaperCount} from the last 5 years.`,
         sourceUrl: pubmedUrl(p.pmid),

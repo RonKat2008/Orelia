@@ -132,7 +132,7 @@ export class DbPersist implements Persist {
           credentials: r.credentials ?? null,
           specialty: r.specialty ?? null,
           institutionId,
-          verified: record.evidence.some((e) => e.sourceKind === "nppes"),
+          verified: r.verified === true,
         };
         const set = { name: values.name, credentials: values.credentials, specialty: values.specialty, institutionId, verified: values.verified };
         const [row] = await db

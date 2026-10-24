@@ -23,6 +23,15 @@ export function pubmedAuthorsTool(pubmed: PubmedPort, tracker: ProvenanceTracker
     tracker,
     run: async ({ disease, limit }) => {
       const hits = await pubmed.searchAuthors({ disease, limit: limit ?? DEFAULT_AUTHOR_LIMIT });
+      for (const h of hits) {
+        // Counts are stamped on the final record from this tool output, never from model prose.
+        tracker.rememberAuthor(h.name, {
+          paperCount: h.paperCount,
+          recentPaperCount: h.recentPaperCount,
+          ...(h.affiliation ? { affiliation: h.affiliation } : {}),
+          ...(h.state ? { state: h.state } : {}),
+        });
+      }
       return {
         authors: hits.map((h) => ({
           name: h.name,

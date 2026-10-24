@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import type { Evidence, ResearchResult, Resource } from "@/lib/contracts";
+import type { CaseInput, Evidence, ResearchResult, Resource } from "@/lib/contracts";
+import { assessTrial } from "./relevance";
 
 /**
  * Verifier (HARD RULE 2): deterministic code, no model in the trust path.
@@ -7,6 +8,8 @@ import type { Evidence, ResearchResult, Resource } from "@/lib/contracts";
  *  - drops every record left with zero evidence
  *  - merges duplicates (expert by NPI, trial by nctId, org by URL host+path, institution by name)
  *  - flags conflicts for a human/UI to see
+ *  - when the case is known, drops trials that are off-target for the disease/subtype or do not enroll adults
+ *    (see ./relevance), recording each drop with its reason
  * An optional proposer (an Opus pass, off by default and never run offline) may only
  * propose merges between records that already exist and extra conflict notes. It cannot add claims.
  */
@@ -58,6 +61,9 @@ export interface VerifyProposals {
   merges: MergeProposal[];
   conflicts: { key: string; reason: string }[];
 }
+
+/** Case facts the deterministic relevance/scope filters need. Omit to skip them. */
+export type VerifyContext = Pick<CaseInput, "diseaseName" | "subtype">;
 
 export type Proposer = (kept: readonly VerifiedRecord[]) => Promise<VerifyProposals>;
 
@@ -215,7 +221,7 @@ function evidenceKey(e: Evidence): string {
 }
 
 /** Deterministic verification. Pure: same input, same output. */
-export function verify(results: readonly ResearchResult[]): VerifyOutput {
+export function verify(results: readonly ResearchResult[], context?: VerifyContext): VerifyOutput {
   const dropped: DroppedItem[] = [];
   const conflicts: ConflictInfo[] = [];
   const working = new Map<string, Working>();
@@ -231,6 +237,13 @@ export function verify(results: readonly ResearchResult[]): VerifyOutput {
       if (ev.length === 0) {
         dropped.push({ type: "record", record, reason: "no evidence with a sourceUrl" });
         continue;
+      }
+      if (context && record.kind === "trial" && record.registry) {
+        const verdict = assessTrial({ title: record.title, registry: record.registry }, context);
+        if (!verdict.keep) {
+          dropped.push({ type: "record", record, reason: verdict.reason ?? "not relevant" });
+          continue;
+        }
       }
       const key = dedupeKey(record);
       const existing = working.get(key);
@@ -258,7 +271,31 @@ export function verify(results: readonly ResearchResult[]): VerifyOutput {
     }
   }
 
+  mergeNameOnlyExperts(working);
   return finalize([...working.values()], dropped, conflicts);
+}
+
+/**
+ * A publication-only expert (keyed by name) is the same person as an NPI-verified expert with the same
+ * normalised name when exactly one such NPI record exists. Several same-name NPIs stay separate (ambiguous).
+ */
+function mergeNameOnlyExperts(working: Map<string, Working>): void {
+  const npiByName = new Map<string, Working[]>();
+  for (const w of working.values()) {
+    if (!w.key.startsWith("expert:npi:") || w.resource.kind !== "expert") continue;
+    const name = normalizeName(w.resource.name);
+    npiByName.set(name, [...(npiByName.get(name) ?? []), w]);
+  }
+  for (const w of [...working.values()]) {
+    if (!w.key.startsWith("expert:name:") || w.resource.kind !== "expert") continue;
+    const candidates = npiByName.get(normalizeName(w.resource.name));
+    const target = candidates?.length === 1 ? candidates[0] : undefined;
+    if (!target) continue;
+    target.resource = mergeResources(target.resource, w.resource);
+    target.originalIds.push(...w.originalIds);
+    for (const [k, e] of w.evidence) target.evidence.set(k, e);
+    working.delete(w.key);
+  }
 }
 
 function finalize(items: Working[], dropped: DroppedItem[], conflicts: ConflictInfo[]): VerifyOutput {
@@ -299,8 +336,9 @@ function finalize(items: Working[], dropped: DroppedItem[], conflicts: ConflictI
 export async function verifyWithProposals(
   results: readonly ResearchResult[],
   propose?: Proposer,
+  context?: VerifyContext,
 ): Promise<VerifyOutput> {
-  const base = verify(results);
+  const base = verify(results, context);
   if (!propose) return base;
 
   const proposals = await propose(base.kept);

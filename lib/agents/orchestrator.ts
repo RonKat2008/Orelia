@@ -1,17 +1,18 @@
-import { agentNameSchema, type ResearchResult } from "@/lib/contracts";
+import { agentNameSchema, type CaseInput, type ResearchResult } from "@/lib/contracts";
 import type { CaseStore } from "./case-store";
 import type { Persist, RankedEntry } from "./persist";
-import type { RankFn } from "./placeholder-rank";
+import { rank as defaultRank } from "@/lib/ranking/rank";
 import type { RunStore, RunUpdate } from "./run-store";
 import type { ResearchAgent, ResearchContext } from "./research/types";
 import type { SourcePorts } from "./research/source-ports";
-import { toCandidate } from "./signals";
+import { toCandidate, type RankFn } from "./signals";
 import { verifyWithProposals, type Proposer, type VerifyOutput } from "./verifier";
 
 export interface OrchestratorDeps {
   store: RunStore;
   ports: SourcePorts;
-  rank: RankFn;
+  /** Defaults to the deterministic lib/ranking/rank.ts. */
+  rank?: RankFn;
   persist: Persist;
   cases: CaseStore;
   agents: readonly ResearchAgent[];
@@ -134,7 +135,7 @@ export async function runResearch(caseId: string, deps: OrchestratorDeps): Promi
 
   // 3. Verify (deterministic), 4. rank per resource kind, 5. persist.
   try {
-    return await finalizeCase(caseId, results, runStatuses, deps);
+    return await finalizeCase(caseId, caseRecord, results, runStatuses, deps);
   } catch (e) {
     await deps.cases.setStatus(caseId, "research_failed");
     throw e;
@@ -143,16 +144,17 @@ export async function runResearch(caseId: string, deps: OrchestratorDeps): Promi
 
 async function finalizeCase(
   caseId: string,
+  caseRecord: CaseInput,
   results: ResearchResult[],
   runStatuses: Record<string, string>,
   deps: OrchestratorDeps,
 ): Promise<ResearchSummary> {
-  const verified = await verifyWithProposals(results, deps.proposer);
+  const verified = await verifyWithProposals(results, deps.proposer, caseRecord);
   const ranked: RankedEntry[] = [];
   const kinds = [...new Set(verified.kept.map((k) => k.resource.kind))].sort();
   for (const kind of kinds) {
     const group = verified.kept.filter((k) => k.resource.kind === kind);
-    const out = deps.rank(group.map((rec) => toCandidate(rec, verified.kept)));
+    const out = (deps.rank ?? defaultRank)(group.map((rec) => toCandidate(rec, verified.kept, caseRecord)));
     for (const r of out) ranked.push({ record: r.record, score: r.score, rank: r.rank, breakdown: r.breakdown });
   }
   await deps.persist.saveResults(caseId, ranked);

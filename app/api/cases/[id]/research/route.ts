@@ -1,6 +1,5 @@
 import { after, NextResponse } from "next/server";
 import { runResearch } from "@/lib/agents/orchestrator";
-import { placeholderRank } from "@/lib/agents/placeholder-rank";
 import { jsonError, parseId } from "../../_lib/http";
 import { getResearchWiring } from "../../_lib/research-wiring";
 import { getServices } from "../../_lib/services";
@@ -36,7 +35,6 @@ export async function POST(_req: Request, { params }: Ctx) {
         store: services.runs,
         persist: services.persist,
         cases: services.cases,
-        rank: wiring.rank ?? placeholderRank,
         ports: wiring.ports,
         agents: wiring.agents,
       });

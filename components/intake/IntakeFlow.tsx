@@ -1,70 +1,106 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Case, CaseInput } from "@/lib/contracts";
-import { goalSchema } from "@/lib/contracts";
 import { Reveal } from "@/components/motion/Reveal";
-import { EmptyState, LoadingSkeleton } from "@/components/threads/states";
+import { Skeleton, Stepper, toast, type StepperStep } from "@/components/ui";
 import type { DemoReport } from "./demos";
 import { confirmAndResearch, extractCase } from "./case-client";
+import { NEEDS_REVIEW, checkUpload, fallbackFor } from "./fallback";
+import { ReportStep } from "./ReportStep";
+import { ReviewStep } from "./ReviewStep";
 
-const GOAL_LABELS: Record<(typeof goalSchema.options)[number], string> = {
-  second_opinion: "Second opinion",
-  treatment: "Treatment center",
-  trial: "Clinical trial",
-  support: "Advocacy and support",
-  aid: "Financial or travel aid",
-};
+const STEPS: StepperStep[] = [
+  { id: "report", label: "Share a report", description: "Paste or upload" },
+  { id: "review", label: "Confirm the details", description: "Edit anything" },
+  { id: "search", label: "Start the search", description: "Nine searches at once" },
+];
 
-type Props = { demos: DemoReport[] };
+type Phase = "report" | "reading" | "review" | "starting";
 
-export function IntakeFlow({ demos }: Props) {
+const STEP_INDEX: Record<Phase, number> = { report: 0, reading: 0, review: 1, starting: 2 };
+
+function ReadingState() {
+  return (
+    <section
+      aria-labelledby="reading-heading"
+      aria-busy="true"
+      className="grid gap-6 rounded-lg border border-line bg-card p-6 shadow-md sm:p-8"
+    >
+      <div role="status" className="grid gap-1">
+        <h2 id="reading-heading" tabIndex={-1} className="m-0 font-display text-h3 font-normal text-ink display-soft">
+          Reading the report
+        </h2>
+        <p className="m-0 text-body text-ink-2">Pulling out the diagnosis, location and coverage details.</p>
+      </div>
+      <div aria-hidden className="grid gap-4 sm:grid-cols-2">
+        <Skeleton className="h-11 sm:col-span-2" />
+        <Skeleton className="h-11" />
+        <Skeleton className="h-24" />
+        <Skeleton className="h-11" />
+        <Skeleton className="h-11" />
+      </div>
+    </section>
+  );
+}
+
+export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   const router = useRouter();
+  const [phase, setPhase] = useState<Phase>("report");
   const [reportText, setReportText] = useState("");
   const [draft, setDraft] = useState<Case | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [demoId, setDemoId] = useState(demos[0]?.id ?? "");
+  const [preview, setPreview] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const stepRef = useRef<HTMLDivElement>(null);
 
-  const selectedDemo = useMemo(
-    () => demos.find((demo) => demo.id === demoId) ?? demos[0],
-    [demoId, demos],
-  );
+  // Move focus to the new step's heading so keyboard and screen reader users land in the right place.
+  const focusKey = phase === "reading" || phase === "starting" ? null : phase;
+  const lastFocused = useRef<Phase | null>("report");
+  useEffect(() => {
+    if (!focusKey || lastFocused.current === focusKey) return;
+    lastFocused.current = focusKey;
+    const heading = stepRef.current?.querySelector<HTMLElement>("h2");
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus({ preventScroll: false });
+  }, [focusKey]);
 
-  function fallbackFor(text: string): CaseInput {
-    const trimmed = text.trim();
-    const matched =
-      demos.find((demo) => demo.reportText.trim() === trimmed) ??
-      demos.find((demo) => trimmed.includes(demo.input.diseaseName));
-    if (matched) return matched.input;
-    return { diseaseName: "Needs review", goals: [] };
+  function loadSample(demo: DemoReport) {
+    setReportText(demo.reportText);
+    setError(null);
+    toast.success(`Loaded the ${demo.title} sample`, { description: "Synthetic report. Read it when you are ready." });
   }
 
-  async function onExtract() {
-    if (!reportText.trim()) return;
-    setBusy(true);
-    setMessage(null);
+  async function loadFile(file: File) {
+    const check = checkUpload(file);
+    if (!check.ok) {
+      setError(check.reason);
+      toast.error("That file could not be used", { description: check.reason });
+      return;
+    }
     try {
-      const { record, preview } = await extractCase(reportText, fallbackFor(reportText));
-      setDraft(record);
-      setMessage(
-        preview
-          ? "The research service is not connected yet, so known demo reports are filled from the fixture. Other reports need you to type the fields. Edit anything that does not match, then confirm."
-          : "Review the fields below. Edit anything that does not match the report, then confirm.",
-      );
+      setReportText(await file.text());
+      setError(null);
+      toast.success(`Added ${file.name}`);
     } catch {
-      setMessage("Wayfinder could not read that report. Try a demo case or paste the text again.");
-    } finally {
-      setBusy(false);
+      setError("That file could not be read. Try pasting the text instead.");
     }
   }
 
-  async function onFile(file: File | undefined) {
-    if (!file) return;
-    const text = await file.text();
-    setReportText(text);
-    setDraft(null);
+  async function readReport() {
+    if (!reportText.trim()) return;
+    setPhase("reading");
+    setError(null);
+    try {
+      const { record, preview: isPreview } = await extractCase(reportText, fallbackFor(reportText, demos));
+      setDraft(record.diseaseName === NEEDS_REVIEW ? { ...record, diseaseName: "" } : record);
+      setPreview(isPreview);
+      setPhase("review");
+      toast.success("Report read", { description: "Check each detail before the search starts." });
+    } catch {
+      setPhase("report");
+      setError("Wayfinder could not read that report. Try a sample case, or paste the text again.");
+    }
   }
 
   function update<K extends keyof CaseInput>(key: K, value: CaseInput[K]) {
@@ -81,171 +117,62 @@ export function IntakeFlow({ demos }: Props) {
     });
   }
 
-  async function onConfirm() {
+  async function startSearch() {
     if (!draft) return;
-    setBusy(true);
-    setMessage(null);
+    setPhase("starting");
+    setError(null);
     try {
       await confirmAndResearch(draft);
       router.push(`/cases/${draft.id}/swarm`);
     } catch {
-      setMessage("Those fields could not be saved. Check required disease name and try again.");
-      setBusy(false);
+      setPhase("review");
+      setError("Those details could not be saved. Check the diagnosis and try again.");
+      toast.error("The search did not start");
     }
   }
 
   return (
-    <div className="stack">
-      <section className="panel stack" aria-labelledby="report-heading">
-        <h2 id="report-heading">Your report</h2>
-        <p className="meta">
-          Paste a synthetic report or upload a text file. Wayfinder extracts the details it needs to
-          search. It does not interpret the diagnosis.
-        </p>
-        {demos.length === 0 ? (
-          <EmptyState title="No demo reports" detail="Paste a synthetic report below. Wayfinder does not interpret the diagnosis." />
-        ) : null}
-        {busy && !draft ? <LoadingSkeleton label="Reading the report" /> : null}
-        <div className="row">
-          <label className="field" style={{ flex: "1 1 220px" }}>
-            <span>Demo case</span>
-            <select value={demoId} onChange={(event) => setDemoId(event.target.value)}>
-              {demos.map((demo) => (
-                <option key={demo.id} value={demo.id}>
-                  {demo.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => {
-              if (!selectedDemo) return;
-              setReportText(selectedDemo.reportText);
-              setDraft(null);
-              setMessage(null);
-            }}
-          >
-            Load demo case
-          </button>
-        </div>
-        <label className="field">
-          <span>Report text</span>
-          <textarea
-            value={reportText}
-            onChange={(event) => setReportText(event.target.value)}
-            placeholder="Paste the report here"
-          />
-        </label>
-        <label className="field">
-          <span>Upload a .txt or .md file</span>
-          <input
-            type="file"
-            accept=".txt,.md,text/plain,text/markdown"
-            onChange={(event) => void onFile(event.target.files?.[0])}
-          />
-        </label>
-        <div className="row">
-          <button type="button" onClick={() => void onExtract()} disabled={busy || !reportText.trim()}>
-            {busy && !draft ? "Reading report…" : "Extract fields"}
-          </button>
-        </div>
-      </section>
-
-      <Reveal revealKey={draft ? `draft-${draft.id}` : "none"}>
-      {draft ? (
-        <section className="panel stack" aria-labelledby="fields-heading">
-          <h2 id="fields-heading">Extracted case</h2>
-          <div className="grid-2">
-            <label className="field">
-              <span>Disease name</span>
-              <input
-                type="text"
-                required
-                value={draft.diseaseName}
-                onChange={(event) => update("diseaseName", event.target.value)}
-              />
-            </label>
-            <label className="field">
-              <span>Subtype</span>
-              <input
-                type="text"
-                value={draft.subtype ?? ""}
-                onChange={(event) => update("subtype", event.target.value || undefined)}
-              />
-            </label>
-            <label className="field">
-              <span>Home city</span>
-              <input
-                type="text"
-                value={draft.homeCity ?? ""}
-                onChange={(event) => update("homeCity", event.target.value || undefined)}
-              />
-            </label>
-            <label className="field">
-              <span>Home state</span>
-              <input
-                type="text"
-                value={draft.homeState ?? ""}
-                onChange={(event) => update("homeState", event.target.value || undefined)}
-              />
-            </label>
-            <label className="field">
-              <span>Insurer</span>
-              <input
-                type="text"
-                value={draft.insurer ?? ""}
-                onChange={(event) => update("insurer", event.target.value || undefined)}
-              />
-            </label>
-            <label className="field">
-              <span>Travel limit (miles)</span>
-              <input
-                type="number"
-                min={0}
-                value={draft.travelLimitMiles ?? ""}
-                onChange={(event) =>
-                  update(
-                    "travelLimitMiles",
-                    event.target.value === "" ? undefined : Number(event.target.value),
-                  )
-                }
-              />
-            </label>
-          </div>
-          <label className="field">
-            <span>Stage summary, as written in the report</span>
-            <textarea
-              value={draft.stageSummary ?? ""}
-              onChange={(event) => update("stageSummary", event.target.value || undefined)}
+    <div className="grid gap-10">
+      <Stepper steps={STEPS} current={STEP_INDEX[phase]} aria-label="Intake progress" />
+      <div ref={stepRef}>
+        <Reveal revealKey={phase === "reading" ? "reading" : phase === "report" ? "report" : "review"}>
+          {phase === "reading" ? (
+            <ReadingState />
+          ) : draft && phase !== "report" ? (
+            <ReviewStep
+              draft={draft}
+              preview={preview}
+              busy={phase === "starting"}
+              error={error}
+              onChange={update}
+              onToggleGoal={toggleGoal}
+              onBack={() => {
+                setError(null);
+                setPhase("report");
+              }}
+              onConfirm={() => void startSearch()}
             />
-          </label>
-          <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend>What you want help finding</legend>
-            {goalSchema.options.map((goal) => (
-              <label key={goal} className="check">
-                <input
-                  type="checkbox"
-                  checked={draft.goals.includes(goal)}
-                  onChange={() => toggleGoal(goal)}
-                />
-                <span>{GOAL_LABELS[goal]}</span>
-              </label>
-            ))}
-          </fieldset>
-          <div className="row">
-            <button type="button" onClick={() => void onConfirm()} disabled={busy || !draft.diseaseName.trim()}>
-              {busy ? "Starting research…" : "Confirm and start research"}
-            </button>
-          </div>
-        </section>
-      ) : null}
-      </Reveal>
-
-      <div aria-live="polite">
-        <Reveal revealKey={message ?? "none"}>{message ? <p className="notice" role="status">{message}</p> : null}</Reveal>
+          ) : (
+            <ReportStep
+              demos={demos}
+              reportText={reportText}
+              busy={false}
+              error={error}
+              onTextChange={(text) => {
+                setReportText(text);
+                setError(null);
+              }}
+              onSample={loadSample}
+              onFile={(file) => void loadFile(file)}
+              onExtract={() => void readReport()}
+            />
+          )}
+        </Reveal>
       </div>
+      <p className="m-0 max-w-prose text-small text-ink-2">
+        Wayfinder helps you find and contact people. It does not give medical advice. If symptoms feel urgent, contact
+        your care team or call 911.
+      </p>
     </div>
   );
 }

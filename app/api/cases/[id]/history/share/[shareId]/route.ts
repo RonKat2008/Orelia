@@ -11,10 +11,12 @@ type Ctx = { params: Promise<{ id: string; shareId: string }> };
 export async function DELETE(req: Request, { params }: Ctx) {
   const raw = await params;
   const id = parseId(raw.id);
-  const shareId = parseId(raw.shareId);
-  if (!id || !shareId) return jsonError(400, 'Invalid id');
+  if (!id) return jsonError(400, 'Invalid id');
+  // Ownership + same-origin first, so nothing about the case leaks through sub-id validation.
   const denied = await guardCase(req, id);
   if (denied) return denied;
+  const shareId = parseId(raw.shareId);
+  if (!shareId) return jsonError(400, 'Invalid id');
   try {
     const share = await getShareStore().revoke(id, shareId, new Date());
     return share ? NextResponse.json({ share }) : jsonError(404, 'Share link not found');

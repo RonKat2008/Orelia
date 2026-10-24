@@ -11,10 +11,12 @@ type Ctx = { params: Promise<{ id: string; docId: string }> };
 export async function DELETE(req: Request, { params }: Ctx) {
   const { id: rawId, docId: rawDoc } = await params;
   const id = parseId(rawId);
-  const docId = parseId(rawDoc);
-  if (!id || !docId) return jsonError(400, 'Invalid id');
+  if (!id) return jsonError(400, 'Invalid id');
+  // Ownership + same-origin first, so nothing about the case leaks through sub-id validation.
   const denied = await guardCase(req, id);
   if (denied) return denied;
+  const docId = parseId(rawDoc);
+  if (!docId) return jsonError(400, 'Invalid id');
   try {
     if (!(await removeRecord(id, docId))) return jsonError(404, 'Record not found');
     return NextResponse.json({ timeline: await loadTimeline(id) });

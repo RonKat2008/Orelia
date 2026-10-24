@@ -147,8 +147,9 @@ export class PostgresAppointmentStore implements AppointmentStore {
     return rows.map(rowToAppointment);
   }
   async caseOwner(caseId: string) {
-    const [r] = await this.db.select({ owner: s.cases.ownerSessionId }).from(s.cases).where(eq(s.cases.id, caseId)).limit(1);
-    return r ? r.owner : undefined;
+    const [r] = await this.db.select({ owner: s.cases.ownerSessionId, account: s.cases.accountId }).from(s.cases).where(eq(s.cases.id, caseId)).limit(1);
+    if (!r) return undefined;
+    return r.account ? `account:${r.account}` : r.owner;
   }
   async createFeed(ownerKey: string) {
     const [r] = await this.db.insert(s.calendarFeeds).values({ ownerKey }).returning();

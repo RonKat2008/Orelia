@@ -4,21 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
+import { cn } from "@/lib/ui/cn";
 import { deleteCase } from "./delete-case";
 
-/** "Delete case" with an in-app confirm step (the design-system Dialog, never window.confirm). */
-export function DeleteCaseControl({ caseId }: { caseId: string }) {
+/**
+ * "Delete case" with an in-app confirm step (ConfirmDialog, never window.confirm). A quiet danger-ghost trigger that
+ * belongs in a "Manage case" area, never beside the next step (docs/DESIGN-v2.md 4.1).
+ */
+export function DeleteCaseControl({ caseId, className }: { caseId: string; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -40,37 +35,24 @@ export function DeleteCaseControl({ caseId }: { caseId: string }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (busy ? undefined : setOpen(next))}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="mt-6 text-danger" data-testid="delete-case">
+    <ConfirmDialog
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <Button variant="danger-ghost" size="sm" className={cn("w-fit", className)} data-testid="delete-case">
           <Trash2 aria-hidden />
           Delete case
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete this case?</DialogTitle>
-          <DialogDescription>
-            This permanently removes the case, its research, documents, contacts, messages and tracker tasks. It cannot be
-            undone. Messages already sent to a resource stay with that resource.
-          </DialogDescription>
-        </DialogHeader>
-        {error ? (
-          <p role="alert" className="text-small text-danger">
-            {error}
-          </p>
-        ) : null}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="secondary" disabled={busy}>
-              Keep case
-            </Button>
-          </DialogClose>
-          <Button variant="danger" onClick={confirm} disabled={busy} aria-busy={busy} data-testid="delete-case-confirm">
-            {busy ? "Deleting" : "Delete case"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      }
+      title="Delete this case?"
+      description="This removes your case and everything in it for good, but messages already sent stay with the people who got them."
+      confirmLabel="Delete case"
+      cancelLabel="Keep it"
+      busy={busy}
+      busyLabel="Deleting"
+      error={error}
+      onConfirm={() => void confirm()}
+      confirmTestId="delete-case-confirm"
+    />
   );
 }

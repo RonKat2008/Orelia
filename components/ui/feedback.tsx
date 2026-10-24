@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import { useId, type ComponentProps, type ReactNode } from "react";
 import { Progress as ProgressPrimitive, Separator as SeparatorPrimitive } from "radix-ui";
 import { cn } from "@/lib/ui/cn";
 import { toPercent } from "@/lib/ui/format";
@@ -8,21 +8,31 @@ import { toPercent } from "@/lib/ui/format";
 export interface ProgressProps extends Omit<ComponentProps<typeof ProgressPrimitive.Root>, "value" | "max"> {
   value: number;
   max?: number;
-  /** Visible label above the bar; also the accessible name. */
+  /** Visible label above the bar; also the accessible name (via aria-labelledby). */
   label?: ReactNode;
+  /** Accessible name when there is no visible label. One of `label` or `aria-label` is needed (axe aria-progressbar-name). */
+  "aria-label"?: string;
   /** Text at the right of the label, e.g. "3 of 5 sources checked". */
   valueText?: string;
   tone?: "teal" | "ok" | "warn";
 }
 
-export function Progress({ value, max = 100, label, valueText, tone = "teal", className, ...props }: ProgressProps) {
+export function Progress({ value, max = 100, label, valueText, tone = "teal", className, "aria-label": ariaLabel, ...props }: ProgressProps) {
   const percent = toPercent(value, max);
+  const labelId = useId();
+  const named = ariaLabel ? { "aria-label": ariaLabel } : label ? { "aria-labelledby": labelId } : { "aria-label": valueText ?? "Progress" };
   const bar = { teal: "bg-teal", ok: "bg-ok", warn: "bg-warn" }[tone];
   return (
     <div data-slot="progress" className={cn("grid gap-2", className)}>
       {label || valueText ? (
         <div className="flex items-baseline justify-between gap-4 text-small">
-          {label ? <span className="font-semibold text-ink">{label}</span> : <span />}
+          {label ? (
+            <span id={labelId} className="font-semibold text-ink">
+              {label}
+            </span>
+          ) : (
+            <span />
+          )}
           {valueText ? <span className="tabular-nums text-ink-2">{valueText}</span> : null}
         </div>
       ) : null}
@@ -30,11 +40,12 @@ export function Progress({ value, max = 100, label, valueText, tone = "teal", cl
         value={value}
         max={max}
         aria-valuetext={valueText}
+        {...named}
         className="relative h-2 overflow-hidden rounded-pill bg-paper-2 shadow-inset"
         {...props}
       >
         <ProgressPrimitive.Indicator
-          className={cn("h-full w-full rounded-pill transition-transform duration-700 ease-out-expo motion-reduce:transition-none", bar)}
+          className={cn("h-full w-full rounded-pill transition-transform duration-400 ease-out-expo motion-reduce:transition-none", bar)}
           style={{ transform: `translateX(-${100 - percent}%)` }}
         />
       </ProgressPrimitive.Root>

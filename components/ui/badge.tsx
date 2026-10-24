@@ -3,8 +3,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/ui/cn";
 
 /**
- * Badge: a short status or category label. Tone carries meaning, so always pair it
- * with words (and ideally an icon); never rely on the colour alone.
+ * Badge: a short, *dynamic* status ("Your turn", "Replied", "Needs you", "Couldn't reach"). Tone carries meaning,
+ * so always pair it with words; never rely on the colour alone.
+ *
+ * v2 budget (docs/DESIGN-v2.md 4.5): at most 1 badge per row or card in patient view, 2 in judge view. Static facts
+ * ("Email", "Clinic") are plain text, not badges. Patient view uses only PATIENT_BADGE_TONES.
  */
 export const badgeVariants = cva(
   [
@@ -32,13 +35,21 @@ export const badgeVariants = cva(
         outline: "border-line-strong bg-transparent text-ink-2",
       },
       size: {
-        sm: "h-6 px-2.5 text-micro tracking-[0.02em]",
+        // 14 px text: badges reuse the `small` step instead of adding a 12 px size to the view.
+        sm: "h-6 px-2.5 text-small",
         md: "h-7 px-3 text-small",
       },
     },
     defaultVariants: { tone: "neutral", size: "sm" },
   },
 );
+
+/** The only tones allowed on patient screens (teal = your turn / working; ok, warn, danger = status). */
+export const PATIENT_BADGE_TONES = ["teal", "ok", "warn", "danger"] as const;
+export type PatientBadgeTone = (typeof PATIENT_BADGE_TONES)[number];
+
+/** Max badges per row or card for each view. */
+export const BADGE_BUDGET = { patient: 1, judge: 2 } as const;
 
 export type BadgeProps = ComponentProps<"span"> &
   VariantProps<typeof badgeVariants> & {
@@ -48,7 +59,7 @@ export type BadgeProps = ComponentProps<"span"> &
 
 export function Badge({ className, tone, size, dot, children, ...props }: BadgeProps) {
   return (
-    <span data-slot="badge" className={cn(badgeVariants({ tone, size }), className)} {...props}>
+    <span data-slot="badge" data-tone={tone ?? "neutral"} className={cn(badgeVariants({ tone, size }), className)} {...props}>
       {dot ? <span aria-hidden className="size-1.5 rounded-pill bg-current opacity-80" /> : null}
       {children}
     </span>

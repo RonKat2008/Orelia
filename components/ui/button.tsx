@@ -5,8 +5,11 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/ui/cn";
 
 /**
- * Button. Primary is the one teal action per view; secondary sits on paper;
- * ghost is for toolbars; link is inline; danger is for destructive, confirmed acts.
+ * Button. v2 CTA rules (docs/DESIGN-v2.md 4.6): exactly one `primary` per view (patient view: size="lg",
+ * left-aligned under the content); at most one `secondary`; everything else is `link` or lives in a menu.
+ * `ghost` is for toolbars; `danger` only confirms a destructive act inside a dialog; `danger-ghost` is the quiet
+ * "Delete case" trigger that lives in a "Manage case" area, never beside the next step.
+ * Labels are verb + object ("Send this email"), never "Submit", "Next" or "OK".
  * States: hover lifts 1px and deepens; active presses down; focus-visible draws
  * the ring; loading keeps the width and announces aria-busy.
  */
@@ -29,9 +32,10 @@ export const buttonVariants = cva(
           "hover:bg-teal-ink hover:-translate-y-px hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.14),var(--elev-md)]",
           "active:shadow-inset",
         ],
+        // Deliberately quiet (no lift, no shadow) so the single primary stays the strongest thing on screen.
         secondary: [
-          "bg-card text-ink border border-line-strong shadow-xs",
-          "hover:border-ink-3 hover:bg-paper-2 hover:-translate-y-px hover:shadow-sm",
+          "bg-card text-ink border border-line-strong",
+          "hover:border-ink-3 hover:bg-paper-2",
           "active:bg-paper-2 active:shadow-inset",
         ],
         ghost: ["bg-transparent text-ink", "hover:bg-paper-2", "active:bg-line/60"],
@@ -44,11 +48,13 @@ export const buttonVariants = cva(
           "hover:-translate-y-px hover:shadow-md hover:bg-[color-mix(in_oklab,var(--danger)_86%,var(--ink))]",
           "active:shadow-inset",
         ],
+        "danger-ghost": ["bg-transparent text-danger", "hover:bg-danger-soft", "active:bg-danger-soft"],
       },
       size: {
         sm: "h-9 rounded-sm px-3 text-small [&_svg]:size-4",
         md: "h-11 rounded-md px-5 text-body [&_svg]:size-[1.1em]",
-        lg: "h-13 rounded-md px-7 text-lead [&_svg]:size-5",
+        // 52 px tall, body-size label: big target without adding a type size (v2 budget: 3 sizes per view).
+        lg: "h-13 rounded-md px-7 text-body [&_svg]:size-5",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },
@@ -78,10 +84,12 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = cn(buttonVariants({ variant, size }), className);
+  // data-variant lets the budget audit (scripts/ui-budget.ts) count primaries per view.
+  const resolvedVariant = variant ?? "primary";
 
   if (asChild) {
     return (
-      <Slot.Root data-slot="button" className={classes} {...props}>
+      <Slot.Root data-slot="button" data-variant={resolvedVariant} className={classes} {...props}>
         {children}
       </Slot.Root>
     );
@@ -90,6 +98,7 @@ export function Button({
   return (
     <button
       data-slot="button"
+      data-variant={resolvedVariant}
       type={type ?? "button"}
       className={classes}
       disabled={disabled || loading}

@@ -7,36 +7,37 @@ import { getInitials, hashToBucket } from "@/lib/ui/format";
 
 export interface EmptyStateProps extends Omit<ComponentProps<"div">, "title"> {
   icon?: ReactNode;
+  /** What will appear here ("Replies will show here"). */
   title: ReactNode;
+  /** One sentence: when it will appear. */
   description?: ReactNode;
-  /** Usually one Button. */
+  /** At most one action, and never a copy of the page header's action. */
   action?: ReactNode;
+  /** Heading level. Default h2 (safe under the page h1 or a section h2). */
+  titleAs?: "h2" | "h3" | "h4";
 }
 
-/** EmptyState: say what will appear here and the one thing to do next. */
-export function EmptyState({ icon, title, description, action, className, ...props }: EmptyStateProps) {
+/**
+ * EmptyState (docs/DESIGN-v2.md 6): title (what will appear), one sentence (when), at most one action. Quiet and
+ * left-aligned with the content: an empty list is not an error, so it is never red.
+ */
+export function EmptyState({ icon, title, description, action, titleAs: Title = "h2", className, ...props }: EmptyStateProps) {
   return (
     <div
       data-slot="empty-state"
-      className={cn(
-        "grain flex flex-col items-center rounded-lg border border-dashed border-line-strong bg-paper-2/60 px-6 py-12 text-center sm:py-16",
-        className,
-      )}
+      className={cn("grid justify-items-start gap-2 rounded-lg border border-line bg-paper-2/60 px-6 py-8", className)}
       {...props}
     >
       {icon ? (
-        <div
-          aria-hidden
-          className="mb-5 grid size-14 place-items-center rounded-pill bg-card text-teal shadow-sm ring-1 ring-line [&_svg]:size-6"
-        >
+        <div aria-hidden className="mb-1 text-ink-3 [&_svg]:size-5">
           {icon}
         </div>
       ) : null}
-      <h3 data-slot="empty-state-title" className="font-display text-h3 font-normal text-ink display-soft text-balance">
+      <Title data-slot="empty-state-title" className="m-0 font-display text-h3 font-normal text-ink display-soft text-balance">
         {title}
-      </h3>
-      {description ? <p className="m-0 mt-2 max-w-[46ch] text-body text-ink-2 text-pretty">{description}</p> : null}
-      {action ? <div className="mt-6">{action}</div> : null}
+      </Title>
+      {description ? <p className="m-0 max-w-[52ch] text-body text-ink-2 text-pretty">{description}</p> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }

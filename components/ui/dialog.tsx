@@ -1,9 +1,11 @@
 "use client";
 
+import type * as React from "react";
 import type { ComponentProps } from "react";
 import { X } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { cn } from "@/lib/ui/cn";
+import { Button } from "./button";
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -85,5 +87,83 @@ export function DialogDescription({ className, ...props }: ComponentProps<typeof
       className={cn("text-body text-ink-2", className)}
       {...props}
     />
+  );
+}
+
+export interface ConfirmDialogProps {
+  /** Element that opens the dialog (rendered asChild): usually a danger-ghost Button. */
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** A question: "Delete this case?". */
+  title: React.ReactNode;
+  /** One sentence: the consequence. */
+  description: React.ReactNode;
+  /** Verb + object: "Delete case". */
+  confirmLabel: string;
+  /** The safe way out: "Keep it". */
+  cancelLabel?: string;
+  /** danger for serious, hard-to-undo acts (R14); primary otherwise. */
+  tone?: "danger" | "primary";
+  /** Runs on confirm. The dialog stays open (and un-dismissable) while busy. */
+  onConfirm: () => void;
+  busy?: boolean;
+  busyLabel?: string;
+  /** Problem plus fix, shown above the buttons. */
+  error?: React.ReactNode;
+  /** Test hook for the confirm button. */
+  confirmTestId?: string;
+}
+
+/**
+ * ConfirmDialog (docs/DESIGN-v2.md 6, Dialogs): title as a question, one-sentence consequence, the confirm button
+ * (danger tone for deletes) and a secondary safe choice. Approve flows are pages, not dialogs.
+ */
+export function ConfirmDialog({
+  trigger,
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel = "Keep it",
+  tone = "danger",
+  onConfirm,
+  busy = false,
+  busyLabel,
+  error,
+  confirmTestId,
+}: ConfirmDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={(next) => (busy ? undefined : onOpenChange?.(next))}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        {error ? (
+          <p role="alert" className="m-0 text-body font-semibold text-danger">
+            {error}
+          </p>
+        ) : null}
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="secondary" disabled={busy}>
+              {cancelLabel}
+            </Button>
+          </DialogClose>
+          <Button
+            variant={tone}
+            onClick={onConfirm}
+            loading={busy}
+            loadingText={busyLabel}
+            data-testid={confirmTestId}
+          >
+            {confirmLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

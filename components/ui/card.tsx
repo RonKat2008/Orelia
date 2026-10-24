@@ -6,9 +6,14 @@ import { cn } from "@/lib/ui/cn";
 /**
  * Surface hierarchy (bottom to top):
  *   inset  - sunk into the page: form groups, quoted evidence, code
+ *   well   - v2: quoted letter text, transcripts, code (no shadow)
  *   flat   - card colour + hairline: most content
+ *   pane   - v2: judge detail pane and dialogs (hairline, no shadow)
  *   raised - lifted with a warm layered shadow: the thing to look at first
  * `interactive` adds a designed hover/press for clickable cards (wrap a Link with asChild).
+ *
+ * v2 rules (docs/DESIGN-v2.md 4.4): comparable items are ListRows, not cards; at most one raised card per view (use
+ * ActionCard for it); never nest a bordered box inside a card (use a well or a row).
  */
 export const surfaceVariants = cva("relative block text-ink", {
   variants: {
@@ -16,6 +21,8 @@ export const surfaceVariants = cva("relative block text-ink", {
       flat: "bg-card border border-line",
       raised: "bg-card border border-line/70 shadow-md",
       inset: "bg-paper-2 shadow-inset",
+      well: "bg-paper-2",
+      pane: "bg-card border border-line",
     },
     padding: {
       none: "",

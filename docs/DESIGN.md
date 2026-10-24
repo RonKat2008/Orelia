@@ -3,6 +3,21 @@
 Live guide: `/system` (`app/(design)/system/page.tsx`). Every token and primitive is shown there in both themes.
 Source of truth: `app/styles/theme.css` (tokens), `app/styles/tokens.css` (legacy), `lib/ui/fonts.ts` (type).
 
+> **v2 ("Clear Day, quieter") is in [`docs/DESIGN-v2.md`](./DESIGN-v2.md) and wins wherever the two disagree.**
+> The budgets every view must meet (count them with `npx tsx scripts/ui-budget.ts`):
+>
+> - **1 primary button** per view (patient view: `size="lg"`, left-aligned), at most 1 secondary; the rest are links.
+> - **3 content type sizes** per view: `text-h1` (one title), `text-h3` (sections), `text-body` (18 px in patient
+>   view via `[data-view="patient"]`, 16 px in judge view), plus `text-small` (14 px) for metadata. `text-display` is
+>   the landing h1 only; no `emph` outside it; no uppercase eyebrows in patient view.
+> - **Badges:** 1 per row or card in patient view (only `teal`, `ok`, `warn`, `danger`), 2 in judge view, and only for
+>   dynamic states. "Verified" is one `CheckedMark` per item.
+> - **Lists for comparing, cards for doing:** `ListRow` for comparable items, one `ActionCard` per view, `Details` for
+>   the one level of extra information. No nested cards, no shadows on list items.
+> - **Colour means something:** teal is action; ok/warn/danger are status with a word; channel and source hues are a
+>   16 px icon tint (judge: plus an 8 px dot). Coral is hero and marketing only.
+> - Root font size follows the browser (no fixed 17 px root); `html` has `scroll-padding` so sticky bars never hide focus.
+
 ## Direction
 
 Wayfinder helps worried adults with a rare disease, and the people caring for them, get seen. The interface should

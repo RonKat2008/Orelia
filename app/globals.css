@@ -30,7 +30,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
-  font-size: 17px;
+  /* No fixed root size (v2): rem follows the reader's browser setting. */
   line-height: var(--wf-leading-text);
   overflow-wrap: break-word;
 }

@@ -49,8 +49,8 @@ describe('safety boundary cases', () => {
     expect(checkOutbound(request)).toEqual({ ok: false, reasons: ['consent_mismatch'] });
   });
   it('requires cadence data when an explicit follow-up has no known contact', () => {
-    const request = input();
-    request.draft.isFollowUp = true;
+    const base = input();
+    const request = { ...base, draft: { ...base.draft, isFollowUp: true } };
     expect(checkOutbound(request)).toEqual({ ok: false, reasons: ['follow_up_cadence'] });
   });
   it('refuses a sent contact with no follow-up counter', () => {

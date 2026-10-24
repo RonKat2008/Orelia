@@ -57,4 +57,15 @@ describe('enrichVerified', () => {
     expect(email.claim).toBe('info@aidfund.example.org');
     expect(out.kept[1]!.resource.evidenceRefs).toEqual([email.id]);
   });
+
+  it('keeps the targets that finished when another is still searching at the time budget', async () => {
+    // Arrange: the institution answers at once; the organization search never returns.
+    const v: VerifyOutput = { ...base(), kept: [base().kept[0]!, { key: 'organization:url:https://aidfund.example.org/', resource: { kind: 'organization', id: 'o2', name: 'Northgate Aid Fund', organizationKind: 'financial_aid', url: 'https://aidfund.example.org/', evidenceRefs: [] }, evidence: [] }] };
+    const port = exa(async ({ query }) => (query.includes('Aid Fund') ? new Promise(() => undefined) : [{ url: 'https://northgate-genetics.example.org/appointments', title: 'Appointments', text: 'New patient appointments: 217-555-0142' }]));
+    // Act
+    const out = await enrichVerified(v, port, NOW, 50);
+    // Assert
+    expect(out.kept[0]!.evidence.some((e) => e.claimType === 'contact_point.voice.new_patient_line')).toBe(true);
+    expect(out.kept[1]).toEqual(v.kept[1]);
+  });
 });

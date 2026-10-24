@@ -34,7 +34,8 @@ export interface EnrichTarget {
 
 /** Search queries: a form page for an institution that already has a phone, the contact / apply page for an organization. */
 export const formQuery = (name: string): string => `"${name}" request an appointment online form`;
-export const organizationContactQuery = (name: string): string => `"${name}" contact us email apply`;
+export const organizationContactQuery = (name: string): string => `"${name}" contact us`;
+const CONCURRENCY = 4;
 
 const hostOf = (url: string): string | null => {
   try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { return null; }
@@ -136,13 +137,21 @@ async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) 
  * Enrich up to MAX_ENRICHED_INSTITUTIONS institutions (those without a phone first, then those with a phone but no
  * email / online form) and MAX_ENRICHED_ORGANIZATIONS organizations without an email, 3 searches at a time. Never throws.
  */
-export async function enrichInstitutions(targets: readonly EnrichTarget[], exa: ExaPort, fetchedAt: string): Promise<Map<string, Array<Evidence & { id: string }>>> {
+export async function enrichInstitutions(
+  targets: readonly EnrichTarget[], exa: ExaPort, fetchedAt: string,
+  /** Optional: filled as each target finishes, so a caller with a time budget can keep the targets that completed. */
+  partial?: Map<string, Array<Evidence & { id: string }>>,
+): Promise<Map<string, Array<Evidence & { id: string }>>> {
   const needing = targets.filter((t) => enrichmentQuery(t) !== null);
   const institutions = needing.filter((t) => t.targetKind === 'institution');
   const todo = [
     ...[...institutions.filter((t) => !hasVoice(t.evidence)), ...institutions.filter((t) => hasVoice(t.evidence))].slice(0, MAX_ENRICHED_INSTITUTIONS),
     ...needing.filter((t) => t.targetKind === 'organization').slice(0, MAX_ENRICHED_ORGANIZATIONS),
   ];
-  const rows = await mapLimit(todo, 3, (t) => institutionContactRows(t, exa, fetchedAt).catch(() => []));
+  const rows = await mapLimit(todo, CONCURRENCY, async (t) => {
+    const found = await institutionContactRows(t, exa, fetchedAt).catch(() => []);
+    if (found.length > 0) partial?.set(t.targetId, found);
+    return found;
+  });
   return new Map(todo.map((t, i) => [t.targetId, rows[i] ?? []] as const).filter(([, r]) => r.length > 0));
 }

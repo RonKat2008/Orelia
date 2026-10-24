@@ -23,8 +23,8 @@ function targetsOf(kept: readonly VerifiedRecord[]): EnrichTarget[] {
 /**
  * After verification, give kept institutions (no phone, or a phone but no email / online form) and kept aid /
  * advocacy organizations without an email code-stamped contact points from their own site (see
- * lib/contact-finder/enrich). Ids follow the verifier's scheme. Bounded in time; on timeout or error the
- * verified output is returned unchanged, so research never fails because of this step.
+ * lib/contact-finder/enrich). Ids follow the verifier's scheme. Bounded in time; on timeout the targets that already
+ * finished are kept, on error the verified output is returned unchanged, so research never fails because of this step.
  */
 export async function enrichVerified(verified: VerifyOutput, exa: ExaPort, now: Date, budgetMs = DEFAULT_BUDGET_MS): Promise<VerifyOutput> {
   let targets: EnrichTarget[];
@@ -32,10 +32,13 @@ export async function enrichVerified(verified: VerifyOutput, exa: ExaPort, now: 
   if (targets.length === 0) return verified;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), budgetMs); });
-  const rows = await Promise.race([
-    enrichInstitutions(targets, exa, now.toISOString()).catch(() => null),
+  // Targets that finished before the budget ran out are kept even when others are still searching.
+  const partial = new Map<string, Array<Omit<EvidenceWithId, "id"> & { id: string }>>();
+  const done = await Promise.race([
+    enrichInstitutions(targets, exa, now.toISOString(), partial).catch(() => null),
     timeout,
   ]).finally(() => clearTimeout(timer));
+  const rows = done ?? partial;
   if (!rows || rows.size === 0) return verified;
   try {
     return { ...verified, kept: mergeRows(verified.kept, rows) };

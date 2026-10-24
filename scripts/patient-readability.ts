@@ -20,6 +20,8 @@ const SOURCES: { name: string; file: string }[] = [
   { name: "intake", file: "components/intake/patient/copy.ts" },
   { name: "home", file: "components/patient/copy.ts" },
   { name: "consent", file: "components/patient/flows/consent/copy.ts" },
+  { name: "shortlist", file: "components/patient/flows/shortlist/copy.ts" },
+  { name: "plan", file: "components/patient/flows/plan/copy.ts" },
   { name: "search", file: "components/patient/views/search/copy.ts" },
   { name: "outbox", file: "components/patient/views/outbox/copy.ts" },
   { name: "tracker", file: "components/patient/views/tracker/copy.ts" },

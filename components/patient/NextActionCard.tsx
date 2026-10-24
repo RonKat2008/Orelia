@@ -12,31 +12,37 @@ import { PlanCard } from "./actions/PlanCard";
 import { ReplyCard } from "./actions/ReplyCard";
 import { ShareCard } from "./actions/ShareCard";
 import { ConfirmCard } from "./actions/ConfirmCard";
+import { PATIENT_HOME_COPY } from "./copy";
 
 function RetryCard({ caseId, onDone, detailsHref }: { caseId: string; onDone: () => Promise<void>; detailsHref: string }) {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const copy = PATIENT_HOME_COPY.retry;
   async function retry() {
     setBusy(true);
     setErrors([]);
     const response = await fetch(`/api/cases/${caseId}/research`, { method: "POST" }).catch(() => null);
     if (!response?.ok) {
       setBusy(false);
-      setErrors(["The search didn't restart. Please try again in a minute."]);
+      setErrors([copy.failed]);
       return;
     }
-    toast.success("Searching again");
+    toast.success(copy.toast);
     await onDone();
     setBusy(false);
   }
   return (
-    <ActionFrame kind="retry_search" title="Try the search again?" detailsHref={detailsHref}>
-      <ActionError messages={errors} />
-      <div>
-        <Button size="lg" loading={busy} loadingText="Starting" onClick={() => void retry()}>
-          Try the search again
+    <ActionFrame
+      kind="retry_search"
+      title={copy.title}
+      detailsHref={detailsHref}
+      action={
+        <Button size="lg" loading={busy} loadingText={copy.busy} onClick={() => void retry()}>
+          {copy.action}
         </Button>
-      </div>
+      }
+    >
+      {errors.length > 0 ? <ActionError messages={errors} /> : null}
     </ActionFrame>
   );
 }
@@ -75,13 +81,17 @@ export function NextActionCard({
       return <ConfirmCard key={key} {...common} />;
     case "try_someone_else":
       return (
-        <ActionFrame key={key} kind={action.kind} title="Try someone else" lede="Your list still has other people and programs who may help.">
-          <div>
+        <ActionFrame
+          key={key}
+          kind={action.kind}
+          title={PATIENT_HOME_COPY.trySomeoneElse.title}
+          lede={PATIENT_HOME_COPY.trySomeoneElse.lede}
+          action={
             <Button asChild size="lg">
               <Link href={action.detailsHref}>{action.label}</Link>
             </Button>
-          </div>
-        </ActionFrame>
+          }
+        />
       );
   }
 }

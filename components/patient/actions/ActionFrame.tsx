@@ -1,57 +1,101 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { ArrowUpRight } from "lucide-react";
-import { Card } from "@/components/ui";
+"use client";
 
-/** The one primary action card: a title, the work, and a quiet "See details" link to the judge page. */
+import Link from "next/link";
+import { useEffect, useRef, type ReactNode } from "react";
+import { CircleAlert } from "lucide-react";
+import { ActionCard } from "@/components/ui";
+import { PATIENT_HOME_COPY } from "../copy";
+
+export interface ActionFrameProps {
+  title: ReactNode;
+  /** At most one sentence. */
+  lede?: ReactNode;
+  /** The detailed page for this step; shown as a quiet "See details" link. */
+  detailsHref?: string;
+  children?: ReactNode;
+  kind: string;
+  /** Heading level of the card title. Default h2 (the page h1 sits above the card). */
+  titleAs?: "h1" | "h2" | "h3";
+  /** The view's one primary Button (size="lg"). */
+  action?: ReactNode;
+  /** At most one quiet alternative (a link-variant Button). */
+  secondaryAction?: ReactNode;
+  /** One short line under the button. Say it once per screen. */
+  reassurance?: ReactNode;
+}
+
+const QUIET_LINK =
+  "rounded-sm text-small font-semibold text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink focus-ring";
+
+/**
+ * The one "do this now" card on the patient case home, built on the lane A ActionCard (2 px teal top edge, raised).
+ * Callers may pass the controls as children (older cards) or use the action / secondaryAction / reassurance slots.
+ */
 export function ActionFrame({
   title,
   lede,
   detailsHref,
   children,
   kind,
-}: {
-  title: string;
-  lede?: ReactNode;
-  detailsHref?: string;
-  children: ReactNode;
-  kind: string;
-}) {
+  titleAs = "h2",
+  action,
+  secondaryAction,
+  reassurance,
+}: ActionFrameProps) {
+  const details = detailsHref ? (
+    <Link href={detailsHref} className={QUIET_LINK}>
+      {PATIENT_HOME_COPY.seeDetails}
+    </Link>
+  ) : null;
+  const secondary = secondaryAction ?? details;
+  const footer = secondaryAction && details ? <>{reassurance ? <>{reassurance} </> : null}{details}</> : reassurance;
   return (
-    <Card
-      variant="raised"
-      padding="lg"
+    <ActionCard
       data-testid="patient-action"
       data-action={kind}
-      aria-labelledby="patient-action-title"
-      className="grid grid-cols-[minmax(0,1fr)] gap-6 border-t-4 border-t-teal"
+      title={title}
+      titleAs={titleAs}
+      lede={lede}
+      action={action}
+      secondaryAction={secondary}
+      reassurance={footer}
     >
-      <div className="grid gap-2">
-        <h2 id="patient-action-title" className="m-0 font-display text-h2 font-normal text-ink display-soft text-balance">
-          {title}
-        </h2>
-        {lede ? <p className="m-0 max-w-prose text-lead text-ink-2 text-pretty">{lede}</p> : null}
-      </div>
       {children}
-      {detailsHref ? (
-        <p className="m-0 text-small">
-          <Link href={detailsHref} className="inline-flex items-center gap-1 rounded-sm font-semibold text-teal underline decoration-teal/40 underline-offset-4 hover:text-teal-ink focus-ring">
-            See details <ArrowUpRight aria-hidden className="size-4" />
-          </Link>
-        </p>
-      ) : null}
-    </Card>
+    </ActionCard>
   );
 }
 
-export function ActionError({ messages }: { messages: string[] }) {
+/**
+ * Problems from a save or load, shown like the lane A ErrorSummary ("There is a problem") and taking focus when they
+ * appear. These messages are not tied to one field, so they are plain items rather than links.
+ */
+export function ActionError({ messages, title = PATIENT_HOME_COPY.errorTitle }: { messages: string[]; title?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const signature = messages.join("|");
+  useEffect(() => {
+    if (signature) ref.current?.focus();
+  }, [signature]);
   if (messages.length === 0) return null;
   return (
-    <ul role="alert" className="m-0 grid list-none gap-1 rounded-md border border-danger/30 bg-danger-soft p-4 text-body text-ink">
-      {messages.map((message) => (
-        <li key={message}>{message}</li>
-      ))}
-    </ul>
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="alert"
+      data-slot="error-summary"
+      className="grid gap-3 rounded-md border-2 border-danger bg-card p-5 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      <h3 className="m-0 flex items-center gap-2 text-body font-semibold text-ink">
+        <CircleAlert aria-hidden className="size-5 shrink-0 text-danger" />
+        {title}
+      </h3>
+      <ul className="m-0 grid list-none gap-2 p-0">
+        {messages.map((message) => (
+          <li key={message} className="text-body text-ink [overflow-wrap:anywhere]">
+            {message}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

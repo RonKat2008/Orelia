@@ -1,7 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { Check } from "lucide-react";
 import type { PatientTimelineItem } from "@/lib/patient-status/types";
+import { PATIENT_HOME_COPY } from "./copy";
+import { latestHappened } from "./home-logic";
 
 const MINUTE = 60_000;
 const subscribe = (onChange: () => void) => {
@@ -23,24 +27,26 @@ export function relativeTime(iso: string | null, now: number): string | null {
   return `${days} ${days === 1 ? "day" : "days"} ago`;
 }
 
-/** Short plain-language history: "Emailed Stanford Health Care · 2 days ago". */
-export function WhatsHappened({ items }: { items: PatientTimelineItem[] }) {
+/** The 3 latest things, quiet (done things go quiet, P7), with "See all" to the tracker when there are more. */
+export function WhatsHappened({ items, seeAllHref }: { items: PatientTimelineItem[]; seeAllHref?: string }) {
   const now = useSyncExternalStore(subscribe, minuteNow, () => 0);
+  const { shown, more } = latestHappened(items);
+  const copy = PATIENT_HOME_COPY.happened;
   return (
-    <section aria-labelledby="happened-heading" className="grid gap-4">
+    <section aria-labelledby="happened-heading" className="grid gap-3">
       <h2 id="happened-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
-        What&apos;s happened
+        {copy.title}
       </h2>
-      {items.length === 0 ? (
-        <p className="m-0 text-body text-ink-2">Nothing yet. Each step is written down here as it happens.</p>
+      {shown.length === 0 ? (
+        <p className="m-0 text-body text-ink-2">{copy.empty}</p>
       ) : (
         <ol data-testid="patient-timeline" className="m-0 grid list-none gap-0 p-0">
-          {items.map((item) => {
+          {shown.map((item) => {
             const when = now ? relativeTime(item.at, now) : null;
             return (
-              <li key={item.id} className="flex gap-3 border-t border-line py-3 first:border-t-0 first:pt-0">
-                <span aria-hidden className="mt-2.5 size-2 shrink-0 rounded-pill bg-teal" />
-                <span className="min-w-0 text-body text-ink [overflow-wrap:anywhere]">
+              <li key={item.id} className="flex gap-2 py-2 text-body text-ink-2">
+                <Check aria-hidden className="mt-1 size-4 shrink-0 text-ok" />
+                <span className="min-w-0 [overflow-wrap:anywhere]">
                   {item.text}
                   {when ? <span className="text-ink-3"> · {when}</span> : null}
                 </span>
@@ -49,6 +55,17 @@ export function WhatsHappened({ items }: { items: PatientTimelineItem[] }) {
           })}
         </ol>
       )}
+      {more && seeAllHref ? (
+        <p className="m-0 text-body">
+          <Link
+            href={seeAllHref}
+            className="rounded-sm font-semibold text-teal underline decoration-teal/35 underline-offset-4 hover:text-teal-ink focus-ring"
+          >
+            {copy.seeAll}
+            <span className="sr-only"> {copy.seeAllHidden}</span>
+          </Link>
+        </p>
+      ) : null}
     </section>
   );
 }

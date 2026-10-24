@@ -1,21 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Skeleton, toast } from "@/components/ui";
+import { Button, Skeleton, SummaryList, toast } from "@/components/ui";
 import { confirmAndResearch } from "@/components/intake/case-client";
 import { caseSchema, type Case } from "@/lib/contracts";
+import { PATIENT_HOME_COPY } from "../copy";
 import { ActionError, ActionFrame, type ActionProps } from "./ActionFrame";
 
-const GOALS: Record<string, string> = {
-  second_opinion: "A second opinion",
-  treatment: "Treatment at a specialist center",
-  trial: "A clinical trial",
-  support: "Support",
-  aid: "Help with money or travel",
-};
+const COPY = PATIENT_HOME_COPY.confirm;
 
 /** A case that was read but never confirmed: show what we have and start the search for THIS case. */
-export function ConfirmCard({ caseId, onDone, headline }: ActionProps & { headline: string }) {
+export function ConfirmCard({ caseId, onDone }: ActionProps & { headline?: string }) {
   const [record, setRecord] = useState<Case | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -41,46 +36,40 @@ export function ConfirmCard({ caseId, onDone, headline }: ActionProps & { headli
     setErrors([]);
     try {
       await confirmAndResearch(record);
-      toast.success("Your search has started");
+      toast.success(COPY.toast);
       await onDone();
     } catch {
-      setErrors(["We couldn't start the search. Nothing was sent to anyone. Please try again."]);
+      setErrors([COPY.startFailed]);
     }
     setBusy(false);
   }
 
-  const rows: [string, string | undefined][] = record
+  const rows = record
     ? [
-        ["Condition", record.diseaseName],
-        ["Where you live", [record.homeCity, record.homeState].filter(Boolean).join(", ") || undefined],
-        ["How far you can travel", typeof record.travelLimitMiles === "number" ? `Up to ${record.travelLimitMiles} miles` : undefined],
-        ["Hoping for", record.goals.map((g) => GOALS[g] ?? g).join(", ") || undefined],
-        ["Insurance", record.insurer],
+        { label: COPY.rows.condition, value: record.diseaseName },
+        { label: COPY.rows.home, value: [record.homeCity, record.homeState].filter(Boolean).join(", ") || undefined },
+        { label: COPY.rows.travel, value: typeof record.travelLimitMiles === "number" ? COPY.travel(record.travelLimitMiles) : undefined },
+        { label: COPY.rows.goals, value: record.goals.map((g) => COPY.goals[g] ?? g).join(", ") || undefined },
+        { label: COPY.rows.insurance, value: record.insurer },
       ]
     : [];
 
   return (
-    <ActionFrame kind="confirm_details" title="Is this right?" lede={headline}>
+    <ActionFrame
+      kind="confirm_details"
+      title={COPY.title}
+      action={
+        record ? (
+          <Button size="lg" loading={busy} loadingText={COPY.busy} onClick={() => void start()}>
+            {COPY.action}
+          </Button>
+        ) : undefined
+      }
+    >
       {record === undefined ? <Skeleton className="h-40 w-full" /> : null}
-      {record === null ? <ActionError messages={["We couldn't load your details. Please try again in a moment."]} /> : null}
-      {record ? (
-        <>
-          <dl className="m-0 grid gap-0 rounded-md border border-line bg-card">
-            {rows.map(([label, value]) => (
-              <div key={label} className="grid gap-0.5 border-t border-line px-4 py-3 first:border-t-0 sm:grid-cols-[12rem_1fr] sm:gap-4">
-                <dt className="text-small font-semibold text-ink-2">{label}</dt>
-                <dd className="m-0 text-body text-ink [overflow-wrap:anywhere]">{value || "Not given"}</dd>
-              </div>
-            ))}
-          </dl>
-          <ActionError messages={errors} />
-          <div>
-            <Button size="lg" loading={busy} loadingText="Starting" onClick={() => void start()}>
-              Looks right, start looking
-            </Button>
-          </div>
-        </>
-      ) : null}
+      {record === null ? <ActionError messages={[COPY.loadFailed]} /> : null}
+      <ActionError messages={errors} />
+      {record ? <SummaryList rows={rows} /> : null}
     </ActionFrame>
   );
 }

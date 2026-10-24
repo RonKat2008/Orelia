@@ -36,7 +36,7 @@ export const MESSAGE_COPY = {
   sendReply: "Send this reply",
   okCall: "OK this call",
   sending: "Sending",
-  change: "Change something",
+  change: "Change something (detailed view)",
   skip: "Skip for now",
   reassurance: "Nothing is sent without your OK. Every message says an AI helped write it.",
   heldTitle: "OK, it will wait",
@@ -153,7 +153,7 @@ export function MessageCard({ caseId, onDone, action }: ActionProps & { action: 
         draft ? (
           <span className="flex flex-wrap gap-x-6 gap-y-2">
             <Button asChild variant="link">
-              <Link href={action.detailsHref}>{MESSAGE_COPY.change}</Link>
+              <Link href={`${action.detailsHref}?view=judge`}>{MESSAGE_COPY.change}</Link>
             </Button>
             <Button variant="link" onClick={() => setHeld(true)}>
               {MESSAGE_COPY.skip}

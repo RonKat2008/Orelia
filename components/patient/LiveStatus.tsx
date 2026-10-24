@@ -1,80 +1,61 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { Progress } from "@/components/ui";
-import { cn } from "@/lib/ui/cn";
-import { EASE_OUT_EXPO } from "@/lib/ui/motion";
-import { useReducedMotionGate } from "@/lib/motion/MotionPreference";
-import type { PatientStatus, PatientTone } from "@/lib/patient-status/types";
+import { useSyncExternalStore } from "react";
+import { Badge, Progress } from "@/components/ui";
+import type { PatientStatus } from "@/lib/patient-status/types";
+import { PATIENT_HOME_COPY } from "./copy";
+import { statusBadgeTone, statusWord } from "./home-logic";
 import type { LiveMode } from "./usePatientStatus";
+import { relativeTime } from "./WhatsHappened";
 
-const TONE: Record<PatientTone, { word: string; dot: string }> = {
-  working: { word: "Working on it", dot: "bg-teal" },
-  you: { word: "Your turn", dot: "bg-terracotta" },
-  waiting: { word: "Waiting to hear back", dot: "bg-gold" },
-  good: { word: "Good news", dot: "bg-ok" },
-  problem: { word: "Needs a look", dot: "bg-danger" },
+const MINUTE = 60_000;
+const subscribe = (onChange: () => void) => {
+  const id = setInterval(onChange, MINUTE);
+  return () => clearInterval(id);
 };
+const minuteNow = () => Math.floor(Date.now() / MINUTE) * MINUTE;
 
-/** The big plain-language status line. It is the page's h1 and a polite live region, so changes are announced. */
+/**
+ * The status line ("Your turn · Updated 2 min ago") and the page h1 (docs/DESIGN-v2.md 7.4). What it says and when
+ * comes from lib/patient-status; this only presents it. Changes are announced through polite live regions; the
+ * timestamp sits outside them so the minute tick is never read out.
+ */
 export function LiveStatus({ status, mode }: { status: PatientStatus; mode: LiveMode }) {
-  const reduced = useReducedMotionGate();
-  const tone = TONE[status.tone];
-  const key = `${status.headline}|${status.detail ?? ""}`;
-  const content = (
-    <>
-      <h1
-        id="patient-status-heading"
-        data-testid="patient-status-headline"
-        className="m-0 max-w-[24ch] font-display text-h1 font-light text-ink display-soft text-balance"
-      >
-        {status.headline}
-      </h1>
-      {status.detail ? <p className="m-0 mt-4 max-w-prose text-lead text-ink-2 text-pretty">{status.detail}</p> : null}
-    </>
-  );
+  const now = useSyncExternalStore(subscribe, minuteNow, () => 0);
+  const ago = now ? relativeTime(status.updatedAt, now) : null;
 
   return (
-    <section aria-labelledby="patient-status-heading" data-testid="patient-status" data-tone={status.tone} className="grid gap-5">
-      <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-2 text-small font-semibold text-ink-2">
-        <span className="inline-flex items-center gap-2">
-          <span aria-hidden className={cn("size-2.5 rounded-pill", tone.dot)} />
-          {tone.word}
+    <section
+      aria-labelledby="patient-status-heading"
+      data-testid="patient-status"
+      data-tone={status.tone}
+      data-live-mode={mode}
+      className="grid gap-3"
+    >
+      <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">
+        <span role="status" aria-live="polite" aria-atomic="true">
+          <Badge tone={statusBadgeTone(status.tone)}>{statusWord(status.tone)}</Badge>
         </span>
-        <span className="inline-flex items-center gap-2 font-normal text-ink-3" data-live-mode={mode}>
-          <span aria-hidden className="relative flex size-2">
-            {mode === "live" ? (
-              <span className="absolute inline-flex size-full animate-ping rounded-pill bg-teal/60 motion-reduce:animate-none" />
-            ) : null}
-            <span className={cn("relative inline-flex size-2 rounded-pill", mode === "live" ? "bg-teal" : "bg-line-strong")} />
-          </span>
-          {mode === "live" ? "Live: updates on its own" : mode === "polling" ? "Checking for updates every few seconds" : "Connecting"}
-        </span>
+        {ago ? <span>{PATIENT_HOME_COPY.updated(ago)}</span> : null}
       </p>
 
-      <div role="status" aria-live="polite" aria-atomic="true" className="min-h-[7rem]">
-        {reduced ? (
-          <div key={key}>{content}</div>
-        ) : (
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={key}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE_OUT_EXPO } }}
-              exit={{ opacity: 0, y: -6, transition: { duration: 0.2, ease: EASE_OUT_EXPO } }}
-            >
-              {content}
-            </motion.div>
-          </AnimatePresence>
-        )}
+      <div role="status" aria-live="polite" aria-atomic="true" className="grid gap-3">
+        <h1
+          id="patient-status-heading"
+          data-testid="patient-status-headline"
+          className="m-0 font-display text-h1 font-light text-ink display-soft text-balance"
+        >
+          {status.headline}
+        </h1>
+        {status.detail ? <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">{status.detail}</p> : null}
       </div>
 
       {status.progress ? (
         <Progress
           value={status.progress.done}
           max={status.progress.total}
-          label="Search progress"
-          valueText={`${status.progress.done} of ${status.progress.total} sources done`}
+          label={PATIENT_HOME_COPY.searchProgress.label}
+          valueText={PATIENT_HOME_COPY.searchProgress.valueText(status.progress.done, status.progress.total)}
           className="max-w-xl"
         />
       ) : null}

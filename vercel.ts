@@ -7,6 +7,9 @@ import type { VercelConfig } from "@vercel/config/v1";
  * gateway, Exa, AgentMail, AgentCall, PubMed and ClinicalTrials.gov are called
  * from the server only, so none of them may appear in connect-src. next/font
  * self-hosts its Google fonts at build time, so font-src stays 'self'.
+ * The one browser-side exception is the medical-document library's direct upload to the PRIVATE Vercel Blob store
+ * (https://vercel.com/api/blob/, path-scoped). It carries a short-lived client token minted by our own upload route
+ * for exactly one pathname, one content type and 25 MB; nothing is ever read from there by the browser.
  * 'unsafe-inline' scripts are required for Next.js's inline bootstrap (no nonces);
  * 'unsafe-eval' is deliberately omitted.
  */
@@ -16,7 +19,7 @@ export const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://vercel.com/api/blob/",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

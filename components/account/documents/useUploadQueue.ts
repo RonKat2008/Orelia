@@ -36,6 +36,8 @@ function friendlyCreateError(status: number, message: string | null): string {
   return message ?? "We could not start the upload. Please try again.";
 }
 
+const UPLOAD_TIMEOUT_MS = 10 * 60 * 1000;
+
 let keyCounter = 0;
 const nextKey = () => `upload-${Date.now().toString(36)}-${keyCounter++}`;
 
@@ -99,6 +101,8 @@ export function useUploadQueue(onDocument: (doc: LibraryDocument) => void) {
               contentType,
               multipart: item.file.size > MULTIPART_THRESHOLD,
               onUploadProgress: ({ percentage }) => patch(key, { progress: Math.round(percentage) }),
+              // Without a ceiling a blocked or dropped connection retries forever at 0%.
+              abortSignal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
             });
           } catch {
             patch(key, { phase: "failed", error: "The upload did not finish. Check your connection and retry." });

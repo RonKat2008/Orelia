@@ -42,7 +42,8 @@ describe("vercel.ts", () => {
     expect(contentSecurityPolicy).toContain("object-src 'none'");
     expect(contentSecurityPolicy).toContain("upgrade-insecure-requests");
     expect(contentSecurityPolicy).not.toContain("unsafe-eval");
-    expect(directive("connect-src")).toBe("connect-src 'self'");
+    // Only exception: path-scoped private Vercel Blob client uploads (document library).
+    expect(directive("connect-src")).toBe("connect-src 'self' https://vercel.com/api/blob/");
     expect(contentSecurityPolicy).not.toMatch(/neon|exa\.ai|agentmail|agentcall|ncbi|clinicaltrials/i);
   });
 

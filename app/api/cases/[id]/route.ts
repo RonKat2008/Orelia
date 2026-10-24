@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { caseInputSchema } from "@/lib/contracts";
-import { jsonError, parseBody, parseId } from "../_lib/http";
+import { guardCase } from "@/lib/auth/ownership";
+import { fieldPaths, jsonError, parseBody, parseId } from "../_lib/http";
 import { getServices } from "../_lib/services";
 
 export const runtime = "nodejs";
@@ -11,9 +12,11 @@ type Ctx = { params: Promise<{ id: string }> };
 // Edits are partial; the merged result must still satisfy the full CaseInput contract.
 const patchSchema = z.object({ fields: caseInputSchema.partial().default({}) });
 
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, "Invalid case id");
+  const denied = await guardCase(req, id);
+  if (denied) return denied;
   const found = await getServices().cases.get(id);
   return found ? NextResponse.json({ case: found }) : jsonError(404, "Case not found");
 }
@@ -22,6 +25,8 @@ export async function GET(_req: Request, { params }: Ctx) {
 export async function PATCH(req: Request, { params }: Ctx) {
   const id = parseId((await params).id);
   if (!id) return jsonError(400, "Invalid case id");
+  const denied = await guardCase(req, id);
+  if (denied) return denied;
   const body = await parseBody(req, patchSchema);
   if (!body.ok) return body.response;
 
@@ -30,12 +35,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!existing) return jsonError(404, "Case not found");
   if (existing.status === "researching") return jsonError(409, "Research is running; case cannot be edited");
 
-  const { id: _id, status: _s, createdAt: _c, ...current } = existing;
+  const current = omit(existing, ["id", "status", "createdAt"]);
   const merged = caseInputSchema.safeParse({ ...current, ...stripUndefined(body.data.fields) });
-  if (!merged.success) return jsonError(400, "Edited case is invalid", z.treeifyError(merged.error));
+  if (!merged.success) return jsonError(400, "Edited case is invalid", z.treeifyError(merged.error), fieldPaths(merged.error));
 
   const updated = await cases.update(id, merged.data, "confirmed");
   return updated ? NextResponse.json({ case: updated }) : jsonError(404, "Case not found");
+}
+
+function omit<T extends object, K extends keyof T>(o: T, keys: K[]): Omit<T, K> {
+  return Object.fromEntries(Object.entries(o).filter(([k]) => !keys.includes(k as K))) as Omit<T, K>;
 }
 
 function stripUndefined<T extends object>(o: T): Partial<T> {

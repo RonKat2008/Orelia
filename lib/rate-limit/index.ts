@@ -108,3 +108,8 @@ export async function withModelRateLimit<T>(
   if (!r.ok) throw new RateLimitedError(r.retryAfterSeconds);
   return fn();
 }
+
+/** Test-only: drops the process-wide store so in-memory counters start fresh. */
+export function resetMemoryRateLimitStore(): void {
+  delete (globalThis as { __rateLimitStore?: RateLimitStore }).__rateLimitStore;
+}

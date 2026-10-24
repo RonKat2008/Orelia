@@ -153,6 +153,7 @@ describe('calendar feed routes', () => {
     const res = await getFeed(req(`/api/calendar/feed/${token}`, null), ctx({ token }));
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/calendar');
+    expect(res.headers.get('cache-control')).toContain('no-cache'); // revocation must not wait for a cache to expire
     const text = await res.text();
     expect(text).toContain(`UID:${APPT_A}@app.test`);
     expect(text).not.toContain(APPT_A_PROPOSED);

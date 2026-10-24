@@ -30,7 +30,7 @@ export async function GET(req: Request, { params }: Ctx) {
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',
         'Content-Disposition': 'inline; filename="wayfinder.ics"',
-        'Cache-Control': 'private, max-age=300',
+        'Cache-Control': 'private, no-cache', // revalidate every fetch so a revoked feed stops at once
         'X-Robots-Tag': 'noindex',
         'Referrer-Policy': 'no-referrer',
       },

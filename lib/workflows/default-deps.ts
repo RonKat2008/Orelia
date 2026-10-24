@@ -10,6 +10,10 @@ import { systemClock } from './clock';
 import { initialContext, type ContactContext } from './connection-machine';
 import type { ConnectionDeps } from './connection-workflow';
 import { PostgresContactContextStore, type ContactContextStore } from './contact-store';
+import { agentMailNotifier } from '../notify/agentmail';
+import { notifyPending, type NotifyMailer } from '../notify/service';
+import { allowlistFrom, notifyMode } from '../notify/service';
+import { PostgresFollowUpPlan, resolvePreapprovedSend } from '../outreach/follow-up-plan';
 
 type Env = Record<string, string | undefined>;
 
@@ -19,14 +23,58 @@ export function createDurableDeps(opts: {
   env?: Env;
 }): ConnectionDeps {
   const { store, send } = opts;
+  const env = opts.env ?? process.env;
+  const plan = store instanceof PostgresContactContextStore ? new PostgresFollowUpPlan() : null;
   return {
-    clock: systemClock(opts.env ?? process.env),
+    clock: systemClock(env),
     send,
     loadContext: (contactId) => store.load(contactId),
     saveContext: (contactId, ctx) => store.save(contactId, ctx),
     draftFollowUp: (input) => store.createFollowUpDraft(input),
     loadMessageApproval: (messageId) => store.loadMessageApproval(messageId),
     loadThread: (contactId) => store.loadThread(contactId),
+    ...(plan
+      ? {
+          resolvePreapproved: (input: { contactId: string; followUpNumber: 1 | 2 }) =>
+            resolvePreapprovedSend(plan, input),
+          cancelPreapproved: (input: { contactId: string; reason: 'reply' | 'decline' | 'revoke' }) =>
+            plan.cancelPending(input.contactId, input.reason).then(() => undefined),
+          notifyApprovalNeeded: async (input: { caseId: string; reason: string }) => {
+            const listed = await plan.list(input.caseId);
+            const pending = Math.max(1, listed.followUps.filter((row) => !row.sentAt && !row.approvedAt).length);
+            const secret = env.WAYFINDER_NOTIFY_LINK_SECRET;
+            const inboxId = env.WAYFINDER_NOTIFY_INBOX_ID;
+            if (!secret || !listed.notification.optIn) return;
+            const mailer: NotifyMailer = inboxId && env.AGENTMAIL_API_KEY
+              ? agentMailNotifier(
+                  new (await import('agentmail')).AgentMailClient({ apiKey: env.AGENTMAIL_API_KEY }),
+                  inboxId,
+                )
+              : { async send() { return { id: 'unconfigured' }; } };
+            if (!inboxId) return;
+            const result = await notifyPending({
+              caseId: input.caseId,
+              pendingCount: pending,
+              state: {
+                optIn: listed.notification.optIn,
+                patientEmail: listed.notification.patientEmail,
+                homeState: listed.notification.homeState,
+                lastSentAt: listed.notification.lastSentAt ? new Date(listed.notification.lastSentAt) : null,
+                lastDigestOn: listed.notification.lastDigestOn,
+              },
+              now: new Date(),
+              mode: notifyMode(env),
+              allowlist: allowlistFrom(env.OUTBOUND_ALLOWLIST),
+              outboundAllowReal: env.OUTBOUND_ALLOW_REAL,
+              appBaseUrl: env.WAYFINDER_APP_BASE_URL ?? 'http://localhost:3000',
+              linkSecret: secret,
+              kind: 'immediate',
+              mailer,
+            });
+            if (result.sent) await plan.recordNotify(input.caseId, result);
+          },
+        }
+      : {}),
   };
 }
 

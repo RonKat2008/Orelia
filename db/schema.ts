@@ -109,6 +109,10 @@ export const cases = pgTable("cases", {
     .notNull()
     .default(sql`ARRAY[]::goal[]`),
   status: text("status").notNull().default("unconfirmed"),
+  patientEmail: text("patient_email"),
+  patientNotifyOptIn: boolean("patient_notify_opt_in").notNull().default(false),
+  patientNotifyLastAt: timestamp("patient_notify_last_at", { withTimezone: true }),
+  patientNotifyDigestOn: text("patient_notify_digest_on"),
   ...timestamps,
 });
 
@@ -243,6 +247,7 @@ export const messages = pgTable("messages", {
   sentAt: timestamp("sent_at", { withTimezone: true }),
   receivedAt: timestamp("received_at", { withTimezone: true }),
   classification: text("classification"),
+  approvalFingerprint: text("approval_fingerprint"),
 });
 
 export const calls = pgTable("calls", {

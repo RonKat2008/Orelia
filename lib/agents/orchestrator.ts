@@ -7,6 +7,9 @@ import type { RunStore, RunUpdate } from "./run-store";
 import type { ResearchAgent, ResearchContext } from "./research/types";
 import type { SourcePorts } from "./research/source-ports";
 import { toCandidate, type RankFn } from "./signals";
+import { getCurationStore, type CurationStore } from "./curator-store";
+import { runCurator, type ValidatedCuration } from "./curator";
+import { caseSlug } from "./research/shared";
 import { verifyWithProposals, type Proposer, type VerifyOutput } from "./verifier";
 
 export interface OrchestratorDeps {
@@ -25,6 +28,10 @@ export interface OrchestratorDeps {
   step?: ResearchStep;
   /** Shared durable deadline; prevents late persistence from publishing a timed-out run. */
   deadline?: number;
+  /** Curator phase (tiers + reasons over the ranked list). Defaults to runCurator; never reorders ranked. */
+  curate?: (caseId: string, caseRecord: CaseInput, ranked: RankedEntry[]) => Promise<ValidatedCuration>;
+  /** Where curation results are saved. Defaults to getCurationStore(). */
+  curations?: CurationStore;
 }
 
 export interface ResearchSummary {
@@ -33,6 +40,7 @@ export interface ResearchSummary {
   candidates: number;
   verified: VerifyOutput;
   ranked: RankedEntry[];
+  curation: { source: ValidatedCuration["source"]; best: number; suggested: string[] };
 }
 
 export interface ResearchStep {
@@ -183,8 +191,17 @@ async function finalizeCase(
     }
     return ranked;
   });
+  const curate =
+    deps.curate ??
+    ((id: string, c: CaseInput, r: RankedEntry[]) => runCurator(id, c, r, { store: deps.store, offlineKey: caseSlug(c) }));
+  const curation = await step.run("curate", () => curate(caseId, caseRecord, ranked));
   await step.run("persist", async () => {
     await deps.persist.saveResults(caseId, ranked);
+    try {
+      await (deps.curations ?? getCurationStore()).save(caseId, ranked, curation);
+    } catch (e) {
+      console.error(`[curator] failed to save curation for case ${caseId}: ${errMessage(e)}`);
+    }
     if (deps.deadline !== undefined && Date.now() >= deps.deadline) throw new Error("Research exceeded 180s deadline");
     await deps.cases.setStatus(caseId, "ready");
     return { saved: ranked.length };
@@ -201,5 +218,10 @@ async function finalizeCase(
     candidates: ranked.length,
     verified,
     ranked,
+    curation: {
+      source: curation.source,
+      best: curation.tiers.filter((t) => t.tier === "best").length,
+      suggested: curation.suggested,
+    },
   };
 }

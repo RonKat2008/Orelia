@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
-  BackLink,
+ 
   Badge,
   Button,
   CheckedMark,
@@ -181,7 +181,6 @@ export function ShortlistPicker({ caseId, layout, titleAs = "h1", detailsHref, o
 
   return (
     <div className="grid max-w-patient gap-6">
-      <BackLink href={`/cases/${caseId}`}>{COPY.backToCase}</BackLink>
       <PageHeader as={titleAs} title={COPY.title} lede={lede} className="mb-0" />
       {content}
       {action ? (

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Mail, MousePointerClick, PhoneCall } from "lucide-react";
-import { BackLink, Button, EmptyState, List, ListRow, LoadingState, PageHeader, Skeleton } from "@/components/ui";
+import { Button, EmptyState, List, ListRow, LoadingState, PageHeader, Skeleton } from "@/components/ui";
 import { planLine } from "@/lib/patient-status/plain";
 import { ActionError, ActionFrame } from "../../actions/ActionFrame";
 import { PLAN_COPY as COPY } from "./copy";
@@ -92,7 +92,6 @@ export function PlanView({ caseId, layout, titleAs = "h1", detailsHref, onDone }
 
   return (
     <div className="grid max-w-patient gap-6">
-      <BackLink href={`/cases/${caseId}`}>{COPY.backToCase}</BackLink>
       <PageHeader as={titleAs} title={COPY.title} lede={COPY.lede} className="mb-0" />
       {content}
       {action ? <div>{action}</div> : null}

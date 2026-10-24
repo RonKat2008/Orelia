@@ -122,7 +122,7 @@ export function PlanView({ caseId }: { caseId: string }) {
   if (phase === 'loading') {
     return (
       <div className="ds-root flex flex-col gap-4" role="status" aria-busy="true">
-        <p className="text-lead text-ink-2">
+        <p className="m-0 text-body text-ink-2">
           Getting your plan ready. If this is your first visit, we are building it from the resources you chose.
         </p>
         <Skeleton className="h-40 w-full rounded-lg" />
@@ -147,12 +147,12 @@ export function PlanView({ caseId }: { caseId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       {outcome && plan.status === 'approved' ? (
-        <section role="status" aria-labelledby="plan-outcome-heading" className="rounded-md border border-teal/40 bg-teal-soft p-4 sm:p-5">
-          <h3 id="plan-outcome-heading" className="m-0 text-h4 font-semibold text-ink">{outcome.headline}</h3>
+        <section role="status" aria-labelledby="plan-outcome-heading" className="border-l-2 border-teal pl-4">
+          <h3 id="plan-outcome-heading" className="m-0 text-h3 text-ink">{outcome.headline}</h3>
           <p className="m-0 mt-1 max-w-prose text-body text-ink-2">{outcome.detail}</p>
-          <Button asChild variant="secondary" size="sm" className="mt-3">
+          <Button asChild variant="link" className="mt-2">
             <Link href={`/cases/${caseId}/outbox`}>
               Open the outbox <ArrowRight aria-hidden />
             </Link>

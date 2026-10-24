@@ -1,14 +1,24 @@
 'use client';
 
-import { ArrowDown, ArrowUp, Globe, Mail, Phone, type LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ArrowDown, ArrowUp, FileText, Mail, Phone, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'motion/react';
-import { Badge, Button, Card, CardEyebrow, CardTitle, IconButton, Switch } from '@/components/ui';
-import { useReducedMotionGate } from '@/lib/motion/MotionPreference';
-import { DURATION, EASE, STAGGER } from '@/lib/motion/tokens';
+import {
+  Badge,
+  Button,
+  IconButton,
+  JudgeOnly,
+  List,
+  ListRow,
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+  Switch,
+} from '@/components/ui';
 import type { ContactPlan, PlanChannel, PlanStep, ResourcePlan } from '@/lib/plan/contract';
 import type { PlanEvidenceMeta } from '@/lib/plan/evidence-meta';
-import { useDemoDestinations } from '@/components/outreach/DemoCoordinators';
+import { DemoLabelBadge, useDemoDestinations } from '@/components/outreach/DemoCoordinators';
 import {
   KIND_LABELS,
   enabledStepCount,
@@ -20,7 +30,10 @@ import {
   waitText,
 } from './model';
 
-const CHANNEL_ICONS: Record<PlanChannel, LucideIcon> = { voice: Phone, email: Mail, web_form: Globe };
+const CHANNEL_ICONS: Record<PlanChannel, LucideIcon> = { voice: Phone, email: Mail, web_form: FileText };
+
+/** At most this many badges per row; further sources are plain small text. */
+const MAX_ROW_BADGES = 2;
 
 export interface PlanBoardProps {
   plan: ContactPlan;
@@ -44,17 +57,14 @@ export function PlanBoard({ plan, evidence = {}, busy = false, onToggle, onMove,
   const enabled = enabledStepCount(plan);
   const showApproved = plan.status === 'approved' && !editing;
   return (
-    <div className="ds-root flex flex-col gap-stack">
-      <p className="max-w-prose text-lead text-ink-2 text-pretty" data-testid="plan-summary">
+    <div className="ds-root flex min-w-0 flex-col gap-6">
+      <p className="m-0 max-w-prose text-body text-ink-2 text-pretty" data-testid="plan-summary">
         {plan.summary}
       </p>
-      <p className="text-small text-ink-3">
-        Nothing is sent from this page. You review every message before it goes out.
-      </p>
-      <ul className="m-0 flex list-none flex-col gap-6 p-0">
+      <ul className="m-0 flex list-none flex-col gap-8 p-0">
         {plan.resources.map(resource => (
-          <li key={resource.resourceKey}>
-            <ResourceCard resource={resource} evidence={evidence} busy={busy} onToggle={onToggle} onMove={onMove} />
+          <li key={resource.resourceKey} className="min-w-0">
+            <ResourceSection resource={resource} evidence={evidence} busy={busy} onToggle={onToggle} onMove={onMove} />
           </li>
         ))}
       </ul>
@@ -73,17 +83,18 @@ export function PlanBoard({ plan, evidence = {}, busy = false, onToggle, onMove,
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button size="lg" disabled={busy || enabled === 0} onClick={onApprove}>
-            Approve plan &amp; draft messages
-          </Button>
-          <Button variant="secondary" size="lg" disabled={busy} onClick={onRebuild}>
-            Rebuild plan
-          </Button>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <Button size="lg" disabled={busy || enabled === 0} onClick={onApprove}>
+              Approve plan &amp; draft messages
+            </Button>
+            <MoreMenu busy={busy} onRebuild={onRebuild} />
+          </div>
+          <p className="m-0 text-small text-ink-2">Nothing is sent without your OK. You read every message first.</p>
         </div>
       )}
       {enabled === 0 && !showApproved ? (
-        <p className="text-small text-warn-ink" role="status">
+        <p className="m-0 text-small text-warn-ink" role="status">
           Turn on at least one step to continue.
         </p>
       ) : null}
@@ -97,7 +108,24 @@ export function approvedText(draftCount: number | null | undefined): string {
   return `Plan approved · ${draftCount} ${draftCount === 1 ? 'draft' : 'drafts'} in the outbox`;
 }
 
-function ResourceCard({
+function MoreMenu({ busy, onRebuild }: { busy: boolean; onRebuild: () => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="link">More</Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto min-w-40 p-1">
+        <PopoverClose asChild>
+          <Button variant="link" disabled={busy} onClick={onRebuild}>
+            Rebuild plan
+          </Button>
+        </PopoverClose>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ResourceSection({
   resource,
   evidence,
   busy,
@@ -113,17 +141,17 @@ function ResourceCard({
   const steps = sortedSteps(resource);
   const headingId = `plan-resource-${resource.resourceKey.replace(/[^A-Za-z0-9_-]/g, '-')}`;
   return (
-    <Card variant="raised" padding="md" aria-labelledby={headingId} role="group" className="min-w-0">
-      <CardEyebrow>{KIND_LABELS[resource.targetKind] ?? resource.targetKind}</CardEyebrow>
-      <CardTitle id={headingId} className="display-soft font-display text-h3 break-words">
+    <div role="group" aria-labelledby={headingId} className="min-w-0">
+      <h3 id={headingId} className="m-0 text-h3 text-ink break-words">
         {resource.name}
-      </CardTitle>
+      </h3>
+      <p className="m-0 mt-1 text-small text-ink-2">{KIND_LABELS[resource.targetKind] ?? resource.targetKind}</p>
       {resource.unavailableReason || steps.length === 0 ? (
-        <p className="mt-3 text-body text-ink-2" data-testid="plan-unavailable">
+        <p className="m-0 mt-3 text-body text-ink-2" data-testid="plan-unavailable">
           {resource.unavailableReason ?? 'No way to reach this resource was found.'}
         </p>
       ) : (
-        <ol className="m-0 mt-4 flex list-none flex-col p-0">
+        <List className="mt-3">
           {steps.map((step, index) => (
             <StepRow
               key={step.id}
@@ -137,9 +165,9 @@ function ResourceCard({
               onMove={delta => onMove(resource.resourceKey, step.id, delta)}
             />
           ))}
-        </ol>
+        </List>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -162,84 +190,80 @@ function StepRow({
   onToggle: (enabled: boolean) => void;
   onMove: (delta: -1 | 1) => void;
 }) {
-  const reduced = useReducedMotionGate();
   const demo = useDemoDestinations();
   const demoLabel = demo.enabled ? demoStepLabel(step.channel, demo.callsRingTestNumber) : null;
   const Icon = CHANNEL_ICONS[step.channel];
   const label = stepLabel(step);
   const isLast = index === total - 1;
-  const connector = reduced
-    ? { initial: false as const }
-    : {
-        initial: { scaleY: 0, opacity: 0 },
-        animate: { scaleY: 1, opacity: 1 },
-        transition: { duration: DURATION.slow, ease: EASE.arrive, delay: index * STAGGER.list * 2 },
-      };
+  const wait = index === 0 && step.waitFor === 'none' ? null : waitText(step.waitFor, index === 0);
+
+  // Badge budget: Skipped and the test-inbox label come first, then sources; anything beyond the cap is plain text.
+  const pool: ReactNode[] = [];
+  if (!step.enabled) {
+    pool.push(
+      <Badge key="skipped" tone="outline" size="sm">
+        Skipped
+      </Badge>,
+    );
+  }
+  if (demoLabel) pool.push(<DemoLabelBadge key="demo" label={demoLabel} />);
+  const sourceIds = step.evidenceIds;
+  const sourceSlots = Math.max(0, MAX_ROW_BADGES - pool.length);
+  sourceIds.slice(0, sourceSlots).forEach(id => {
+    pool.push(
+      <JudgeOnly key={id}>
+        <Badge tone="outline" size="sm" title={evidence[id]?.host ? `Source: ${evidence[id]!.host}` : id}>
+          {evidenceBadgeText(id, evidence[id])}
+        </Badge>
+      </JudgeOnly>,
+    );
+  });
+  const extraSources = sourceIds.slice(sourceSlots).map(id => evidenceBadgeText(id, evidence[id]));
+
   return (
-    <li className="relative flex gap-3 pb-5 last:pb-0" data-testid="plan-step">
-      <div className="flex w-10 shrink-0 flex-col items-center">
-        <span
-          className={`flex size-10 items-center justify-center rounded-pill border ${
-            step.enabled ? 'border-teal bg-teal-soft text-teal' : 'border-line-strong bg-paper-2 text-ink-3'
-          }`}
-        >
-          <Icon aria-hidden className="size-5" />
+    <ListRow
+      data-testid="plan-step"
+      title={label}
+      maxBadges={MAX_ROW_BADGES}
+      badges={pool}
+      leading={
+        <span className="flex flex-col items-center gap-1 text-ink-2">
+          <Icon aria-hidden className="size-4" />
+          {isLast ? null : <span aria-hidden data-testid="plan-connector" className="h-3 w-px bg-line-strong" />}
         </span>
-        {isLast ? null : (
-          <motion.span
-            aria-hidden
-            data-testid="plan-connector"
-            style={{ originY: 0 }}
-            className="mt-1 w-0.5 flex-1 rounded-pill bg-line-strong"
-            {...connector}
-          />
-        )}
+      }
+      meta={
+        <>
+          {wait ? <span>{wait} · </span> : null}
+          <span className="text-pretty">{step.reason}</span>
+        </>
+      }
+    >
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {extraSources.length > 0 ? (
+          <JudgeOnly>
+            <span className="text-small text-ink-2">Also from {extraSources.join(', ')}</span>
+          </JudgeOnly>
+        ) : null}
+        {step.channel === 'web_form' && isHttpUrl(step.targetRef) ? (
+          <a
+            href={step.targetRef}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="focus-ring rounded-sm text-small text-teal underline underline-offset-4"
+          >
+            Open the form<span className="sr-only"> for {resourceName} (opens in a new tab)</span>
+          </a>
+        ) : null}
       </div>
-      <div className={`min-w-0 flex-1 ${step.enabled ? '' : 'opacity-70'}`}>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <p className="m-0 text-h4 font-bold text-ink">{label}</p>
-          <Badge tone="neutral" size="sm">
-            {waitText(step.waitFor, index === 0)}
-          </Badge>
-          {step.enabled ? null : (
-            <Badge tone="outline" size="sm">
-              Skipped
-            </Badge>
-          )}
-        </div>
-        <p className="m-0 mt-1 text-body text-ink-2 text-pretty">{step.reason}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {step.evidenceIds.map(id => (
-            <Badge key={id} tone="outline" size="sm" title={evidence[id]?.host ? `Source: ${evidence[id]!.host}` : id}>
-              {evidenceBadgeText(id, evidence[id])}
-            </Badge>
-          ))}
-          {demoLabel ? (
-            <Badge tone="accent" size="sm" title="Demo mode: this real contact point is not used. Delivery goes to Wayfinder's own test destination.">
-              {demoLabel}
-            </Badge>
-          ) : null}
-          {step.channel === 'web_form' && isHttpUrl(step.targetRef) ? (
-            <a
-              href={step.targetRef}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="focus-ring rounded-sm text-small text-teal underline underline-offset-4"
-            >
-              Open the form<span className="sr-only"> for {resourceName} (opens in a new tab)</span>
-            </a>
-          ) : null}
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="flex min-h-11 items-center gap-2 text-small font-semibold text-ink">
-            <Switch
-              checked={step.enabled}
-              disabled={busy}
-              onCheckedChange={onToggle}
-              aria-label={`Include step ${index + 1}: ${label} for ${resourceName}`}
-            />
-            <span aria-hidden>{step.enabled ? 'Included' : 'Skipped'}</span>
-          </label>
+      <div className="mt-1 flex flex-wrap items-center gap-3">
+        <label className="flex min-h-11 items-center gap-2 text-small font-semibold text-ink">
+          <Switch checked={step.enabled} disabled={busy} onCheckedChange={onToggle} />
+          <span>
+            Include<span className="sr-only"> step {index + 1}: {label} for {resourceName}</span>
+          </span>
+        </label>
+        {total >= 2 ? (
           <div className="flex items-center gap-1">
             <IconButton
               label={`Move step ${index + 1} earlier for ${resourceName}`}
@@ -258,8 +282,8 @@ function StepRow({
               <ArrowDown aria-hidden />
             </IconButton>
           </div>
-        </div>
+        ) : null}
       </div>
-    </li>
+    </ListRow>
   );
 }

@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Case, CaseInput } from "@/lib/contracts";
+import { REPORT_TEXT_MAX, REPORT_TEXT_MIN, type Case, type CaseInput } from "@/lib/contracts";
 import { Reveal } from "@/components/motion/Reveal";
 import { Skeleton, Stepper, toast, type StepperStep } from "@/components/ui";
 import type { DemoReport } from "./demos";
-import { confirmAndResearch, extractCase } from "./case-client";
+import { confirmAndResearch, extractCase, InvalidFields, ScopeRefusal } from "./case-client";
 import { NEEDS_REVIEW, checkUpload, fallbackFor } from "./fallback";
 import { ReportStep } from "./ReportStep";
 import { ReviewStep } from "./ReviewStep";
@@ -16,6 +16,18 @@ const STEPS: StepperStep[] = [
   { id: "review", label: "Confirm the details", description: "Edit anything" },
   { id: "search", label: "Start the search", description: "Nine searches at once" },
 ];
+
+const FIELD_LABELS: Record<string, string> = {
+  diseaseName: "the diagnosis",
+  subtype: "the subtype",
+  stageSummary: "the stage summary",
+  homeCity: "the home city",
+  homeState: "the home state (use a US state)",
+  insurer: "the insurer",
+  planId: "the plan",
+  travelLimitMiles: "the travel limit (0 to 20,000 miles)",
+  goals: "what you want help finding",
+};
 
 type Phase = "report" | "reading" | "review" | "starting";
 
@@ -53,6 +65,8 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   const [preview, setPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stepRef = useRef<HTMLDivElement>(null);
+  /** Synchronous in-flight guard: a double click fires twice before React re-renders the disabled state. */
+  const busyRef = useRef(false);
 
   // Move focus to the new step's heading so keyboard and screen reader users land in the right place.
   const focusKey = phase === "reading" || phase === "starting" ? null : phase;
@@ -88,7 +102,19 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   }
 
   async function readReport() {
-    if (!reportText.trim()) return;
+    const text = reportText.trim();
+    if (!text || busyRef.current) return;
+    if (text.length < REPORT_TEXT_MIN) {
+      setError("That is too short to read. Paste more of the report.");
+      return;
+    }
+    if (text.length > REPORT_TEXT_MAX) {
+      setError(
+        `That is longer than ${REPORT_TEXT_MAX.toLocaleString("en-US")} characters. Paste the diagnosis and staging sections instead.`,
+      );
+      return;
+    }
+    busyRef.current = true;
     setPhase("reading");
     setError(null);
     try {
@@ -97,9 +123,15 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
       setPreview(isPreview);
       setPhase("review");
       toast.success("Report read", { description: "Check each detail before the search starts." });
-    } catch {
+    } catch (error) {
       setPhase("report");
-      setError("Wayfinder could not read that report. Try a sample case, or paste the text again.");
+      setError(
+        error instanceof ScopeRefusal
+          ? error.message
+          : "Wayfinder could not read that report. Try a sample case, or paste the text again.",
+      );
+    } finally {
+      busyRef.current = false;
     }
   }
 
@@ -118,15 +150,21 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
   }
 
   async function startSearch() {
-    if (!draft) return;
+    if (!draft || busyRef.current) return;
+    busyRef.current = true;
     setPhase("starting");
     setError(null);
     try {
       await confirmAndResearch(draft);
       router.push(`/cases/${draft.id}/swarm`);
-    } catch {
+    } catch (error) {
+      busyRef.current = false;
       setPhase("review");
-      setError("Those details could not be saved. Check the diagnosis and try again.");
+      setError(
+        error instanceof InvalidFields
+          ? `Check ${error.fields.map((f) => FIELD_LABELS[f] ?? f).join(", ")} and try again.`
+          : "Those details could not be saved. Check the diagnosis and try again.",
+      );
       toast.error("The search did not start");
     }
   }

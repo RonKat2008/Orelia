@@ -1,5 +1,8 @@
 export {
   caseInputSchema,
+  REPORT_TEXT_MAX,
+  REPORT_TEXT_MIN,
+  TRAVEL_LIMIT_MAX_MILES,
   caseSchema,
   diseaseCodesSchema,
   goalSchema,

@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Compass } from "lucide-react";
 import type { Case, CaseInput } from "@/lib/contracts";
-import { goalSchema } from "@/lib/contracts";
+import { goalSchema, TRAVEL_LIMIT_MAX_MILES } from "@/lib/contracts";
 import { Button, Checkbox, ChoiceRow, Field, Input, Textarea } from "@/components/ui";
 import { GOAL_HINTS, GOAL_LABELS } from "./goals";
 import { PrivacyNotes } from "./PrivacyNotes";
@@ -18,6 +18,11 @@ type Props = {
   onBack: () => void;
   onConfirm: () => void;
 };
+
+function toMiles(raw: string): number | undefined {
+  const miles = Number(raw);
+  return raw === "" || !Number.isFinite(miles) ? undefined : Math.min(TRAVEL_LIMIT_MAX_MILES, Math.max(0, Math.round(miles)));
+}
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
@@ -116,10 +121,11 @@ export function ReviewStep({ draft, preview, busy, error, onChange, onToggleGoal
                 type="number"
                 inputMode="numeric"
                 min={0}
+                max={TRAVEL_LIMIT_MAX_MILES}
                 aria-describedby="travelLimitMiles-hint"
                 value={draft.travelLimitMiles ?? ""}
                 onChange={(event) =>
-                  onChange("travelLimitMiles", event.target.value === "" ? undefined : Math.max(0, Math.round(Number(event.target.value))))
+                  onChange("travelLimitMiles", toMiles(event.target.value))
                 }
               />
             </Field>

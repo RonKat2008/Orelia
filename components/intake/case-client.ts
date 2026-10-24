@@ -38,6 +38,22 @@ function isOfflinePreview(): boolean {
   return ["1", "true"].includes((process.env.NEXT_PUBLIC_WAYFINDER_OFFLINE ?? "").trim().toLowerCase());
 }
 
+/** The server declined the report as outside Wayfinder's scope (a child, or a patient outside the US). */
+export class ScopeRefusal extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ScopeRefusal";
+  }
+}
+
+/** The server rejected these case fields (paths such as "homeState"). */
+export class InvalidFields extends Error {
+  constructor(public readonly fields: string[]) {
+    super(`Invalid fields: ${fields.join(", ")}`);
+    this.name = "InvalidFields";
+  }
+}
+
 export async function extractCase(reportText: string, fallback: CaseInput): Promise<{ record: Case; preview: boolean }> {
   try {
     const response = await fetch("/api/cases", {
@@ -45,6 +61,10 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ reportText }),
     });
+    if (response.status === 422) {
+      const body = (await response.json().catch(() => null)) as { error?: unknown } | null;
+      if (typeof body?.error === "string") throw new ScopeRefusal(body.error);
+    }
     if (response.ok) {
       const body: unknown = await response.json();
       const record = asCase(body, fallback);
@@ -53,7 +73,8 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
         return { record, preview: false };
       }
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof ScopeRefusal) throw error;
     // Fall through: only the explicit offline preview may continue without the API.
   }
   if (!isOfflinePreview()) throw new Error("The cases API did not return a case.");
@@ -68,14 +89,23 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
 }
 
 export async function confirmAndResearch(record: Case): Promise<void> {
-  const input = caseInputSchema.parse(record);
+  const checked = caseInputSchema.safeParse(record);
+  if (!checked.success) {
+    throw new InvalidFields([...new Set(checked.error.issues.map((issue) => String(issue.path[0] ?? "")).filter(Boolean))]);
+  }
+  const input = checked.data;
   rememberCase({ ...record, ...input, status: "confirmed" });
   const offline = isOfflinePreview();
   const patch = await fetch(`/api/cases/${record.id}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ fields: input }),
   }).catch(() => undefined);
+  if (!offline && patch?.status === 400) {
+    const body = (await patch.json().catch(() => null)) as { fields?: unknown } | null;
+    const fields = Array.isArray(body?.fields) ? body.fields.filter((f): f is string => typeof f === "string") : [];
+    if (fields.length > 0) throw new InvalidFields(fields.map((f) => f.replace(/^fields\./, "")));
+  }
   if (!offline && !patch?.ok) throw new Error("The case details were not saved.");
   const research = await fetch(`/api/cases/${record.id}/research`, { method: "POST" }).catch(() => undefined);
   if (!offline && !research?.ok) throw new Error("The search did not start.");

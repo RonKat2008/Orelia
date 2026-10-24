@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 // Edits are partial; the merged result must still satisfy the full CaseInput contract.
-const patchSchema = z.object({ fields: caseInputSchema.partial().default({}) });
+const patchSchema = z.strictObject({ fields: caseInputSchema.partial().default({}) });
 
 export async function GET(req: Request, { params }: Ctx) {
   try {

@@ -7,6 +7,7 @@ import { cn } from "@/lib/ui/cn";
 import { MobileMenu } from "./MobileMenu";
 import { isNavItemActive, type NavItem } from "./nav";
 import { ThemeToggle } from "./ThemeToggle";
+import { ViewToggle } from "@/components/view-mode/ViewToggle";
 import { Wordmark } from "./Wordmark";
 
 export type { NavItem } from "./nav";
@@ -31,10 +32,12 @@ export interface SiteHeaderProps {
   /** Primary call to action. Defaults to starting a case. */
   cta?: NavItem | null;
   className?: string;
+  /** Show the "Patient view / Judge view" switch (landing, /start and case pages). */
+  viewToggle?: boolean;
 }
 
 /** Calm sticky header: translucent paper with blur, hairline underneath. */
-export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label: "Start a case" }, className }: SiteHeaderProps) {
+export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label: "Start a case" }, className, viewToggle = false }: SiteHeaderProps) {
   const pathname = usePathname() ?? "/";
 
   return (
@@ -52,7 +55,7 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
       >
         Skip to content
       </a>
-      <div className="page-container flex h-16 items-center gap-6 sm:h-18">
+      <div className="page-container flex h-16 items-center gap-3 sm:h-18 sm:gap-6">
         <Wordmark />
 
         <nav aria-label="Main" className="ml-auto hidden items-center gap-1 md:flex">
@@ -77,7 +80,8 @@ export function SiteHeader({ nav = MARKETING_NAV, cta = { href: "/start", label:
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3 md:ml-0">
+        <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3 md:ml-0">
+          {viewToggle ? <ViewToggle /> : null}
           <ThemeToggle className="hidden sm:inline-flex" />
           {cta ? (
             <Button asChild size="sm" className="hidden sm:inline-flex">

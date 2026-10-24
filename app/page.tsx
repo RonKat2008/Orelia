@@ -22,7 +22,7 @@ export default function LandingPage() {
   return (
     <LenisProvider>
       <div className="ds-root">
-        <SiteHeader cta={{ href: START_HREF, label: "Start your case" }} />
+        <SiteHeader cta={{ href: START_HREF, label: "Start your case" }} viewToggle />
         <main id="main">
           <Hero />
           <ProblemSection />

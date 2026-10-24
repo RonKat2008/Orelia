@@ -3,7 +3,7 @@ import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AgentRunIsland } from "./AgentRunIsland";
 import { AgentRunPanelView } from "./AgentRunPanelView";
-import { HERO_PROMISE, HOW_IT_WORKS_ID, START_HREF, TRUST_LINE } from "./content";
+import { HERO_PROMISE, HOW_IT_WORKS_ID, JUDGE_START_HREF, START_HREF, TRUST_LINE } from "./content";
 import { FieldPoster } from "./field/FieldPoster";
 import { HeroField } from "./field/HeroField";
 import { HeroMotionProvider, HeroPauseButton } from "./HeroMotion";
@@ -78,6 +78,15 @@ export function Hero() {
                 </ScrollToLink>
               </Button>
             </div>
+
+            <p className="m-0 mt-5 text-small text-ink-2">
+              <Link
+                href={JUDGE_START_HREF}
+                className="font-semibold text-teal underline decoration-teal/40 underline-offset-4 hover:text-teal-ink focus-ring rounded-sm"
+              >
+                Judge view: watch the agents work
+              </Link>
+            </p>
 
             <ul
               aria-label="Our promises"

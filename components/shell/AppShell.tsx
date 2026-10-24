@@ -17,16 +17,18 @@ export interface AppShellProps {
   nav?: NavItem[];
   children: ReactNode;
   className?: string;
+  /** Show the Patient view / Judge view switch in the header. */
+  viewToggle?: boolean;
 }
 
 /**
  * AppShell: the frame for case pages. Sticky header, an editorial title block,
  * an optional sticky rail and a readable main column.
  */
-export function AppShell({ eyebrow, title, lede, actions, sidebar, nav, children, className }: AppShellProps) {
+export function AppShell({ eyebrow, title, lede, actions, sidebar, nav, children, className, viewToggle = false }: AppShellProps) {
   return (
     <div data-slot="app-shell" className={cn("ds-root min-h-dvh bg-paper text-ink", className)}>
-      <SiteHeader nav={nav} cta={null} />
+      <SiteHeader nav={nav} cta={null} viewToggle={viewToggle} />
       <div className="page-container pb-section pt-10 sm:pt-14">
         {title || eyebrow || actions ? (
           <div className="mb-10 flex flex-col gap-6 border-b border-line pb-8 md:flex-row md:items-end md:justify-between">

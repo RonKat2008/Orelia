@@ -1,6 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useHydrated } from "@/components/view-mode/useHydrated";
+import { useViewMode } from "@/components/view-mode/view-store";
 import { AppShell, CASE_NAV } from "@/components/shell";
 import { Skeleton } from "@/components/ui/feedback";
 import { DeleteCaseControl } from "./DeleteCaseControl";
@@ -74,9 +77,26 @@ export function JourneyShell({ caseId, children }: { caseId: string; children: R
     <RailSkeleton />
   );
 
+  // Patient view on the case home: no rail and no title block; the live status line is the page heading.
+  const pathname = usePathname();
+  const hydrated = useHydrated();
+  const view = useViewMode();
+  const simple = pathname === `/cases/${caseId}` && (!hydrated || view === "patient");
+  if (simple) {
+    return (
+      <JourneyContext.Provider value={{ plan, data }}>
+        <AppShell nav={CASE_NAV} viewToggle>
+          <div data-journey={plan.current} data-case-id={caseId} data-view="patient">
+            {children}
+          </div>
+        </AppShell>
+      </JourneyContext.Provider>
+    );
+  }
+
   return (
     <JourneyContext.Provider value={{ plan, data }}>
-      <AppShell nav={CASE_NAV} sidebar={sidebar} title={data?.summary?.diseaseName ?? "Your case"}>
+      <AppShell nav={CASE_NAV} sidebar={sidebar} title={data?.summary?.diseaseName ?? "Your case"} viewToggle>
         <div data-journey={plan.current} data-case-id={caseId}>
           {children}
         </div>

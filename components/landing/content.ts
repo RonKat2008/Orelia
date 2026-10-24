@@ -5,6 +5,8 @@
  */
 
 export const START_HREF = "/start";
+/** The detailed intake and swarm, for judges who want to watch every agent. */
+export const JUDGE_START_HREF = "/start?view=judge";
 export const HOW_IT_WORKS_ID = "how-it-works";
 
 export const TRUST_LINE = [

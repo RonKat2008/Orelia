@@ -1,6 +1,6 @@
-import { CaseHome } from "@/components/journey/CaseHome";
+import { CaseHomeSwitch } from "@/components/patient/CaseHomeSwitch";
 
 export default async function CaseHomePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <CaseHome caseId={id} />;
+  return <CaseHomeSwitch caseId={id} />;
 }

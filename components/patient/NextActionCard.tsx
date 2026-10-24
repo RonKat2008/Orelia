@@ -1,0 +1,97 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { Button, toast } from "@/components/ui";
+import type { PatientStatus } from "@/lib/patient-status/types";
+import { ActionError, ActionFrame } from "./actions/ActionFrame";
+import { FormCard } from "./actions/FormCard";
+import { MessageCard } from "./actions/MessageCard";
+import { PickContactsCard } from "./actions/PickContactsCard";
+import { PlanCard } from "./actions/PlanCard";
+import { ReplyCard } from "./actions/ReplyCard";
+import { ShareCard } from "./actions/ShareCard";
+import type { PatientDraft } from "./usePatientStatus";
+
+function RetryCard({ caseId, onDone, detailsHref }: { caseId: string; onDone: () => Promise<void>; detailsHref: string }) {
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+  async function retry() {
+    setBusy(true);
+    setErrors([]);
+    const response = await fetch(`/api/cases/${caseId}/research`, { method: "POST" }).catch(() => null);
+    if (!response?.ok) {
+      setBusy(false);
+      setErrors(["The search didn't restart. Please try again in a minute."]);
+      return;
+    }
+    toast.success("Searching again");
+    await onDone();
+    setBusy(false);
+  }
+  return (
+    <ActionFrame kind="retry_search" title="Try the search again?" detailsHref={detailsHref}>
+      <ActionError messages={errors} />
+      <div>
+        <Button size="lg" loading={busy} loadingText="Starting" onClick={() => void retry()}>
+          Try the search again
+        </Button>
+      </div>
+    </ActionFrame>
+  );
+}
+
+/** Exactly one card: the next thing the patient must do, chosen by patientStatus(). */
+export function NextActionCard({
+  caseId,
+  status,
+  draft,
+  onDone,
+}: {
+  caseId: string;
+  status: PatientStatus;
+  draft: PatientDraft | null;
+  onDone: () => Promise<void>;
+}) {
+  const action = status.nextAction;
+  if (!action) return null;
+  const common = { caseId, onDone, headline: status.headline };
+  // Keyed by the action so a new action starts with fresh state.
+  const key = [action.kind, action.contactId, action.taskId, action.applicationId, action.draftId].join(":");
+  switch (action.kind) {
+    case "pick_contacts":
+      return <PickContactsCard key={key} {...common} detailsHref={action.detailsHref} />;
+    case "share_details":
+      return <ShareCard key={key} {...common} detailsHref={action.detailsHref} />;
+    case "approve_plan":
+      return <PlanCard key={key} {...common} detailsHref={action.detailsHref} />;
+    case "approve_message":
+      return <MessageCard key={key} {...common} action={action} serverDraft={draft} />;
+    case "approve_application":
+      return <FormCard key={key} {...common} action={action} />;
+    case "answer_task":
+      return <ReplyCard key={key} {...common} action={action} />;
+    case "retry_search":
+      return <RetryCard key={key} caseId={caseId} onDone={onDone} detailsHref={action.detailsHref} />;
+    case "confirm_details":
+      return (
+        <ActionFrame key={key} kind={action.kind} title="Finish telling us about you" detailsHref={action.detailsHref}>
+          <div>
+            <Button asChild size="lg">
+              <Link href="/start?view=patient">{action.label}</Link>
+            </Button>
+          </div>
+        </ActionFrame>
+      );
+    case "try_someone_else":
+      return (
+        <ActionFrame key={key} kind={action.kind} title="Try someone else" lede="Your list still has other people and programs who may help.">
+          <div>
+            <Button asChild size="lg">
+              <Link href={action.detailsHref}>{action.label}</Link>
+            </Button>
+          </div>
+        </ActionFrame>
+      );
+  }
+}

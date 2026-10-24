@@ -187,6 +187,7 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
           minimumAge: p.eligibilityModule?.minimumAge,
           investigators: (p.contactsLocationsModule?.overallOfficials ?? []).flatMap((o: { name?: string }) => (o.name ? [o.name] : [])),
           hasContact: (p.contactsLocationsModule?.centralContacts ?? []).length > 0,
+          centralContacts: (p.contactsLocationsModule?.centralContacts ?? []).map((c: { phone?: string; email?: string }) => ({ phone: c.phone, email: c.email })),
         };
       });
     },

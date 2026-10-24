@@ -137,6 +137,7 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
         minimumAge: t.minimumAge,
         investigators: t.investigators.flatMap((o) => (o.name ? [o.name] : [])),
         hasContact: t.contacts.length > 0,
+        centralContacts: t.contacts.map((c) => ({ phone: c.phone, email: c.email })),
       }));
     },
   };

@@ -8,6 +8,7 @@ import { pubmedAuthorsTool } from "./pubmed-tool";
 import { runResearch, trackedTool, type ProvenanceTracker } from "./shared";
 import type { NppesPort } from "./source-ports";
 import type { ResearchAgent } from "./types";
+import { contactPointEvidence, usPhoneToE164 } from "@/lib/contact-finder/contact-points";
 
 export const nppesProviderUrl = (npi: string): string =>
   `https://npiregistry.cms.hhs.gov/provider-view/${npi}`;
@@ -70,6 +71,15 @@ For each author you looked up, output one record of kind "expert": {"kind":"expe
 - If verified=false (including rejected taxonomies, missing affiliation corroboration, ambiguous names or incomplete results): NEVER guess. npi = null, id = "expert:<first>-<last lowercased>", no credentials. One evidence item, claimType "identity_unverified", sourceUrl = the lookup's searchUrl, claim saying how many exact name matches the registry returned and that identity was not confirmed.
 - Never combine two registry entries, never pick one of several, never use an NPI the tool did not mark verified.`;
 
+/** The verified provider's practice-location phone from the NPPES record (structured field, never model text). */
+export function nppesContactEvidence(npi: string, provider: RawProvider | undefined, fetchedAt: string) {
+  if (!provider || String(provider.number) !== npi) return null;
+  const location = (provider.addresses ?? []).find((a) => a.address_purpose === "LOCATION" && a.telephone_number);
+  const phone = usPhoneToE164(location?.telephone_number);
+  if (!phone) return null;
+  return contactPointEvidence({ channel: "voice", address: phone, origin: "nppes_location_phone", sourceUrl: nppesProviderUrl(npi), sourceKind: "nppes" }, fetchedAt);
+}
+
 export const identityAgent: ResearchAgent = {
   name: "identity",
   model: HAIKU,
@@ -87,7 +97,8 @@ export const identityAgent: ResearchAgent = {
     const result = await runResearch({
       name: "identity",
       instructions: INSTRUCTIONS,
-      rules: { allowedKinds: ["expert"], sourceKinds: ["nppes"] },
+      // Every identity claim is rewritten below from the deterministic verdict, so the model's prose is discarded here.
+      rules: { allowedKinds: ["expert"], sourceKinds: ["nppes"], restateClaim: () => "NPPES registry lookup." },
       makeTools: (ports, tracker) => [
         pubmedAuthorsTool(ports.pubmed, tracker),
         lookupNpiTool(ports.nppes, tracker, assess),
@@ -126,6 +137,8 @@ export const identityAgent: ResearchAgent = {
       if (!source) return { ...r, npi: null, verified: false, credentials: undefined, specialty: undefined };
       const stamped = { ...source, id: undefined, claimType: npi ? "identity_verified" : "identity_unverified", claim: `${verdict?.summary ?? "NPI rejected: no corroborated author"}. ${(verdict?.reasons ?? []).join("; ")}`, sourceUrl: npi ? nppesProviderUrl(npi) : source.sourceUrl };
       evidence.push(stamped);
+      const phone = npi ? nppesContactEvidence(npi, item?.provider, stamped.fetchedAt) : null;
+      if (phone) evidence.push(phone);
       return { ...r, name: author?.name ?? r.name, profile, npi, verified: !!npi, credentials: npi && typeof item?.provider?.basic.credential === "string" ? item.provider.basic.credential : undefined, specialty: npi ? item?.provider?.taxonomies?.find((t) => t.primary)?.desc ?? undefined : undefined, evidenceRefs: [stamped.sourceUrl] };
     });
     return { status: "ok", records, evidence };

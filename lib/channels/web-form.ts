@@ -47,6 +47,7 @@ export class WebFormChannel implements Channel {
     const session = await this.provider.launch();
     try {
       const live = await session.open(url);
+      this.checkLanded(live);
       if (fingerprintFields(live.fields) !== form.formFingerprint) throw new PageChangedError(name);
       const values: Record<string, FieldValue> = {};
       for (const f of form.fields) values[f.fieldKey] = f.value;
@@ -77,12 +78,18 @@ export class WebFormChannel implements Channel {
     });
   }
 
+  /** A redirect may land on another host: the page actually loaded must pass the same URL rules as the request. */
+  private checkLanded(snap: PageSnapshot): void {
+    if (snap.url) checkWebUrl(snap.url, this.provider.name, this.guard);
+  }
+
   private async withSession<T>(url: string, run: (s: BrowserSession, snap: PageSnapshot) => Promise<T>): Promise<T> {
     const name = this.provider.name;
     checkWebUrl(url, name, this.guard); // previews are limited to the web allowlist too
     const session = await this.provider.launch();
     try {
       const snap = await session.open(url);
+      this.checkLanded(snap);
       return await run(session, snap);
     } finally {
       await session.close().catch(() => undefined);

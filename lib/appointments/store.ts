@@ -117,13 +117,13 @@ export class PostgresAppointmentStore implements AppointmentStore {
     return r ? rowToAppointment(r) : undefined;
   }
   async listForCase(caseId: string) {
-    const rows = await this.db.select().from(s.appointments).where(eq(s.appointments.caseId, caseId)).orderBy(asc(sql`${s.appointments.startsAt} NULLS LAST`), asc(s.appointments.createdAt));
+    const rows = await this.db.select().from(s.appointments).where(eq(s.appointments.caseId, caseId)).orderBy(sql`${s.appointments.startsAt} asc nulls last`, asc(s.appointments.createdAt));
     return rows.map(rowToAppointment);
   }
   async listForOwner(ownerKey: string) {
     const accountId = accountIdFromKey(ownerKey);
     const owned = this.db.select({ id: s.cases.id }).from(s.cases).where(accountId ? eq(s.cases.accountId, accountId) : eq(s.cases.ownerSessionId, ownerKey));
-    const rows = await this.db.select().from(s.appointments).where(inArray(s.appointments.caseId, owned)).orderBy(asc(sql`${s.appointments.startsAt} NULLS LAST`)).limit(500);
+    const rows = await this.db.select().from(s.appointments).where(inArray(s.appointments.caseId, owned)).orderBy(sql`${s.appointments.startsAt} asc nulls last`).limit(500);
     return rows.map(rowToAppointment);
   }
   async insert(row: NewAppointment) {

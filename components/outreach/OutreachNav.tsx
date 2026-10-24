@@ -5,6 +5,7 @@ import { cn } from "@/lib/ui/cn";
 const links = [
   { slug: "consent", label: "Consent" },
   { slug: "plan", label: "Plan" },
+  { slug: "coordinate", label: "Coordinate" },
   { slug: "outbox", label: "Outbox" },
   { slug: "tracker", label: "Tracker" },
   { slug: "threads", label: "Threads" },

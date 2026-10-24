@@ -197,7 +197,9 @@ async function finalizeCase(
     ((id: string, c: CaseInput, r: RankedEntry[]) => runCurator(id, c, r, { store: deps.store, offlineKey: caseSlug(c) }));
   const curation = await step.run("curate", () => curate(caseId, caseRecord, ranked));
   await step.run("persist", async () => {
-    await deps.persist.saveResults(caseId, ranked);
+    // Below-threshold experts stay research: saved for the read-only Experts trace, never as candidates.
+    const research = verified.kept.filter((k) => k.resource.kind === "expert" && k.shortlistEligibility?.eligible !== true);
+    await deps.persist.saveResults(caseId, ranked, research);
     try {
       await (deps.curations ?? getCurationStore()).save(caseId, ranked, curation);
     } catch (e) {

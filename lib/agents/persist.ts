@@ -51,11 +51,44 @@ export interface ShortlistMeta {
   organizationKind: "advocacy" | "financial_aid" | "travel_aid" | null;
 }
 
+/** An expert with case-scoped verified evidence: shortlisted, or kept as research below the shortlist threshold. */
+export interface CaseExpert {
+  id: string;
+  name: string;
+  npi: string | null;
+  profile?: { paperCount?: number; recentPaperCount?: number; affiliation?: string; state?: string };
+  evidence: ShortlistEvidence[];
+}
+
 export interface Persist {
-  /** Replace the case's candidates with these (re-runs overwrite), upserting resources + evidence. */
-  saveResults(caseId: string, entries: readonly RankedEntry[]): Promise<void>;
+  /**
+   * Replace the case's candidates with these (re-runs overwrite), upserting resources + evidence.
+   * `research` holds verified experts that are NOT eligible for the shortlist: their resource and evidence rows are
+   * saved for the read-only Experts trace, but they get no candidate row and are not ingested into outreach docs.
+   */
+  saveResults(caseId: string, entries: readonly RankedEntry[], research?: readonly VerifiedRecord[]): Promise<void>;
   getShortlist(caseId: string): Promise<ShortlistItem[]>;
   getShortlistMeta(caseId: string): Promise<ShortlistMeta[]>;
+  /** Every expert (shortlisted or research-only) with evidence saved for this case. */
+  getCaseExperts(caseId: string): Promise<CaseExpert[]>;
+}
+
+/** Research-only records: experts that are not among the ranked entries. */
+function researchExperts(entries: readonly RankedEntry[], research: readonly VerifiedRecord[] = []): VerifiedRecord[] {
+  const ranked = new Set(entries.map((e) => e.record.resource.id));
+  return research.filter((r) => r.resource.kind === "expert" && !ranked.has(r.resource.id));
+}
+
+function toCaseExpert(record: VerifiedRecord): CaseExpert | null {
+  const r = record.resource;
+  if (r.kind !== "expert") return null;
+  return {
+    id: r.id,
+    name: r.name,
+    npi: r.npi ?? null,
+    ...(r.profile ? { profile: { ...r.profile } } : {}),
+    evidence: record.evidence.map(toShortlistEvidence),
+  };
 }
 
 export function resourceName(r: Resource): string {
@@ -88,11 +121,15 @@ export class MemoryPersist implements Persist {
   constructor(private readonly documents?: DocumentStore) {}
   private readonly byCase = new Map<string, ShortlistItem[]>();
   private readonly metaByCase = new Map<string, ShortlistMeta[]>();
+  private readonly expertsByCase = new Map<string, CaseExpert[]>();
   /** Every resource seen, by canonical id (mirrors the entity tables). */
   readonly resources = new Map<string, Resource>();
 
-  async saveResults(caseId: string, entries: readonly RankedEntry[]): Promise<void> {
+  async saveResults(caseId: string, entries: readonly RankedEntry[], research?: readonly VerifiedRecord[]): Promise<void> {
+    const extra = researchExperts(entries, research);
     for (const e of entries) this.resources.set(e.record.resource.id, e.record.resource);
+    for (const r of extra) this.resources.set(r.resource.id, r.resource);
+    this.expertsByCase.set(caseId, [...entries.map((e) => e.record), ...extra].flatMap((r) => toCaseExpert(r) ?? []));
     this.metaByCase.set(caseId, entries.map((e) => metaFor(e.record.resource, crypto.randomUUID())));
     this.byCase.set(
       caseId,
@@ -117,6 +154,10 @@ export class MemoryPersist implements Persist {
   async getShortlistMeta(caseId: string): Promise<ShortlistMeta[]> {
     return [...(this.metaByCase.get(caseId) ?? [])];
   }
+
+  async getCaseExperts(caseId: string): Promise<CaseExpert[]> {
+    return (this.expertsByCase.get(caseId) ?? []).map((e) => structuredClone(e));
+  }
 }
 
 type Db = ReturnType<typeof getDb>;
@@ -125,8 +166,9 @@ type Db = ReturnType<typeof getDb>;
 export class DbPersist implements Persist {
   constructor(private readonly db: Db = getDb(), private readonly documents?: DocumentStore) {}
 
-  async saveResults(caseId: string, entries: readonly RankedEntry[]): Promise<void> {
+  async saveResults(caseId: string, entries: readonly RankedEntry[], research?: readonly VerifiedRecord[]): Promise<void> {
     const { db } = this;
+    const records = [...entries.map((e) => e.record), ...researchExperts(entries, research)];
     // canonical (verifier) id -> real DB id (differs only when an NPI / NCT row already existed)
     const idMap = new Map<string, string>();
 
@@ -151,7 +193,7 @@ export class DbPersist implements Persist {
       idMap.set(r.id, r.id);
     }
 
-    for (const { record } of entries) {
+    for (const record of records) {
       const r = record.resource;
       if (r.kind === "expert") {
         const institutionId = r.institutionId ? (idMap.get(r.institutionId) ?? null) : null;
@@ -163,8 +205,13 @@ export class DbPersist implements Persist {
           specialty: r.specialty ?? null,
           institutionId,
           verified: r.verified === true,
+          diseasePaperCount: r.profile?.paperCount ?? null,
+          recentPaperCount: r.profile?.recentPaperCount ?? null,
         };
-        const set = { name: values.name, credentials: values.credentials, specialty: values.specialty, institutionId, verified: values.verified };
+        const set = {
+          name: values.name, credentials: values.credentials, specialty: values.specialty, institutionId, verified: values.verified,
+          diseasePaperCount: values.diseasePaperCount, recentPaperCount: values.recentPaperCount,
+        };
         const [row] = await db
           .insert(experts)
           .values(values)
@@ -187,7 +234,7 @@ export class DbPersist implements Persist {
       }
     }
 
-    for (const { record } of entries) {
+    for (const record of records) {
       const targetId = idMap.get(record.resource.id) ?? record.resource.id;
       for (const e of record.evidence) {
         await db
@@ -289,5 +336,38 @@ export class DbPersist implements Persist {
       nctId: c.targetKind === "trial" ? (nct.get(c.targetId) ?? null) : null,
       organizationKind: c.targetKind === "organization" ? (kinds.get(c.targetId) ?? null) : null,
     }));
+  }
+
+  async getCaseExperts(caseId: string): Promise<CaseExpert[]> {
+    const { db } = this;
+    const evRows = await db
+      .select()
+      .from(evidenceTable)
+      .where(and(eq(evidenceTable.caseId, caseId), eq(evidenceTable.targetKind, "expert")));
+    if (evRows.length === 0) return [];
+    const ids = [...new Set(evRows.map((e) => e.targetId))];
+    const rows = await db.select().from(experts).where(inArray(experts.id, ids));
+    return rows.map((x) => {
+      const profile = {
+        ...(x.diseasePaperCount != null ? { paperCount: x.diseasePaperCount } : {}),
+        ...(x.recentPaperCount != null ? { recentPaperCount: x.recentPaperCount } : {}),
+      };
+      return {
+        id: x.id,
+        name: x.name,
+        npi: x.npi ?? null,
+        ...(Object.keys(profile).length ? { profile } : {}),
+        evidence: evRows
+          .filter((e) => e.targetId === x.id)
+          .map((e) => ({
+            id: e.id,
+            claimType: e.claimType,
+            claim: e.claim,
+            sourceUrl: e.sourceUrl,
+            sourceKind: e.sourceKind,
+            fetchedAt: e.fetchedAt.toISOString(),
+          })),
+      };
+    });
   }
 }

@@ -1,5 +1,6 @@
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from './caps';
 import { AI_DISCLOSURE_EMAIL } from './disclosure';
+import { sameFieldValue } from './field-value';
 import { containsUnsharedField } from './minimize';
 import { flagMedicalAdvice } from './no-medical-advice';
 import { isWebAllowed } from './web-allowlist';
@@ -31,7 +32,7 @@ function checkFieldSources(form: WebFormDraftPayload, input: WebGateInput, refus
     const { source } = field;
     if (source.kind === 'consent') {
       if (!consent.sharedFields.includes(source.key)) refuse('unshared_field');
-      else if (!Object.hasOwn(caseRecord, source.key) || String(field.value) !== String(caseRecord[source.key])) refuse('consent_mismatch');
+      else if (!Object.hasOwn(caseRecord, source.key) || typeof field.value !== 'string' || !sameFieldValue(field.value, caseRecord[source.key])) refuse('consent_mismatch');
     } else if (source.kind === 'doc') {
       if (!docIds.includes(source.docId)) refuse('unshared_field');
     } else if (source.kind === 'disclosure') {

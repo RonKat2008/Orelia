@@ -35,7 +35,7 @@ export class PostgresDocumentStore implements DocumentStore {
       content: t.content, embedModel: t.embedModel, createdAt: t.createdAt, score: sql<number>`1 - (${distance})`,
     }).from(t).where(and(
       eq(t.caseId, input.caseId), eq(t.embedModel, input.embedModel), sql`${t.kind} <> 'intake_report'`,
-      input.contactId ? or(isNull(t.contactId), eq(t.contactId, input.contactId)) : isNull(t.contactId),
+      input.contactId ? (input.contactOnly ? eq(t.contactId, input.contactId) : or(isNull(t.contactId), eq(t.contactId, input.contactId))) : isNull(t.contactId),
       or(and(isNull(t.sharedField), inArray(t.kind, ['resource_page', 'evidence'])),
         allowed.length ? inArray(t.sharedField, allowed) : sql`false`),
     )).orderBy(asc(distance)).limit(resultLimit(input.k));

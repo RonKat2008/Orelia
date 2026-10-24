@@ -37,7 +37,7 @@ import {
   type FollowUpMessage,
   type UnavailableContact,
 } from "./client";
-import { loadCaseContacts } from "./case-activity";
+import { loadCaseContacts, loadShortlistNames, withDisplayNames } from "./case-activity";
 import { buildLetterPreview } from "./letter";
 import { LetterSheet } from "./LetterSheet";
 
@@ -94,11 +94,20 @@ export function ConsentForm({ caseId }: { caseId: string }) {
         setPhase({ kind: "failed", reasons: selected.reasons });
         return;
       }
-      writeStoredOutreach(caseId, selected.value);
-      setContacts(selected.value.contacts);
-      setUnavailable(selected.value.unavailable);
+      // The select response has no names; fill them so every screen can say who is who.
+      const [live, names] = await Promise.all([loadCaseContacts(caseId), loadShortlistNames(caseId)]);
+      if (!active) return;
+      const named = {
+        contacts: withDisplayNames(selected.value.contacts, live),
+        unavailable: selected.value.unavailable.map((item) =>
+          names.has(item.candidateId) ? { ...item, name: names.get(item.candidateId) } : item,
+        ),
+      };
+      writeStoredOutreach(caseId, named);
+      setContacts(named.contacts);
+      setUnavailable(named.unavailable);
       setSharedByContact(
-        Object.fromEntries(selected.value.contacts.map((contact) => [contact.id, defaultSharedFields()])),
+        Object.fromEntries(named.contacts.map((contact) => [contact.id, defaultSharedFields()])),
       );
       setPhase({ kind: "ready" });
     })();
@@ -304,7 +313,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
 
       {unavailable.map((item) => (
         <Card key={item.candidateId} variant="inset" data-channel="none">
-          <h3 className="m-0 mb-2 font-display text-h4 font-normal text-ink display-soft">No way to reach this one</h3>
+          <h3 className="m-0 mb-2 font-display text-h4 font-normal text-ink display-soft">{item.name ? <>No way to reach {item.name}</> : "No way to reach this one"}</h3>
           <p className="m-0 max-w-prose text-body text-ink-2">
             This resource has no email or phone number we could verify, so there is nothing to send and no option to
             send it. {item.reason}

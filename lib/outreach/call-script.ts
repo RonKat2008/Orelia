@@ -7,9 +7,9 @@ import type { CaseDocument } from '../case-docs/store';
 import type { Consent, Contact } from './types';
 
 export type ContextDocument = Pick<CaseDocument, 'id' | 'caseId' | 'contactId' | 'kind' | 'sharedField' | 'content' | 'sourceUrl'>;
-/** Defense in depth: retrieved private text is never a source of patient facts. */
+/** Only docs owned by this contact's own target; case-wide docs describe other resources. Retrieved private text is never a source of patient facts. */
 export function resourceContext(contact: Contact, consent: Consent, record: CaseRecord, docs: readonly ContextDocument[]) {
-  return docs.filter(doc => doc.caseId === contact.caseId && (doc.contactId === null || doc.contactId === contact.id)
+  return docs.filter(doc => doc.caseId === contact.caseId && doc.contactId === contact.id
     && (doc.kind === 'resource_page' || doc.kind === 'evidence') && doc.sharedField === null
     && !!doc.sourceUrl && /^https?:\/\//i.test(doc.sourceUrl)
     && !containsUnsharedField(`${doc.content}\n${doc.sourceUrl}`, record, consent.sharedFields)

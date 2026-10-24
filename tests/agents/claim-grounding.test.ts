@@ -97,6 +97,19 @@ describe("claim grounding (H1)", () => {
       .toBe("Jane Roe is listed as an author of PMID 123456. In the PubMed results retrieved for Epithelioid sarcoma, Jane Roe appears on 3 paper(s), 1 from the last 5 years.");
     expect(publicationClaim({ claim: "John Doe is an author", sourceUrl: url }, tracker)).toBeNull();
   });
+
+  it("resolves the author from the evidence id when the claim omits the name (prompt-example shaped claim)", () => {
+    const tracker = new ProvenanceTracker();
+    tracker.rememberAuthorPapers("Jane Roe", "Epithelioid sarcoma", ["123456"]);
+    tracker.rememberAuthor("Jane Roe", { paperCount: 3, recentPaperCount: 1 });
+    tracker.rememberAuthorPapers("Mary Poe", "Epithelioid sarcoma", ["123456"]);
+    const url = "https://pubmed.ncbi.nlm.nih.gov/123456/";
+    const claim = "Appears as an author on 3 papers about Epithelioid sarcoma in the PubMed results retrieved; includes PMID 123456.";
+    expect(publicationClaim({ id: "lit:jane-roe:123456", claim, sourceUrl: url }, tracker))
+      .toBe("Jane Roe is listed as an author of PMID 123456. In the PubMed results retrieved for Epithelioid sarcoma, Jane Roe appears on 3 paper(s), 1 from the last 5 years.");
+    expect(publicationClaim({ claim, sourceUrl: url }, tracker)).toBeNull();
+    expect(publicationClaim({ id: "lit:john-doe:123456", claim, sourceUrl: url }, tracker)).toBeNull();
+  });
 });
 
 describe("structured registry contact points (H1)", () => {

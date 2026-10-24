@@ -21,6 +21,8 @@ export type UnavailableContact = {
   candidateId: string;
   channel: "none";
   reason: string;
+  /** Resource name from the shortlist, when known. */
+  name?: string;
 };
 
 export type StoredOutreach = {

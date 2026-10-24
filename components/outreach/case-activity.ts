@@ -86,3 +86,38 @@ export async function loadCaseTasks(
     return null;
   }
 }
+
+/**
+ * The select response carries contact rows without names. Fill each missing displayName from the live
+ * contacts list (GET /api/cases/[id]/contacts), matching by contact id. Returns new objects.
+ */
+export function withDisplayNames(contacts: readonly ApiContact[], live: readonly ApiContact[] | null): ApiContact[] {
+  const names = new Map((live ?? []).flatMap((c) => (c.displayName ? [[c.id, c.displayName] as const] : [])));
+  return contacts.map((c) => (c.displayName || !names.has(c.id) ? c : { ...c, displayName: names.get(c.id) }));
+}
+
+/** caseCandidateId -> resource name, from GET /api/cases/[id]/shortlist. */
+export function namesFromShortlist(value: unknown): Map<string, string> {
+  const names = new Map<string, string>();
+  const groups = value && typeof value === "object" ? (value as { groups?: unknown }).groups : undefined;
+  if (!groups || typeof groups !== "object") return names;
+  for (const items of Object.values(groups as Record<string, unknown>)) {
+    if (!Array.isArray(items)) continue;
+    for (const item of items) {
+      const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+      if (typeof row.caseCandidateId === "string" && typeof row.name === "string" && row.name) {
+        names.set(row.caseCandidateId, row.name);
+      }
+    }
+  }
+  return names;
+}
+
+export async function loadShortlistNames(caseId: string, fetchImpl: typeof fetch = fetch): Promise<Map<string, string>> {
+  try {
+    const response = await fetchImpl(`/api/cases/${encodeURIComponent(caseId)}/shortlist`);
+    return response.ok ? namesFromShortlist(await response.json()) : new Map();
+  } catch {
+    return new Map();
+  }
+}

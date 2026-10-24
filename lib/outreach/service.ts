@@ -1,4 +1,4 @@
-import { search } from '../case-docs';
+import { ingest, search } from '../case-docs';
 import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
 import { parseAllowlist } from '../safety/allowlist';
@@ -31,6 +31,11 @@ export class OutreachService {
     });
     if (activeContactCount(existing) + proposed.length > MAX_ACTIVE_CONTACTS) throw new OutreachError(422, ['contact_cap']);
     const created = await this.store.select(caseId, proposed, MAX_ACTIVE_CONTACTS);
+    // Own-target evidence is stored under the contact so drafts never draw on other resources' docs.
+    // Best effort: contacts already exist, so a failed embed must not fail selection (drafts then just get less context).
+    const stored = await Promise.allSettled(created.flatMap(contact => fresh.filter(c => c.targetId === contact.targetId && c.targetKind === contact.targetKind)
+      .flatMap(c => c.evidence.map(e => ingest({ caseId, contactId: contact.id, kind: 'evidence', title: e.claimType, sourceUrl: e.sourceUrl, text: e.claim })))));
+    if (stored.some(r => r.status === 'rejected')) console.error('Contact evidence ingest failed for some docs; drafts get less public context');
     return { contacts: [...existing.filter(e => candidates.some(c => e.targetId === c.targetId && e.targetKind === c.targetKind)), ...created], unavailable };
   }
   async requireContact(id: string) { const c = await this.store.contact(id); if (!c) throw new OutreachError(404, ['contact_not_found']); return c; }
@@ -48,7 +53,7 @@ export class OutreachService {
     if (!record) throw new OutreachError(404, ['case_not_found']);
     const pending = await this.store.pendingDraft?.(contact, consent.sharedFields);
     if (pending) return pending;
-    const docs = await search({ caseId: contact.caseId, contactId: contact.id, allowedFields: [], query: 'intake requirements hours referral process', k: 5 });
+    const docs = await search({ caseId: contact.caseId, contactId: contact.id, allowedFields: [], contactOnly: true, query: 'intake requirements hours referral process', k: 5 });
     const draft = createDraft(contact, consent, record, docs);
     await this.store.saveDraft(draft);
     return draft;

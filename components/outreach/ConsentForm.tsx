@@ -46,6 +46,10 @@ import { properName } from "./format";
 import { buildLetterPreview } from "./letter";
 import { LetterSheet } from "./LetterSheet";
 import { cn } from "@/lib/ui/cn";
+import { CASE_SECTION_HEADING, CASE_SUB_HEADING } from "./CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
+const SubH = CASE_SUB_HEADING;
 
 type Phase =
   | { kind: "loading" }
@@ -173,7 +177,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
   if (phase.kind === "nothing") {
     return (
       <EmptyState
-        titleAs="h3"
+        titleAs={CASE_SECTION_HEADING}
         title="No one is selected yet"
         description="Pick up to five on your shortlist. Then come back to choose what each one may see."
         action={
@@ -212,9 +216,9 @@ export function ConsentForm({ caseId }: { caseId: string }) {
     >
       <section aria-labelledby="consent-heading" className="grid grid-cols-[minmax(0,1fr)] gap-6">
         <div className="grid gap-2">
-          <h3 id="consent-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+          <SectionH id="consent-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
             What may we share?
-          </h3>
+          </SectionH>
           <p className="m-0 max-w-prose text-body text-ink-2">
             Each contact has its own switches. Changing one never changes another.
           </p>
@@ -250,9 +254,9 @@ export function ConsentForm({ caseId }: { caseId: string }) {
             >
               <div className="grid min-w-0 content-start gap-4">
                 <div className="grid gap-1">
-                  <h4 id={`contact-${contact.id}`} className="m-0 break-words text-body font-semibold text-ink">
+                  <SubH id={`contact-${contact.id}`} className="m-0 break-words text-body font-semibold text-ink">
                     {name}
-                  </h4>
+                  </SubH>
                   <p className="m-0 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-small text-ink-2">
                     <ChannelIcon
                       aria-hidden
@@ -320,9 +324,9 @@ export function ConsentForm({ caseId }: { caseId: string }) {
 
       {unavailable.length > 0 ? (
         <section aria-labelledby="unavailable-heading" className="grid gap-3">
-          <h3 id="unavailable-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+          <SectionH id="unavailable-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
             Not reached from here
-          </h3>
+          </SectionH>
           <List>
             {unavailable.map((item) => (
               <ListRow
@@ -341,9 +345,9 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       ) : null}
 
       <section aria-labelledby="summary-heading" className="grid gap-4 border-t border-line pt-6">
-        <h3 id="summary-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+        <SectionH id="summary-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
           Your choices at a glance
-        </h3>
+        </SectionH>
         <ul className="m-0 grid list-none gap-2 p-0">
           {summary.map(({ contact, shared, withheld }) => (
             <li key={contact.id} className="text-body text-ink-2">
@@ -389,9 +393,9 @@ export function ConsentForm({ caseId }: { caseId: string }) {
       </section>
 
       <section data-slot="follow-up-plan" aria-labelledby="follow-up-heading" className="grid gap-3 border-t border-line pt-6">
-        <h3 id="follow-up-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+        <SectionH id="follow-up-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
           Follow-ups while you&apos;re away
-        </h3>
+        </SectionH>
         <p className="m-0 max-w-prose text-body text-ink-2">
           Day 3 and day 7 messages are kept only after you approve the exact text. None is sent on its own.
         </p>

@@ -9,6 +9,9 @@ import type { SectionFocusProps } from './focus';
 import { Live, PanelHeading } from './shared';
 import { PacketSections } from './PacketSections';
 import type { ContactOption, Resource, SpecialistPacket } from './types';
+import { CASE_SUB_HEADING } from "@/components/outreach/CasePage";
+
+const SubH = CASE_SUB_HEADING;
 
 export function PacketPanel({ caseId, resources, contacts, primary, onNeeds }: { caseId: string; resources: Resource[]; contacts: ContactOption[] } & SectionFocusProps) {
   const [packets, setPackets] = useState<Record<string, SpecialistPacket>>({});
@@ -86,7 +89,7 @@ export function PacketPanel({ caseId, resources, contacts, primary, onNeeds }: {
         return (
           <div key={r.resourceKey} className="grid gap-3">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-              <h4 className="m-0 min-w-0 break-words text-body font-semibold text-ink">{r.name}</h4>
+              <SubH className="m-0 min-w-0 break-words text-body font-semibold text-ink">{r.name}</SubH>
               <Button
                 size="sm"
                 variant={isPrimary ? 'primary' : 'link'}

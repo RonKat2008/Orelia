@@ -28,6 +28,9 @@ import {
   useMediaQuery,
 } from "@/components/ui";
 import type { AgreementSummary, ReviewVerdict } from "./model";
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 export interface ReviewResource {
   id: string;
@@ -207,7 +210,7 @@ export function ReviewCheckpoint({ caseId, resources, agreement = [], onSubmit }
       }}
     >
       <div className="grid gap-1">
-        <h3 className="m-0 font-display text-h3 font-normal text-ink text-balance">{selected.label}</h3>
+        <SectionH className="m-0 font-display text-h3 font-normal text-ink text-balance">{selected.label}</SectionH>
         <p className="m-0 text-small text-ink-2">{KIND_LABEL[selected.targetKind] ?? selected.targetKind}</p>
       </div>
       <Field label="Reviewer name" htmlFor="reviewer-name">
@@ -253,9 +256,9 @@ export function ReviewCheckpoint({ caseId, resources, agreement = [], onSubmit }
   return (
     <section aria-labelledby="review-title" className="grid gap-6">
       <header className="grid max-w-prose gap-2">
-        <h3 id="review-title" className="m-0 font-display text-h3 font-normal text-ink text-balance">
+        <SectionH id="review-title" className="m-0 font-display text-h3 font-normal text-ink text-balance">
           Review the candidates
-        </h3>
+        </SectionH>
         <p className="m-0 text-body text-ink-2 text-pretty">
           Mark whether each lead is the right kind of resource. This records a checkpoint. It does not contact anyone
           and it does not recommend a treatment.
@@ -302,9 +305,9 @@ export function ReviewCheckpoint({ caseId, resources, agreement = [], onSubmit }
 
       {agreement.length > 0 ? (
         <section aria-labelledby="agreement-title" className="grid gap-3 border-t border-line pt-6">
-          <h3 id="agreement-title" className="m-0 font-display text-h3 font-normal text-ink text-balance">
+          <SectionH id="agreement-title" className="m-0 font-display text-h3 font-normal text-ink text-balance">
             Agreement by resource kind
-          </h3>
+          </SectionH>
           <List label="Agreement by resource kind">
             {agreement.map((row) => (
               <ListRow

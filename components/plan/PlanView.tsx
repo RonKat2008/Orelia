@@ -9,6 +9,9 @@ import { buildPlan, getOrBuildPlan, patchPlan, type PlanResult } from './client'
 import { approveOutcome, type ApproveOutcome, movedIds, parseMaterialized, toggleEdit, withOrder, withToggle } from './model';
 import { PlanBoard } from './PlanBoard';
 import type { PlanEvidenceMeta } from '@/lib/plan/evidence-meta';
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 type Phase = 'loading' | 'ready' | 'error';
 
@@ -150,7 +153,7 @@ export function PlanView({ caseId }: { caseId: string }) {
     <div className="flex min-w-0 flex-col gap-6">
       {outcome && plan.status === 'approved' ? (
         <section role="status" aria-labelledby="plan-outcome-heading" className="border-l-2 border-teal pl-4">
-          <h3 id="plan-outcome-heading" className="m-0 text-h3 text-ink">{outcome.headline}</h3>
+          <SectionH id="plan-outcome-heading" className="m-0 text-h3 text-ink">{outcome.headline}</SectionH>
           <p className="m-0 mt-1 max-w-prose text-body text-ink-2">{outcome.detail}</p>
           <Button asChild variant="link" className="mt-2">
             <Link href={`/cases/${caseId}/outbox`}>

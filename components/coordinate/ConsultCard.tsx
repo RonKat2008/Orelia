@@ -8,6 +8,7 @@ import { patchConsult } from './client';
 import { CONSULT_STATUS_LABELS, PROCESS_KIND_LABELS, UNVERIFIED_DOCTOR_NOTE, availableActions, consultTimeline, refusalMessages, type PatientAction } from './model';
 import { SourceLink } from './shared';
 import type { ConsultRequest, Doctor } from './types';
+import { CASE_SUB_HEADING } from "@/components/outreach/CasePage";
 
 type Confirm = 'send_to_doctor' | 'consent' | null;
 
@@ -80,7 +81,7 @@ export function ConsultCard({ caseId, consult, doctor, primary, onUpdate, onMess
 
   return (
     <ListRow
-      titleAs="h4"
+      titleAs={CASE_SUB_HEADING}
       title={consult.expertName}
       meta={`Through ${doctorName} · ${PROCESS_KIND_LABELS[consult.process.kind]}`}
       badges={<Badge tone={consult.status === 'sent' ? 'ok' : consult.status === 'doctor_declined' || consult.status === 'failed' ? 'warn' : 'teal'} dot>{CONSULT_STATUS_LABELS[consult.status]}</Badge>}

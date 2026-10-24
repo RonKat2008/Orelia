@@ -9,6 +9,9 @@ import { ConsultCard } from './ConsultCard';
 import type { SectionFocusProps } from './focus';
 import { Live, PanelHeading } from './shared';
 import type { ConsultRequest, Doctor, Resource, SpecialistPacket } from './types';
+import { CASE_SUB_HEADING } from "@/components/outreach/CasePage";
+
+const SubH = CASE_SUB_HEADING;
 
 export function ConsultPanel({ caseId, resources, primary, onNeeds }: { caseId: string; resources: Resource[] } & SectionFocusProps) {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -57,7 +60,7 @@ export function ConsultPanel({ caseId, resources, primary, onNeeds }: { caseId: 
       <StartConsult caseId={caseId} resources={resources} doctors={doctors} packets={packets} primary={primaryTarget === 'start'} onStarted={c => { replaceConsult(c); setMessage('Draft created. Read it below before sending it to your doctor.'); }} onMessage={setMessage} />
       {consults.length > 0 ? (
         <div className="grid gap-2">
-          <h4 className="m-0 text-body font-semibold text-ink">Your requests</h4>
+          <SubH className="m-0 text-body font-semibold text-ink">Your requests</SubH>
           <List label="Your consultation requests">
             {consults.map(c => (
               <ConsultCard key={c.id} caseId={caseId} consult={c} doctor={doctors.find(d => d.id === c.doctorId)} primary={primaryTarget === 'card' && c.id === actionable?.id} onUpdate={replaceConsult} onMessage={setMessage} />
@@ -108,7 +111,7 @@ function DoctorsSection({ caseId, doctors, primary, onChange, onMessage }: { cas
 
   return (
     <div className="grid gap-3">
-      <h4 className="m-0 text-body font-semibold text-ink">Your doctors</h4>
+      <SubH className="m-0 text-body font-semibold text-ink">Your doctors</SubH>
       {doctors.length > 0 ? (
         <List label="Your doctors">
           {doctors.map(d => (
@@ -180,7 +183,7 @@ function StartConsult({ caseId, resources, doctors, packets, primary, onStarted,
 
   return (
     <div className="grid gap-3">
-      <h4 className="m-0 text-body font-semibold text-ink">Start a request</h4>
+      <SubH className="m-0 text-body font-semibold text-ink">Start a request</SubH>
       {resources.length === 0 || doctors.length === 0 ? (
         <p className="m-0 text-body text-ink-2">{resources.length === 0 ? 'Choose who to contact first.' : 'Add your doctor above to start.'}</p>
       ) : (

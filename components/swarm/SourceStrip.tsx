@@ -3,6 +3,9 @@
 import { Link2 } from "lucide-react";
 import { ListRow, SourceChip } from "@/components/ui";
 import type { SourceRef } from "./stream";
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 /** The single "Sources (N)" row in the judge list; opens the full list in the detail pane. */
 export function SourcesRow({
@@ -37,7 +40,7 @@ export function SourcesRow({
 export function SourceStrip({ sources, preview, showTitle = true }: { sources: SourceRef[]; preview: boolean; showTitle?: boolean }) {
   return (
     <div className="grid min-w-0 gap-3">
-      {showTitle ? <h3 className="m-0 text-h3 font-semibold text-ink">Sources ({sources.length})</h3> : null}
+      {showTitle ? <SectionH className="m-0 text-h3 font-semibold text-ink">Sources ({sources.length})</SectionH> : null}
       {preview ? <p className="m-0 text-small text-ink-2">Example links, not real findings.</p> : null}
       {sources.length === 0 ? (
         <p className="m-0 text-body text-ink-2">

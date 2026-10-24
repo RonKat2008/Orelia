@@ -5,6 +5,9 @@ import { RotateCcw } from "lucide-react";
 import { RANKING_WEIGHTS, type RankingWeights } from "@/config/ranking";
 import { Button } from "@/components/ui";
 import { FACTOR_COPY, RANKING_FACTORS, RANKING_FORMULA } from "./model";
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 export interface WeightsPanelProps {
   weights?: RankingWeights;
@@ -26,9 +29,9 @@ export function WeightsPanel({ weights: controlled, defaults = RANKING_WEIGHTS, 
   return (
     <section aria-labelledby={`${baseId}-title`} className="grid gap-6">
       <header className="grid gap-2">
-        <h3 id={`${baseId}-title`} className="m-0 font-display text-h3 font-normal text-ink text-balance">
+        <SectionH id={`${baseId}-title`} className="m-0 font-display text-h3 font-normal text-ink text-balance">
           How we order fit
-        </h3>
+        </SectionH>
         <p className="m-0 text-small text-ink-2 text-pretty">{RANKING_FORMULA}</p>
       </header>
       <div className="grid gap-6">

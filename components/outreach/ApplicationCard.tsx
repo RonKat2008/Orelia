@@ -18,6 +18,9 @@ import { approveApplicationRequest, displayValue, docIdsOf, requiredMissing, sou
 import { formatWhen } from "./format";
 import { DemoCoordinatorBadge } from "./DemoCoordinators";
 import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
+import { CASE_SECTION_HEADING } from "./CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 export function hostOf(url: string): string {
   try {
@@ -82,9 +85,9 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
     <div data-channel="web_form" aria-labelledby={titleId} role="group" className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
       <div className="grid gap-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 id={titleId} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
+          <SectionH id={titleId} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
             Review application
-          </h3>
+          </SectionH>
           <Badge tone={status.tone}>
             {application.status === "submitted" ? <CircleCheck aria-hidden /> : null}
             {status.label}

@@ -7,6 +7,9 @@ import { getBoard } from './client';
 import { BOARD_STATUS_LABELS, BOARD_STATUS_TONE, formatDue, groupBoard, isSafeHttpUrl } from './model';
 import { PanelHeading, SourceLink } from './shared';
 import type { Board, BoardItem } from './types';
+import { CASE_SUB_HEADING } from "@/components/outreach/CasePage";
+
+const SubH = CASE_SUB_HEADING;
 
 export function BoardPanel({ caseId }: { caseId: string }) {
   const [board, setBoard] = useState<Board | null>(null);
@@ -34,7 +37,7 @@ export function BoardPanel({ caseId }: { caseId: string }) {
       {!loading && !error && groups.length === 0 ? <EmptyState title="Nothing open yet" description="As you check requirements and start requests, the next steps show up here." /> : null}
       {groups.map(g => (
         <div key={g.key} className="grid content-start gap-2">
-          <h4 className="m-0 text-body font-semibold text-ink">{g.title}</h4>
+          <SubH className="m-0 text-body font-semibold text-ink">{g.title}</SubH>
           <List label={g.title}>
             {g.items.map(item => <BoardRow key={item.id} item={item} />)}
           </List>

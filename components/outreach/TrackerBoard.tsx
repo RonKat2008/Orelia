@@ -31,6 +31,10 @@ import { DemoCoordinatorBadge } from "./DemoCoordinators";
 import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 import { CONTACT_STATES, STATE_LABELS, type ContactState, type OutreachTask } from "./types";
 import { cn } from "@/lib/ui/cn";
+import { CASE_SECTION_HEADING, CASE_SUB_HEADING } from "./CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
+const SubH = CASE_SUB_HEADING;
 
 /** The happy path. Declined and stalled are exits from it, not steps on it. */
 const JOURNEY: readonly ContactState[] = [
@@ -335,9 +339,9 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false, focusCon
 
       {orphanTasks.length > 0 ? (
         <section aria-labelledby="other-requests-heading" className="grid gap-4">
-          <h3 id="other-requests-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+          <SectionH id="other-requests-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
             Other requests
-          </h3>
+          </SectionH>
           <ul className="m-0 grid list-none gap-6 p-0">
             {orphanTasks.map((task) => (
               <li key={task.id}>
@@ -397,7 +401,7 @@ export function TrackerBoard({ caseId, tasks, schedulingPaused = false, focusCon
             />
           ) : null
         }
-        emptyDetail={<EmptyPanel title="Pick a contact" description="Their messages, requests and follow-ups show here." titleAs="h3" />}
+        emptyDetail={<EmptyPanel title="Pick a contact" description="Their messages, requests and follow-ups show here." titleAs={CASE_SECTION_HEADING} />}
         detailOpen={detailOpen}
         onDetailOpenChange={setDetailOpen}
         detailTitle={shown?.name}
@@ -450,9 +454,9 @@ function ContactDetail({
     <article data-contact-state={state} aria-labelledby={`contact-${id}`} className="grid min-w-0 gap-8">
       <header className="grid gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h3 id={`contact-${id}`} className="m-0 min-w-0 break-words font-display text-h3 font-normal text-ink display-soft">
+          <SectionH id={`contact-${id}`} className="m-0 min-w-0 break-words font-display text-h3 font-normal text-ink display-soft">
             {name}
-          </h3>
+          </SectionH>
           <StatusBadge status={statusWord(state, view.needsYou)} />
         </div>
         <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 break-words text-small text-ink-2">
@@ -466,9 +470,9 @@ function ContactDetail({
 
       {hasRequests ? (
         <section aria-labelledby={`needs-${id}`} className="grid gap-4">
-          <h4 id={`needs-${id}`} className={SECTION_HEADING}>
+          <SubH id={`needs-${id}`} className={SECTION_HEADING}>
             {view.needsYou ? "Needs you" : "Requests"}
-          </h4>
+          </SubH>
           {state === "drafted" ? (
             <PendingAction
               text={`Approve the draft for ${name}. Nothing has been sent to them yet.`}
@@ -498,24 +502,24 @@ function ContactDetail({
       ) : null}
 
       <section aria-labelledby={`stands-${id}`} className="grid gap-4">
-        <h4 id={`stands-${id}`} className={SECTION_HEADING}>
+        <SubH id={`stands-${id}`} className={SECTION_HEADING}>
           Where it stands
-        </h4>
+        </SubH>
         <p className="m-0 max-w-prose text-body text-ink-2">{STATE_NOTES[state]}</p>
         <JourneyTimeline state={state} name={name} />
       </section>
 
       <section aria-labelledby={`thread-${id}`} className="grid gap-4">
-        <h4 id={`thread-${id}`} className={SECTION_HEADING}>
+        <SubH id={`thread-${id}`} className={SECTION_HEADING}>
           Conversation
-        </h4>
+        </SubH>
         <ContactThreadView caseId={caseId} status={threadsStatus} thread={thread} onRetry={onRetryThreads} />
       </section>
 
       <section aria-labelledby={`follow-${id}`} className="grid gap-2">
-        <h4 id={`follow-${id}`} className={SECTION_HEADING}>
+        <SubH id={`follow-${id}`} className={SECTION_HEADING}>
           Follow-ups
-        </h4>
+        </SubH>
         <p className="m-0 flex items-start gap-2 text-small text-ink-2">
           <CalendarClock aria-hidden className="mt-0.5 size-4 shrink-0" />
           <span>{followUpNote(contact, state, schedulingPaused)}</span>
@@ -617,9 +621,9 @@ function applicationNote(application: ApiApplication): string {
 function ApplicationsSection({ applications, contacts }: { applications: ApiApplication[]; contacts: ApiContact[] }) {
   return (
     <section aria-labelledby="applications-heading" className="grid gap-4" data-testid="tracker-applications">
-      <h3 id="applications-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
+      <SectionH id="applications-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">
         Online applications
-      </h3>
+      </SectionH>
       <List>
         {applications.map((application) => {
           const owner = contacts.find((contact) => contact.id === application.contactId);

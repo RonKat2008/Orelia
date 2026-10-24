@@ -15,6 +15,9 @@ import { CasePage } from "@/components/outreach/CasePage";
 import { normalizeShortlist } from "@/components/shortlist/data";
 import { titleOf } from "@/components/shortlist/view-model";
 import { Button, Details, JudgeOnly, LoadingState, Skeleton } from "@/components/ui";
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 interface PreviewRow {
   id: string;
@@ -187,7 +190,7 @@ export default function ReviewPage() {
           </LoadingState>
         ) : status ? (
           <div role="alert" className="grid gap-3">
-            <h3 className="m-0 font-display text-h3 font-normal text-ink text-balance">Preview ranking is unavailable</h3>
+            <SectionH className="m-0 font-display text-h3 font-normal text-ink text-balance">Preview ranking is unavailable</SectionH>
             <p className="m-0 text-body text-danger">{status}</p>
             <div>
               <Button

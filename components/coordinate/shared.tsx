@@ -4,6 +4,9 @@ import type { ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/ui/cn';
 import { isSafeHttpUrl } from './model';
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 /** "Source" link: opens in a new tab, says so to screen readers. */
 export function SourceLink({ url, label = 'Source', className }: { url: string; label?: string; className?: string }) {
@@ -35,7 +38,7 @@ export function Live({ children }: { children: ReactNode }) {
 export function PanelHeading({ id, title, lede }: { id: string; title: ReactNode; lede?: ReactNode }) {
   return (
     <header className="grid max-w-prose gap-2">
-      <h3 id={id} className="m-0 font-display text-h3 font-normal text-ink text-balance">{title}</h3>
+      <SectionH id={id} className="m-0 font-display text-h3 font-normal text-ink text-balance">{title}</SectionH>
       {lede ? <p className="m-0 text-body text-ink-2 text-pretty">{lede}</p> : null}
     </header>
   );

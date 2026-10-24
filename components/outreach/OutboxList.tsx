@@ -47,6 +47,10 @@ import { applicationStepContext, draftStepContext, stepContextText } from "@/com
 import type { ContactPlan } from "@/lib/plan/contract";
 import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 import { cn } from "@/lib/ui/cn";
+import { CASE_SECTION_HEADING, CASE_SUB_HEADING } from "./CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
+const SubH = CASE_SUB_HEADING;
 
 type Row = {
   contact: ApiContact;
@@ -158,7 +162,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
   if (phase === "empty") {
     return (
       <EmptyState
-        titleAs="h3"
+        titleAs={CASE_SECTION_HEADING}
         title="No drafts yet"
         description="Drafts are written after you choose who to contact and what they may see."
         action={
@@ -284,7 +288,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
         }
         detail={detail}
         emptyDetail={
-          <EmptyState titleAs="h3" title="Drafts will show here" description="We are writing them now." className="border-0 bg-transparent px-0 py-0" />
+          <EmptyState titleAs={CASE_SECTION_HEADING} title="Drafts will show here" description="We are writing them now." className="border-0 bg-transparent px-0 py-0" />
         }
         detailOpen={detailOpen}
         onDetailOpenChange={setDetailOpen}
@@ -409,9 +413,9 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
 
   const header = (
     <div className="grid gap-1">
-      <h3 id={`draft-${row.contact.id}`} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
+      <SectionH id={`draft-${row.contact.id}`} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
         {name}
-      </h3>
+      </SectionH>
       <p className="m-0 text-small text-ink-2">
         {followUp ? `${followUp}, ${isEmail ? "email" : "call"}` : isEmail ? "Email draft" : "Call script"}
         {stepCtx ? <span data-plan-step> · {stepContextText(stepCtx)}</span> : null}
@@ -426,7 +430,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
         {header}
         {consent ? (
           <EmptyState
-            titleAs="h4"
+            titleAs={CASE_SUB_HEADING}
             title="We need one more answer first"
             description={`Tell us what ${name} may see, then we'll write the ${isEmail ? "email" : "call script"}.`}
             action={
@@ -437,7 +441,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
           />
         ) : (
           <EmptyState
-            titleAs="h4"
+            titleAs={CASE_SUB_HEADING}
             title="No new draft for this contact"
             description={(row.error ?? ["No draft."]).join(" ")}
           />
@@ -475,7 +479,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
       </LetterSheet>
 
       <section aria-label="Safety checks" className="grid gap-2">
-        <h4 className="m-0 text-body font-semibold text-ink">Before it goes</h4>
+        <SubH className="m-0 text-body font-semibold text-ink">Before it goes</SubH>
         <ul className="m-0 grid list-none gap-2 p-0 text-small text-ink-2">
           <JudgeOnly
             fallback={

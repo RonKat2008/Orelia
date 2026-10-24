@@ -9,6 +9,9 @@ import { REQUIREMENT_KIND_LABELS, REQUIREMENT_STATUS_LABELS, REQUIREMENT_STATUS_
 import type { SectionFocusProps } from './focus';
 import { Live, PanelHeading, SourceLink } from './shared';
 import type { ReferralRequirement, RequirementKind, RequirementStatus, RequirementsChecklist, Resource } from './types';
+import { CASE_SUB_HEADING } from "@/components/outreach/CasePage";
+
+const SubH = CASE_SUB_HEADING;
 
 const KIND_ICONS: Record<RequirementKind, LucideIcon> = {
   referral_letter: Mail,
@@ -122,10 +125,10 @@ function ResourceChecklist({ resource, list, busy, onCheck, onUpdate }: {
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h4 className="m-0 min-w-0 break-words text-body font-semibold text-ink">
+        <SubH className="m-0 min-w-0 break-words text-body font-semibold text-ink">
           {resource.name}
           {progress && progress.total > 0 ? <span className="font-normal text-ink-2"> · {progress.have} of {progress.total} ready</span> : null}
-        </h4>
+        </SubH>
         <Button size="sm" variant="link" className="min-h-11" onClick={onCheck} loading={busy} loadingText="Checking">
           {list ? 'Check again' : 'Check'}<span className="sr-only"> {resource.name}</span>
         </Button>

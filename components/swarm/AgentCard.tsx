@@ -6,6 +6,9 @@ import { Badge, ListRow, SourceChip, type BadgeProps } from "@/components/ui";
 import { AGENT_LABEL, STATUS_PRESENTATION } from "@/lib/motion/status";
 import { cn } from "@/lib/ui/cn";
 import { NARRATIVE, type AgentCardState } from "./stream";
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 /** A queued search with no change for this long reads "Still waiting" (presentational only). */
 export const STILL_WAITING_MS = 60_000;
@@ -112,7 +115,7 @@ export function AgentDetail({
   const sources = card.sources ?? [];
   return (
     <div className="grid min-w-0 gap-4" data-status={status}>
-      {showTitle ? <h3 className="m-0 text-h3 font-semibold text-ink">{AGENT_LABEL[card.agent]}</h3> : null}
+      {showTitle ? <SectionH className="m-0 text-h3 font-semibold text-ink">{AGENT_LABEL[card.agent]}</SectionH> : null}
       <p className="m-0 flex items-center gap-2 text-body text-ink">
         <StatusIcon status={status} />
         <span>{statusWord(status, stillWaiting)}</span>

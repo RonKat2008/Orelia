@@ -29,6 +29,9 @@ import {
   sortedSteps,
   waitText,
 } from './model';
+import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+
+const SectionH = CASE_SECTION_HEADING;
 
 const CHANNEL_ICONS: Record<PlanChannel, LucideIcon> = { voice: Phone, email: Mail, web_form: FileText };
 
@@ -142,9 +145,9 @@ function ResourceSection({
   const headingId = `plan-resource-${resource.resourceKey.replace(/[^A-Za-z0-9_-]/g, '-')}`;
   return (
     <div role="group" aria-labelledby={headingId} className="min-w-0">
-      <h3 id={headingId} className="m-0 text-h3 text-ink break-words">
+      <SectionH id={headingId} className="m-0 text-h3 text-ink break-words">
         {resource.name}
-      </h3>
+      </SectionH>
       <p className="m-0 mt-1 text-small text-ink-2">{KIND_LABELS[resource.targetKind] ?? resource.targetKind}</p>
       {resource.unavailableReason || steps.length === 0 ? (
         <p className="m-0 mt-3 text-body text-ink-2" data-testid="plan-unavailable">

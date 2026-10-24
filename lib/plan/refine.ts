@@ -103,7 +103,7 @@ function buildMessages(resources: readonly AliasedResource[], inputs: readonly P
         family: input ? ruleFamily(input) : res.base.targetKind,
         name: safeName(res.base.name),
         contactPoints: [...res.aliases].map(([ref, cp]) => ({ ref, channel: cp.channel, origin: cp.origin })),
-        currentSteps: res.base.steps.map(s => ({ channel: s.channel, purpose: s.purpose, targetRef: refOf(res, s) ?? null, waitFor: s.waitFor })),
+        currentSteps: res.base.steps.filter(s => s.purpose !== 'verify').map(s => ({ channel: s.channel, purpose: s.purpose, targetRef: refOf(res, s) ?? null, waitFor: s.waitFor })),
       };
     }),
   };
@@ -128,12 +128,14 @@ function extractJson(text: string): unknown {
 
 /** Validated replacement steps for one resource, or null to keep the deterministic ones. */
 function validateResource(res: AliasedResource, rawSteps: readonly unknown[]): PlanStep[] | null {
-  if (rawSteps.length === 0 || rawSteps.length > MAX_STEPS_PER_RESOURCE || res.aliases.size === 0) return null;
+  // Verification steps are code-owned (opt-in, never proposed by the model) and are kept in front of the proposal.
+  const verify = res.base.steps.filter(s => s.purpose === 'verify').sort((a, b) => a.order - b.order);
+  if (rawSteps.length === 0 || rawSteps.length + verify.length > MAX_STEPS_PER_RESOURCE || res.aliases.size === 0) return null;
   const used = new Set<string>();
   const steps: PlanStep[] = [];
   for (const [i, raw] of rawSteps.entries()) {
     const parsed = proposedStepSchema.safeParse(raw);
-    if (!parsed.success) return null;
+    if (!parsed.success || parsed.data.purpose === 'verify') return null;
     const p = parsed.data;
     const cp = res.aliases.get(p.targetRef);
     if (!cp || cp.channel !== (p.channel as PlanChannel) || used.has(p.targetRef)) return null;
@@ -144,11 +146,11 @@ function validateResource(res: AliasedResource, rawSteps: readonly unknown[]): P
     used.add(p.targetRef);
     const evidenceIds = [...new Set(p.evidenceIds.map(id => res.aliases.get(id)!.evidenceId))];
     steps.push({
-      id: `s${i + 1}`, channel: cp.channel, order: i + 1, purpose: p.purpose,
+      id: `s${i + 1 + verify.length}`, channel: cp.channel, order: i + 1 + verify.length, purpose: p.purpose,
       targetRef: stepTarget(cp).targetRef, reason, evidenceIds, waitFor: p.waitFor, enabled: true,
     });
   }
-  return steps;
+  return [...verify.map((s, i) => ({ ...s, id: `s${i + 1}`, order: i + 1 })), ...steps];
 }
 
 function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>, ms: number, outer?: AbortSignal): Promise<T> {

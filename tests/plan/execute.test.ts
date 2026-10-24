@@ -211,3 +211,23 @@ describe('createDefaultPlanExecDeps.dispatchGated', () => {
     expect(await refused.dispatchGated({ caseId: 'c', contactId: 'k', resource: res, step: step('s1', 1) })).toEqual({ status: 'blocked', detail: 'consent_required' });
   });
 });
+
+describe('executePlan: verify steps', () => {
+  it('a verify step only prepares a verification request (never dispatchGated, never a send)', async () => {
+    const createVerification = vi.fn(async () => ({ id: 'ver-1' }));
+    const { deps } = makeDeps({ createVerification });
+    const plan = approved({ resources: [resource('e1', [step('s1', 1, { channel: 'voice', purpose: 'verify' }), step('s2', 2)])] });
+    const out = await executePlan(new FakeStep(), plan, deps);
+    expect(createVerification).toHaveBeenCalledWith({ caseId: 'case-1', resourceKey: 'expert:e1' });
+    expect(deps.dispatchGated).toHaveBeenCalledTimes(1);
+    expect(out.map(o => [o.stepId, o.status])).toEqual([['s1', 'awaiting_approval'], ['s2', 'awaiting_approval']]);
+  });
+
+  it('without the dep a verify step is not_available', async () => {
+    const { deps } = makeDeps();
+    const plan = approved({ resources: [resource('e1', [step('s1', 1, { channel: 'voice', purpose: 'verify' })])] });
+    const out = await executePlan(new FakeStep(), plan, deps);
+    expect(out[0].status).toBe('not_available');
+    expect(deps.dispatchGated).not.toHaveBeenCalled();
+  });
+});

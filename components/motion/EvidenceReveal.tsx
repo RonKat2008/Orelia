@@ -19,6 +19,7 @@ const SOURCE_NAME: Record<Evidence["sourceKind"], string> = {
   nppes: "NPI Registry",
   nci: "NCI",
   exa: "Web page",
+  phone_call: "Phone call",
 };
 
 function safeHref(url: string): string | undefined {

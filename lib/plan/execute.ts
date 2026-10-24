@@ -49,6 +49,8 @@ export interface PlanExecDeps {
   hasReply(contactId: string): Promise<boolean>;
   /** Drafts web forms (fill + screenshot + review task); submission happens only after the patient approves it. */
   webForm: WebFormChannel;
+  /** Optional: verify steps write an awaiting-approval verification request (idempotent); nothing is dialed. */
+  createVerification?(input: { caseId: string; resourceKey: string }): Promise<{ id: string }>;
   record(outcome: StepOutcome): Promise<void>;
 }
 
@@ -125,12 +127,24 @@ async function runStep(
   caseId: string, resource: ResourcePlan, s: PlanStep, deps: PlanExecDeps,
 ): Promise<{ status: StepStatus; detail?: string }> {
   try {
+    if (s.purpose === 'verify') return await runVerify(caseId, resource, s, deps);
     if (s.channel === 'web_form') return await runWebForm(caseId, resource, s, deps);
     if (!resource.contactId) return { status: 'blocked', detail: 'no contact row; the patient must select this resource first' };
     return await deps.dispatchGated({ caseId, contactId: resource.contactId, resource, step: s });
   } catch (err) {
     // Detail is kept generic: never persist provider bodies or addresses.
     return { status: 'error', detail: err instanceof Error ? err.name : 'unknown error' };
+  }
+}
+
+/** A verify step never dials: it only (re)uses an awaiting-approval request; the patient approves the call itself. */
+async function runVerify(caseId: string, resource: ResourcePlan, s: PlanStep, deps: PlanExecDeps): Promise<{ status: StepStatus; detail?: string }> {
+  if (s.channel !== 'voice' || !deps.createVerification) return { status: 'not_available', detail: 'verification calls are not available here' };
+  try {
+    await deps.createVerification({ caseId, resourceKey: resource.resourceKey });
+    return { status: 'awaiting_approval', detail: 'verification call prepared; it waits for the patient to approve it' };
+  } catch {
+    return { status: 'blocked', detail: 'verification call could not be prepared' };
   }
 }
 

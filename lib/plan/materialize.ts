@@ -5,6 +5,8 @@
  *     approval in the outbox, where checkOutbound runs before anything leaves.
  *   - web_form steps that are ready now: an application is filled (never submitted) and saved with a screenshot as
  *     a "Review application" draft.
+ *   - verify steps (opt-in): a verification-call request is written through the optional createVerification dep and
+ *     waits for the patient's own approval of that call (then checkOutbound). Never an outbox draft, never a call.
  *   - follow_up steps: covered by the walk-away follow-up plan (pre-approved day-3/day-7 follow-ups), never here.
  *   - steps behind a business-day wait: left to the plan/approved workflow.
  * "Ready now" = enabled steps, in order, up to the first business-day wait.
@@ -14,7 +16,7 @@ import { MAX_PLAN_RESOURCES, type ContactPlan, type PlanStep, type ResourcePlan 
 import type { WebFormChannel } from './channels';
 
 export type MaterializedStatus =
-  | 'drafted' | 'application_drafted' | 'scheduled' | 'follow_up_plan'
+  | 'drafted' | 'application_drafted' | 'verification_drafted' | 'scheduled' | 'follow_up_plan'
   | 'channel_mismatch' | 'no_contact' | 'blocked' | 'not_available' | 'error';
 
 export interface MaterializedStep {
@@ -24,6 +26,7 @@ export interface MaterializedStep {
   status: MaterializedStatus;
   draftId?: string;
   applicationId?: string;
+  verificationId?: string;
   /** A reason code or fixed sentence; never provider text. */
   detail?: string;
 }
@@ -33,6 +36,8 @@ export interface MaterializeDeps {
   /** The existing outreach draft path (OutreachService.draft): consented fields only, disclosure included. */
   createDraft(contactId: string): Promise<{ id: string }>;
   webForm: WebFormChannel;
+  /** Optional: writes an 'awaiting_approval' verification request (diagnosis name only). Never dials. */
+  createVerification?(input: { caseId: string; resourceKey: string }): Promise<{ id: string }>;
 }
 
 export function readySteps(resource: ResourcePlan): PlanStep[] {
@@ -46,6 +51,11 @@ function reasonCode(error: unknown): string {
   return Array.isArray(reasons) && typeof reasons[0] === 'string' ? reasons[0] : 'draft_failed';
 }
 
+function verifyCode(error: unknown): string {
+  const code = (error as { code?: unknown })?.code;
+  return typeof code === 'string' && /^[a-z_]{1,40}$/.test(code) ? code : 'verification_failed';
+}
+
 async function materializeResource(caseId: string, resource: ResourcePlan, deps: MaterializeDeps): Promise<MaterializedStep[]> {
   const ready = new Set(readySteps(resource).map(s => s.id));
   const ordered = [...resource.steps].filter(s => s.enabled).sort((a, b) => a.order - b.order);
@@ -55,6 +65,16 @@ async function materializeResource(caseId: string, resource: ResourcePlan, deps:
     const base = { resourceKey: resource.resourceKey, stepId: s.id, channel: s.channel };
     if (s.purpose === 'follow_up') { out.push({ ...base, status: 'follow_up_plan' }); continue; }
     if (!ready.has(s.id)) { out.push({ ...base, status: 'scheduled' }); continue; }
+    if (s.purpose === 'verify') {
+      if (s.channel !== 'voice' || !deps.createVerification) { out.push({ ...base, status: 'not_available', detail: 'verification_unavailable' }); continue; }
+      try {
+        const v = await deps.createVerification({ caseId, resourceKey: resource.resourceKey });
+        out.push({ ...base, status: 'verification_drafted', verificationId: v.id });
+      } catch (error) {
+        out.push({ ...base, status: 'blocked', detail: verifyCode(error) });
+      }
+      continue;
+    }
     if (s.channel === 'web_form') {
       const fill = await deps.webForm.draftFill({ caseId, contactId: resource.contactId, url: s.targetRef });
       out.push(fill.ok ? { ...base, status: 'application_drafted', applicationId: fill.draft.applicationId } : { ...base, status: 'not_available', detail: fill.reason });

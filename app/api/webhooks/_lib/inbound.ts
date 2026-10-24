@@ -20,7 +20,24 @@ export interface InboundDeps {
   sendEvents: SendEvents;
   /** Called only after signature checks and provider-id dedupe. */
   ingestInbound(event: WebhookInboundEvent): Promise<unknown>;
+  /** Optional: AI verification calls (lib/verification), which have no contact row. */
+  verification?: VerificationInboundDeps;
   now?: () => Date;
+}
+
+export interface VerificationInboundDeps {
+  isVerificationCall(providerCallId: string): Promise<boolean>;
+  /** The transcript is untrusted data; it is parsed, never followed. */
+  ingest(providerCallId: string, transcript: unknown, receivedAt: string): Promise<unknown>;
+  status(providerCallId: string, status: string | undefined): Promise<unknown>;
+}
+
+/** Raw AgentCall turns from an already signature-verified body. */
+function rawTranscript(rawBody: string): unknown {
+  try {
+    const data = (JSON.parse(rawBody) as { data?: { transcript?: unknown } }).data;
+    return Array.isArray(data?.transcript) ? data.transcript : [];
+  } catch { return []; }
 }
 
 const json = (status: number, body: Record<string, unknown>) => Response.json(body, { status });
@@ -83,11 +100,21 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
   if (!deps.secret) return json(503, { reasons: ['webhook_secret_not_configured'] });
   const raw = await req.text();
   let owner: Owner | undefined;
+  let verification = false;
   try {
     const parsed = await parseAgentCallWebhook(raw, req.headers, deps.secret, async id => {
       owner = await deps.lookupCall(id);
+      if (!owner && deps.verification && await deps.verification.isVerificationCall(id)) { verification = true; return 'verification'; }
       return owner?.contactId;
     });
+    if (verification && deps.verification && parsed.callId) {
+      const at = new Date(parsed.receivedAt);
+      const receivedAt = (Number.isNaN(at.getTime()) ? (deps.now ?? (() => new Date()))() : at).toISOString();
+      if (parsed.eventType === 'call.transcript') await deps.verification.ingest(parsed.callId, rawTranscript(raw), receivedAt);
+      else if (parsed.eventType === 'call.status') await deps.verification.status(parsed.callId, parsed.status);
+      else return json(200, { ignored: true });
+      return json(200, { ok: true });
+    }
     if (!owner || !parsed.callId) return json(404, { reasons: ['unknown_call'] });
     const at = new Date(parsed.receivedAt);
     const receivedAt = Number.isNaN(at.getTime()) ? (deps.now ?? (() => new Date()))() : at;

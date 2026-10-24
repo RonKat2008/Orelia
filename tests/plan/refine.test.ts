@@ -46,15 +46,27 @@ describe('refinePlan', () => {
     expect(complete).toHaveBeenCalledOnce();
     expect(out.source).toBe('rules+llm');
     const e1 = out.resources[0];
+    // The code-owned (disabled) verification step stays first; the model's steps follow it.
     expect(e1.steps.map(s => [s.id, s.order, s.channel, s.targetRef, s.waitFor])).toEqual([
       ['s1', 1, 'voice', specialistP.id, 'none'],
-      ['s2', 2, 'email', specialistE.id, 'business_days:2'],
+      ['s2', 2, 'voice', specialistP.id, 'none'],
+      ['s3', 3, 'email', specialistE.id, 'business_days:2'],
     ]);
-    expect(e1.steps[0].evidenceIds).toEqual([specialistP.id]);
-    expect(e1.steps[0].reason).toBe('Their office prefers phone calls.');
+    expect(e1.steps[0]).toMatchObject({ purpose: 'verify', enabled: false });
+    expect(e1.steps[1].evidenceIds).toEqual([specialistP.id]);
+    expect(e1.steps[1].reason).toBe('Their office prefers phone calls.');
     expect(out.resources.slice(1)).toEqual(base.resources.slice(1));
     expect(out.summary).toBe('3 resources: 1 email, 1 online application, 1 call, 1 email if no reply, 1 email if no reply.');
     expect(contactPlanSchema.safeParse(out).success).toBe(true);
+  });
+
+  it('rejects a model proposal that adds a verify step (verification calls are code-owned and opt-in)', async () => {
+    const complete = completer(a => {
+      const voice = a['expert:e1'].find(c => c.channel === 'voice')!.ref;
+      return { resources: [{ resourceKey: 'expert:e1', steps: [step('voice', voice, { purpose: 'verify' })] }] };
+    });
+    const out = await refinePlan(base, inputs, { complete });
+    expect(out.resources[0].steps).toEqual(base.resources[0].steps);
   });
 
   it('never puts raw addresses or source URLs into the prompt', async () => {

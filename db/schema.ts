@@ -348,3 +348,15 @@ export const caseDocuments = pgTable("case_documents", {
   index("case_documents_scope_idx").on(table.caseId, table.contactId),
   index("case_documents_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
 ]);
+
+/** One current contact plan per case (the full ContactPlan lives in `plan`; scalar columns support optimistic concurrency). */
+export const contactPlans = pgTable("contact_plans", {
+  caseId: uuid("case_id").primaryKey().references(() => cases.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  status: text("status").notNull(),
+  source: text("source").notNull(),
+  plan: jsonb("plan").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+});

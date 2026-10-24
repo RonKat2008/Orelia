@@ -18,7 +18,7 @@ export default function LandingPage() {
   return (
     <LenisProvider>
       <div className="ds-root">
-        <SiteHeader cta={{ href: START_HREF, label: "Start your case" }} viewToggle />
+        <SiteHeader cta={{ href: START_HREF, label: "Start your case" }} viewToggle ctaHideWhileVisible="[data-hero]" />
         <main id="main">
           <Hero />
           <HowItWorks />

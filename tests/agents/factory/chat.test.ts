@@ -64,7 +64,7 @@ describe('agent chat instructions', () => {
     expect(ask.card).toEqual({ kind: 'approve_send', contactId: 'c1', draftId: 'd-1', preview: 'Ask about telehealth' });
     const send = await handleChat(agent.id, 'send my MRI report', deps);
     expect(send.card).toBeUndefined();
-    expect(send.reply).toMatch(/marked shareable/);
+    expect(send.reply).toMatch(/Turn on sharing/);
     expect(drafts.length).toBe(1);
   });
 });

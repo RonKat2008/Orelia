@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { caseInputSchema } from "@/lib/contracts";
+import { caseInputSchema, goalSchema } from "@/lib/contracts";
 import { guardCase } from "@/lib/auth/ownership";
 import { readSession } from "@/lib/auth/session";
 import { checkRateLimit, DELETE_CASE_LIMITS, getRateLimitStore, rateLimitedResponse } from "@/lib/rate-limit";
@@ -24,6 +24,8 @@ const patchFields = caseInputSchema.partial().extend({
   insurer: caseInputSchema.shape.insurer.nullable(),
   planId: caseInputSchema.shape.planId.nullable(),
   travelLimitMiles: caseInputSchema.shape.travelLimitMiles.nullable(),
+  // No default here: a PATCH that does not mention goals must keep the stored ones, not reset them to [].
+  goals: z.array(goalSchema).max(goalSchema.options.length).optional(),
 });
 const patchSchema = z.strictObject({ fields: patchFields.default({}) });
 

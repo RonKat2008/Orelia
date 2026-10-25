@@ -73,3 +73,15 @@ describe("confirm step field errors", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("a partial PATCH keeps the fields it does not mention", () => {
+  it("does not wipe the patient's goals when only another field is edited", async () => {
+    const created = await getServices().cases.create({ diseaseName: "A", goals: ["treatment", "aid"] }, "draft");
+    (holder.__wayfinderOwnerStore as MemoryOwnerStore).registerCase(created.id, "owner");
+    const res = await patch(created.id, { fields: { travelLimitMiles: 100 } });
+    expect(res.status).toBe(200);
+    const stored = await getServices().cases.get(created.id);
+    expect(stored?.travelLimitMiles).toBe(100);
+    expect(stored?.goals).toEqual(["treatment", "aid"]);
+  });
+});

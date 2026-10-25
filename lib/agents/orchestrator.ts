@@ -140,11 +140,9 @@ async function finishRun(store: RunStore, runId: string, outcome: PromiseSettled
 
 /** The case owner's library, searched for the condition: a cited, sanitized block, or '' (anonymous case / none). */
 async function caseLibraryContext(caseId: string, caseRecord: CaseInput): Promise<string> {
-  const { searchCaseLibrary } = await import("@/lib/accounts/case-link");
-  const { historyContextBlock } = await import("@/lib/accounts/retrieve");
+  const { documentsForAgent } = await import("@/lib/accounts/agent-docs");
   const query = [caseRecord.diseaseName, caseRecord.subtype].filter(Boolean).join(" ");
-  const { results } = await searchCaseLibrary(caseId, query, 4);
-  return historyContextBlock(results, 500);
+  return (await documentsForAgent(caseId, "research", query, { k: 4, maxChars: 500 })).block;
 }
 
 export async function runResearch(caseId: string, deps: OrchestratorDeps): Promise<ResearchSummary> {

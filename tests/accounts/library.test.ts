@@ -149,7 +149,8 @@ describe("retrieval scoping", () => {
     owners.registerCase("case-a", "s1", "A");
     owners.registerCase("case-anon", "s2");
     expect((await searchCaseLibrary("case-a", "COL3A1", 5, { ...deps, owners })).results[0]?.title).toBe("A lab");
-    expect(await searchCaseLibrary("case-anon", "COL3A1", 5, { ...deps, owners })).toEqual({ available: false, results: [] });
+    // An anonymous case reads its own space (case:<id>), never the account's library.
+    expect(await searchCaseLibrary("case-anon", "COL3A1", 5, { ...deps, owners })).toEqual({ available: true, results: [] });
   });
 });
 

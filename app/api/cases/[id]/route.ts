@@ -8,6 +8,7 @@ import { fieldPaths, jsonError, parseBody, parseId } from "../_lib/http";
 import { ingestSummarySafely } from "../_lib/case-summary";
 import { reapIfStuck } from "@/lib/workflows/research-watchdog";
 import { getServices } from "../_lib/services";
+import { purgeCaseSpace } from "@/lib/accounts/documents";
 
 export const runtime = "nodejs";
 
@@ -81,6 +82,8 @@ export async function DELETE(req: Request, { params }: Ctx) {
     if (denied) return denied;
     const limit = await checkRateLimit(getRateLimitStore(), DELETE_CASE_LIMITS(readSession(req) ?? "anonymous"), new Date());
     if (!limit.ok) return rateLimitedResponse(limit.retryAfterSeconds);
+    // Lane K: an anonymous case's own uploaded documents go with it (account libraries are kept).
+    await purgeCaseSpace(id).catch(() => 0);
     const deleted = await getServices().cases.delete(id);
     return deleted ? NextResponse.json({ deleted: true }) : jsonError(404, "Case not found");
   } catch (error) {

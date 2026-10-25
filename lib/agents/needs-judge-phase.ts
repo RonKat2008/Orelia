@@ -32,7 +32,11 @@ export const defaultNeeds: NeedsFn = async (caseId, c, store) => {
     },
     documents: async (id) => {
       const { getDocumentStore } = await import("@/lib/case-docs");
-      return (await getDocumentStore().list(id)).map((d) => ({ kind: d.kind }));
+      const hints: { kind: string; title?: string }[] = (await getDocumentStore().list(id)).map((d) => ({ kind: d.kind }));
+      // Lane K: the patient's own uploaded documents (titles only; the cached needs never see their contents).
+      const { documentsForAgent } = await import("@/lib/accounts/agent-docs");
+      const own = await documentsForAgent(id, "needs", "diagnosis confirmation genetic testing results", { k: 4 });
+      return [...hints, ...own.used.map((u) => ({ kind: "medical_record", title: u.title }))];
     },
   });
 };

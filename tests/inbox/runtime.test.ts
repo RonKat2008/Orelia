@@ -78,7 +78,7 @@ describe('runtime classifier (live path, fake client)', () => {
     const r = await processInbound(event, deps(new MemoryRunStore(), client));
     expect(r.classification.class).toBe('redirect');
     const params = (create.mock.calls as unknown[][])[0][0] as Record<string, unknown>;
-    expect(params.tools).toEqual([expect.objectContaining({ name: 'case_docs_search' })]);
+    expect(params.tools).toEqual([expect.objectContaining({ name: 'case_docs_search' }), expect.objectContaining({ name: 'my_documents_search' })]);
     expect(params.model).toBe('claude-opus-5-5');
   });
   it('advice-like output falls back to unclear', async () => {

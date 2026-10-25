@@ -103,7 +103,11 @@ export const createDocumentSchema = documentMetadataSchema.extend({
 export type CreateDocumentBody = z.infer<typeof createDocumentSchema>;
 
 /** Partial update: the docType default must not apply (a title edit would silently reset the type to 'other'). */
-export const updateDocumentSchema = documentMetadataSchema.extend({ docType: libraryDocTypeSchema }).partial().strict();
+export const updateDocumentSchema = documentMetadataSchema.extend({
+  docType: libraryDocTypeSchema,
+  /** Lane K: let resource-facing agents read this document. Off unless the patient turns it on. */
+  shareWithResources: z.boolean(),
+}).partial().strict();
 
 /** What the API returns for a library document (never the blob URL, never the text). */
 export interface LibraryDocument {
@@ -117,6 +121,8 @@ export interface LibraryDocument {
   fileName: string;
   contentType: string;
   sizeBytes: number;
+  /** Lane K: resource-facing agents may read this document. Defaults to false. */
+  shareWithResources: boolean;
   status: DocStatus;
   /** Patient-facing reason when status is 'failed' (or a note, e.g. HEIC stored without text). */
   statusDetail: string | null;

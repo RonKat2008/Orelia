@@ -1,4 +1,5 @@
 import { caseDocsTool } from '../case-docs/tool';
+import { libraryDocsTool } from '../accounts/tool';
 import type { DocumentStore } from '../case-docs';
 import { ingestInbound as ingestDocument } from '../case-docs/hooks';
 import type { InboxClassifier } from '../inbox/classifier';
@@ -37,7 +38,7 @@ export async function processInbound(event: InboxEvent, deps: InboxDeps): Promis
       if (row && typeof row.id === 'string') contextDocIds.add(row.id);
     }
     return results;
-  } }];
+  } }, libraryDocsTool(ctx.caseId, 'inbox')];
   const raw = await deps.classifier.classify({ channel: event.channel, body: event.body, subject: event.subject, from: event.from, caseId: ctx.caseId, offlineKey: event.offlineKey, tools });
   // Whatever produced the classification (model, fixture), a phone survives only if it is in the message itself.
   const grounded = groundPhones(raw, event.body);

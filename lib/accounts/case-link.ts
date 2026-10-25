@@ -9,6 +9,7 @@ import type { DocType, HistoryStore, HistoryTimeline } from '@/lib/history/contr
 import { getOwnerStore, type OwnerStore } from '@/lib/auth/ownership';
 import type { LibraryDocType, MedicalHistoryHit } from './contract';
 import { searchMedicalHistory, type RetrieveDeps } from './retrieve';
+import { scopeForCase } from './scope';
 import { getAccountStore, type AccountStore } from './store';
 
 const DOC_TYPE_MAP: Record<LibraryDocType, DocType> = {
@@ -57,9 +58,8 @@ export async function importLibraryIntoCase(caseId: string, accountId: string, d
 export async function searchCaseLibrary(caseId: string, query: string, k = 5, deps: RetrieveDeps & { owners?: OwnerStore } = {}): Promise<{
   available: boolean; results: MedicalHistoryHit[];
 }> {
-  const accountId = await caseAccountId(caseId, deps.owners);
-  if (!accountId) return { available: false, results: [] };
-  const results = await searchMedicalHistory(accountId, query, k, deps);
+  // Lane K: anonymous cases have their own document space (`case:<id>`); account cases read the account library.
+  const results = await searchMedicalHistory(await scopeForCase(caseId, deps.owners), query, k, deps);
   return { available: true, results };
 }
 

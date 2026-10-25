@@ -7,7 +7,7 @@ import { safeNext, signInHref } from "@/components/account/helpers/safe-next";
 
 const doc = (over: Partial<LibraryDocument>): LibraryDocument => ({
   id: "1", title: "CBC panel", docType: "lab", dateOfService: "2025-03-02", provider: "Mercy Clinic", notes: null,
-  tags: ["blood"], fileName: "cbc.pdf", contentType: "application/pdf", sizeBytes: 10, status: "embedded",
+  tags: ["blood"], fileName: "cbc.pdf", contentType: "application/pdf", sizeBytes: 10, shareWithResources: false, status: "embedded",
   statusDetail: null, pageCount: 1, chunkCount: 1, createdAt: "2025-03-03T00:00:00Z", updatedAt: "2025-03-03T00:00:00Z",
   ...over,
 });

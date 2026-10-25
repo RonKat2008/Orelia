@@ -11,12 +11,12 @@ import type { DocStatus, LibraryDocType, LibraryDocument, Profile } from './cont
 export interface DocumentRow {
   id: string; accountId: string; title: string; docType: LibraryDocType; dateOfService: string | null;
   provider: string | null; notes: string | null; tags: string[]; fileName: string; contentType: string;
-  sizeBytes: number; blobPathname: string; status: DocStatus; statusDetail: string | null; pageCount: number | null;
+  sizeBytes: number; blobPathname: string; shareWithResources: boolean; status: DocStatus; statusDetail: string | null; pageCount: number | null;
   chunkCount: number; text: string | null; createdAt: Date; updatedAt: Date;
 }
-export type NewDocumentRow = Omit<DocumentRow, 'createdAt' | 'updatedAt' | 'status' | 'statusDetail' | 'pageCount' | 'chunkCount' | 'text'>;
+export type NewDocumentRow = Omit<DocumentRow, 'createdAt' | 'updatedAt' | 'shareWithResources' | 'status' | 'statusDetail' | 'pageCount' | 'chunkCount' | 'text'>;
 export type DocumentPatch = Partial<Pick<DocumentRow, 'title' | 'docType' | 'dateOfService' | 'provider' | 'notes' | 'tags'
-  | 'status' | 'statusDetail' | 'pageCount' | 'chunkCount' | 'text'>>;
+  | 'shareWithResources' | 'status' | 'statusDetail' | 'pageCount' | 'chunkCount' | 'text'>>;
 
 export interface ChunkRow {
   accountId: string; documentId: string; chunkIndex: number; page: number | null; section: string | null;
@@ -37,6 +37,8 @@ export interface AccountStore {
   replaceChunks(accountId: string, documentId: string, rows: ChunkRow[]): Promise<void>;
   searchChunks(accountId: string, embedding: number[], embedModel: string, k: number): Promise<ChunkHit[]>;
   countChunks(accountId: string): Promise<number>;
+  /** Lane K: re-keys every document and chunk of one scope (draft:/case:) to another (the case or its account). */
+  moveScope(fromScope: string, toScope: string): Promise<number>;
   /** Removes the profile, every document and every chunk of the account; returns the deleted documents. */
   deleteAccountData(accountId: string): Promise<DocumentRow[]>;
 }
@@ -45,7 +47,7 @@ export function toLibraryDocument(row: DocumentRow): LibraryDocument {
   return {
     id: row.id, title: row.title, docType: row.docType, dateOfService: row.dateOfService, provider: row.provider,
     notes: row.notes, tags: [...row.tags], fileName: row.fileName, contentType: row.contentType, sizeBytes: row.sizeBytes,
-    status: row.status, statusDetail: row.statusDetail, pageCount: row.pageCount, chunkCount: row.chunkCount,
+    shareWithResources: row.shareWithResources, status: row.status, statusDetail: row.statusDetail, pageCount: row.pageCount, chunkCount: row.chunkCount,
     createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -65,7 +67,7 @@ export class MemoryAccountStore implements AccountStore {
   async putProfile(accountId: string, profile: Profile) { this.profiles.set(accountId, structuredClone(profile)); }
   async createDocument(row: NewDocumentRow) {
     const now = new Date();
-    const doc: DocumentRow = { ...structuredClone(row), id: row.id || randomUUID(), status: 'pending_upload', statusDetail: null,
+    const doc: DocumentRow = { ...structuredClone(row), id: row.id || randomUUID(), shareWithResources: false, status: 'pending_upload', statusDetail: null,
       pageCount: null, chunkCount: 0, text: null, createdAt: now, updatedAt: now };
     this.docs.set(doc.id, doc);
     return structuredClone(doc);
@@ -111,6 +113,13 @@ export class MemoryAccountStore implements AccountStore {
       .sort((a, b) => b.score - a.score).slice(0, k);
   }
   async countChunks(accountId: string) { return this.chunks.filter(c => c.accountId === accountId).length; }
+  async moveScope(fromScope: string, toScope: string) {
+    if (fromScope === toScope) return 0;
+    let n = 0;
+    for (const [id, d] of this.docs) if (d.accountId === fromScope) { this.docs.set(id, { ...d, accountId: toScope }); n++; }
+    this.chunks = this.chunks.map(c => (c.accountId === fromScope ? { ...c, accountId: toScope } : c));
+    return n;
+  }
   async deleteAccountData(accountId: string) {
     const docs = await this.listDocuments(accountId);
     for (const d of docs) this.docs.delete(d.id);
@@ -124,7 +133,7 @@ type DocSelect = typeof accountDocuments.$inferSelect;
 const fromRow = (r: DocSelect): DocumentRow => ({
   id: r.id, accountId: r.accountId, title: r.title, docType: r.docType as LibraryDocType, dateOfService: r.dateOfService,
   provider: r.provider, notes: r.notes, tags: r.tags ?? [], fileName: r.fileName, contentType: r.contentType,
-  sizeBytes: r.sizeBytes, blobPathname: r.blobPathname, status: r.status as DocStatus, statusDetail: r.statusDetail,
+  sizeBytes: r.sizeBytes, blobPathname: r.blobPathname, shareWithResources: r.shareWithResources, status: r.status as DocStatus, statusDetail: r.statusDetail,
   pageCount: r.pageCount, chunkCount: r.chunkCount, text: r.text, createdAt: r.createdAt, updatedAt: r.updatedAt,
 });
 
@@ -188,6 +197,12 @@ export class PostgresAccountStore implements AccountStore {
     const [row] = await this.db.select({ n: sql<number>`count(*)::int` }).from(accountDocumentChunks)
       .where(eq(accountDocumentChunks.accountId, accountId));
     return row?.n ?? 0;
+  }
+  async moveScope(fromScope: string, toScope: string) {
+    if (fromScope === toScope) return 0;
+    const moved = await this.db.update(accountDocuments).set({ accountId: toScope }).where(eq(accountDocuments.accountId, fromScope)).returning({ id: accountDocuments.id });
+    await this.db.update(accountDocumentChunks).set({ accountId: toScope }).where(eq(accountDocumentChunks.accountId, fromScope));
+    return moved.length;
   }
   async deleteAccountData(accountId: string) {
     const docs = (await this.db.delete(accountDocuments).where(eq(accountDocuments.accountId, accountId)).returning()).map(fromRow);

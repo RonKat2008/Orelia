@@ -7,6 +7,8 @@ import type { CareNeeds, CareNeedsBase, CaseInput } from "@/lib/contracts";
 
 export interface DocumentHint {
   kind: string;
+  /** Titles of the patient's own uploaded documents (lane K). Contents are never read here. */
+  title?: string;
 }
 
 const PATIENT_DOC_KINDS = new Set(["intake_report", "medical_record", "patient_note"]);
@@ -36,7 +38,9 @@ export function personalizeNeeds(
   }
   if (c.insurer) add("insurer", `Ask each center and clinician whether they are in network with ${c.insurer.slice(0, 80)}.`);
   const docs = (meta.documents ?? []).filter((d) => PATIENT_DOC_KINDS.has(d.kind)).length;
-  if (docs > 0) add("documents", `You have ${docs} document${docs === 1 ? "" : "s"} in Wayfinder; they may answer intake and trial-screening questions (for example, how the diagnosis was confirmed).`);
+  const titles = (meta.documents ?? []).flatMap((d) => (d.title ? [d.title.replace(/\s+/g, " ").slice(0, 60)] : [])).slice(0, 3);
+  if (titles.length > 0) add("documents", `Your documents (${titles.join("; ")}) can answer intake and trial-screening questions, such as how the diagnosis was confirmed. Only what you tick is ever shared.`);
+  else if (docs > 0) add("documents", `You have ${docs} document${docs === 1 ? "" : "s"} in Wayfinder; they may answer intake and trial-screening questions (for example, how the diagnosis was confirmed).`);
 
   return {
     ...base,

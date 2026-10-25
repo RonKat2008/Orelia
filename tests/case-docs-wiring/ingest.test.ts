@@ -14,7 +14,7 @@ it.each(['email', 'voice'] as const)('stores verified %s inbound privately and g
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ contactId: 'contact-a', kind: channel === 'voice' ? 'call_transcript' : 'inbound_message', sharedField: 'unshared' });
   const input = classify.mock.calls[0][0] as unknown as { tools: { handler: (input: { query: string }) => Promise<unknown> }[] };
-  expect(input.tools).toHaveLength(1);
+  expect(input.tools).toHaveLength(2);
   expect(JSON.stringify(await input.tools[0].handler({ query: 'insurance' }))).not.toContain('SecretPlan');
 });
 it('ingests persisted verified evidence with its wrapper URL', async () => {

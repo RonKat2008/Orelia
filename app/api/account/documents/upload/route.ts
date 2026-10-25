@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { MAX_FILE_BYTES } from "@/lib/accounts/contract";
-import { fail, json, requireAccount } from "@/lib/accounts/http";
+import { fail, json } from "@/lib/accounts/http";
+import { requireSpace } from "@/lib/accounts/scope";
 import { markUploaded } from "@/lib/accounts/documents";
 import { getAccountStore } from "@/lib/accounts/store";
 import { pathnameBelongsTo } from "@/lib/accounts/upload";
@@ -23,9 +24,9 @@ export async function POST(req: Request) {
   }
   let accountId: string | null = null;
   if (body?.type !== "blob.upload-completed") {
-    const guard = await requireAccount(req);
+    const guard = await requireSpace(req);
     if (!guard.ok) return guard.response;
-    accountId = guard.account.id;
+    accountId = guard.scopeId;
     if (body?.type !== "blob.generate-client-token") return fail(400, "invalid_request");
   }
   try {

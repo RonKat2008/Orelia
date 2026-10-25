@@ -553,6 +553,8 @@ export const accountDocuments = pgTable("account_documents", {
   chunkCount: integer("chunk_count").notNull().default(0),
   /** Sanitized extracted text (untrusted data). Never logged. */
   text: text("text"),
+  /** Lane K: the patient lets resource-facing agents (agent factory) read this document. Default off (drizzle/0052). */
+  shareWithResources: boolean("share_with_resources").notNull().default(false),
   ...timestamps,
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, table => [
@@ -575,6 +577,19 @@ export const accountDocumentChunks = pgTable("account_document_chunks", {
   index("account_document_chunks_scope_idx").on(table.accountId, table.embedModel),
   index("account_document_chunks_document_idx").on(table.documentId),
   index("account_document_chunks_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
+]);
+
+/** Lane K: which documents each agent read for a case ("Used 2 of your documents" in the judge view). Titles only. */
+export const documentUses = pgTable("document_uses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  agent: text("agent").notNull(),
+  documentId: uuid("document_id").notNull(),
+  title: text("title").notNull(),
+  ...timestamps,
+}, table => [
+  index("document_uses_case_idx").on(table.caseId, table.createdAt),
+  uniqueIndex("document_uses_case_agent_doc_key").on(table.caseId, table.agent, table.documentId),
 ]);
 
 // ---- calendar lane: appointments, calendar feeds, calendar connections ----

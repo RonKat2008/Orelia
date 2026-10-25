@@ -1,5 +1,6 @@
+import { requireSpace } from "@/lib/accounts/scope";
 import { z } from "zod";
-import { fail, requireAccount } from "@/lib/accounts/http";
+import { fail } from "@/lib/accounts/http";
 import { getBlob } from "@/lib/accounts/blob";
 import { getAccountStore } from "@/lib/accounts/store";
 
@@ -10,11 +11,11 @@ const INLINE = new Set(["application/pdf", "image/png", "image/jpeg", "text/plai
 
 /** GET -> streams the private file to its owner (never a blob URL). ?download=1 forces an attachment. */
 export async function GET(req: Request, ctx: Ctx) {
-  const guard = await requireAccount(req);
+  const guard = await requireSpace(req);
   if (!guard.ok) return guard.response;
   const { docId } = await ctx.params;
   if (!z.uuid().safeParse(docId).success) return fail(404, "not_found");
-  const row = await getAccountStore().getDocument(guard.account.id, docId);
+  const row = await getAccountStore().getDocument(guard.scopeId, docId);
   if (!row) return fail(404, "not_found");
   try {
     const file = await getBlob().read(row.blobPathname);

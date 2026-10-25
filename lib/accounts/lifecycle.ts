@@ -9,6 +9,7 @@ import { getOwnerStore, type OwnerStore } from '@/lib/auth/ownership';
 import { getNeonAuth, accountsEnabled } from '@/lib/auth/neon';
 import type { Account } from './contract';
 import { getBlob, type BlobPort } from './blob';
+import { CASE_SCOPE_PREFIX } from './scope';
 import { getAccountStore, toLibraryDocument, type AccountStore } from './store';
 
 export interface LifecycleDeps {
@@ -21,7 +22,13 @@ export interface LifecycleDeps {
 
 export async function claimCases(sessionId: string | null, accountId: string, owners: OwnerStore = getOwnerStore()): Promise<number> {
   if (!sessionId || !owners.claimSessionCases) return 0;
-  return owners.claimSessionCases(sessionId, accountId);
+  const claimed = await owners.claimSessionCases(sessionId, accountId);
+  // Lane K: documents added to an anonymous case join the account library when the case is claimed.
+  if (claimed > 0) {
+    const store = getAccountStore();
+    for (const caseId of (await owners.casesForAccount?.(accountId)) ?? []) await store.moveScope(`${CASE_SCOPE_PREFIX}${caseId}`, accountId);
+  }
+  return claimed;
 }
 
 async function defaultDeleteCase(caseId: string): Promise<boolean> {

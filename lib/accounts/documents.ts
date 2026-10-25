@@ -11,6 +11,7 @@ import { ExtractionError, MAX_FILE_BYTES, type CreateDocumentBody, type Extracti
 import { getBlob, readAll, type BlobPort } from './blob';
 import { extractDocumentText, type ExtractionInput } from './extract';
 import { getAccountStore, toLibraryDocument, type AccountStore, type DocumentPatch } from './store';
+import { CASE_SCOPE_PREFIX } from './scope';
 import { blobPathnameFor } from './upload';
 
 export interface LibraryDeps {
@@ -111,4 +112,14 @@ export async function markUploaded(accountId: string, id: string, deps: LibraryD
   const store = storeOf(deps);
   const row = await store.getDocument(accountId, id);
   if (row && row.status === 'pending_upload') await store.updateDocument(accountId, id, { status: 'uploaded' });
+}
+
+/** Deletes everything in an anonymous case's own document space (files, text, vectors). Account libraries are untouched. */
+export async function purgeCaseSpace(caseId: string, deps: LibraryDeps = {}): Promise<number> {
+  const scope = `${CASE_SCOPE_PREFIX}${caseId}`;
+  const store = storeOf(deps);
+  const docs = (await store.listDocuments(scope)).filter(d => d.accountId === scope);
+  if (!docs.length) return 0;
+  await (deps.blob ?? getBlob()).remove(docs.map(d => d.blobPathname));
+  return (await store.deleteAccountData(scope)).length;
 }

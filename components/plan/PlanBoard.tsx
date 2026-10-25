@@ -61,11 +61,11 @@ export function PlanBoard({ plan, evidence = {}, busy = false, onToggle, onMove,
   const enabled = enabledStepCount(plan);
   const showApproved = plan.status === 'approved' && !editing;
   return (
-    <div className="ds-root flex min-w-0 flex-col gap-6">
+    <div className="ds-root flex min-w-0 flex-col gap-4">
       <p className="m-0 max-w-prose text-body text-ink-2 text-pretty" data-testid="plan-summary">
         {plan.summary}
       </p>
-      <ul className="m-0 flex list-none flex-col gap-8 p-0">
+      <ul className="m-0 grid list-none gap-x-10 gap-y-5 p-0 lg:grid-cols-2 lg:items-start">
         {plan.resources.map(resource => (
           <li key={resource.resourceKey} className="min-w-0">
             <ResourceSection resource={resource} evidence={evidence} busy={busy} onToggle={onToggle} onMove={onMove} />
@@ -87,14 +87,17 @@ export function PlanBoard({ plan, evidence = {}, busy = false, onToggle, onMove,
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div
+          data-slot="action-bar"
+          className="sticky bottom-0 z-30 -mx-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line bg-paper/95 px-1 py-2.5 backdrop-blur-md"
+        >
+          <p className="m-0 text-small text-ink-2">Nothing is sent without your OK. You read every message first.</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Button size="lg" disabled={busy || enabled === 0} onClick={onApprove}>
+            <MoreMenu busy={busy} onRebuild={onRebuild} />
+            <Button disabled={busy || enabled === 0} onClick={onApprove}>
               Approve plan &amp; draft messages
             </Button>
-            <MoreMenu busy={busy} onRebuild={onRebuild} />
           </div>
-          <p className="m-0 text-small text-ink-2">Nothing is sent without your OK. You read every message first.</p>
         </div>
       )}
       {enabled === 0 && !showApproved ? (
@@ -146,16 +149,16 @@ function ResourceSection({
   const headingId = `plan-resource-${resource.resourceKey.replace(/[^A-Za-z0-9_-]/g, '-')}`;
   return (
     <div role="group" aria-labelledby={headingId} className="min-w-0">
-      <SectionH id={headingId} className="m-0 text-h3 text-ink break-words">
+      <SectionH id={headingId} className="m-0 font-sans text-body font-semibold text-ink break-words">
         {resource.name}
       </SectionH>
-      <p className="m-0 mt-1 text-small text-ink-2">{KIND_LABELS[resource.targetKind] ?? resource.targetKind}</p>
+      <p className="m-0 text-small text-ink-2">{KIND_LABELS[resource.targetKind] ?? resource.targetKind}</p>
       {resource.unavailableReason || steps.length === 0 ? (
         <p className="m-0 mt-3 text-body text-ink-2" data-testid="plan-unavailable">
           {resource.unavailableReason ?? 'No way to reach this resource was found.'}
         </p>
       ) : (
-        <List className="mt-3">
+        <List className="mt-1.5">
           {steps.map((step, index) => (
             <StepRow
               key={step.id}
@@ -228,9 +231,41 @@ function StepRow({
   });
   const extraSources = sourceIds.slice(sourceSlots).map(id => evidenceBadgeText(id, evidence[id]));
 
+  const controls = (
+    <div className="flex flex-wrap items-center gap-3">
+      <label className="flex min-h-11 items-center gap-2 text-small font-semibold text-ink">
+        <Switch checked={step.enabled} disabled={busy} onCheckedChange={onToggle} />
+        <span>
+          Include<span className="sr-only"> step {index + 1}: {label} for {resourceName}</span>
+        </span>
+      </label>
+      {total >= 2 ? (
+        <div className="flex items-center gap-1">
+          <IconButton
+            label={`Move step ${index + 1} earlier for ${resourceName}`}
+            size="sm"
+            disabled={busy || index === 0}
+            onClick={() => onMove(-1)}
+          >
+            <ArrowUp aria-hidden />
+          </IconButton>
+          <IconButton
+            label={`Move step ${index + 1} later for ${resourceName}`}
+            size="sm"
+            disabled={busy || isLast}
+            onClick={() => onMove(1)}
+          >
+            <ArrowDown aria-hidden />
+          </IconButton>
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <ListRow
       data-testid="plan-step"
+      trailing={<div className="hidden sm:block">{controls}</div>}
       title={label}
       maxBadges={MAX_ROW_BADGES}
       badges={pool}
@@ -264,34 +299,7 @@ function StepRow({
           </a>
         ) : null}
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-3">
-        <label className="flex min-h-11 items-center gap-2 text-small font-semibold text-ink">
-          <Switch checked={step.enabled} disabled={busy} onCheckedChange={onToggle} />
-          <span>
-            Include<span className="sr-only"> step {index + 1}: {label} for {resourceName}</span>
-          </span>
-        </label>
-        {total >= 2 ? (
-          <div className="flex items-center gap-1">
-            <IconButton
-              label={`Move step ${index + 1} earlier for ${resourceName}`}
-              size="sm"
-              disabled={busy || index === 0}
-              onClick={() => onMove(-1)}
-            >
-              <ArrowUp aria-hidden />
-            </IconButton>
-            <IconButton
-              label={`Move step ${index + 1} later for ${resourceName}`}
-              size="sm"
-              disabled={busy || isLast}
-              onClick={() => onMove(1)}
-            >
-              <ArrowDown aria-hidden />
-            </IconButton>
-          </div>
-        ) : null}
-      </div>
+      <div className="mt-1 sm:hidden">{controls}</div>
     </ListRow>
   );
 }

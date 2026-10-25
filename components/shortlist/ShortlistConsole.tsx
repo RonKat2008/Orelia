@@ -132,7 +132,7 @@ export function ShortlistConsole({
     ) : null;
 
   const list = (
-    <div className="grid gap-6">
+    <div className="grid gap-3">
       {showOverview ? (
         <List label="Judge">
           <ListRow

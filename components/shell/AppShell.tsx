@@ -92,10 +92,10 @@ export function AppShell({
     >
       {header ?? <SiteHeader nav={nav} cta={null} viewToggle={viewToggle} />}
       {isCase ? (
-        <div className={cn("page-container", mode === "patient" ? "pb-8 sm:pb-12" : "pb-section")}>
+        <div className={cn("page-container", mode === "patient" ? "pb-8 sm:pb-12" : "pb-8")}>
           {/* The chrome sits inside <main> so every piece of content is in a landmark (axe "region"). */}
           <main id="main" className={cn("min-w-0", column, top ? null : mode === "patient" ? "pt-4 sm:pt-8" : "pt-6 sm:pt-10")}>
-            {top ? <div className={cn(mode === "judge" ? "mb-8" : "mb-5 pt-4 sm:mb-8 sm:pt-8")}>{top}</div> : null}
+            {top ? <div className={cn(mode === "judge" ? "mb-4" : "mb-5 pt-4 sm:mb-8 sm:pt-8")}>{top}</div> : null}
             {children}
             {footer}
           </main>

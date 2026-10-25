@@ -47,7 +47,7 @@ function StageBarSkeleton() {
 /** "Manage case": the quiet home for Delete, away from the next step (docs/DESIGN-v2.md 4.1). */
 export function ManageCase({ caseId }: { caseId: string }) {
   return (
-    <section aria-label="Manage case" className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4">
+    <section aria-label="Manage case" className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-4 in-data-[view=judge]:mt-8 in-data-[view=judge]:pt-3">
       <span className="text-small font-semibold text-ink-2">Manage case</span>
       <Link href={`/cases/${caseId}/emergency`} className="inline-flex min-h-11 items-center rounded-sm text-small font-semibold text-ink underline decoration-line-strong underline-offset-4 hover:text-teal focus-ring">
         Emergency card

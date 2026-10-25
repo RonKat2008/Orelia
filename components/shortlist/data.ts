@@ -438,6 +438,20 @@ export function initialSelection(
     .slice(0, limit);
 }
 
+/**
+ * One-click "Pick the top N": the curator's suggestions first, then the best-scoring cards that are not excluded,
+ * never more than the limit. Pure, so the judge can see exactly who it picked in the list.
+ */
+export function topPicks(items: ShortlistCard[], suggested: string[], limit: number): string[] {
+  const keys = new Set(items.map(selectionKey));
+  const ranked = items
+    .filter((card) => card.tier !== "exclude")
+    .sort((a, b) => b.score - a.score)
+    .map(selectionKey);
+  const order = [...suggested.filter((id) => keys.has(id)), ...ranked];
+  return order.filter((id, index) => order.indexOf(id) === index).slice(0, limit);
+}
+
 /** Suggestions shown as ticked must be stored like a click, or consent opens with nobody selected. */
 export function shouldPersistInitialSelection(stored: string[] | null, initial: string[]): boolean {
   return stored === null && initial.length > 0;

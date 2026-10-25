@@ -121,7 +121,7 @@ export function ApproveAllPanel({
                     {item.channel === "email" ? "Email" : "Call"}
                   </span>
                 </span>
-                <span className="truncate text-small text-ink-2">
+                <span className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-sm bg-paper-2 p-2 text-small text-ink">
                   {item.summary}
                 </span>
                 {outcome === "sending" ? (

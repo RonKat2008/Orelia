@@ -81,6 +81,16 @@ export function defaultSharedFields(): ShareableFieldKey[] {
   return SHAREABLE_FIELDS.filter((field) => field.defaultShared).map((field) => field.key);
 }
 
+/**
+ * Minimum-necessary pre-fill per kind of resource (the judge consent screen shows and lets you change every one):
+ * a care site needs the diagnosis, where you live (licensing, eligibility) and what you hope for; an organization
+ * (advocacy, aid) needs the diagnosis and what you hope for. Insurance, plan ID, stage and subtype stay private.
+ */
+export function minimumNecessaryFields(targetKind: string | undefined): ShareableFieldKey[] {
+  if (targetKind === "organization") return ["diseaseName", "goals"];
+  return ["diseaseName", "homeState", "goals"];
+}
+
 export function fieldValue(record: CaseInput, key: ShareableFieldKey): string {
   if (key === "goals") {
     return record.goals.map((goal) => GOAL_LABELS[goal]).join(", ");

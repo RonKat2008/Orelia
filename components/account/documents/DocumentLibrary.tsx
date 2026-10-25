@@ -8,7 +8,7 @@ export function DocumentLibrary() {
   return (
     <AccountGate path="/account/documents">
       {() => (
-        <div className="grid gap-6">
+        <div className="grid gap-3">
           <p className="m-0 text-small text-ink-2">
             Documents you add inside a case are kept here too.
           </p>

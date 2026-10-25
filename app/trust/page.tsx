@@ -1,7 +1,7 @@
 import { DeleteCaseStub } from "@/components/journey/DeleteCaseStub";
 import { SiteFooter, SiteHeader } from "@/components/shell";
 import { PROMISES } from "@/components/landing/content";
-import { Details, PageHeader } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 
 export const metadata = {
   title: "Trust",
@@ -20,67 +20,57 @@ export default function TrustPage() {
     <div className="ds-root min-h-dvh bg-paper text-ink">
       <SiteHeader />
       <main id="main">
-        <div className="page-container pt-14 sm:pt-20">
+        <div className="page-container pt-8 sm:pt-10">
           <PageHeader
             title="What Wayfinder will never do"
+            className="mb-6"
             lede="Your health story is private. These limits are part of the product. They are not settings, and you cannot switch them off."
           />
         </div>
 
         <section
           aria-labelledby="promises-heading"
-          className="page-container pb-section"
+          className="page-container pb-10"
         >
           <h2 id="promises-heading" className="sr-only">
             Our five promises
           </h2>
-          <ol className="m-0 list-none border-t border-line p-0">
+          <ol className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
             {PROMISES.map((promise, i) => (
               <li
                 key={promise.id}
                 id={ANCHORS[promise.id]}
-                className="grid scroll-mt-28 grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 border-b border-line py-8 md:grid-cols-[4rem_minmax(0,1fr)]"
+                className="grid scroll-mt-28 content-start gap-2 rounded-lg border border-line bg-paper-2/60 p-4"
               >
-                <span
-                  aria-hidden
-                  className="font-display text-h3 font-light text-ink-2 display-soft"
-                >
-                  {i + 1}
-                </span>
-                <div className="grid max-w-prose gap-3">
-                  <h3 className="m-0 font-display text-h3 font-light text-ink display-soft">
-                    {promise.title}
-                  </h3>
-                  <p className="m-0 text-body text-ink-2">{promise.body}</p>
-                  <Details summary="how this works">
-                    <p className="m-0 text-body text-ink-2">{promise.more}</p>
-                  </Details>
-                </div>
+                <h3 className="m-0 flex items-baseline gap-2 font-display text-h3 font-light text-ink display-soft">
+                  <span aria-hidden className="text-teal">
+                    {i + 1}
+                  </span>
+                  {promise.title}
+                </h3>
+                <p className="m-0 text-body text-ink">{promise.body}</p>
+                <p className="m-0 text-small text-ink-2">{promise.more}</p>
               </li>
             ))}
-          </ol>
-        </section>
-
-        <section
-          aria-labelledby="delete-heading"
-          className="border-t border-line"
-        >
-          <div className="page-container py-12">
-            <div className="grid max-w-3xl gap-3">
-              <h2
+            <li
+              aria-labelledby="delete-heading"
+              className="grid content-start justify-items-start gap-2 rounded-lg border border-line p-4"
+            >
+              <h3
                 id="delete-heading"
                 className="m-0 font-display text-h3 font-light text-ink display-soft"
               >
                 Delete a case
-              </h2>
-              <p className="m-0 text-body text-ink-2">
+              </h3>
+              <p className="m-0 text-small text-ink-2">
                 You can ask for a case to be removed. This demo does not delete
                 stored cases yet.
               </p>
               <DeleteCaseStub />
-            </div>
-          </div>
+            </li>
+          </ol>
         </section>
+
       </main>
       <SiteFooter />
     </div>

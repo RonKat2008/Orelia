@@ -16,11 +16,16 @@ export function SelectionTray({
   chosen,
   limit,
   onRemove,
+  onPickTop,
+  canPickTop,
 }: {
   caseId: string;
   chosen: ShortlistCard[];
   limit: number;
   onRemove: (id: string) => void;
+  /** One click: choose the best-ranked contacts up to the limit. */
+  onPickTop?: () => void;
+  canPickTop?: boolean;
 }) {
   const count = chosen.length;
   const consentHref = `/cases/${caseId}/consent`;
@@ -30,10 +35,17 @@ export function SelectionTray({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md"
     >
       <div className="page-container flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-2.5 sm:py-3">
-        <p className="m-0 text-body text-ink" role="status" aria-live="polite">
-          <span className="font-semibold tabular-nums">{count}</span>
-          <span className="text-ink-2"> of {limit} chosen</span>
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="m-0 text-body text-ink" role="status" aria-live="polite">
+            <span className="font-semibold tabular-nums">{count}</span>
+            <span className="text-ink-2"> of {limit} chosen</span>
+          </p>
+          {onPickTop && canPickTop ? (
+            <Button type="button" variant="secondary" size="sm" onClick={onPickTop}>
+              Pick the top {limit}
+            </Button>
+          ) : null}
+        </div>
         <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:justify-end">
           <Sheet
             title="Your contact list"

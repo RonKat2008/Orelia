@@ -64,9 +64,9 @@ export function CalendarSettings({ googleResult }: { googleResult?: string }) {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-14">
-      <section aria-labelledby="feed-heading" className="grid content-start gap-5">
-        <div className="grid gap-2">
+    <div className="grid content-start gap-6">
+      <section aria-labelledby="feed-heading" className="grid content-start gap-3">
+        <div className="grid gap-1">
           <h2 id="feed-heading" className="m-0 font-display text-h3 font-normal text-ink display-soft">Subscribe by link</h2>
           <p className="m-0 max-w-prose text-body text-ink-2">
             A private link your calendar app checks for updates. It works with Apple Calendar, Outlook and Google (Other calendars, then

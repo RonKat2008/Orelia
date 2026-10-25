@@ -14,14 +14,14 @@ function sourceHost(url: string): string {
 export function RareFacts() {
   const facts = loadRareFacts();
   return (
-    <section aria-labelledby="rare-heading" className="page-container pb-section">
-      <div className="grid max-w-prose gap-5">
-        <h2 id="rare-heading" className="m-0 font-display text-h2 font-light text-balance text-ink display-soft">
+    <section aria-labelledby="rare-heading">
+      <div className="grid gap-3">
+        <h2 id="rare-heading" className="m-0 font-display text-h3 font-light text-balance text-ink display-soft">
           For rare disease
         </h2>
-        <p className="m-0 text-body text-pretty text-ink-2">{RARE_INTRO}</p>
+        <p className="m-0 max-w-prose text-body text-pretty text-ink-2">{RARE_INTRO}</p>
         {facts.length > 0 ? (
-          <ul className="m-0 grid list-none gap-6 p-0">
+          <ul className="m-0 grid list-none gap-5 p-0 ">
             {facts.map((fact) => (
               <li key={fact.id} className="grid gap-2">
                 <p className="m-0 text-body font-semibold text-pretty text-ink">{fact.claim}</p>

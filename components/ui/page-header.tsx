@@ -26,17 +26,17 @@ export function PageHeader({ title, lede, action, eyebrow, as: Heading = "h1", t
   return (
     <header
       data-slot="page-header"
-      className={cn("mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between", className)}
+      className={cn("mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between in-data-[view=judge]:gap-2 md:in-data-[view=judge]:items-center", className)}
       {...props}
     >
-      <div className="grid max-w-3xl gap-3">
+      <div className="grid max-w-3xl gap-3 in-data-[view=judge]:gap-1">
         {eyebrow ? (
-          <p className="m-0 text-small font-semibold text-ink-2 in-data-[view=patient]:hidden">{eyebrow}</p>
+          <p className="m-0 text-small font-semibold text-ink-2 in-data-[view=patient]:hidden in-data-[view=judge]:sr-only">{eyebrow}</p>
         ) : null}
-        <Heading id={titleId} className="m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance">
+        <Heading id={titleId} className="m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance in-data-[view=judge]:text-h3">
           {title}
         </Heading>
-        {lede ? <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">{lede}</p> : null}
+        {lede ? <p className="m-0 max-w-prose text-body text-ink-2 text-pretty in-data-[view=judge]:text-small">{lede}</p> : null}
       </div>
       {action ? <div className="flex shrink-0 flex-wrap items-center gap-3">{action}</div> : null}
     </header>

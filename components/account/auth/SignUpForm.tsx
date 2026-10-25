@@ -82,8 +82,8 @@ export function SignUpForm({ next }: { next?: string }) {
     >
       <GoogleButton callbackURL={destination} onError={setFormError} />
       <OrDivider />
-      <form onSubmit={onSubmit} noValidate className="grid gap-5">
-        <TextField id="signup-name" label="Name" autoComplete="name" value={name} onValueChange={setName} error={errors.name} required />
+      <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <TextField id="signup-name" label="Name" autoComplete="name" value={name} onValueChange={setName} error={errors.name} required autoFocus />
         <TextField
           id="signup-email"
           label="Email"

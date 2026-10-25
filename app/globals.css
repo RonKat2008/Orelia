@@ -443,3 +443,16 @@ details summary {
     align-items: flex-start;
   }
 }
+
+/* Case pages: a one-line safety notice on phones (the landing page keeps the full text). */
+@media (max-width: 639px) {
+  body:has([data-slot="app-shell"][data-view]) [data-slot="safety-banner"] [data-sb="long"] {
+    display: none;
+  }
+  body:has([data-slot="app-shell"][data-view]) [data-slot="safety-banner"] [data-sb="short"] {
+    display: inline;
+  }
+  body:has([data-slot="app-shell"][data-view]) [data-slot="safety-banner"] p {
+    padding-block: 0.375rem;
+  }
+}

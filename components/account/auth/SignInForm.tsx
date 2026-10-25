@@ -62,7 +62,7 @@ export function SignInForm({ next }: { next?: string }) {
     >
       <GoogleButton callbackURL={destination} onError={setError} />
       <OrDivider />
-      <form onSubmit={onSubmit} noValidate className="grid gap-5">
+      <form onSubmit={onSubmit} noValidate className="grid gap-4">
         <TextField
           id="signin-email"
           label="Email"
@@ -74,6 +74,7 @@ export function SignInForm({ next }: { next?: string }) {
           value={email}
           onValueChange={setEmail}
           required
+          autoFocus
         />
         <TextField
           id="signin-password"
@@ -84,7 +85,7 @@ export function SignInForm({ next }: { next?: string }) {
           onValueChange={setPassword}
           required
         />
-        <p className="-mt-2 m-0 flex flex-wrap items-center gap-x-5 text-small">
+        <p className="-mt-3 m-0 flex flex-wrap items-center gap-x-5 text-small">
           <Link href={`/auth/forgot-password${suffix}`} className={cn(AUTH_LINK, "inline-flex min-h-11 items-center")}>
             Forgot your password?
           </Link>

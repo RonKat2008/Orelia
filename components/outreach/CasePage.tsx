@@ -43,7 +43,7 @@ export function CasePage({ title, lede, eyebrow, action, patient, width = "judge
   const body = (
     <section
       data-slot="case-page"
-      className={cn("ds-root grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8", width === "wide" ? "max-w-wide" : "max-w-judge", className)}
+      className={cn("ds-root grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8 in-data-[view=judge]:gap-4", width === "wide" ? "max-w-wide" : "max-w-judge", className)}
     >
       <PageHeader as={CASE_PAGE_HEADING} title={title} lede={lede} eyebrow={eyebrow} action={action} className="mb-0" />
       {children}

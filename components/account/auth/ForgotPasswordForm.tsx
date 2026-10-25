@@ -59,7 +59,7 @@ export function ForgotPasswordForm({ next }: { next?: string }) {
           If an account exists for that email, a reset link is on its way. It can take a minute to arrive.
         </Callout>
       ) : (
-        <form onSubmit={onSubmit} noValidate className="grid gap-5">
+        <form onSubmit={onSubmit} noValidate className="grid gap-4">
           <TextField
             id="forgot-email"
             label="Email"
@@ -69,6 +69,7 @@ export function ForgotPasswordForm({ next }: { next?: string }) {
             value={email}
             onValueChange={setEmail}
             required
+            autoFocus
           />
           {error ? <Callout tone="danger" role="alert">{error}</Callout> : null}
           <Button type="submit" size="lg" loading={pending} loadingText="Sending" className="w-full text-body">

@@ -10,6 +10,7 @@ import type { VerificationsResponse } from "@/lib/verification/contract";
 import {
   initialSelection,
   shouldPersistInitialSelection,
+  topPicks,
   loadHomeState,
   loadShortlist,
   selectionKey,
@@ -208,6 +209,8 @@ export function ShortlistView({ caseId }: { caseId: string }) {
                   chosen={chosen}
                   limit={limit}
                   onRemove={(id) => choose(selected.filter((item) => item !== id))}
+                  onPickTop={() => choose(topPicks(items, loaded.suggested, limit))}
+                  canPickTop={topPicks(items, loaded.suggested, limit).join() !== selected.join()}
                 />
             </>
           )}

@@ -67,7 +67,7 @@ export function ResetPasswordForm({ token, next }: { token?: string; next?: stri
 
   return (
     <AuthCard title="Choose a new password" lede="Pick something you have not used elsewhere.">
-      <form onSubmit={onSubmit} noValidate className="grid gap-5">
+      <form onSubmit={onSubmit} noValidate className="grid gap-4">
         <TextField
           id="reset-password"
           label="New password"
@@ -78,6 +78,7 @@ export function ResetPasswordForm({ token, next }: { token?: string; next?: stri
           onValueChange={setPassword}
           error={errors.password}
           required
+          autoFocus
         />
         <TextField
           id="reset-confirm"

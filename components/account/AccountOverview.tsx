@@ -29,8 +29,8 @@ function OverviewBody({ account }: { account: Account }) {
   const count = useDocumentCount();
   const firstName = account.name?.trim().split(/\s+/)[0];
   return (
-    <div className="grid max-w-wide gap-12">
-      <section aria-labelledby="hello" className="grid gap-4">
+    <div className="grid max-w-wide gap-6 lg:grid-cols-2 lg:gap-x-10">
+      <section aria-labelledby="hello" className="grid content-start gap-3">
         <h2 id="hello" className={SECTION_TITLE}>
           {firstName ? `Hello, ${firstName}.` : "Hello."}
         </h2>
@@ -49,7 +49,7 @@ function OverviewBody({ account }: { account: Account }) {
         </List>
       </section>
 
-      <section aria-labelledby="appearance-heading" className="grid gap-4">
+      <section aria-labelledby="appearance-heading" className="grid content-start gap-3">
         <h2 id="appearance-heading" className={SECTION_TITLE}>Appearance</h2>
         <div className="flex flex-wrap items-center gap-4">
           <ThemeToggle />
@@ -57,9 +57,10 @@ function OverviewBody({ account }: { account: Account }) {
         </div>
       </section>
 
-      <section aria-labelledby="data-heading" className="grid gap-4">
+      <section aria-labelledby="data-heading" className="grid content-start gap-3 lg:col-span-2">
         <h2 id="data-heading" className={SECTION_TITLE}>Manage your data</h2>
-        <div className="grid gap-1">
+        <div className="grid gap-3 lg:grid-cols-2 lg:gap-10">
+        <div className="grid content-start gap-1">
           <p className="m-0 max-w-prose text-body text-ink-2">
             You own your information. Get a copy of your profile, cases and document details.
           </p>
@@ -67,13 +68,14 @@ function OverviewBody({ account }: { account: Account }) {
             <a href="/api/account/export" download><Download aria-hidden />Download my data (JSON)</a>
           </Button>
         </div>
-        <div className="grid gap-1 border-t border-line pt-4">
+        <div className="grid content-start gap-1 border-t border-line pt-3 lg:border-t-0 lg:pt-0">
           <p className="m-0 max-w-prose text-body text-ink-2">
             Deleting your account removes your cases, documents, files, profile and sign-in. It cannot be undone.
           </p>
           <div>
             <DeleteAccountDialog />
           </div>
+        </div>
         </div>
       </section>
     </div>

@@ -113,7 +113,7 @@ export function ListRow({
       data-slot="list-row"
       data-selected={selected || undefined}
       className={cn(
-        "relative flex min-h-14 items-start gap-3 border-b border-line px-3 py-4",
+        "relative flex min-h-14 items-start gap-3 border-b border-line px-3 py-4 in-data-[view=judge]:min-h-12 in-data-[view=judge]:py-2.5",
         "transition-colors duration-150 motion-reduce:transition-none",
         interactive && "hover:bg-paper-2",
         selected && "bg-teal-soft hover:bg-teal-soft",
@@ -122,7 +122,7 @@ export function ListRow({
       {...props}
     >
       {leading ? <div className="relative z-10 flex min-h-6 shrink-0 items-center [&_svg]:size-5">{leading}</div> : null}
-      <div className="grid min-w-0 flex-1 gap-2">
+      <div className="grid min-w-0 flex-1 gap-2 in-data-[view=judge]:gap-0.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
           <TitleTag className="m-0 min-w-0 text-body font-semibold leading-snug text-ink">
             <RowTarget title={title} href={href} onSelect={onSelect} selectId={selectId} selected={selected} />

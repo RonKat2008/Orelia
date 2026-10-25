@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Skeleton, toast } from '@/components/ui';
 import { ArrowRight } from 'lucide-react';
 import type { ContactPlan, PlanEdit } from '@/lib/plan/contract';
@@ -16,6 +17,7 @@ const SectionH = CASE_SECTION_HEADING;
 type Phase = 'loading' | 'ready' | 'error';
 
 export function PlanView({ caseId }: { caseId: string }) {
+  const router = useRouter();
   const [plan, setPlan] = useState<ContactPlan | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -100,8 +102,11 @@ export function PlanView({ caseId }: { caseId: string }) {
       const result = approveOutcome(parseMaterialized(res.materialized));
       setOutcome(result);
       setEditing(false);
-      if (result.count > 0) toast.success(result.headline);
-      else toast.info(result.headline);
+      if (result.count > 0) {
+        toast.success(result.headline);
+        // The drafts are written: go straight to reading them (the next click is the approval itself).
+        router.push(`/cases/${caseId}/outbox`);
+      } else toast.info(result.headline);
     }
   };
 

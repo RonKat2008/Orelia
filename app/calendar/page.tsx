@@ -15,14 +15,16 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     <div className="ds-root min-h-dvh bg-paper text-ink">
       <SiteHeader />
       <main id="main">
-        <div className="page-container grid gap-section py-section">
+        <div className="page-container py-8">
           <PageHeader
             title="Your appointments"
             lede="Times offices suggest wait for you to confirm. Confirmed ones get reminders and can sync to your calendar."
-            className="mb-0"
+            className="mb-6"
           />
-          <UpcomingAppointments limit={8} />
-          <CalendarSettings googleResult={google} />
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
+            <UpcomingAppointments limit={8} />
+            <CalendarSettings googleResult={google} />
+          </div>
         </div>
       </main>
       <SiteFooter />

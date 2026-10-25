@@ -36,7 +36,7 @@ export function SegmentedControl<T extends string>({ label, options, value, onVa
         if (next) onValueChange(next as T);
       }}
       data-slot="segmented-control"
-      className={cn("inline-flex w-fit max-w-full flex-wrap gap-1 rounded-pill bg-paper-2 p-1 shadow-inset", className)}
+      className={cn("inline-flex w-fit max-w-full gap-1 overflow-x-auto rounded-pill bg-paper-2 p-1 shadow-inset [scrollbar-width:none] sm:flex-wrap", className)}
     >
       {options.map((option) => (
         <ToggleGroup.Item

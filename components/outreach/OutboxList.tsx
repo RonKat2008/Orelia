@@ -1,7 +1,7 @@
 "use client";
 
 import { DemoCoordinatorBadge, demoDestinationLabel, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { CircleCheck, CircleDashed, FileText, Mail, PhoneCall, TriangleAlert } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   EmptyState,
   JudgeOnly,
+  Kbd,
   List,
   ListRow,
   LoadingState,
@@ -167,6 +168,38 @@ export function OutboxList({ caseId }: { caseId: string }) {
     return { ok: true };
   }
 
+  const waitingRows = rows.filter(isApprovable);
+
+  // Keyboard: A approves the open draft (after its confirmation), Shift+A opens "approve all" with every draft listed,
+  // N moves to the next draft that is waiting. A key alone never approves anything: both open a confirmation first.
+  const onKey = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || confirming || batchSnapshot) return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+      const key = event.key.toLowerCase();
+      const open = rows.find((row) => `draft:${row.contact.id}` === selectedKey) ?? waitingRows[0];
+      if (key === "a" && event.shiftKey && waitingRows.length > 1 && !pending) {
+        event.preventDefault();
+        setBatchSnapshot(batchOf(waitingRows));
+      } else if (key === "a" && !event.shiftKey && open && isApprovable(open)) {
+        event.preventDefault();
+        setConfirming(open.contact.id);
+      } else if (key === "n" && waitingRows.length > 0) {
+        event.preventDefault();
+        const index = waitingRows.findIndex((row) => `draft:${row.contact.id}` === selectedKey);
+        const next = waitingRows[(index + 1) % waitingRows.length];
+        setSelectedKey(`draft:${next.contact.id}`);
+        setDetailOpen(true);
+      }
+    },
+    [batchSnapshot, confirming, pending, rows, selectedKey, waitingRows],
+  );
+  useEffect(() => {
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onKey]);
+
   if (phase === "loading") {
     return (
       <LoadingState label="Loading drafts">
@@ -197,14 +230,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const replaceApplication = (next: ApiApplication) =>
     setApplications((current) => current.map((app) => (app.id === next.id ? next : app)));
 
-  const batchItems: BatchItem[] = rows
-    .filter((row) => row.draft && !row.approvedAt && !row.held)
-    .map((row) => ({
-      id: row.contact.id,
-      recipient: titleCase(contactLabel(row.contact)),
-      channel: (row.draft?.channel ?? row.contact.channel) === "email" ? "email" : "voice",
-      summary: row.draft?.subject?.trim() || (row.draft?.body ?? "").split("\n").find((line) => line.trim()) || "No preview",
-    }));
+  const batchItems = batchOf(rows.filter((row) => row.draft && !row.approvedAt && !row.held));
 
   const keys = [
     ...applications.map((app) => `app:${app.id}`),
@@ -270,18 +296,22 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const confirmEmail = (confirmDraft?.channel ?? confirmRow?.contact.channel) === "email";
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
-      <p role="status" aria-live="polite" className="m-0 text-body text-ink-2">
-        {statusLine}
-      </p>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p role="status" aria-live="polite" className="m-0 text-body text-ink-2">
+          {statusLine}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="m-0 hidden text-small text-ink-2 lg:block">
+            <Kbd>A</Kbd> approve · <Kbd>Shift</Kbd>+<Kbd>A</Kbd> approve all · <Kbd>N</Kbd> next
+          </p>
+          {!batchSnapshot && batchItems.length >= 2 && !pending ? (
+            <Button onClick={() => setBatchSnapshot(batchItems)}>Approve all ({batchItems.length})</Button>
+          ) : null}
+        </div>
+      </div>
       {batchSnapshot ? (
         <ApproveAllPanel items={batchSnapshot} approveOne={approveForBatch} onClose={() => setBatchSnapshot(null)} />
-      ) : batchItems.length >= 2 && !pending ? (
-        <div>
-          <Button variant="secondary" onClick={() => setBatchSnapshot(batchItems)}>
-            Approve all ({batchItems.length})
-          </Button>
-        </div>
       ) : null}
       <TwoPane
         listLabel="Drafts"
@@ -356,7 +386,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                   Go back
                 </Button>
               </DialogClose>
-              <Button loading={approvingId === confirmRow.contact.id} loadingText="Approving" onClick={() => void approve(confirmRow)}>
+              <Button autoFocus loading={approvingId === confirmRow.contact.id} loadingText="Approving" onClick={() => void approve(confirmRow)}>
                 {confirmEmail ? "Send this email" : "Approve this call"}
               </Button>
             </DialogFooter>
@@ -372,6 +402,21 @@ const CONSENT_REQUIRED = REFUSAL_LABELS.consent_required;
 /** A draft that could not be written because no consent is saved yet: a missing answer, not an error. */
 function needsConsent(row: Row): boolean {
   return !row.draft && (row.error ?? []).some((reason) => reason === CONSENT_REQUIRED);
+}
+
+/** The rows for the "approve all" panel: each draft in full, so nothing is approved unseen. */
+function batchOf(list: Row[]): BatchItem[] {
+  return list.map((row) => ({
+    id: row.contact.id,
+    recipient: titleCase(contactLabel(row.contact)),
+    channel: (row.draft?.channel ?? row.contact.channel) === "email" ? "email" : "voice",
+    summary: [row.draft?.subject?.trim() ? `Subject: ${row.draft.subject.trim()}` : "", row.draft?.body ?? ""].filter(Boolean).join("\n\n") || "No preview",
+  }));
+}
+
+/** A draft that can be approved: written, disclosed, not yet approved, not on hold. */
+function isApprovable(row: Row): boolean {
+  return Boolean(row.draft) && !row.approvedAt && !row.held && hasDisclosure(row.draft?.body ?? "");
 }
 
 function rowStatus(row: Row): { label: string; tone: "ok" | "neutral" | "teal" | "danger" | "outline"; icon: ReactNode } {
@@ -446,7 +491,22 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
   const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? rowChannel ?? "email" });
   const demoLabel = demoDestinationLabel(draft?.address ?? row.contact.address, useDemoDestinations());
 
+  const actions = approved || !draft ? null : (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <Button disabled={blocked} onClick={onApprove}>
+        {isEmail ? "Approve this email" : "Approve this call"}
+      </Button>
+      <Button asChild variant="secondary">
+        <Link href={`/cases/${caseId}/consent`}>Change what it shares</Link>
+      </Button>
+      <Button variant="link" onClick={onHold}>
+        {row.held ? "Resume this draft" : "Hold this draft"}
+      </Button>
+    </div>
+  );
+
   const header = (
+    <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
     <div className="grid gap-1">
       <SectionH id={`draft-${row.contact.id}`} className="m-0 break-words font-display text-h3 font-normal text-ink display-soft">
         {name}
@@ -454,7 +514,10 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
       <p className="m-0 text-small text-ink-2">
         {followUp ? `${followUp}, ${isEmail ? "email" : "call"}` : isEmail ? "Email draft" : "Call script"}
         {stepCtx ? <span data-plan-step> · {stepContextText(stepCtx)}</span> : null}
+        {actions ? <span className="block">Nothing is sent without your OK.</span> : null}
       </p>
+    </div>
+    {actions}
     </div>
   );
 
@@ -492,7 +555,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
 
   return (
     <div
-      className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6"
+      className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4"
       data-channel={draft.channel}
       data-approved={approved ? "true" : "false"}
       aria-labelledby={`draft-${row.contact.id}`}
@@ -562,22 +625,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
             Follow it in the tracker
           </Link>
         </p>
-      ) : (
-        <div className="grid gap-3 border-t border-line pt-6">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Button disabled={blocked} onClick={onApprove}>
-              {isEmail ? "Approve this email" : "Approve this call"}
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href={`/cases/${caseId}/consent`}>Change what it shares</Link>
-            </Button>
-            <Button variant="link" onClick={onHold}>
-              {row.held ? "Resume this draft" : "Hold this draft"}
-            </Button>
-          </div>
-          <p className="m-0 text-small text-ink-2">Nothing is sent without your OK.</p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

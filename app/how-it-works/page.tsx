@@ -22,10 +22,11 @@ export default function HowItWorksPage() {
     <div className="ds-root min-h-dvh bg-paper text-ink">
       <SiteHeader />
       <main id="main">
-        <div className="page-container pt-14 sm:pt-20">
+        <div className="page-container pt-8 sm:pt-10">
           <PageHeader
             title="How Wayfinder works"
             lede="Most doctors may never have seen a case. We find the ones who have. Four steps, and you approve every message."
+            className="mb-6"
             action={
               <Button asChild size="lg">
                 <Link href={START_HREF}>Start your case</Link>
@@ -36,28 +37,28 @@ export default function HowItWorksPage() {
 
         <section
           aria-labelledby="steps-heading"
-          className="page-container pb-section"
+          className="page-container pb-10"
         >
           <h2 id="steps-heading" className="sr-only">
             The four steps
           </h2>
-          <ol className="m-0 list-none border-t border-line p-0">
+          <ol className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-4">
             {HOW_STEPS.map((step, i) => (
               <li
                 key={step.id}
-                className="grid grid-cols-[minmax(0,1fr)] gap-x-8 gap-y-3 border-b border-line py-8 md:grid-cols-[14rem_minmax(0,1fr)]"
+                className="grid content-start gap-2 rounded-lg border border-line bg-paper-2/60 p-4"
               >
-                <h3 className="m-0 font-display text-h3 font-light text-ink display-soft">
+                <h3 className="m-0 flex items-baseline gap-2 font-display text-h3 font-light text-ink display-soft">
                   <span className="sr-only">Step {i + 1}: </span>
-                  <span aria-hidden>{i + 1}. </span>
+                  <span aria-hidden className="text-teal">
+                    {i + 1}
+                  </span>
                   {step.title}
                 </h3>
-                <div className="grid max-w-prose gap-3">
-                  <p className="m-0 text-body text-ink">{step.body}</p>
-                  <p className="m-0 text-small text-ink-2">
-                    Behind the scenes: {step.behind}
-                  </p>
-                </div>
+                <p className="m-0 text-body text-ink">{step.body}</p>
+                <p className="m-0 text-small text-ink-2">
+                  Behind the scenes: {step.behind}
+                </p>
               </li>
             ))}
           </ol>
@@ -69,11 +70,11 @@ export default function HowItWorksPage() {
           aria-labelledby="walkaway-heading"
           className="border-y border-line bg-paper-2"
         >
-          <div className="page-container py-section">
-            <div className="grid max-w-3xl gap-4">
+          <div className="page-container py-8">
+            <div className="grid max-w-3xl gap-3">
               <h2
                 id="walkaway-heading"
-                className="m-0 font-display text-h2 font-light text-balance display-soft"
+                className="m-0 font-display text-h3 font-light text-balance display-soft"
               >
                 You can walk away
               </h2>

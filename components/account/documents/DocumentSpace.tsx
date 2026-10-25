@@ -129,10 +129,10 @@ export function DocumentSpace({ scope, compact = false, onChange }: DocumentSpac
   const total = docs.length - docs.filter((d) => uploadingIds.has(d.id)).length;
 
   return (
-    <div className={compact ? "grid gap-5" : "grid gap-12"}>
+    <div className={compact ? "grid gap-5" : "grid gap-6"}>
       <UploadPanel queue={queue} compact={compact} />
 
-      <section aria-labelledby="library-heading" className={compact ? "grid gap-3" : "grid gap-5"}>
+      <section aria-labelledby="library-heading" className={compact ? "grid gap-3" : "grid gap-3"}>
         <h2 id="library-heading" className={compact ? "sr-only" : "m-0 font-display text-h3 font-normal text-ink display-soft"}>Your library</h2>
         {loadError ? <Callout tone="danger" role="alert">{loadError}</Callout> : null}
 

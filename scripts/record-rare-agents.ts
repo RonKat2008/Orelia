@@ -38,7 +38,8 @@ async function main(): Promise<void> {
           const dir = path.join("fixtures", "api", "exa", c.slug);
           mkdirSync(dir, { recursive: true });
           // Hard rule: no real email addresses in fixtures.
-          const scrubbed = JSON.stringify({ query: input.query, includeDomains: input.includeDomains ?? [], results }, null, 2).replace(EMAIL, "[email removed]");
+          const clean = results.map((r) => ({ ...r, title: r.title.replace(EMAIL, "[email removed]"), ...(r.text ? { text: r.text.replace(EMAIL, "[email removed]") } : {}) }));
+          const scrubbed = JSON.stringify({ query: input.query, includeDomains: input.includeDomains ?? [], results: clean }, null, 2);
           writeFileSync(path.join(dir, `${input.fixtureKey}.json`), `${scrubbed}\n`);
         }
         return results;

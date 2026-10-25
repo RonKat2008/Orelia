@@ -1,4 +1,17 @@
 import { ingestEvidence } from '@/lib/case-docs/hooks';
+
+/**
+ * Evidence chunks are an enrichment (retrieval context for later outreach drafts), not part of the research result.
+ * By the time this runs the candidates and evidence rows are already saved, so a transient embedding-model error
+ * (a 503 from the gateway) or a dropped database connection must not turn a finished search into a failed one.
+ */
+async function ingestEvidenceSafely(caseId: string, evidence: Parameters<typeof ingestEvidence>[1], documents?: DocumentStore): Promise<void> {
+  try {
+    await ingestEvidence(caseId, evidence, documents);
+  } catch (error) {
+    console.error(`[case-docs ${caseId}] evidence ingest failed; shortlist kept`, error instanceof Error ? error.message : 'error');
+  }
+}
 import type { DocumentStore } from '@/lib/case-docs/store';
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
@@ -155,7 +168,7 @@ export class MemoryPersist implements Persist {
         evidence: e.record.evidence.map(toShortlistEvidence),
       })),
     );
-    await ingestEvidence(caseId, entries.flatMap(e => e.record.evidence), this.documents);
+    await ingestEvidenceSafely(caseId, entries.flatMap(e => e.record.evidence), this.documents);
   }
 
   async getShortlist(caseId: string): Promise<ShortlistItem[]> {
@@ -306,7 +319,7 @@ export class DbPersist implements Persist {
         })),
       );
     }
-    await ingestEvidence(caseId, entries.flatMap(e => e.record.evidence), this.documents);
+    await ingestEvidenceSafely(caseId, entries.flatMap(e => e.record.evidence), this.documents);
   }
 
   async getShortlist(caseId: string): Promise<ShortlistItem[]> {

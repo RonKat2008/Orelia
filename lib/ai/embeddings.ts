@@ -3,6 +3,9 @@ import { modelFor } from '@/config/models';
 import { gatewayConfig } from './gateway';
 
 export const DIMENSIONS = 1024;
+/** Attempts per batch before giving up (the first call plus retries on 429/502/503/504). */
+const MAX_ATTEMPTS = 4;
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
 export const FAKE_EMBED_MODEL = 'wayfinder-hashed-bow-v1';
 export function embeddingModel() {
   return process.env.WAYFINDER_OFFLINE === '1' || !gatewayConfig() ? FAKE_EMBED_MODEL : modelFor('embedding');
@@ -35,7 +38,8 @@ export async function embed(texts: string[]): Promise<number[][]> {
         body: JSON.stringify({ model: modelFor('embedding'), input: batch, dimensions: DIMENSIONS }),
         signal: AbortSignal.timeout(60_000),
       });
-      if (response.status === 429 && attempt < 3) {
+      // Rate limits and transient upstream failures (502/503/504) are retried with backoff; anything else fails fast.
+      if ((response.status === 429 || TRANSIENT_STATUSES.has(response.status)) && attempt < MAX_ATTEMPTS - 1) {
         const retry = Number(response.headers.get('retry-after'));
         await new Promise(resolve => setTimeout(resolve, Math.min(30_000, retry > 0 ? retry * 1000 : 250 * 2 ** attempt)));
         continue;

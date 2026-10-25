@@ -69,6 +69,29 @@ describe('MemoryPersist', () => {
   });
 });
 
+describe('evidence ingest is best-effort', () => {
+  it('MemoryPersist keeps the shortlist when embedding the evidence fails', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    ingestEvidence.mockRejectedValueOnce(new Error('Embedding request failed (503)'));
+    const p = new MemoryPersist();
+    await expect(p.saveResults(CASE, [entry(expert(), 1, [ev('e1')])])).resolves.toBeUndefined();
+    expect(await p.getShortlist(CASE)).toHaveLength(1);
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining(`[case-docs ${CASE}] evidence ingest failed`), 'Embedding request failed (503)');
+    errorLog.mockRestore();
+  });
+
+  it('DbPersist still saves candidates and evidence when the ingest throws', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    ingestEvidence.mockRejectedValueOnce(new Error('Failed query: insert into "case_documents"'));
+    const { fake, persist } = persistWith();
+    await expect(persist.saveResults(CASE, [entry(trial(), 1, [ev('e1', 'ctgov')])])).resolves.toBeUndefined();
+    expect(fake.callsFor('insert:case_candidates')).toHaveLength(1);
+    expect(fake.callsFor('insert:evidence')).toHaveLength(1);
+    expect(errorLog).toHaveBeenCalledTimes(1);
+    errorLog.mockRestore();
+  });
+});
+
 describe('DbPersist.saveResults', () => {
   it('upserts an institution with defaults, flags NCI designation from evidence, and maps its id', async () => {
     const { fake, persist } = persistWith();

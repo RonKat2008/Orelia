@@ -6,6 +6,8 @@ vi.mock('../../lib/workflows/follow-up-sweep', () => ({
   PostgresFollowUpSweepStore: class {},
 }));
 vi.mock('../../lib/workflows/default-deps', () => ({ createDefaultDeps: () => ({}) }));
+const runDueAgents = vi.hoisted(() => vi.fn(async () => ({ ran: 1, skipped: 0, failed: 0, digests: { sent: 0, skipped: 0 } })));
+vi.mock('../../lib/agents/factory', () => ({ runDueAgents }));
 
 import { GET } from '../../app/api/cron/follow-ups/route';
 
@@ -35,8 +37,9 @@ describe('GET /api/cron/follow-ups auth', () => {
     vi.stubEnv('DATABASE_URL', 'postgres://x');
     const res = await GET(req('Bearer s3cret'));
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ ok: true, steps: { followUps: { claimed: 2, stalled: 1 } } });
+    expect(await res.json()).toMatchObject({ ok: true, steps: { followUps: { claimed: 2, stalled: 1 }, resourceAgents: { ran: 1, failed: 0 } } });
     expect(sweep).toHaveBeenCalledOnce();
+    expect(runDueAgents).toHaveBeenCalledOnce();
   });
   it('does not sweep when Inngest owns the timers', async () => {
     vi.stubEnv('CRON_SECRET', 's3cret');

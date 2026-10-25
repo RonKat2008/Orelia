@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { KernelBrowserProvider } from '../../lib/channels/kernel-web';
 import { readOnlyLiveViewUrl, withLiveViewScope, type LiveViewSink, type LiveViewStart } from '../../lib/channels/live-view';
 
-function setup(liveUrl: string | undefined = 'https://api.onkernel.com/browser/live/TOKEN') {
+function setup(liveUrl: string | null = 'https://api.onkernel.com/browser/live/TOKEN') {
   const page: any = { goto: vi.fn(), evaluate: vi.fn(async () => []), locator: () => ({ first() { return this; }, fill: vi.fn() }), screenshot: vi.fn(), url: () => 'x', waitForLoadState: vi.fn() };
   const browser = { contexts: () => [{ pages: () => [page], newPage: async () => page }], newContext: async () => ({ newPage: async () => page }), close: vi.fn(async () => undefined) };
   const client = { browsers: { create: vi.fn(async () => ({ cdp_ws_url: 'wss://cdp', session_id: 's1', ...(liveUrl ? { browser_live_view_url: liveUrl } : {}) })), deleteByID: vi.fn(async () => undefined) } };
@@ -27,7 +27,7 @@ describe('Kernel live view capture', () => {
   });
   it('records nothing without a scope, without a url, or for non-https urls', async () => {
     const a = setup(); await a.provider.launch(); expect(a.started).toHaveLength(0);
-    const b = setup(undefined); await withLiveViewScope(scope, () => b.provider.launch()); expect(b.started).toHaveLength(0);
+    const b = setup(null); await withLiveViewScope(scope, () => b.provider.launch()); expect(b.started).toHaveLength(0);
     const c = setup('http://evil.test/x'); await withLiveViewScope(scope, () => c.provider.launch()); expect(c.started).toHaveLength(0);
   });
   it('holds a filled browser open before closing, then expires the live view', async () => {

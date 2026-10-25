@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { stoppedCopy } from "./stopped-copy";
 import { useEffect, useState } from "react";
 import { ActionCard, Button, Skeleton, Surface, toast } from "@/components/ui";
 import { approveContactDraft, createContactDraft, loadCase, type ApiDraft } from "@/components/outreach/client";
@@ -45,9 +46,6 @@ export const MESSAGE_COPY = {
   loading: "Writing the message",
   changed: "This message changed",
   changedDetail: "Please read the new version. Nothing was sent.",
-  stopped: "Our safety check stopped this message",
-  stoppedDetail: "Nothing was sent.",
-  tryLater: "You can try again later, or change the message.",
   sent: "Sent",
   sentDetail: "We'll tell you when they reply.",
   queued: "It will go out shortly.",
@@ -121,7 +119,8 @@ export function MessageCard({ caseId, onDone, action: first }: ActionProps & { a
     if (!result.ok) {
       setBusy(false);
       setErrors(result.reasons);
-      toast.error(MESSAGE_COPY.stopped, { description: MESSAGE_COPY.stoppedDetail });
+      const stopped = stoppedCopy(result.reasons);
+      toast.error(stopped.title, { description: stopped.detail });
       return;
     }
     toast.success(call ? MESSAGE_COPY.callOk : MESSAGE_COPY.sent, { description: result.sentAt ? MESSAGE_COPY.sentDetail : MESSAGE_COPY.queued });
@@ -176,7 +175,7 @@ export function MessageCard({ caseId, onDone, action: first }: ActionProps & { a
     >
       {errors.length > 0 ? (
         <p role="alert" data-reasons={errors.join(" ")} className="m-0 text-body text-ink">
-          {MESSAGE_COPY.stopped}. {MESSAGE_COPY.stoppedDetail} {MESSAGE_COPY.tryLater}
+          {stoppedCopy(errors).title}. {stoppedCopy(errors).detail}
         </p>
       ) : null}
       {!draft && errors.length === 0 ? (

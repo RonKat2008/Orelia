@@ -18,9 +18,10 @@ export class ExaClient {
     const records = [...new Map(pages.map(p => [p.url,p])).values()];
     return {records,evidence:records.flatMap(p => { const text = p.text?.trim(); return text ? [evidence("exa",p.url,fetchedAt,"page_excerpt",text.slice(0,1000))] : []; })};
   }
-  async search(query: string, options: {key?: string; numResults?: number} = {}): Promise<SourceResult<ExaPage>> {
+  async search(query: string, options: {key?: string; numResults?: number; includeDomains?: string[]} = {}): Promise<SourceResult<ExaPage>> {
     if (!query.trim()) throw new SourceError("exa", "Empty search query");
-    const response = await this.request("search",{query,numResults:options.numResults ?? 10,contents:{text:true}},options.key);
+    const domains = options.includeDomains?.filter(d => d.trim()) ?? [];
+    const response = await this.request("search",{query,numResults:options.numResults ?? 10,...(domains.length ? {includeDomains:domains} : {}),contents:{text:true}},options.key);
     response.results.forEach(r => this.returnedUrls.add(r.url));
     // Search fixtures include the text fetched by Exa's contents option. Bare snippets/titles produce no evidence.
     return this.result(response.results,response.fetchedAt);

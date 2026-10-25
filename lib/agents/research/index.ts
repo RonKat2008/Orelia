@@ -7,6 +7,9 @@ import { identityAgent } from "./identity";
 import { literatureAgent } from "./literature";
 import { logisticsAgent } from "./logistics";
 import { networkAgent } from "./network";
+import { diseaseFundsAgent } from "./disease-funds";
+import { rareNetworkAgent } from "./rare-network";
+import { secondOpinionAgent } from "./second-opinion";
 import { trialsAgent } from "./trials";
 import type { ResearchAgent } from "./types";
 
@@ -18,6 +21,9 @@ export const researchAgents: ReadonlyArray<ResearchAgent> = [
   centersAgent,
   advocacyAgent,
   aidAgent,
+  rareNetworkAgent,
+  diseaseFundsAgent,
+  secondOpinionAgent,
   contactFinderAgent,
   networkAgent,
   logisticsAgent,

@@ -32,6 +32,7 @@ import type {
 const PUBMED_RETMAX = 50;
 const DEFAULT_AUTHOR_LIMIT = 6;
 const DEFAULT_RATE_PER_SECOND = 3;
+const DIRECTORY_RATE_PER_SECOND = 2;
 const PUBMED_KEYED_RATE_PER_SECOND = 10;
 const MAX_CENTERS = 8;
 const NPPES_RESULT_LIMIT = 200;
@@ -42,7 +43,7 @@ export interface LivePortsOptions {
   /** Reference date for "last 5 years" paper counts. */
   now?: () => Date;
   /** Shared or fake-clock limiters; each defaults to the source's conservative rate. */
-  limiters?: Partial<Record<"pubmed" | "ctgov" | "nppes" | "exa", RateLimiter>>;
+  limiters?: Partial<Record<"pubmed" | "ctgov" | "nppes" | "exa" | "exaDirectory", RateLimiter>>;
   /** Pre-loaded NCI dataset (tests); otherwise data/nci-centers.json is read lazily. */
   nciDataset?: NciDataset;
   /** Fixture keys per request (tests only): lets a FixtureTransport replay differently-shaped live queries. */
@@ -98,7 +99,7 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
   const keyed: Transport = options.keyFor
     ? { request: (r) => transport.request({ ...r, key: r.key ?? options.keyFor?.(r) }) }
     : transport;
-  const limiter = (name: "pubmed" | "ctgov" | "nppes" | "exa", rate: number): RateLimiter =>
+  const limiter = (name: "pubmed" | "ctgov" | "nppes" | "exa" | "exaDirectory", rate: number): RateLimiter =>
     options.limiters?.[name] ?? new RateLimiter(rate);
 
   const pubmedClient = new PubMedClient(keyed, {
@@ -108,6 +109,8 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
   const ctgovClient = new CtgovClient(keyed, limiter("ctgov", DEFAULT_RATE_PER_SECOND));
   const nppesClient = new NppesClient(keyed, limiter("nppes", DEFAULT_RATE_PER_SECOND));
   const exaClient = new ExaClient(keyed, env.EXA_API_KEY, limiter("exa", DEFAULT_RATE_PER_SECOND));
+  // Second serial lane for the rare-disease directory agents (combined rate stays within Exa's 5 req/s search limit in practice: each lane waits for its call to finish).
+  const exaDirectoryClient = new ExaClient(keyed, env.EXA_API_KEY, limiter("exaDirectory", DIRECTORY_RATE_PER_SECOND));
 
   const pubmed: PubmedPort = {
     async searchAuthors({ disease, limit = DEFAULT_AUTHOR_LIMIT }) {
@@ -182,12 +185,14 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
     },
   };
 
-  const exa: ExaPort = {
-    async search({ query, numResults }) {
-      const { records } = await exaClient.search(query, { numResults });
+  const exaPort = (client: ExaClient): ExaPort => ({
+    async search({ query, numResults, includeDomains }) {
+      const { records } = await client.search(query, { numResults, ...(includeDomains?.length ? { includeDomains } : {}) });
       return records.map((r) => ({ url: r.url, title: r.title ?? r.url, text: r.text }));
     },
-  };
+  });
+  const exa = exaPort(exaClient);
+  const exaDirectory = exaPort(exaDirectoryClient);
 
   // Statically imported so the bundler includes it (no dynamic filesystem tracing).
   const dataset: NciDataset = options.nciDataset ?? (nciCentersData as NciDataset);
@@ -208,5 +213,5 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
     },
   };
 
-  return { pubmed, ctgov, nppes, exa, centers };
+  return { pubmed, ctgov, nppes, exa, centers, exaDirectory };
 }

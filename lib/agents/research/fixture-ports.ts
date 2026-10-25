@@ -226,7 +226,16 @@ export function createFixturePorts(options: Options = {}): SourcePorts {
   };
 
   const exa: ExaPort = {
-    async search({ query }) {
+    async search({ query, fixtureKey }) {
+      if (fixtureKey) {
+        // Directory agents' seed calls replay fixtures/api/exa/<case>/<fixtureKey>.json; an unrecorded one is "nothing found".
+        const caseDir = ["epithelioid-sarcoma", "vascular-eds", "igg4-related-disease"].find((s) =>
+          query.toLowerCase().includes(s === "vascular-eds" ? "ehlers" : s === "igg4-related-disease" ? "igg4" : "epithelioid"),
+        );
+        const rel = caseDir ? `exa/${caseDir}/${fixtureKey}.json` : undefined;
+        if (!rel || !reader.exists(rel)) return [];
+        return reader.json<{ results: Array<{ url: string; title: string; text?: string }> }>(rel).results.map((r) => ({ url: r.url, title: r.title, text: r.text }));
+      }
       // The recorder ran three queries per disease: 1 advocacy, 2 financial/travel aid, 3 centers.
       const n = /advoca|support group|foundation/i.test(query) ? 1 : /financ|copay|grant|lodging|assistance/i.test(query) ? 2 : 3;
       const slug = ["epithelioid-sarcoma", "vascular-eds", "igg4-related-disease"].find((s) =>

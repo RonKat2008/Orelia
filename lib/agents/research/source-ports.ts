@@ -84,7 +84,14 @@ export interface ExaResult {
 }
 
 export interface ExaPort {
-  search(input: { query: string; numResults?: number }): Promise<ExaResult[]>;
+  search(input: {
+    query: string;
+    numResults?: number;
+    /** Restrict results to these official domains (fixed by code, never by a model). */
+    includeDomains?: string[];
+    /** Recorded-response stem for offline replay (fixtures/api/exa/<case>/<fixtureKey>.json); ignored live. */
+    fixtureKey?: string;
+  }): Promise<ExaResult[]>;
 }
 
 export interface NciCenter {
@@ -106,4 +113,9 @@ export interface SourcePorts {
   nppes: NppesPort;
   exa: ExaPort;
   centers: CentersPort;
+  /**
+   * Separate Exa lane (own client + rate limiter) for the rare-disease directory agents, so their searches never
+   * queue behind the original agents' calls. Falls back to `exa` when absent.
+   */
+  exaDirectory?: ExaPort;
 }

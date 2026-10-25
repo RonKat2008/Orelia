@@ -17,6 +17,6 @@ export const publicRoutes: Record<string, { methods: readonly string[]; protecti
   '/api/integrations/google/callback': { methods: ['GET'], protection: 'Google OAuth redirect: 404 unless Google is configured; requires the AES-GCM sealed, 10-minute flow cookie whose state AND viewer session must both match before the PKCE code exchange; returns only a same-site redirect.' },
 };
 /** Routes whose response is a status probe with no storage behind it (the storage-failure probe expects < 400). */
-export const statusOnlyRoutes = new Set(['/api/health', '/api/account:GET', '/api/account/sign-out:POST']);
+export const statusOnlyRoutes = new Set(['/api/health', '/api/account:GET', '/api/account/sign-out:POST', '/api/cases/[id]/space/usage:GET', '/api/cases/[id]/space/adopt:POST']);
 /** Creates a new owned resource; no existing case to authorize. CSRF still required. */
 export const creationRoutes = new Set(['/api/cases:POST']);

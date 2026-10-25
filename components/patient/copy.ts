@@ -80,9 +80,9 @@ export const PATIENT_HOME_COPY = {
   },
   documents: {
     title: "Your documents",
-    empty: "No documents yet. Add some so our agents can use them.",
+    empty: "No documents yet. Add some so we can use them in your search.",
     count: (total: number, ready: number) =>
-      `${total} ${total === 1 ? "document" : "documents"}, ${ready} ready for your agents`,
+      `${total} ${total === 1 ? "document" : "documents"}, ${ready} ready to use`,
     action: "Add documents",
   },
   form: {

@@ -160,8 +160,8 @@ function QuestionFields({
               ))}
             </RadioGroup>
           </fieldset>
-          <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0">
-            <legend className="mb-1 p-0 text-body font-semibold text-ink">{COPY.questions.needs.goalsLegend}</legend>
+          <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0 sm:grid-cols-2">
+            <legend className="col-span-full mb-1 p-0 text-body font-semibold text-ink">{COPY.questions.needs.goalsLegend}</legend>
             {GOALS.map((goal) => (
               <ChoiceRow key={goal} title={COPY.goals[goal]} className="items-center p-3">
                 <Checkbox

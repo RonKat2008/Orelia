@@ -6,12 +6,15 @@ import type { VerificationsResponse } from "@/lib/verification/contract";
 import type { NeedsJudgeResult } from "@/components/judge/client";
 import { Badge, Button, CheckedMark, Checkbox, EmptyState, List, ListRow, TwoPane, WIDE_QUERY, useMediaQuery } from "@/components/ui";
 import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
-import { bandShortlist, selectionKey, type ShortlistCard } from "./data";
+import { bandShortlist, isContactable, selectionKey, type ShortlistCard } from "./data";
 import { FilterBar } from "./FilterBar";
 import { JudgeOverview, hasOverview } from "./JudgeOverview";
 import { ShortlistDetail, TIER_TONE } from "./ShortlistDetail";
 import { badgeViews } from "./verify-model";
 import { GROUPS, NO_FILTERS, matchesFilters, metaOf, tierLabel, titleOf, type ShortlistFilters } from "./view-model";
+
+/** Shown on any resource with no email, phone or web form: it can be read, never picked. */
+const NO_CONTACT_TEXT = "No way to contact yet";
 
 const OVERVIEW = "__overview__";
 
@@ -104,6 +107,16 @@ export function ShortlistConsole({
     const key = selectionKey(card);
     const isOn = selected.includes(key);
     const full = !isOn && selected.length >= limit;
+    if (!isContactable(card)) {
+      return (
+        <div className="grid gap-1">
+          <Button variant="secondary" disabled aria-describedby="sl-no-contact-detail">
+            Add to contacts
+          </Button>
+          <p id="sl-no-contact-detail" className="m-0 text-small text-ink-2">{NO_CONTACT_TEXT}</p>
+        </div>
+      );
+    }
     return (
       <Button variant="secondary" disabled={full} onClick={() => onToggle(key)}>
         {isOn ? "Remove from contacts" : full ? `${limit} already chosen` : "Add to contacts"}
@@ -170,6 +183,8 @@ export function ShortlistConsole({
                 const title = titleOf(card.resource);
                 const isOn = selected.includes(key);
                 const tier = tierLabel(card.tier);
+                const contactable = isContactable(card);
+                const noContactId = `sl-nocontact-${key}`;
                 return (
                   <ListRow
                     key={key}
@@ -179,15 +194,22 @@ export function ShortlistConsole({
                     leading={
                       <Checkbox
                         checked={isOn}
-                        disabled={!isOn && selected.length >= limit}
+                        disabled={!contactable || (!isOn && selected.length >= limit)}
                         onCheckedChange={() => onToggle(key)}
                         aria-label={`Choose ${title} to contact`}
+                        aria-describedby={contactable ? undefined : noContactId}
                       />
                     }
                     badges={tier && card.tier ? <Badge tone={TIER_TONE[card.tier]}>{tier}</Badge> : null}
                     meta={
                       <>
                         {metaOf(card)}
+                        {contactable ? null : (
+                          <>
+                            {" · "}
+                            <span id={noContactId} className="font-semibold text-ink-2">{NO_CONTACT_TEXT}</span>
+                          </>
+                        )}
                         {card.evidence.length > 0 ? (
                           <>
                             {" · "}

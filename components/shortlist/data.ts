@@ -7,6 +7,7 @@ import {
   type Resource,
 } from "@/lib/contracts";
 import { isStudyOrRegistry, rareTags } from "@/lib/rare-disease/tags";
+import { isReachable } from "@/lib/outreach/reachability";
 import { z } from "zod";
 
 export const tierSchema = z.enum(["best", "good", "backup", "exclude"]);
@@ -24,12 +25,19 @@ export const shortlistCardSchema = z.object({
   group: z.enum(["specialists", "studies", "trials", "advocacy", "aid"]),
   tier: tierSchema.optional(),
   tierReasons: z.array(tierReasonSchema).optional(),
+  /** Server-derived: false when there is no email, phone or web form, so the card cannot be picked. */
+  contactable: z.boolean().optional(),
 });
 
 export type ShortlistCard = z.infer<typeof shortlistCardSchema> & {
   /** Case candidate row id. Consent and outreach select this, not the resource id. */
   caseCandidateId?: string | null;
 };
+
+/** Server flag first; falls back to the shared reachability rule for payloads without it. */
+export function isContactable(card: ShortlistCard): boolean {
+  return card.contactable ?? isReachable(card.evidence);
+}
 
 export function selectionKey(card: ShortlistCard): string {
   return card.caseCandidateId || card.resource.id;
@@ -278,6 +286,7 @@ const apiItemSchema = z.object({
   tier: tierSchema.optional(),
   tierReasons: z.array(tierReasonSchema).optional(),
   caseCandidateId: z.string().nullable().optional(),
+  contactable: z.boolean().optional(),
   nctId: z.string().nullable().optional(),
   organizationKind: z.enum(ORGANIZATION_KINDS).nullable().optional(),
 });
@@ -357,6 +366,7 @@ function normalizeApiShortlist(value: unknown): ShortlistPayload | null {
           tier: row.tier,
           tierReasons: row.tierReasons,
           caseCandidateId: row.caseCandidateId ?? null,
+          contactable: row.contactable,
         });
       } catch {
         // A row that cannot be shown with a source is dropped, never guessed.

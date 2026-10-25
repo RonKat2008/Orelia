@@ -9,6 +9,7 @@ import { CasePage } from "@/components/outreach/CasePage";
 import type { VerificationsResponse } from "@/lib/verification/contract";
 import {
   initialSelection,
+  isContactable,
   shouldPersistInitialSelection,
   topPicks,
   loadHomeState,
@@ -107,9 +108,10 @@ export function ShortlistView({ caseId }: { caseId: string }) {
         error: result.error,
         homeState,
       });
-      const initial = initialSelection(stored, result.payload.suggested, limit);
+      const doorless = new Set(result.payload.items.filter((card) => !isContactable(card)).map(selectionKey));
+      const initial = initialSelection(stored, result.payload.suggested, limit).filter((id) => !doorless.has(id));
       setSelected(initial);
-      if (shouldPersistInitialSelection(stored, initial)) writeStoredSelection(caseId, initial);
+      if (shouldPersistInitialSelection(stored, initial) || (stored !== null && stored.length !== initial.length)) writeStoredSelection(caseId, initial);
     });
     return () => {
       active = false;
@@ -161,9 +163,9 @@ export function ShortlistView({ caseId }: { caseId: string }) {
   const toggle = useCallback(
     (id: string) => {
       if (selected.includes(id)) choose(selected.filter((item) => item !== id));
-      else if (selected.length < limit) choose([...selected, id]);
+      else if (selected.length < limit && (loaded?.items ?? []).some((card) => selectionKey(card) === id && isContactable(card))) choose([...selected, id]);
     },
-    [choose, limit, selected],
+    [choose, limit, selected, loaded],
   );
 
   const items = useMemo(() => loaded?.items ?? [], [loaded]);

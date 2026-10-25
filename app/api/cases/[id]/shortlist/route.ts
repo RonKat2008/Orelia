@@ -6,6 +6,7 @@ import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
 import { guardCase } from "@/lib/auth/ownership";
 import { isReachable } from "@/lib/outreach/reachability";
+import { dedupeShortlist } from "@/lib/ranking/dedupe-shortlist";
 
 export const runtime = "nodejs";
 
@@ -20,7 +21,7 @@ export async function GET(req: Request, { params }: Ctx) {
     if (denied) return denied;
     const { cases, persist } = getServices();
     // One parallel round (was four sequential reads); a missing case still answers 404.
-    const [found, items, meta, curation] = await Promise.all([
+    const [found, rawItems, meta, curation] = await Promise.all([
       cases.get(id),
       persist.getShortlist(id),
       persist.getShortlistMeta ? persist.getShortlistMeta(id) : Promise.resolve([] as ShortlistMeta[]),
@@ -28,6 +29,12 @@ export async function GET(req: Request, { params }: Ctx) {
       getCurationStore().load(id).catch(() => null),
     ]);
     if (!found) return jsonError(404, "Case not found");
+    // Same organisation under two names collapses to its better-ranked entry; the org's own contact page vouches its host.
+    const items = dedupeShortlist(
+      rawItems,
+      (item) => item.evidence.find((e) => e.claimType.startsWith("contact_point."))?.sourceUrl,
+      (item) => isReachable(item.evidence),
+    );
     const metaByKey = new Map(meta.map((row) => [curationKey(row.targetKind, row.targetId), row]));
     const groups: Record<string, Array<ShortlistItem & {
       tier: string;
@@ -35,6 +42,7 @@ export async function GET(req: Request, { params }: Ctx) {
       caseCandidateId: string | null;
       nctId: string | null;
       organizationKind: OrganizationKind | null;
+      contactable: boolean;
     }>> = {
       expert: [], institution: [], trial: [], organization: [],
     };
@@ -49,6 +57,8 @@ export async function GET(req: Request, { params }: Ctx) {
         caseCandidateId: extra?.caseCandidateId ?? null,
         nctId: extra?.nctId ?? null,
         organizationKind: extra?.organizationKind ?? null,
+        // Same rule outreach selection uses: no contact_point.* evidence means it can be shown but never picked.
+        contactable: isReachable(item.evidence),
       });
     }
     for (const list of Object.values(groups)) list.sort((a, b) => a.rank - b.rank);

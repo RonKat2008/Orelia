@@ -16,7 +16,7 @@ export const DEMO_LABELS = {
   email: 'Demo: delivered to Orelia test inbox',
   emailPersonal: 'Demo: delivered to your own inbox (safe mode)',
   voice: 'Demo: call simulated (no real number is dialed)',
-  voiceTestNumber: 'Demo: rings the Orelia test phone',
+  voiceTestNumber: 'Demo: calls ring your test phone',
   web_form: 'Demo: delivered to Orelia test form',
 } as const;
 

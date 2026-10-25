@@ -1,6 +1,6 @@
 "use client";
 
-import { demoDestinationLabel, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
+import { demoDestinationLabel, shownAddress, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
 import { DEMO_LABELS } from "@/lib/outreach/demo-destinations-shared";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -60,6 +60,7 @@ type Phase =
   | { kind: "ready" };
 
 export function ConsentForm({ caseId }: { caseId: string }) {
+  const demoDests = useDemoDestinations();
   const [caseRecord, setCaseRecord] = useState<CaseInput | null>(null);
   const [contacts, setContacts] = useState<ApiContact[]>([]);
   const [unavailable, setUnavailable] = useState<UnavailableContact[]>([]);
@@ -439,7 +440,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
             ) : (
               <LetterSheet
                 channel={previewChannel}
-                recipient={previewItem.contact.address}
+                recipient={shownAddress(previewItem.contact.address, previewItem.contact.displayAddress, demoDests) || previewItem.contact.displayName || "this resource"}
                 label={previewItem.contact.channel === "web" ? "What their online form will include" : previewChannel === "email" ? "Preview of the email" : "Preview of the call"}
                 subject={previewChannel === "email" ? "Patient intake inquiry" : null}
               >

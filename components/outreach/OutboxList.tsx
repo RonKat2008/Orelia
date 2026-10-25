@@ -1,6 +1,6 @@
 "use client";
 
-import { DemoCoordinatorBadge, demoDestinationLabel, useDemoDestinations } from "@/components/outreach/DemoCoordinators";
+import { DemoCoordinatorBadge, demoDestinationLabel, shownAddress, useDemoDestinations, useShownAddress } from "@/components/outreach/DemoCoordinators";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { CircleCheck, CircleDashed, FileText, Mail, PhoneCall, TriangleAlert } from "lucide-react";
@@ -376,7 +376,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
             <DialogHeader>
               <DialogTitle>{confirmEmail ? "Send this email?" : "Approve this call?"}</DialogTitle>
               <DialogDescription>
-                {confirmEmail ? `To ${confirmDraft.address}` : `A call to ${confirmDraft.address}`}, as written.{" "}
+                {confirmEmail ? `To ${confirmDraft.address}` : `A call to ${shownAddress(confirmDraft.address, confirmDraft.displayAddress, demo) || "this resource"}`}, as written.{" "}
                 <DemoCoordinatorBadge address={confirmDraft.address} />
               </DialogDescription>
             </DialogHeader>
@@ -444,6 +444,7 @@ function DraftRow({ row, selected, onSelect }: { row: Row; selected: boolean; on
   const followUp = followUpLabel(row.draft?.classification);
   const status = rowStatus(row);
   const Icon = isEmail ? Mail : PhoneCall;
+  const shown = useShownAddress(row.draft?.address ?? row.contact.address, row.draft ? row.draft.displayAddress : row.contact.displayAddress);
   return (
     <ListRow
       data-channel={channel}
@@ -452,8 +453,9 @@ function DraftRow({ row, selected, onSelect }: { row: Row; selected: boolean; on
       meta={
         <>
           <span className="[overflow-wrap:anywhere]">
-            {[followUp, isEmail ? "Email" : "Call", row.draft?.address ?? row.contact.address].filter(Boolean).join(" · ")}
+            {[followUp, isEmail ? "Email" : "Call", shown].filter(Boolean).join(" · ")}
           </span>
+          {!isEmail && shown ? <JudgeOnly><span className="block">{DEMO_LABELS.voiceTestNumber}</span></JudgeOnly> : null}
           {!row.draft && needsConsent(row) ? (
             <JudgeOnly>
               <span className="block">Draft blocked: no consented fields</span>
@@ -500,7 +502,8 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
   const blocked = !draft || !disclosed || approved || row.held;
   const rowChannel = row.contact.channel === "web" ? undefined : row.contact.channel; // web contacts are filtered out of rows
   const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? rowChannel ?? "email" });
-  const demoLabel = demoDestinationLabel(draft?.address ?? row.contact.address, useDemoDestinations());
+  const demo = useDemoDestinations();
+  const demoLabel = demoDestinationLabel(draft?.address ?? row.contact.address, demo);
 
   const actions = approved || !draft ? null : (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -575,7 +578,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
       {header}
       <LetterSheet
         channel={draft.channel}
-        recipient={draft.address}
+        recipient={shownAddress(draft.address, draft.displayAddress, demo) || name}
         subject={draft.channel === "email" ? draft.subject : null}
         label={
           followUp
@@ -598,7 +601,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
             }
           >
             <CheckItem ok>
-              {demoLabel ? (demoLabel === DEMO_LABELS.emailPersonal ? "Your inbox: delivery goes to your own inbox, not the resource." : "Test inbox: delivery goes to our own test destination.") : "Allowlist checked again when you approve."}
+              {demoLabel === DEMO_LABELS.voiceTestNumber || demoLabel === DEMO_LABELS.voice ? `${demoLabel}.` : demoLabel ? (demoLabel === DEMO_LABELS.emailPersonal ? "Your inbox: delivery goes to your own inbox, not the resource." : "Test inbox: delivery goes to our own test destination.") : "Allowlist checked again when you approve."}
             </CheckItem>
             <CheckItem ok>
               Ticked fields only: {keys.length === 0 ? "no case details, just the request" : sharedLabels(keys).join(", ")}.

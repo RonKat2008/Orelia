@@ -31,6 +31,8 @@ export const contactViewSchema = z.object({
   approved: z.boolean(),
   /** A follow-up (follow_up_*) is drafted and waiting for the patient's approval in the outbox. */
   followUpAwaitingApproval: z.boolean().optional(),
+  /** Demo mode, voice only: the resource's REAL number (null when none). Display only, never dialed. */
+  displayAddress: z.string().nullable().optional(),
 });
 
 export const contactsResponseSchema = z.object({

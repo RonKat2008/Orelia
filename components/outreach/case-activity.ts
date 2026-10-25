@@ -30,6 +30,7 @@ export function contactsFromActivity(value: unknown): ApiContact[] | null {
       targetKind: row.targetKind,
       channel: row.channel,
       address: typeof row.address === "string" ? row.address : "",
+      ...(row.displayAddress === null || typeof row.displayAddress === "string" ? { displayAddress: row.displayAddress } : {}),
       state: typeof row.state === "string" ? row.state : "drafted",
       displayName: typeof row.displayName === "string" ? row.displayName : undefined,
       nextFollowUpAt: typeof row.nextFollowUpAt === "string" ? row.nextFollowUpAt : null,

@@ -15,7 +15,7 @@ import type { ActionProps } from "./ActionFrame";
 type Shown = { id: string; channel: "email" | "voice"; subject: string | null; body: string; sharedFields: string[]; address: string | null };
 
 function fromApi(draft: ApiDraft): Shown {
-  return { id: draft.id, channel: draft.channel, subject: draft.subject ?? null, body: draft.body, sharedFields: draft.sharedFields, address: draft.address };
+  return { id: draft.id, channel: draft.channel, subject: draft.subject ?? null, body: draft.body, sharedFields: draft.sharedFields, address: draft.channel === "voice" && draft.displayAddress !== undefined ? (draft.displayAddress ?? "") : draft.address };
 }
 
 /** Every patient-visible string on this card, for the readability check. */

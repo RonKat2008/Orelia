@@ -3,6 +3,8 @@ import { SHARED_FIELDS } from './draft';
 import { ChannelError, isDefiniteNonDelivery } from '../channels/types';
 import { OutreachError } from './types';
 import type { OutreachService } from './service';
+import { displayAddressFor } from './real-phone';
+import { demoDestinationsEnabled } from './demo-destinations';
 const selection = z.object({ caseId: z.uuid(), candidateIds: z.array(z.uuid()).min(1).max(5).refine(ids => new Set(ids).size === ids.length, 'Duplicate candidate IDs') }).strict();
 const consent = z.object({ sharedFields: z.array(z.enum(SHARED_FIELDS)).max(SHARED_FIELDS.length).refine(fields => new Set(fields).size === fields.length) }).strict();
 const approval = z.object({ draftId: z.uuid() }).strict();
@@ -49,9 +51,18 @@ export function outreachHandlers(service: OutreachService) {
   const respond = outreachRespond;
   const validId = (id: string) => z.uuid().parse(id);
   return {
-    select: (req: Request) => respond(async () => { const body = selection.parse(await req.json()); return service.select(body.caseId, body.candidateIds); }),
+    select: (req: Request) => respond(async () => {
+      const body = selection.parse(await req.json());
+      const result = await service.select(body.caseId, body.candidateIds);
+      if (!demoDestinationsEnabled(service.env ?? {})) return result;
+      return { ...result, contacts: await Promise.all(result.contacts.map(async c => ({ ...c, ...await displayAddressFor(service.env, c) }))) };
+    }),
     consent: (req: Request, id: string) => respond(async () => service.consent(validId(id), consent.parse(await req.json()).sharedFields)),
-    draft: (_req: Request, id: string) => respond(async () => service.draft(validId(id))),
+    draft: (_req: Request, id: string) => respond(async () => {
+      const draft = await service.draft(validId(id));
+      if (draft.channel !== 'voice' || !demoDestinationsEnabled(service.env ?? {})) return draft;
+      return { ...draft, ...await displayAddressFor(service.env, await service.requireContact(draft.contactId)) };
+    }),
     approve: (req: Request, id: string) => respond(async () => service.approve(validId(id), approval.parse(await req.json()).draftId)),
   };
 }

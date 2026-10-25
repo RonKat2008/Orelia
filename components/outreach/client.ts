@@ -11,6 +11,8 @@ export type ApiContact = {
   /** "web": reachable only by online form (address = form URL); it gets an application, not a message. */
   channel: "email" | "voice" | "web";
   address: string;
+  /** Demo mode, calls: the resource's real number (null: none known). Display only. */
+  displayAddress?: string | null;
   state: string;
   purpose?: string;
   displayName?: string;
@@ -40,6 +42,7 @@ export type ApiDraft = {
   contactId: string;
   channel: "email" | "voice";
   address: string;
+  displayAddress?: string | null;
   subject?: string;
   body: string;
   sharedFields: string[];

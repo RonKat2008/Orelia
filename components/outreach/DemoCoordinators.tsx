@@ -87,3 +87,22 @@ export function DemoCoordinatorBadge({ address }: { address: string | null | und
   if (!label) return null;
   return <DemoLabelBadge label={label} />;
 }
+
+/**
+ * The address to SHOW for a contact or draft. A demo call's stored address is the presenter's test phone (or the
+ * sink), so the resource's real number (displayAddress) is shown instead, or nothing when it has none. Emails and
+ * real mode are unchanged. Display only: delivery still goes to the stored address.
+ */
+export function useShownAddress(address: string | null | undefined, displayAddress?: string | null): string {
+  const demo = useDemoDestinations();
+  if (displayAddress !== undefined) return displayAddress ?? "";
+  const label = demoDestinationLabel(address, demo);
+  return label === DEMO_LABELS.voice || label === DEMO_LABELS.voiceTestNumber ? "" : (address ?? "");
+}
+
+/** Pure twin of useShownAddress for non-hook code. */
+export function shownAddress(address: string | null | undefined, displayAddress: string | null | undefined, demo: DemoDestinations): string {
+  if (displayAddress !== undefined) return displayAddress ?? "";
+  const label = demoDestinationLabel(address, demo);
+  return label === DEMO_LABELS.voice || label === DEMO_LABELS.voiceTestNumber ? "" : (address ?? "");
+}

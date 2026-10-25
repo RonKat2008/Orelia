@@ -27,7 +27,7 @@ import { loadCaseContacts, loadCaseTasks } from "./case-activity";
 import { formatDay, titleCase } from "./format";
 import { TaskCard } from "./TaskCard";
 import { loadApplications, type ApiApplication } from "./applications";
-import { DemoCoordinatorBadge } from "./DemoCoordinators";
+import { DemoCoordinatorBadge, useShownAddress } from "./DemoCoordinators";
 import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 import { CONTACT_STATES, STATE_LABELS, type ContactState, type OutreachTask } from "./types";
 import { cn } from "@/lib/ui/cn";
@@ -443,6 +443,7 @@ function ContactDetail({
 }) {
   const { contact, state, name } = view;
   const id = contact.id;
+  const shownContactAddress = useShownAddress(contact.address, contact.displayAddress);
   const planLine = contactPlanLine(plan, { contactId: id, state, nextAt: contact.nextFollowUpAt });
   // The first pending item gets the view's one primary; any others are links.
   const primaryTaskId = isPrimary && state !== "drafted" ? (view.openTasks[0]?.id ?? null) : null;
@@ -462,7 +463,7 @@ function ContactDetail({
         <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 break-words text-small text-ink-2">
           <span className="min-w-0 break-all">
             {contact.channel === "email" ? "Email" : "Phone"}
-            {contact.address ? ` · ${contact.address}` : null}
+            {shownContactAddress ? ` · ${shownContactAddress}` : null}
           </span>
           <DemoCoordinatorBadge address={contact.address} />
         </p>

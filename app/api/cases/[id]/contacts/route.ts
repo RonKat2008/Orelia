@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardCase } from "@/lib/auth/ownership";
 import { contactsResponseSchema, getCaseActivity } from "@/lib/cases/activity";
+import { displayAddressFor } from "@/lib/outreach/real-phone";
 import { jsonError, parseId } from "../../_lib/http";
 import { getServices } from "../../_lib/services";
 
@@ -19,7 +20,8 @@ export async function GET(req: Request, { params }: Ctx) {
     const [found, contacts, tasks] = await Promise.all([getServices().cases.get(id), activity.contacts(id), activity.tasks(id)]);
     if (!found) return jsonError(404, "Case not found");
     const openTaskCount = tasks.filter((task) => task.status === "open").length;
-    const body = contactsResponseSchema.parse({ caseId: id, contacts, openTaskCount });
+    const shown = await Promise.all(contacts.map(async (c) => ({ ...c, ...(await displayAddressFor(process.env, { ...c, caseId: id })) })));
+    const body = contactsResponseSchema.parse({ caseId: id, contacts: shown, openTaskCount });
     return NextResponse.json(body);
   } catch (error) {
     return jsonError(500, "Unable to load contacts", error);

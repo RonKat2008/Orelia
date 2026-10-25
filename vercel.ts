@@ -35,10 +35,12 @@ export const contentSecurityPolicy = [
  * JS eval) and a blob: audio worklet; without them the mic track never reaches Vapi (verified in Chrome).
  * Every other page keeps the policy above and microphone=().
  */
-export const BROWSER_CALL_ORIGINS = { script: "'wasm-unsafe-eval' https://c.daily.co blob:", connect: "https://*.daily.co wss://*.daily.co https://api.vapi.ai https://*.vapi.ai wss://*.vapi.ai" };
+export const KERNEL_LIVE_VIEW_FRAME_SRC = "https://*.onkernel.com https://*.onkernel.com:8443 https://*.kernel.sh:8443";
+export const BROWSER_CALL_ORIGINS = { frame: KERNEL_LIVE_VIEW_FRAME_SRC, script: "'wasm-unsafe-eval' https://c.daily.co blob:", connect: "https://*.daily.co wss://*.daily.co https://api.vapi.ai https://*.vapi.ai wss://*.vapi.ai" };
 export const browserCallContentSecurityPolicy = contentSecurityPolicy
   .replace("script-src 'self' 'unsafe-inline'", `script-src 'self' 'unsafe-inline' ${BROWSER_CALL_ORIGINS.script}`)
   .replace("connect-src 'self' https://vercel.com/api/blob/", `connect-src 'self' https://vercel.com/api/blob/ ${BROWSER_CALL_ORIGINS.connect}`)
+  .concat(`; frame-src ${BROWSER_CALL_ORIGINS.frame}`)
   .concat("; media-src 'self' blob:; worker-src 'self' blob:");
 
 export { BROWSER_CALL_SOURCES, DEFAULT_HEADERS_SOURCE };

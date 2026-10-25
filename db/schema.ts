@@ -428,6 +428,19 @@ export const webApplications = pgTable("web_applications", {
   ...timestamps,
 }, (table) => [index("web_applications_case_idx").on(table.caseId)]);
 
+/** Kernel cloud-browser live view sessions (judge console only; the url is a session capability). */
+export const browserLiveViews = pgTable("browser_live_views", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  host: text("host").notNull(),
+  phase: text("phase").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+}, (table) => [index("browser_live_views_case_idx").on(table.caseId)]);
+
 /** Medical history lane: patient-uploaded records (sanitized text) with their extracted timeline events. */
 export const historyDocuments = pgTable("history_documents", {
   id: uuid("id").primaryKey().defaultRandom(),

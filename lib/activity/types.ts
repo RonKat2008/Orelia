@@ -49,6 +49,14 @@ export interface LiveCall {
 export type LaneChannel = "email" | "voice" | "web";
 export type LaneTargetKind = "expert" | "institution" | "trial" | "organization" | "unknown";
 
+/** Judge view only: a running Kernel cloud browser for this contact's web application. A session capability: never log it. */
+export interface LaneLiveView {
+  url: string;
+  host: string;
+  phase: "filling" | "submitting";
+  startedAt: string;
+}
+
 export interface ActivityLane {
   contactId: string;
   resourceName: string;
@@ -61,6 +69,8 @@ export interface ActivityLane {
   lastActivityAt: string | null;
   call: LiveCall | null;
   application: { status: string; screenshotUrl?: string; confirmation?: string } | null;
+  /** Judge view only (`?view=judge`); stripped by `stripListenUrls` otherwise. */
+  liveView?: LaneLiveView;
 }
 
 export interface ActivitySnapshot {

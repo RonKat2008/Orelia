@@ -1,5 +1,6 @@
 "use client";
 
+import { WatchAgent } from "./WatchAgent";
 import { useEffect, useMemo, useState } from "react";
 import { useIsJudgeView } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
@@ -55,6 +56,7 @@ export function LiveConsole({ caseId, browserCall = false }: { caseId: string; b
   const [showTurns, setShowTurns] = useState(false);
 
   const laneNames = useMemo(() => new Map((snapshot?.lanes ?? []).map((l) => [l.contactId, l.resourceName])), [snapshot]);
+  const watching = useMemo(() => snapshot?.lanes.find((l) => l.liveView && (selected === null || l.contactId === selected)) ?? null, [snapshot, selected]);
   const visible = useMemo(() => {
     if (!snapshot) return [];
     return snapshot.events
@@ -70,6 +72,7 @@ export function LiveConsole({ caseId, browserCall = false }: { caseId: string; b
         <span aria-hidden className={cn("size-2 rounded-pill", mode === "live" ? "live-pulse bg-ok" : mode === "polling" ? "bg-warn" : "bg-line-strong")} />
         {MODE_TEXT[mode]}
       </p>
+      {watching ? <WatchAgent lane={watching} /> : null}
       {!snapshot ? (
         <p className="m-0 text-small text-ink-2">Loading activity…</p>
       ) : (

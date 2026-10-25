@@ -11,6 +11,7 @@
  */
 import type { DocumentStore } from '../case-docs';
 import type { PageField } from '../channels/browser-types';
+import { withLiveViewScope } from '../channels/live-view';
 import { draftFillWebForm, probeApplicationForm, submitGatedWebForm } from '../channels/kernel-web';
 import type { WebFormChannel as BrowserWebFormChannel } from '../channels/web-form';
 import { isGatedDraft, type GatedDraft } from '../safety/outbound-gate';
@@ -131,10 +132,10 @@ export class KernelPlanWebForm implements WebFormChannel {
     const url = demo ? demoFormUrl(env, { caseId: input.caseId, applicationId: id, resourceKey: input.resourceKey!, realUrl: input.url }) : input.url;
     let filled: Awaited<ReturnType<typeof draftFillWebForm>>;
     try {
-      filled = await draftFillWebForm(channel, {
+      filled = await withLiveViewScope({ caseId: input.caseId, contactId: input.contactId ?? undefined, phase: 'filling' }, () => draftFillWebForm(channel, {
         url, caseId: input.caseId, ...(input.contactId ? { contactId: input.contactId } : {}),
         caseRecord: ctx.caseRecord, sharedFields: ctx.sharedFields, ...(this.deps.docStore ? { docStore: this.deps.docStore } : {}),
-      });
+      }));
     } catch (error) {
       logBrowserFailure('draftFill', error);
       return unavailable(BROWSER_FAILED);
@@ -156,7 +157,8 @@ export class KernelPlanWebForm implements WebFormChannel {
     if (!isGatedDraft(gated) || gated.channel !== 'web_form') return unavailable('Only an approved, safety-checked application can be submitted');
     const channel = this.ready();
     if (!channel) return unavailable('Online forms are not configured (no cloud browser key)');
-    await submitGatedWebForm(channel, gated);
+    const run = () => submitGatedWebForm(channel, gated);
+    if (gated.caseId) await withLiveViewScope({ caseId: gated.caseId, contactId: gated.contactId, phase: 'submitting' }, run); else await run();
     return { ok: true, status: 'submitted' };
   }
 }

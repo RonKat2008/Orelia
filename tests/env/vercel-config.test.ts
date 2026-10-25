@@ -84,4 +84,13 @@ describe("vercel.ts", () => {
     expect(contentSecurityPolicy).not.toContain("wasm-unsafe-eval");
     expect(get("X-Frame-Options")).toBe("DENY");
   });
+
+  it("allows the Kernel live view iframe only on the browser-call policy", () => {
+    expect(browserCallContentSecurityPolicy).toContain("frame-src https://*.onkernel.com https://*.onkernel.com:8443 https://*.kernel.sh:8443");
+    expect(contentSecurityPolicy).not.toContain("frame-src");
+    expect(contentSecurityPolicy).not.toContain("onkernel");
+    expect(contentSecurityPolicy).toContain("frame-ancestors 'none'");
+    const defaultHeaders = config.headers?.find((h) => h.source === DEFAULT_HEADERS_SOURCE);
+    expect(defaultHeaders?.headers.find((h) => h.key === "Content-Security-Policy")?.value).not.toContain("onkernel");
+  });
 });

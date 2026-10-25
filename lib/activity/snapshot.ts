@@ -41,13 +41,20 @@ export function mergeLanes(results: SourceResult[], events: ActivityEvent[]): Ac
   return out.sort((a, b) => Number(!!b.call?.live) - Number(!!a.call?.live) || a.resourceName.localeCompare(b.resourceName));
 }
 
-/** Removes provider listen URLs (judge view only may see them). Returns new objects; input is untouched. */
+/** Removes provider listen URLs and browser live view URLs (judge view only may see them). Returns new objects; input is untouched. */
 export function stripListenUrls(lanes: ActivityLane[]): ActivityLane[] {
   return lanes.map((lane) => {
-    if (!lane.call || lane.call.listenUrl === undefined) return lane;
-    const call = { ...lane.call };
-    delete call.listenUrl;
-    return { ...lane, call };
+    let next = lane;
+    if (next.liveView !== undefined) {
+      next = { ...next };
+      delete next.liveView;
+    }
+    if (next.call && next.call.listenUrl !== undefined) {
+      const call = { ...next.call };
+      delete call.listenUrl;
+      next = { ...next, call };
+    }
+    return next;
   });
 }
 

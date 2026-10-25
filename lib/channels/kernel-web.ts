@@ -18,11 +18,12 @@ import { cleanConfirmation, cleanLabel, cleanOptions } from './page-text';
 import { fingerprintFields, type BrowserProvider, type BrowserSession, type FieldValue, PageField, PageFieldType, PageSnapshot, UploadFile } from './browser-types';
 import { ChannelError, type ChannelGuardOptions, type GatedDraft, type ProviderRef } from './types';
 import { WebFormChannel, type LoadUpload } from './web-form';
+import { LIVE_VIEW_HOLD_MS, recordLiveView, type LiveViewHandle, type LiveViewSink } from './live-view';
 
 /** Minimal slices of @onkernel/sdk and playwright-core, so tests inject fakes and nothing needs the network. */
 export interface KernelClientLike {
   browsers: {
-    create(body?: { timeout_seconds?: number }): Promise<{ cdp_ws_url: string; session_id: string }>;
+    create(body?: { timeout_seconds?: number }): Promise<{ cdp_ws_url: string; session_id: string; browser_live_view_url?: string }>;
     deleteByID(idOrName: string): Promise<void>;
   };
 }
@@ -50,7 +51,14 @@ export interface PlaywrightBrowserLike {
 }
 export type ConnectCdp = (cdpUrl: string) => Promise<PlaywrightBrowserLike>;
 
-export interface KernelBrowserOptions { apiKey?: string; client?: KernelClientLike; connect?: ConnectCdp }
+export interface KernelBrowserOptions {
+  apiKey?: string; client?: KernelClientLike; connect?: ConnectCdp;
+  /** Where live view URLs are recorded; defaults to Postgres when DATABASE_URL is set. */
+  liveViewSink?: LiveViewSink;
+  /** Pause before closing a browser that filled a form, so a viewer sees the result. 0 disables. */
+  liveViewHoldMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+}
 
 /** Keep cloud sessions short-lived; Kernel reaps them even if our cleanup fails. */
 export const KERNEL_SESSION_TIMEOUT_SECONDS = 120;
@@ -105,7 +113,11 @@ interface FieldTarget { index: number; type: PageFieldType; optionIndexes: numbe
 class KernelSession implements BrowserSession {
   private targets = new Map<string, FieldTarget>();
   private closed = false;
-  constructor(private page: PageLike, private browser: PlaywrightBrowserLike, private cleanup: () => Promise<void>) {}
+  private filled = false;
+  constructor(
+    private page: PageLike, private browser: PlaywrightBrowserLike, private cleanup: () => Promise<void>,
+    private live?: LiveViewHandle, private holdMs = 0, private sleep: (ms: number) => Promise<void> = (ms) => new Promise(r => setTimeout(r, ms)),
+  ) {}
 
   private byIndex(i: number) { return this.page.locator(`[data-wf-i="${i}"]`).first(); }
 
@@ -136,6 +148,7 @@ class KernelSession implements BrowserSession {
   }
 
   async fill(values: Readonly<Record<string, FieldValue>>): Promise<void> {
+    this.filled = true;
     for (const [key, value] of Object.entries(values)) {
       const t = this.target(key);
       if (t.type === 'file') throw new ChannelError('kernel', `Use upload() for file field: ${key}`);
@@ -174,6 +187,7 @@ class KernelSession implements BrowserSession {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+    if (this.live && this.filled && this.holdMs > 0) await this.sleep(this.holdMs);
     try { await this.browser.close(); } catch { /* cleanup never throws */ }
     finally { try { await this.cleanup(); } catch { /* cleanup never throws */ } }
   }
@@ -185,6 +199,9 @@ export class KernelBrowserProvider implements BrowserProvider {
   private readonly apiKey?: string;
   private readonly client?: KernelClientLike;
   private readonly connect?: ConnectCdp;
+  private readonly liveViewSink?: LiveViewSink;
+  private readonly holdMs: number;
+  private readonly sleep?: (ms: number) => Promise<void>;
 
   constructor(opts: KernelBrowserOptions = {}) {
     const key = opts.apiKey?.trim();
@@ -192,6 +209,9 @@ export class KernelBrowserProvider implements BrowserProvider {
     if (key) this.apiKey = key;
     if (opts.client) this.client = opts.client;
     if (opts.connect) this.connect = opts.connect;
+    if (opts.liveViewSink) this.liveViewSink = opts.liveViewSink;
+    if (opts.sleep) this.sleep = opts.sleep;
+    this.holdMs = opts.liveViewHoldMs ?? LIVE_VIEW_HOLD_MS;
   }
 
   private async getClient(): Promise<KernelClientLike> {
@@ -210,13 +230,14 @@ export class KernelBrowserProvider implements BrowserProvider {
     if (this.status !== 'ready') throw new ChannelError('kernel', 'Kernel is not configured (KERNEL_API_KEY missing)');
     const client = await this.getClient();
     const created = await client.browsers.create({ timeout_seconds: KERNEL_SESSION_TIMEOUT_SECONDS });
-    const cleanup = async () => { await client.browsers.deleteByID(created.session_id); };
+    const live = await recordLiveView(created.browser_live_view_url, KERNEL_SESSION_TIMEOUT_SECONDS, this.liveViewSink);
+    const cleanup = async () => { await live?.end(); await client.browsers.deleteByID(created.session_id); };
     let browser: PlaywrightBrowserLike | undefined;
     try {
       browser = await (await this.getConnect())(created.cdp_ws_url);
       const ctx = browser.contexts()[0];
       const page = ctx?.pages()[0] ?? (ctx ? await ctx.newPage() : await (await browser.newContext()).newPage());
-      return new KernelSession(page, browser, cleanup);
+      return new KernelSession(page, browser, cleanup, live, this.holdMs, this.sleep);
     } catch (error) {
       try { await browser?.close(); } catch { /* ignore */ }
       try { await cleanup(); } catch { /* ignore */ }

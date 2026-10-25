@@ -8,6 +8,7 @@ import {
   MAX_STEPS_PER_RESOURCE,
   type ContactPlan,
   type PlanChannel,
+  type PlanEvidence,
   type PlanResourceInput,
   type PlanStep,
   type ResourcePlan,
@@ -17,12 +18,15 @@ import {
 import { parsePlanContactPoints, type PlanContactOrigin, type PlanContactPoint } from './contact-points';
 import { summarizePlan } from './summary';
 
-export type RuleFamily = 'aid' | 'specialist' | 'trial' | 'advocacy';
+export type RuleFamily = 'aid' | 'specialist' | 'trial' | 'advocacy' | 'registry';
 
 const AID_KINDS = new Set(['financial_aid', 'travel_aid']);
-const FOLLOW_UP_DAYS: Record<RuleFamily, number> = { aid: 3, specialist: 3, trial: 2, advocacy: 3 };
+const FOLLOW_UP_DAYS: Record<RuleFamily, number> = { aid: 3, specialist: 3, trial: 2, advocacy: 3, registry: 3 };
+/** Code-stamped evidence claim type for a patient registry page (lib/rare-disease/tags.ts). */
+const REGISTRY_CLAIM = 'patient_registry';
 
 export const NO_CHANNEL_REASON = 'No verified email, phone or online form was found for this resource yet, so there is nothing to plan.';
+export const REGISTRY_NO_ONLINE_REASON = 'Registries are usually joined through an online form or by email, and neither was found for this one yet.';
 
 /** Most to least preferred origin per family; unknown origins sort last. */
 const ORIGIN_PREFERENCE: Record<RuleFamily, readonly PlanContactOrigin[]> = {
@@ -38,6 +42,11 @@ const ORIGIN_PREFERENCE: Record<RuleFamily, readonly PlanContactOrigin[]> = {
   ],
   aid: [
     'org_contact', 'referral_coordinator', 'new_patient_line', 'nurse_navigator', 'second_opinion_program',
+    'pathology_consult', 'trial_contact', 'nppes_location_phone', 'ctgov_central_contact',
+    'application_form', 'intake_form', 'referral_form',
+  ],
+  registry: [
+    'org_contact', 'referral_coordinator', 'nurse_navigator', 'new_patient_line', 'second_opinion_program',
     'pathology_consult', 'trial_contact', 'nppes_location_phone', 'ctgov_central_contact',
     'application_form', 'intake_form', 'referral_form',
   ],
@@ -64,9 +73,14 @@ const ORIGIN_LABEL: Record<PlanContactOrigin, string> = {
   intake_form: 'online intake form',
 };
 
-export function ruleFamily(r: Pick<PlanResourceInput, 'targetKind' | 'subKind'>): RuleFamily {
+/**
+ * Rule family for a resource. Observational studies are trials and follow the trial rules. A registry is an
+ * organization with organizationKind "registry", or (memory mode, no kind loaded) code-stamped registry evidence.
+ */
+export function ruleFamily(r: Pick<PlanResourceInput, 'targetKind' | 'subKind'> & { evidence?: readonly Pick<PlanEvidence, 'claimType'>[] }): RuleFamily {
   if (r.targetKind === 'trial') return 'trial';
   if (r.targetKind === 'expert' || r.targetKind === 'institution') return 'specialist';
+  if (r.subKind === 'registry' || (r.evidence ?? []).some(e => e.claimType === REGISTRY_CLAIM)) return 'registry';
   return r.subKind && AID_KINDS.has(r.subKind) ? 'aid' : 'advocacy';
 }
 
@@ -129,6 +143,16 @@ function aidPlan(c: Chosen, n: number): { rule: string; drafts: StepDraft[] } {
   return directPlan('aid', c, n);
 }
 
+/** Registries: join through the online form (confirm by email), else email (call only as a follow-up); never a call first. */
+function registryPlan(c: Chosen, n: number): { rule: string; drafts: StepDraft[] } {
+  if (c.form) {
+    const formPlan = aidPlan({ form: c.form, ...(c.email ? { email: c.email } : {}) }, n);
+    return { ...formPlan, rule: formPlan.rule.replace(/^aid_/, 'registry_') };
+  }
+  if (!c.email) return { rule: 'registry_no_online_channel', drafts: [] };
+  return directPlan('registry', c, n);
+}
+
 /** Email first (call if no reply); without email, an online form (call if no reply); else a call. */
 function directPlan(prefix: string, c: Chosen, n: number): { rule: string; drafts: StepDraft[] } {
   const first = c.email
@@ -165,7 +189,7 @@ export function planResource(input: PlanResourceInput): ResourcePlan {
   const points = parsePlanContactPoints(input.evidence);
   const chosen: Chosen = { email: best(points, 'email', family), voice: best(points, 'voice', family), form: best(points, 'web_form', family) };
   const n = FOLLOW_UP_DAYS[family];
-  const base = family === 'aid' ? aidPlan(chosen, n) : directPlan(family, chosen, n);
+  const base = family === 'aid' ? aidPlan(chosen, n) : family === 'registry' ? registryPlan(chosen, n) : directPlan(family, chosen, n);
   const { rule, drafts } = family === 'specialist' && chosen.voice ? withVerify(base, chosen.voice) : base;
   return {
     resourceKey: resourceKeyOf(input),
@@ -175,7 +199,7 @@ export function planResource(input: PlanResourceInput): ResourcePlan {
     contactId: input.contactId,
     rule,
     steps: toSteps(drafts),
-    unavailableReason: drafts.length === 0 ? NO_CHANNEL_REASON : null,
+    unavailableReason: drafts.length === 0 ? (rule === 'registry_no_online_channel' ? REGISTRY_NO_ONLINE_REASON : NO_CHANNEL_REASON) : null,
   };
 }
 

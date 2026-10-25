@@ -36,7 +36,7 @@ function answerDeps(store: MemoryApplicationStore, identity: AnswerServiceDeps['
   return { applications: store, identity, now: () => NOW };
 }
 
-function approveDeps(store: MemoryApplicationStore, submit = vi.fn(async () => undefined)): ApproveApplicationDeps & { submit: typeof submit } {
+function approveDeps(store: MemoryApplicationStore, submit = vi.fn(async (gated: unknown) => void gated)): ApproveApplicationDeps & { submit: typeof submit } {
   return {
     applications: store, submit, env: ENV, clock: () => NOW,
     outreach: {

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   doublePrecision,
   index,
@@ -293,6 +294,30 @@ export const calls = pgTable("calls", {
   transcriptIngestedAt: timestamp("transcript_ingested_at", { withTimezone: true }),
   transcriptIngestClaimedAt: timestamp("transcript_ingest_claimed_at", { withTimezone: true }),
 });
+
+/** Live provider state of a call (Vapi): status, end reason, summary and the listen-only monitor URL (judge view only). */
+export const callLive = pgTable("call_live", {
+  callId: uuid("call_id").primaryKey().references(() => calls.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  status: text("status"),
+  endedReason: text("ended_reason"),
+  summary: text("summary"),
+  /** Vapi monitor.listenUrl. A bearer-like secret for live audio: never logged, returned only to the judge view. */
+  listenUrl: text("listen_url"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Live transcript: one row per final utterance, stored as it arrives (untrusted callee speech, rendered as text). */
+export const callTurns = pgTable("call_turns", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  callId: uuid("call_id").notNull().references(() => calls.id, { onDelete: "cascade" }),
+  seq: bigint("seq", { mode: "number" }).notNull(),
+  role: text("role").notNull(),
+  text: text("text").notNull(),
+  spokenAt: timestamp("spoken_at", { withTimezone: true }),
+  dedupeKey: text("dedupe_key").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("call_turns_call_seq_idx").on(table.callId, table.seq)]);
 
 export const tasks = pgTable(
   "tasks",

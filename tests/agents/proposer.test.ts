@@ -117,12 +117,12 @@ describe("proposer factory", () => {
     vi.stubEnv("WAYFINDER_OFFLINE", "0");
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
     vi.stubEnv("WAYFINDER_RECORD_LLM", "");
-    vi.stubEnv("WAYFINDER_MODEL_VERIFIER", "test-opus-verifier");
+    vi.stubEnv("WAYFINDER_MODEL_VERIFIER", "claude-test-verifier");
     const create = vi.fn().mockResolvedValue({ stop_reason: "end_turn", content: [{ type: "text", text: '{"merges":[],"conflicts":[]}' }] } as Anthropic.Message);
     const output = await createMergeProposer({ caseId: "case", offlineKey: "unused", store: new MemoryRunStore(), client: { messages: { create } } })(fixtureCases[0]!.records);
     expect(output).toEqual({ merges: [], conflicts: [] });
     expect(create).toHaveBeenCalledOnce();
-    expect(create.mock.calls[0]![0]).toMatchObject({ model: "test-opus-verifier" });
+    expect(create.mock.calls[0]![0]).toMatchObject({ model: "claude-test-verifier" });
     expect(create.mock.calls[0]![0].messages[0].content).toContain("institution:name:harbor sarcoma center");
     expect(create.mock.calls[0]![0].tools).toBeUndefined();
   });

@@ -3,6 +3,15 @@
 export const MAIL_EVENTS = ['message.received'] as const;
 export const CALL_EVENTS = ['call.status', 'call.transcript'] as const;
 
+/**
+ * Vapi needs no webhook registration: each call carries assistant.server { url, headers.x-vapi-secret }.
+ * Returns the one line the script prints so the operator knows what to set. Never includes a secret.
+ */
+export function vapiWebhookNote(baseUrl: string): string {
+  const url = `${baseUrl.replace(/\/+$/, '')}/api/webhooks/vapi`;
+  return `vapi: no registration needed; calls send server.url=${url} with header x-vapi-secret=$VAPI_WEBHOOK_SECRET (set VAPI_WEBHOOK_SECRET in Vercel)`;
+}
+
 export interface WebhookRecord {
   webhook_id?: string;
   id?: string;

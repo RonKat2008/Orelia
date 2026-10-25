@@ -5,7 +5,7 @@ import type { GatedDraft } from '../safety/outbound-gate';
 export type { GatedDraft } from '../safety/outbound-gate';
 
 export type ChannelKind = 'email' | 'voice' | 'web_form';
-export type ProviderName = 'agentmail' | 'agentcall' | 'mock-mailer' | 'mock-caller' | 'kernel' | 'mock-browser' | 'demo-call';
+export type ProviderName = 'agentmail' | 'agentcall' | 'vapi' | 'mock-mailer' | 'mock-caller' | 'kernel' | 'mock-browser' | 'demo-call';
 
 /** Provider ids stored on messages/calls rows; later replies and webhooks are matched against these. */
 export interface ProviderRef {

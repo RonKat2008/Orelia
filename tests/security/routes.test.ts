@@ -90,6 +90,7 @@ beforeEach(() => {
   vi.stubEnv('AGENTCALL_API_KEY', '');
   vi.stubEnv('AGENTMAIL_WEBHOOK_SECRET', 'whsec_c3ludGhldGljLXNlY3JldA==');
   vi.stubEnv('AGENTCALL_WEBHOOK_SECRET', 'synthetic-call-secret');
+  vi.stubEnv('VAPI_WEBHOOK_SECRET', 'synthetic-vapi-secret');
   vi.stubGlobal('fetch', vi.fn(async () => { throw new Error(FAILURE); }));
   vi.spyOn(console, 'error').mockImplementation(() => {});
   holder.__wayfinderHistoryStore = failingWhenAsked(new MemoryHistoryStore());

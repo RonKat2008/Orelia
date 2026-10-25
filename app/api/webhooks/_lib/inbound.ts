@@ -110,7 +110,7 @@ const inProgress = () => json(503, { reasons: ['ingest_in_progress'], retryable:
  * Runs ingest + the reply event under the ledger claim. Only a fully successful run is marked complete; on any
  * failure the lease is released and the error propagates (500), so the provider's retry re-runs both steps.
  */
-async function ingestOnce(deps: InboundDeps, key: IngestKey, run: () => Promise<void>): Promise<Response> {
+export async function ingestOnce(deps: Pick<InboundDeps, 'ingestLedger'>, key: IngestKey, run: () => Promise<void>): Promise<Response> {
   const claim = await deps.ingestLedger.claim(key);
   if (claim === 'done') return json(200, { duplicate: true });
   if (claim === 'busy') return inProgress();

@@ -15,6 +15,11 @@ const envSchema = z.object({
   AGENTCALL_API_KEY: optionalEnv,
   AGENTCALL_WEBHOOK_SECRET: optionalEnv,
   AGENTCALL_FROM_NUMBER_ID: optionalEnv,
+  VOICE_PROVIDER: optionalEnv,
+  VAPI_API_KEY: optionalEnv,
+  VAPI_PHONE_NUMBER_ID: optionalEnv,
+  VAPI_WEBHOOK_SECRET: optionalEnv,
+  VAPI_SERVER_URL: optionalEnv,
   OUTBOUND_ALLOW_REAL: optionalEnv,
   OUTBOUND_ALLOWLIST: optionalEnv,
   INNGEST_EVENT_KEY: optionalEnv,
@@ -119,6 +124,11 @@ export const TRACKED_ENV_NAMES: readonly string[] = [
   "AGENTCALL_API_KEY",
   "AGENTCALL_WEBHOOK_SECRET",
   "AGENTCALL_FROM_NUMBER_ID",
+  "VOICE_PROVIDER",
+  "VAPI_API_KEY",
+  "VAPI_PHONE_NUMBER_ID",
+  "VAPI_WEBHOOK_SECRET",
+  "VAPI_SERVER_URL",
   "INNGEST_EVENT_KEY",
   "INNGEST_SIGNING_KEY",
   "OUTBOUND_ALLOWLIST",
@@ -177,6 +187,13 @@ export function requirementsFor(mode: EnvMode, source: EnvSource = process.env):
   }
   if (isSet(source, "AGENTCALL_API_KEY")) {
     reqs.push({ name: "AGENTCALL_FROM_NUMBER_ID", why: "AGENTCALL_API_KEY is set; caller number id" });
+  }
+  if (isSet(source, "VAPI_API_KEY") || source.VOICE_PROVIDER?.trim().toLowerCase() === "vapi") {
+    reqs.push(
+      { name: "VAPI_API_KEY", why: "Vapi voice provider selected; API key" },
+      { name: "VAPI_PHONE_NUMBER_ID", why: "Vapi voice provider selected; caller phone number id" },
+      { name: "VAPI_WEBHOOK_SECRET", why: "Vapi voice provider selected; authenticate its webhook" },
+    );
   }
   return reqs;
 }

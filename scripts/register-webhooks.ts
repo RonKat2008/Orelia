@@ -6,8 +6,14 @@
  *
  * --apply prints AGENTMAIL_WEBHOOK_SECRET and AGENTCALL_WEBHOOK_SECRET to stdout
  * when the provider returns them. It never writes secrets to disk.
+ *
+ * Vapi (VOICE_PROVIDER=vapi) needs no registration: every call Wayfinder places carries
+ * assistant.server = { url: <base>/api/webhooks/vapi, headers: { x-vapi-secret: VAPI_WEBHOOK_SECRET } },
+ * so set VAPI_WEBHOOK_SECRET (any long random value) in Vercel and the route authenticates it.
+ * Optionally also set the same URL as the org Server URL in the Vapi dashboard with a Bearer Token credential
+ * (header x-vapi-secret, no Bearer prefix, same secret). See docs/VOICE-PROVIDER.md and vapiWebhookNote().
  */
-import { planRegistration, type WebhookRecord, MAIL_EVENTS, CALL_EVENTS } from './register-webhooks-plan';
+import { planRegistration, vapiWebhookNote, type WebhookRecord, MAIL_EVENTS, CALL_EVENTS } from './register-webhooks-plan';
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(name);
@@ -75,6 +81,7 @@ async function main() {
   const callPlan = planRegistration({ provider: 'agentcall', url: callUrl, events: CALL_EVENTS, existing: await listCall() });
 
   console.log(dryRun ? 'dry-run' : 'apply');
+  console.log(vapiWebhookNote(baseUrl!));
   for (const plan of [mailPlan, callPlan]) {
     console.log(`${plan.provider}: ${plan.action} ${plan.url} events=${plan.events.join(',')}${plan.note ? ` (${plan.note})` : ''}`);
   }

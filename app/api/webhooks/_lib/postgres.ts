@@ -124,14 +124,14 @@ function verificationInboundDeps(): InboundDeps['verification'] {
 }
 
 /** Lazy: nothing touches the database or credentials until a request arrives (keeps `next build` credential-free). */
-export function postgresInboundDeps(provider: 'agentmail' | 'agentcall', env: NodeJS.ProcessEnv = process.env): InboundDeps {
+export function postgresInboundDeps(provider: 'agentmail' | 'agentcall' | 'vapi', env: NodeJS.ProcessEnv = process.env): InboundDeps {
   const db = () => getDb();
   const ownerOf = async (contactId: string): Promise<Owner | undefined> => {
     const [c] = await db().select({ id: s.contacts.id, caseId: s.contacts.caseId }).from(s.contacts).where(eq(s.contacts.id, contactId));
     return c ? { contactId: c.id, caseId: c.caseId } : undefined;
   };
   return {
-    secret: provider === 'agentmail' ? env.AGENTMAIL_WEBHOOK_SECRET : env.AGENTCALL_WEBHOOK_SECRET,
+    secret: provider === 'agentmail' ? env.AGENTMAIL_WEBHOOK_SECRET : provider === 'vapi' ? env.VAPI_WEBHOOK_SECRET : env.AGENTCALL_WEBHOOK_SECRET,
     async lookupThread(threadId) {
       const [row] = await db().select({ contactId: s.messages.contactId }).from(s.messages)
         .where(and(eq(s.messages.providerThreadId, threadId), eq(s.messages.direction, 'outbound'))).limit(1);

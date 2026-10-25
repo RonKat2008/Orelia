@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { AgentCallChannel } from '../channels/agentcall';
 import { AgentMailChannel } from '../channels/agentmail';
+import { VapiChannel } from '../channels/vapi';
 import { MockCaller } from '../channels/mock-caller';
 import { MockMailer } from '../channels/mock-mailer';
 import { defaultMockPages, MockBrowserProvider } from '../channels/mock-browser';
@@ -38,7 +39,7 @@ export function guardFromEnv(env: Env): ChannelGuardOptions {
 
 export interface SelectedChannels {
   channels: [Channel, Channel];
-  providers: { email: Extract<ProviderName, 'agentmail' | 'mock-mailer'>; voice: Extract<ProviderName, 'agentcall' | 'mock-caller'> };
+  providers: { email: Extract<ProviderName, 'agentmail' | 'mock-mailer'>; voice: Extract<ProviderName, 'agentcall' | 'vapi' | 'mock-caller'> };
 }
 
 const isOffline = (env: Env) => ['1', 'true'].includes((env.WAYFINDER_OFFLINE ?? '').trim().toLowerCase());
@@ -46,30 +47,63 @@ const loggedChoices = new Set<string>();
 
 /**
  * Offline mode (WAYFINDER_OFFLINE=1|true) or missing keys => mocks. Email is real only with
- * AGENTMAIL_API_KEY; voice only with AGENTCALL_API_KEY AND AGENTCALL_FROM_NUMBER_ID. Constructing a
+ * AGENTMAIL_API_KEY; voice per voiceProviderFor (Vapi or AgentCall, each only with its keys). Constructing a
  * real channel never touches the network. Only the provider names are logged, never keys.
  */
 export function selectChannels(env: Env = process.env, deps: { now?: () => Date; fetcher?: typeof fetch } = {}): SelectedChannels {
   const guard = guardFromEnv(env);
   const offline = isOffline(env);
   const mailKey = env.AGENTMAIL_API_KEY?.trim();
-  const callKey = env.AGENTCALL_API_KEY?.trim();
-  const fromNumberId = env.AGENTCALL_FROM_NUMBER_ID?.trim();
   const email = !offline && mailKey
     ? new AgentMailChannel({ apiKey: mailKey, guard, ...(env.AGENTMAIL_SENDER_INBOX_ID?.trim() ? { senderInboxId: env.AGENTMAIL_SENDER_INBOX_ID.trim() } : {}), ...(deps.now ? { now: deps.now } : {}), ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
     : new MockMailer(guard, deps.now);
-  const caller = !offline && callKey && fromNumberId
-    ? new AgentCallChannel({ apiKey: callKey, fromNumberId, guard, ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
-    : new MockCaller(guard, deps.now);
+  const caller = offline ? new MockCaller(guard, deps.now) : selectVoiceCaller(env, guard, deps);
   // Demo mode: calls to the reserved demo sink are simulated in front of the caller (which would refuse the sink).
   const voice: Channel = demoDestinationsEnabled(env) ? new DemoCallSimulator(caller) : caller;
   const providers = {
     email: email instanceof AgentMailChannel ? 'agentmail' as const : 'mock-mailer' as const,
-    voice: caller instanceof AgentCallChannel ? 'agentcall' as const : 'mock-caller' as const,
+    voice: caller instanceof VapiChannel ? 'vapi' as const : caller instanceof AgentCallChannel ? 'agentcall' as const : 'mock-caller' as const,
   };
   const key = `${providers.email}/${providers.voice}`;
   if (!loggedChoices.has(key)) { loggedChoices.add(key); console.info(`[outreach] channels: email=${providers.email} voice=${providers.voice}`); }
   return { channels: [email, voice], providers };
+}
+
+export type VoiceProviderChoice = 'vapi' | 'agentcall';
+
+/**
+ * VOICE_PROVIDER=vapi|agentcall picks the phone provider. Unset: Vapi when VAPI_API_KEY and VAPI_PHONE_NUMBER_ID are
+ * both set, otherwise AgentCall exactly as before. The chosen provider still needs its keys, else the mock caller.
+ */
+export function voiceProviderFor(env: Env): VoiceProviderChoice {
+  const explicit = env.VOICE_PROVIDER?.trim().toLowerCase();
+  if (explicit === 'vapi' || explicit === 'agentcall') return explicit;
+  return env.VAPI_API_KEY?.trim() && env.VAPI_PHONE_NUMBER_ID?.trim() ? 'vapi' : 'agentcall';
+}
+
+/** Absolute https webhook URL Vapi posts to: VAPI_SERVER_URL, else the app base URL (or Vercel production host) + /api/webhooks/vapi. */
+export function vapiServerUrl(env: Env): string | undefined {
+  const explicit = env.VAPI_SERVER_URL?.trim();
+  // Vercel sets VERCEL_PROJECT_PRODUCTION_URL (host only); preview deploys sit behind protection Vapi cannot pass.
+  const vercelProd = env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL.trim()}` : '';
+  const base = (env.WAYFINDER_APP_BASE_URL?.trim() || env.WAYFINDER_APP_ORIGIN?.trim() || vercelProd).replace(/\/+$/, '');
+  const url = explicit || (base ? `${base}/api/webhooks/vapi` : '');
+  return /^https:\/\//i.test(url) ? url : undefined;
+}
+
+function selectVoiceCaller(env: Env, guard: ChannelGuardOptions, deps: { now?: () => Date; fetcher?: typeof fetch }): Channel {
+  const fetcher = deps.fetcher ? { fetcher: deps.fetcher } : {};
+  if (voiceProviderFor(env) === 'vapi') {
+    const apiKey = env.VAPI_API_KEY?.trim();
+    const phoneNumberId = env.VAPI_PHONE_NUMBER_ID?.trim();
+    if (!apiKey || !phoneNumberId) return new MockCaller(guard, deps.now);
+    const serverUrl = vapiServerUrl(env);
+    const webhookSecret = env.VAPI_WEBHOOK_SECRET?.trim();
+    return new VapiChannel({ apiKey, phoneNumberId, guard, ...(serverUrl ? { serverUrl } : {}), ...(webhookSecret ? { webhookSecret } : {}), ...fetcher });
+  }
+  const callKey = env.AGENTCALL_API_KEY?.trim();
+  const fromNumberId = env.AGENTCALL_FROM_NUMBER_ID?.trim();
+  return callKey && fromNumberId ? new AgentCallChannel({ apiKey: callKey, fromNumberId, guard, ...fetcher }) : new MockCaller(guard, deps.now);
 }
 
 /**

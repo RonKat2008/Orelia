@@ -98,11 +98,15 @@ describe("hero convergence field geometry", () => {
     expect(layoutForWidth(1440)).toBe(DESKTOP_LAYOUT);
     expect(layoutForWidth(375)).toBe(MOBILE_LAYOUT);
     expect(targetInField({ targetX: 0.5, targetY: 0.5 }, 2)).toEqual({ x: 0, y: 0 });
-    // The headline is centred, so the convergence point sits centred above it on every width.
+    // The convergence point sits in the middle of the hero, behind the centred headline, and is large.
     expect(DESKTOP_LAYOUT.targetX).toBe(0.5);
-    expect(DESKTOP_LAYOUT.targetY).toBe(0.5);
+    expect(DESKTOP_LAYOUT.targetY).toBeGreaterThan(0.35);
+    expect(DESKTOP_LAYOUT.targetY).toBeLessThan(0.55);
+    expect(DESKTOP_LAYOUT.ringPx).toBeGreaterThanOrEqual(100);
+    expect(DESKTOP_LAYOUT.glowPx).toBeGreaterThanOrEqual(360);
     expect(MOBILE_LAYOUT.targetX).toBe(0.5);
-    expect(MOBILE_LAYOUT.targetY).toBe(0.5);
+    expect(MOBILE_LAYOUT.targetY).toBeGreaterThan(0.25);
+    expect(MOBILE_LAYOUT.ringPx).toBeGreaterThanOrEqual(60);
   });
 
   it("keeps mobile body copy clear of particles", () => {

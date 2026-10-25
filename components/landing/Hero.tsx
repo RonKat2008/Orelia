@@ -30,7 +30,7 @@ export function Hero() {
         {/* Legibility wash behind the headline column, in the page's own paper colour. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_50%_at_50%_58%,var(--paper)_30%,transparent_78%)] opacity-60"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_42%_30%_at_50%_50%,var(--paper)_0%,transparent_75%)] opacity-60"
         />
 
         <div className="page-container relative flex flex-col items-center pb-24 pt-28 text-center sm:pt-32 lg:min-h-[min(56rem,calc(100svh-6.5rem))] lg:justify-center lg:pb-24 lg:pt-36">

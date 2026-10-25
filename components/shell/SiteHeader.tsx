@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/ui/cn";
 import { AccountMenu, SignInLink } from "./AccountMenu";
 import { MobileMenu } from "./MobileMenu";
+import { ThemeButton } from "./ThemeButton";
 import { isNavItemActive, type NavItem } from "./nav";
 import { ViewToggle } from "@/components/view-mode/ViewToggle";
 import { Wordmark } from "./Wordmark";
@@ -99,7 +100,7 @@ function MarketingNav({ nav, pathname, wideOnly }: { nav: NavItem[]; pathname: s
 /**
  * Calm sticky header: translucent paper with blur, hairline underneath. Never wraps: every label is nowrap, the
  * marketing nav collapses into the phone menu below 1024 px (768 px without the view switch), and case pages swap
- * the nav for one case menu. The theme control lives in the account menu.
+ * the nav for one case menu. A one-tap light/dark button sits beside the account menu.
  */
 export function SiteHeader({
   nav = MARKETING_NAV,
@@ -142,6 +143,7 @@ export function SiteHeader({
         >
           {viewToggle ? <ViewToggle /> : null}
           {isCase ? null : <SignInLink />}
+          <ThemeButton />
           <AccountMenu />
           {cta && !isCase ? (
             <Button

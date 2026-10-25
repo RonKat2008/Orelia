@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import type { LibraryDocument } from "@/lib/accounts/contract";
 import { apiRequest } from "../helpers/api";
-import { resolveContentType } from "../helpers/files";
+import { MAX_FILE_LABEL, resolveContentType } from "../helpers/files";
+import { docsUrl, type SpaceScope } from "../helpers/space";
 import { draftForFile, metadataFromDraft, type MetadataDraft } from "../helpers/metadata";
 
 export const MAX_CONCURRENT_UPLOADS = 3;
@@ -29,9 +30,9 @@ export interface UploadItem {
 const ACTIVE: ReadonlySet<UploadPhase> = new Set(["creating", "uploading", "processing"]);
 export const isActivePhase = (phase: UploadPhase) => ACTIVE.has(phase);
 
-function friendlyCreateError(status: number, message: string | null): string {
-  if (status === 413) return "That file is too large.";
-  if (status === 415) return "That file type is not supported.";
+function friendlyCreateError(status: number, message: string | null, fileName: string): string {
+  if (status === 413) return `"${fileName}" is too big (up to ${MAX_FILE_LABEL} per file).`;
+  if (status === 415) return `"${fileName}" is not a type we can store. Use PDF, PNG, JPG, HEIC, TXT or DOCX.`;
   if (status === 401 || status === 404) return "Your session ended. Sign in again to upload.";
   return message ?? "We could not start the upload. Please try again.";
 }
@@ -42,7 +43,11 @@ let keyCounter = 0;
 const nextKey = () => `upload-${Date.now().toString(36)}-${keyCounter++}`;
 
 /** Staged files + an upload pipeline (create -> blob upload -> process) with at most 3 files in flight. */
-export function useUploadQueue(onDocument: (doc: LibraryDocument) => void) {
+export function useUploadQueue(onDocument: (doc: LibraryDocument) => void, scope?: SpaceScope) {
+  const scopeRef = useRef(scope);
+  useEffect(() => {
+    scopeRef.current = scope;
+  }, [scope]);
   const [items, setItems] = useState<UploadItem[]>([]);
   const itemsRef = useRef<UploadItem[]>([]);
   const onDocumentRef = useRef(onDocument);
@@ -76,12 +81,12 @@ export function useUploadQueue(onDocument: (doc: LibraryDocument) => void) {
             patch(key, { phase: "staged", fieldErrors: meta.ok ? {} : meta.errors, error: meta.ok ? "That file type is not supported." : null });
             return;
           }
-          const created = await apiRequest<{ document: LibraryDocument; upload: { pathname: string } }>("/api/account/documents", {
+          const created = await apiRequest<{ document: LibraryDocument; upload: { pathname: string } }>(docsUrl(scopeRef.current), {
             method: "POST",
             json: { ...meta.value, fileName: item.file.name, contentType, sizeBytes: item.file.size },
           });
           if (!created.ok || !created.data) {
-            patch(key, { phase: "failed", error: friendlyCreateError(created.status, created.message) });
+            patch(key, { phase: "failed", error: friendlyCreateError(created.status, created.message, item.file.name) });
             return;
           }
           patch(key, { docId: created.data.document.id, pathname: created.data.upload.pathname });
@@ -96,7 +101,7 @@ export function useUploadQueue(onDocument: (doc: LibraryDocument) => void) {
           try {
             await upload(item.pathname, item.file, {
               access: "private",
-              handleUploadUrl: "/api/account/documents/upload",
+              handleUploadUrl: docsUrl(scopeRef.current, "/upload"),
               clientPayload: item.docId,
               contentType,
               multipart: item.file.size > MULTIPART_THRESHOLD,
@@ -112,7 +117,7 @@ export function useUploadQueue(onDocument: (doc: LibraryDocument) => void) {
         }
 
         patch(key, { phase: "processing", error: null });
-        const processed = await apiRequest<{ document: LibraryDocument }>(`/api/account/documents/${item.docId}/process`, { method: "POST" });
+        const processed = await apiRequest<{ document: LibraryDocument }>(docsUrl(scopeRef.current, `/${item.docId}/process`), { method: "POST" });
         if (!processed.ok || !processed.data) {
           patch(key, { phase: "failed", error: processed.message ?? "We could not read this file. Retry in a moment." });
           return;
@@ -141,15 +146,22 @@ export function useUploadQueue(onDocument: (doc: LibraryDocument) => void) {
     pumpRef.current = pump;
   }, [pump]);
 
+  /** Stage files and start every row whose details are valid straight away (the title is filled from the file name). */
   const addFiles = useCallback(
-    (files: File[]) =>
+    (files: File[]) => {
       commit((prev) => [
         ...prev,
-        ...files.map<UploadItem>((file) => ({
-          key: nextKey(), file, draft: draftForFile(file.name), fieldErrors: {}, phase: "staged", progress: 0,
-          error: null, docId: null, pathname: null, blobDone: false,
-        })),
-      ]),
+        ...files.map<UploadItem>((file) => {
+          const draft = draftForFile(file.name);
+          const valid = metadataFromDraft(draft).ok;
+          return {
+            key: nextKey(), file, draft, fieldErrors: {}, phase: valid ? "queued" : "staged", progress: 0,
+            error: null, docId: null, pathname: null, blobDone: false,
+          };
+        }),
+      ]);
+      pumpRef.current();
+    },
     [commit],
   );
 

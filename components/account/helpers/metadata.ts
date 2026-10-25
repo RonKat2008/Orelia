@@ -11,8 +11,26 @@ export interface MetadataDraft {
   tagsText: string;
 }
 
+const GUESS_RULES: ReadonlyArray<readonly [LibraryDocType, RegExp]> = [
+  ["genetic_test", /gene|genetic|variant|brca|panel.*seq|seq.*panel|\bvus\b|exome|genome|karyotype/],
+  ["imaging", /\bmri\b|\bct\b|x-?ray|ultrasound|\bpet\b|scan|imaging|radiology/],
+  ["pathology", /patholog|biopsy/],
+  ["lab", /\blabs?\b|\bcbc\b|\bcmp\b|blood|panel|\ba1c\b|result/],
+  ["insurance", /insurance|\beob\b|claim|policy|coverage|benefit|\bauth/],
+  ["discharge_summary", /discharge/],
+  ["letter", /letter|referral|summary/],
+  ["clinic_note", /clinic|visit|progress|note/],
+];
+
+/** Best-effort document type from a file name alone. Pure; falls back to "other". */
+export function guessDocType(fileName: string): LibraryDocType {
+  const name = fileName.toLowerCase().replace(/[_.]+/g, " ");
+  for (const [type, pattern] of GUESS_RULES) if (pattern.test(name)) return type;
+  return "other";
+}
+
 export function draftForFile(fileName: string): MetadataDraft {
-  return { title: titleFromFileName(fileName), docType: "other", dateOfService: "", provider: "", notes: "", tagsText: "" };
+  return { title: titleFromFileName(fileName), docType: guessDocType(fileName), dateOfService: "", provider: "", notes: "", tagsText: "" };
 }
 
 export function draftForDocument(doc: LibraryDocument): MetadataDraft {

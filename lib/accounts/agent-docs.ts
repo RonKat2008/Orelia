@@ -8,6 +8,7 @@
 import type { MedicalHistoryHit } from './contract';
 import { searchCaseLibrary } from './case-link';
 import { historyContextBlock, type RetrieveDeps } from './retrieve';
+export { usedLabel } from './used-label';
 import { getDocumentUseStore, type DocumentUseStore } from './uses';
 import type { OwnerStore } from '@/lib/auth/ownership';
 
@@ -20,11 +21,6 @@ export function usedDocuments(hits: readonly MedicalHistoryHit[]): { id: string;
   const seen = new Map<string, string>();
   for (const h of hits) if (!seen.has(h.documentId)) seen.set(h.documentId, h.title);
   return [...seen].map(([id, title]) => ({ id, title }));
-}
-
-/** "Used 2 of your documents" copy, singular-aware. */
-export function usedLabel(count: number): string {
-  return count === 1 ? 'Used 1 of your documents' : `Used ${count} of your documents`;
 }
 
 /**

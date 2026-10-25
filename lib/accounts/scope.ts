@@ -46,7 +46,8 @@ export async function requireSpace(req: Request): Promise<SpaceGuard> {
     if (account) return { ok: true, scopeId: account.id, accountId: account.id, caseId: null };
     const existing = readSession(req);
     if (existing) return { ok: true, scopeId: `${DRAFT_SCOPE_PREFIX}${existing}`, accountId: null, caseId: null };
-    if (req.method !== 'GET') return notFound();
+    // A first upload can race the list request that would mint the session; create it here too (CSRF already checked).
+    if (req.method !== 'GET' && req.method !== 'POST') return notFound();
     const fresh = ensureSession(req);
     return { ok: true, scopeId: `${DRAFT_SCOPE_PREFIX}${fresh.id}`, accountId: null, caseId: null, setCookie: fresh.setCookie };
   }

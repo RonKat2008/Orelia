@@ -46,7 +46,7 @@ export function UploadPhaseChip({ phase, progress }: { phase: UploadPhase; progr
 export function DocStatusChip({ status }: { status: DocStatus }) {
   switch (status) {
     case "embedded":
-      return <Status tone="ok" icon={<CircleCheck aria-hidden />}>Ready to use</Status>;
+      return <Status tone="ok" icon={<CircleCheck aria-hidden />}>Ready for your agents</Status>;
     case "failed":
       return <Status tone="bad" icon={<CircleAlert aria-hidden />}>We could not read it</Status>;
     case "uploaded":

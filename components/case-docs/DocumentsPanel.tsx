@@ -192,7 +192,7 @@ function orderGroups(documents: CaseDocument[]) {
   return [...groups].sort((a, b) => rank(a.kind) - rank(b.kind));
 }
 
-export function DocumentsPanel({ caseId }: { caseId: string }) {
+export function DocumentsPanel({ caseId, embedded = false }: { caseId: string; embedded?: boolean }) {
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">(
     "loading",
   );
@@ -236,7 +236,7 @@ export function DocumentsPanel({ caseId }: { caseId: string }) {
   // The header action is the one primary; while loading or on error the page offers no action.
   const header = (action?: ReactNode) => (
     <PageHeader
-      as={CASE_PAGE_HEADING}
+      as={embedded ? "h2" : CASE_PAGE_HEADING}
       eyebrow="Documents"
       title="What we can use"
       lede="Facts and notes we may draw on. Your intake report is never sent."

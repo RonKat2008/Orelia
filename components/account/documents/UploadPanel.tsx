@@ -2,11 +2,12 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import { FileUp, RotateCcw } from "lucide-react";
-import { ACCEPT_ATTRIBUTE, MAX_FILE_BYTES } from "@/lib/accounts/contract";
+import { ACCEPT_ATTRIBUTE, LIBRARY_DOC_TYPE_LABELS } from "@/lib/accounts/contract";
 import { Button } from "@/components/ui/button";
+import { Details } from "@/components/ui/details";
 import { cn } from "@/lib/ui/cn";
 import { Callout } from "../FormBits";
-import { formatBytes, validateFile } from "../helpers/files";
+import { MAX_FILE_LABEL, formatBytes, validateFile } from "../helpers/files";
 import { MetadataFields } from "./MetadataFields";
 import { UploadPhaseChip } from "./StatusChip";
 import { isActivePhase, type UploadItem, type useUploadQueue } from "./useUploadQueue";
@@ -35,11 +36,15 @@ function StagedRow({ item, queue, primary }: { item: UploadItem; queue: Queue; p
   const editable = item.phase === "staged";
   const inFlight = isActivePhase(item.phase) || item.phase === "queued";
   return (
-    <li className="grid gap-4 border-b border-line py-5">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+    <li className="grid gap-2 border-b border-line py-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <div className="min-w-0 flex-1">
-          <p className="m-0 truncate text-body font-semibold text-ink" title={item.file.name}>{item.file.name}</p>
-          <p className="m-0 text-small text-ink-2">{formatBytes(item.file.size)}</p>
+          <p className="m-0 truncate text-body font-semibold text-ink" title={item.file.name}>
+            {editable ? item.file.name : item.draft.title}
+          </p>
+          <p className="m-0 text-small text-ink-2">
+            {editable ? formatBytes(item.file.size) : `${LIBRARY_DOC_TYPE_LABELS[item.draft.docType]} · ${formatBytes(item.file.size)}`}
+          </p>
         </div>
         <span aria-live="polite" aria-atomic="true">
           <UploadPhaseChip phase={item.phase} progress={item.progress} />
@@ -52,12 +57,24 @@ function StagedRow({ item, queue, primary }: { item: UploadItem; queue: Queue; p
       </div>
 
       {editable ? (
-        <MetadataFields
-          idPrefix={`up-${item.key}`}
-          draft={item.draft}
-          errors={item.fieldErrors}
-          onChange={(change) => queue.updateDraft(item.key, change)}
-        />
+        <>
+          <MetadataFields
+            idPrefix={`up-${item.key}`}
+            draft={item.draft}
+            errors={item.fieldErrors}
+            section="primary"
+            onChange={(change) => queue.updateDraft(item.key, change)}
+          />
+          <Details label={null} summary="More details" lazy={false}>
+            <MetadataFields
+              idPrefix={`up-${item.key}`}
+              draft={item.draft}
+              errors={item.fieldErrors}
+              section="more"
+              onChange={(change) => queue.updateDraft(item.key, change)}
+            />
+          </Details>
+        </>
       ) : null}
 
       {inFlight || item.phase === "failed" ? (
@@ -88,7 +105,7 @@ function StagedRow({ item, queue, primary }: { item: UploadItem; queue: Queue; p
 }
 
 /** Dropzone + file picker + the staged rows for files that are waiting for details or on their way up. */
-export function UploadPanel({ queue }: { queue: Queue }) {
+export function UploadPanel({ queue, compact = false }: { queue: Queue; compact?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<string[]>([]);
@@ -116,7 +133,7 @@ export function UploadPanel({ queue }: { queue: Queue }) {
   const choosePrimary = queue.items.length === 0;
 
   return (
-    <section aria-labelledby="upload-heading" className="grid gap-5">
+    <section aria-labelledby="upload-heading" className="grid gap-3">
       <h2 id="upload-heading" className="sr-only">Add documents</h2>
       <div
         onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
@@ -124,16 +141,17 @@ export function UploadPanel({ queue }: { queue: Queue }) {
         onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
         onDrop={onDrop}
         className={cn(
-          "grid justify-items-start gap-3 rounded-lg border border-dashed px-5 py-7",
+          "grid justify-items-start gap-2 rounded-lg border border-dashed",
+          compact ? "px-4 py-4" : "px-5 py-6",
           "transition-[background-color,border-color] duration-300 ease-out-expo motion-reduce:transition-none",
           dragging ? "border-teal bg-teal-soft" : "border-line-strong bg-paper-2/60",
         )}
       >
         <p className="m-0 text-body font-semibold text-ink">Drop files here, or choose them</p>
-        <p className="m-0 text-small text-ink-2">PDF, PNG, JPG, HEIC, TXT or DOCX, up to {formatBytes(MAX_FILE_BYTES)} each.</p>
+        <p className="m-0 text-small text-ink-2">PDF, PNG, JPG, HEIC, TXT or DOCX. Up to {MAX_FILE_LABEL} per file. They upload as soon as you add them.</p>
         <Button
           variant={choosePrimary ? "primary" : "secondary"}
-          size={choosePrimary ? "lg" : "md"}
+          size={choosePrimary && !compact ? "lg" : "md"}
           onClick={() => inputRef.current?.click()}
         >
           <FileUp aria-hidden />Choose files

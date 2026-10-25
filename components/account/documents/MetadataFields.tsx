@@ -12,13 +12,19 @@ export interface MetadataFieldsProps {
   errors: Partial<Record<keyof MetadataDraft, string>>;
   onChange: (change: Partial<MetadataDraft>) => void;
   disabled?: boolean;
+  /** "primary" = title + type only, "more" = date, provider, tags and notes, "all" = everything (default). */
+  section?: "all" | "primary" | "more";
 }
 
 /** Title, type, date, provider, notes and tags: shared by the staging rows and the edit dialog. */
-export function MetadataFields({ idPrefix, draft, errors, onChange, disabled }: MetadataFieldsProps) {
+export function MetadataFields({ idPrefix, draft, errors, onChange, disabled, section = "all" }: MetadataFieldsProps) {
   const id = (name: string) => `${idPrefix}-${name}`;
+  const primary = section !== "more";
+  const more = section !== "primary";
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      {primary ? (
+        <>
       <TextField
         id={id("title")}
         label="Title"
@@ -38,6 +44,10 @@ export function MetadataFields({ idPrefix, draft, errors, onChange, disabled }: 
           </SelectContent>
         </Select>
       </Field>
+        </>
+      ) : null}
+      {more ? (
+        <>
       <TextField
         id={id("date")}
         label="Date of service"
@@ -81,6 +91,8 @@ export function MetadataFields({ idPrefix, draft, errors, onChange, disabled }: 
           className="min-h-20"
         />
       </Field>
+        </>
+      ) : null}
     </div>
   );
 }

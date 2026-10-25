@@ -5,6 +5,7 @@ import { Button, LoadingState, PageHeader, Skeleton } from "@/components/ui";
 import { ManageCase } from "@/components/journey/JourneyShell";
 import { PatientProgress } from "@/components/shell/PatientProgress";
 import { PATIENT_HOME_COPY as COPY } from "./copy";
+import { DocumentsCard } from "./DocumentsCard";
 import { LiveStatus } from "./LiveStatus";
 import { NextActionCard } from "./NextActionCard";
 import { usePatientStatus } from "./usePatientStatus";
@@ -67,6 +68,7 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
       ) : null}
       <PatientProgress current={status.step} />
       <NextActionCard caseId={caseId} status={status} onDone={refresh} />
+      <DocumentsCard caseId={caseId} />
       <WhatsHappened items={timeline} seeAllHref={`/cases/${caseId}/tracker`} />
       <ManageCase caseId={caseId} />
     </div>

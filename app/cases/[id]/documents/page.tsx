@@ -1,4 +1,4 @@
-import { DocumentsPanel } from "@/components/case-docs/DocumentsPanel";
+import { CaseDocumentsView } from "@/components/case-docs/CaseDocumentsView";
 
 export default async function DocumentsPage({
   params,
@@ -6,9 +6,5 @@ export default async function DocumentsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return (
-    <div className="ds-root">
-      <DocumentsPanel caseId={id} />
-    </div>
-  );
+  return <CaseDocumentsView caseId={id} />;
 }

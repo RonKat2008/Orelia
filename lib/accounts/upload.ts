@@ -27,12 +27,15 @@ export function validateUpload(input: unknown): UploadValidation {
   return { ok: true, body: { ...body, contentType }, contentType };
 }
 
+/** Path-safe scope segment: plain ids are unchanged; `case:<id>` / `draft:<id>` scopes avoid percent signs, which Blob mangles. */
+export const scopeSegment = (scope: string) => encodeURIComponent(scope).replace(/%/g, '_');
+
 /** Blob pathname: per-account prefix + unguessable id; the original file name never reaches the path. */
 export function blobPathnameFor(accountId: string, documentId: string, fileName: string): string {
   const ext = extOf(fileName).replace(/[^a-z0-9]/g, '').slice(0, 5) || 'bin';
-  return `accounts/${encodeURIComponent(accountId)}/${documentId}/${randomUUID()}.${ext}`;
+  return `accounts/${scopeSegment(accountId)}/${documentId}/${randomUUID()}.${ext}`;
 }
 
 export function pathnameBelongsTo(pathname: string, accountId: string): boolean {
-  return pathname.startsWith(`accounts/${encodeURIComponent(accountId)}/`) && !pathname.includes('..');
+  return pathname.startsWith(`accounts/${scopeSegment(accountId)}/`) && !pathname.includes('..');
 }

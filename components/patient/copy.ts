@@ -78,6 +78,13 @@ export const PATIENT_HOME_COPY = {
     startFailed: "We couldn't start the search. Nothing was sent to anyone. Try again.",
     toast: "Your search has started",
   },
+  documents: {
+    title: "Your documents",
+    empty: "No documents yet. Add some so our agents can use them.",
+    count: (total: number, ready: number) =>
+      `${total} ${total === 1 ? "document" : "documents"}, ${ready} ready for your agents`,
+    action: "Add documents",
+  },
   form: {
     title: (name: string) => `Online form for ${name}`,
     fallbackName: "this program",

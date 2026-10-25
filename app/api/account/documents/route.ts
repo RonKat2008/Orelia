@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (!valid.ok) return fail(valid.status, valid.error, valid.message);
   try {
     const created = await createLibraryDocument(guard.scopeId, valid.body);
-    return json({ document: created.document, upload: { pathname: created.pathname } }, 201);
+    return withSpaceCookie(json({ document: created.document, upload: { pathname: created.pathname } }, 201), guard);
   } catch (err) {
     return fail(500, "create_failed", undefined, err);
   }

@@ -3,6 +3,7 @@
 import { RotateCcw } from "lucide-react";
 import { LIBRARY_DOC_TYPE_LABELS, type LibraryDocument } from "@/lib/accounts/contract";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/choice";
 import { ListRow } from "@/components/ui/list-row";
 import { cn } from "@/lib/ui/cn";
 import { formatBytes } from "../helpers/files";
@@ -23,13 +24,17 @@ export interface DocumentCardProps {
   onRetry: (doc: LibraryDocument) => void;
   onEdit: (doc: LibraryDocument) => void;
   onDelete: (doc: LibraryDocument) => void;
+  /** "?case=ID" / "?draft=1" / "" so file links use the right space. */
+  fileQuery?: string;
+  onShareChange: (doc: LibraryDocument, shareWithResources: boolean) => void;
 }
 
 /** One document as a list row: title, a line of facts, its state in words, and quiet text actions. */
-export function DocumentCard({ doc, retrying, onRetry, onEdit, onDelete }: DocumentCardProps) {
+export function DocumentCard({ doc, fileQuery = "", retrying, onRetry, onEdit, onDelete, onShareChange }: DocumentCardProps) {
   const meta = [LIBRARY_DOC_TYPE_LABELS[doc.docType], formatDate(doc.dateOfService), doc.provider, formatBytes(doc.sizeBytes)].filter(Boolean);
   const hasFile = doc.status !== "pending_upload";
-  const fileHref = `/api/account/documents/${doc.id}/file`;
+  const fileHref = `/api/account/documents/${doc.id}/file${fileQuery}`;
+  const shareId = `share-${doc.id}`;
   return (
     <ListRow
       title={<span className="break-words">{doc.title}</span>}
@@ -46,6 +51,22 @@ export function DocumentCard({ doc, retrying, onRetry, onEdit, onDelete }: Docum
             {doc.statusDetail}
           </p>
         ) : null}
+        <div className="flex items-center gap-3">
+          <Switch
+            id={shareId}
+            checked={doc.shareWithResources}
+            onCheckedChange={(checked) => onShareChange(doc, checked)}
+            aria-describedby={`${shareId}-hint`}
+          />
+          <div className="grid">
+            <label htmlFor={shareId} className="cursor-pointer text-small font-semibold text-ink">
+              Share with resources<span className="sr-only">: {doc.title}</span>
+            </label>
+            <span id={`${shareId}-hint`} className="text-small text-ink-2">
+              Lets resource-facing agents see this document. Off by default.
+            </span>
+          </div>
+        </div>
         <div className="-ml-0 flex flex-wrap items-center gap-x-5 gap-y-0">
           {hasFile ? (
             <>
@@ -55,7 +76,7 @@ export function DocumentCard({ doc, retrying, onRetry, onEdit, onDelete }: Docum
                 </a>
               </Button>
               <Button asChild variant="link" className={ACTION}>
-                <a href={`${fileHref}?download=1`}>
+                <a href={`${fileHref}${fileQuery ? "&" : "?"}download=1`}>
                   Download<span className="sr-only"> {doc.title}</span>
                 </a>
               </Button>

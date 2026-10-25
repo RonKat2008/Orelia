@@ -1,5 +1,8 @@
 import { ACCEPTED_TYPES, MAX_FILE_BYTES } from "@/lib/accounts/contract";
 
+/** "25 MB", for plain-language limits. */
+export const MAX_FILE_LABEL = `${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`;
+
 export interface FileLike {
   name: string;
   type: string;
@@ -31,10 +34,10 @@ export function formatBytes(bytes: number): string {
 export function validateFile(file: FileLike): string | null {
   if (file.size <= 0) return `"${file.name}" is empty, so it was skipped.`;
   if (file.size > MAX_FILE_BYTES) {
-    return `"${file.name}" is ${formatBytes(file.size)}. Files can be up to ${formatBytes(MAX_FILE_BYTES)}.`;
+    return `"${file.name}" is ${formatBytes(file.size)}, which is too big (up to ${MAX_FILE_LABEL} per file).`;
   }
   if (!resolveContentType(file)) {
-    return `"${file.name}" is not a type we can store. Use PDF, PNG, JPG, HEIC, TXT or DOCX.`;
+    return `"${file.name}" is not a type we can store, so it was skipped. Use PDF, PNG, JPG, HEIC, TXT or DOCX.`;
   }
   return null;
 }

@@ -49,10 +49,11 @@ import {
 } from "./answers";
 import { BackButton } from "./BackButton";
 import { INTAKE_COPY } from "./copy";
+import { DocumentsStep } from "./DocumentsStep";
 import { StepTransition } from "./StepTransition";
 import { useProfilePrefill } from "./useProfilePrefill";
 
-type Phase = "questions" | "upload" | "reading" | "confirm";
+type Phase = "questions" | "upload" | "documents" | "reading" | "confirm";
 
 const COPY = INTAKE_COPY;
 const TOTAL = PATIENT_QUESTIONS.length;
@@ -253,6 +254,7 @@ type CheckProps = {
   busy: boolean;
   error: string | null;
   back: ReactNode;
+  note?: string;
   onChange: (id: PatientQuestionId) => void;
   onStart: () => void;
 };
@@ -262,6 +264,7 @@ function CheckScreen({
   busy,
   error,
   back,
+  note,
   onChange,
   onStart,
 }: CheckProps) {
@@ -293,6 +296,11 @@ function CheckScreen({
         <p className="m-0 max-w-prose text-body text-ink-2">
           {COPY.check.hint}
         </p>
+        {note ? (
+          <p role="status" className="m-0 max-w-prose text-small font-semibold text-teal-ink dark:text-teal">
+            {note}
+          </p>
+        ) : null}
       </div>
       <SummaryList
         rows={rows.map((row) => ({
@@ -348,6 +356,8 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   const [reportText, setReportText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fromDocuments, setFromDocuments] = useState(false);
+  const adopted = useRef<string | null>(null);
   const moved = useRef(false);
   const busyRef = useRef(false);
 
@@ -448,13 +458,21 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     }
   }
 
-  async function readReport() {
-    if (busyRef.current || phase !== "upload") return;
-    if (!reportText.trim()) {
+  /** Move this browser's draft documents into the case. Fire and forget: the flow never waits on it. */
+  function adoptDrafts(caseId: string) {
+    if (adopted.current === caseId) return;
+    adopted.current = caseId;
+    void fetch(`/api/cases/${encodeURIComponent(caseId)}/space/adopt`, { method: "POST", credentials: "same-origin" }).catch(() => undefined);
+  }
+
+  async function readReport(textOverride?: string, from: Phase = "upload") {
+    if (busyRef.current || (phase !== "upload" && phase !== "documents")) return;
+    const text = textOverride ?? reportText;
+    if (!text.trim()) {
       setError(COPY.upload.empty);
       return;
     }
-    const length = reportText.trim().length;
+    const length = text.trim().length;
     if (length < REPORT_TEXT_MIN || length > REPORT_TEXT_MAX) {
       setError(`Use between ${REPORT_TEXT_MIN} and ${REPORT_TEXT_MAX.toLocaleString("en-US")} characters from your report.`);
       return;
@@ -463,21 +481,50 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     busyRef.current = true;
     try {
       const { record: extracted } = await extractCase(
-        reportText,
-        fallbackFor(reportText, demos),
+        text,
+        fallbackFor(text, demos),
       );
       setRecord(extracted);
       setAnswers(recordToAnswers(extracted));
       setFromCheck(false);
+      setFromDocuments(from === "documents");
+      adoptDrafts(extracted.id);
       setPhase("confirm");
     } catch (failure) {
-      setPhase("upload");
+      setPhase(from);
       setError(
         failure instanceof Error ? failure.message : COPY.upload.readFailed,
       );
     } finally {
       busyRef.current = false;
     }
+  }
+
+  async function fillFromDocuments(ids: string[]) {
+    if (busyRef.current || busy) return;
+    setBusy(true);
+    setError(null);
+    let text: string | null = null;
+    try {
+      const response = await fetch("/api/intake/documents/report?draft=1", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      const body: unknown = response.ok ? await response.json().catch(() => null) : null;
+      const candidate = (body as { reportText?: unknown } | null)?.reportText;
+      text = typeof candidate === "string" && candidate.trim() ? candidate : null;
+    } catch {
+      text = null;
+    }
+    setBusy(false);
+    if (!text) {
+      setError(COPY.documents.failed);
+      return;
+    }
+    setReportText(text);
+    await readReport(text, "documents");
   }
 
   async function startLooking() {
@@ -508,6 +555,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
         // Keep the created case so a retry after a failed save does not create a second one.
         setRecord(extracted);
       }
+      adoptDrafts(extracted.id);
       const merged = mergeExtracted(extracted, answers);
       await confirmAndResearch(merged);
       router.push(`/cases/${merged.id}`);
@@ -555,6 +603,19 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
         ),
       };
     }
+    if (phase === "documents") {
+      return {
+        key: "documents",
+        node: (
+          <DocumentsStep
+            busy={busy}
+            error={error}
+            onSkip={() => go(() => setPhase("questions"))}
+            onFill={(ids) => void fillFromDocuments(ids)}
+          />
+        ),
+      };
+    }
     if (phase === "confirm") {
       return {
         key: "confirm",
@@ -563,6 +624,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
             answers={answers}
             busy={busy}
             error={error}
+            note={fromDocuments ? COPY.documents.prefilled : undefined}
             back={
               <BackButton onClick={backFromCheck} disabled={busy}>
                 {COPY.actions.back}
@@ -587,6 +649,13 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
           onClick={() => go(() => setPhase("upload"))}
         >
           {COPY.actions.uploadInstead}
+        </Button>
+        <Button
+          variant="link"
+          className="py-3"
+          onClick={() => go(() => setPhase("documents"))}
+        >
+          {COPY.actions.addDocuments}
         </Button>
       </div>
     );

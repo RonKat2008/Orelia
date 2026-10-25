@@ -81,6 +81,8 @@ export interface ExaResult {
   url: string;
   title: string;
   text?: string;
+  /** The page's own outgoing links (Exa extras.links); only the deterministic form detector reads them. */
+  links?: string[];
 }
 
 export interface ExaPort {

@@ -190,7 +190,7 @@ const NO_FACTS: InstitutionFacts = { institutionPage: null, consultation: null, 
 const MAX_INSTITUTION_CONTACTS = 3;
 
 /** Intake contact points (phone / role email / online intake form) on result pages that belong to the institution. */
-export function institutionContacts(institution: string, results: readonly { url: string; title?: string; text?: string }[], fetchedAt: string): InstitutionFacts['contacts'] {
+export function institutionContacts(institution: string, results: readonly { url: string; title?: string; text?: string; links?: string[] }[], fetchedAt: string): InstitutionFacts['contacts'] {
   const out: InstitutionFacts['contacts'] = [];
   for (const r of results) {
     if (!/^https?:/i.test(r.url) || !pageMatchesInstitution(institution, { url: r.url })) continue;
@@ -198,7 +198,7 @@ export function institutionContacts(institution: string, results: readonly { url
       const row = contactPointEvidence(cp, fetchedAt);
       if (row?.id && !out.some((o) => o.evidence.id === row.id) && out.length < MAX_INSTITUTION_CONTACTS) out.push({ evidence: row as Evidence & { id: string }, origin: cp.origin });
     }
-    for (const wf of webFormsOnPage({ url: r.url, title: r.title, text: r.text })) {
+    for (const wf of webFormsOnPage({ url: r.url, title: r.title, text: r.text, links: r.links })) {
       const row = webFormEvidence(wf, fetchedAt);
       if (row?.id && !out.some((o) => o.evidence.id === row.id) && out.length < MAX_INSTITUTION_CONTACTS) out.push({ evidence: row as Evidence & { id: string }, origin: wf.origin });
     }

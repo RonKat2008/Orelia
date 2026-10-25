@@ -15,6 +15,14 @@ function setup(payloads: unknown[], apiKey?: string) {
 const page = (url: string, text?: string) => ({ url, title: "t", text });
 
 describe("ExaClient.search", () => {
+  it("asks for each page's outgoing links and passes string links through (capped), dropping the raw extras", async () => {
+    const { exa, request } = setup([{ results: [{ ...page("https://a.test/p", "Apply online today"), extras: { links: ["/apply", 7, "https://a.test/x"] } }, page("https://a.test/q", "no extras")] }]);
+    const res = await exa.search("q");
+    const arg = (request.mock.calls[0] as unknown as [{ body: { contents: unknown } }])[0];
+    expect(arg.body.contents).toEqual({ text: true, extras: { links: 60 } });
+    expect(res.records[0]).toEqual({ url: "https://a.test/p", title: "t", text: "Apply online today", links: ["/apply", "https://a.test/x"] });
+    expect(res.records[1]).not.toHaveProperty("links");
+  });
   it("rejects blank queries without calling the transport", async () => {
     const { exa, request } = setup([]);
     await expect(exa.search("   ")).rejects.toThrow("Empty search query");

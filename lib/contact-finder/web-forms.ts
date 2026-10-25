@@ -5,12 +5,14 @@
  *   (b) its fetched text carries form evidence: label-only lines for at least 3 distinct typical fields
  *       (First name, Date of birth, Email, Zip ...), or 2 such fields plus explicit form wording
  *       ("fill out the form", "submit", "required field"). A bare "Contact us" page needs 3 fields incl. message + email.
- * The form URL is always the page URL itself; no URL is ever mined out of the page text. Job, volunteer, donation,
+ * Here the form URL is the page URL itself; linked forms come only from the page's actual links (form-links.ts), never
+ * from URLs in prose. Job, volunteer, donation,
  * newsletter and login pages, and documents (PDF/DOC), never count.
  */
 import type { Evidence } from '../contracts/evidence';
 import type { ExaPage } from '../sources/exa';
 import { normalizeHttpUrl, webFormEvidence, type WebFormOrigin, type WebFormPoint } from '../plan/contact-points';
+import { linkedWebForms } from './form-links';
 
 const MIN_FIELDS = 3;
 const MIN_FIELDS_WITH_WORDING = 2;
@@ -108,8 +110,20 @@ function hasFormEvidence(text: string, strictContact: boolean): boolean {
   return kinds.size >= MIN_FIELDS || (kinds.size >= MIN_FIELDS_WITH_WORDING && FORM_WORDING.test(text));
 }
 
-/** The page itself as an online form contact point, or [] (never throws). */
+/**
+ * Online forms for a fetched page: the page itself when it IS a form, plus forms it links to (form-links.ts), e.g. a
+ * grant program page's "Apply online" link. sourceUrl is always the fetched page. [] when none (never throws).
+ */
 export function webFormsOnPage(page: ExaPage): WebFormPoint[] {
+  const own = pageAsForm(page);
+  const linked = linkedWebForms(page)
+    .filter((l) => !own.some((o) => o.url === l.url))
+    .map((l): WebFormPoint => ({ origin: l.origin, url: l.url, sourceUrl: page.url, sourceKind: 'exa' }));
+  return [...own, ...linked];
+}
+
+/** The page itself as an online form contact point, or [] (never throws). */
+function pageAsForm(page: ExaPage): WebFormPoint[] {
   try {
     const raw = normalizeHttpUrl(page.url ?? '');
     if (!raw || !page.text?.trim()) return [];

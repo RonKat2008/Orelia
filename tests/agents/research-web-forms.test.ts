@@ -51,4 +51,23 @@ describe('research web-form stamping', () => {
     expect(tracker.webFormsFor(FORM_URL)).toHaveLength(1);
     expect(tracker.webFormsFor(OTHER_URL)).toEqual([]);
   });
+
+  it('aid program page: stamps the application form the page links to (Exa extras.links), sourced from the program page', async () => {
+    // Arrange: the aid agent's search_web returns a program landing page whose text has no hrefs, plus its link list.
+    const PROGRAM = 'https://www.patientadvocate.org/connect-with-services/financial-aid-funds/';
+    const tracker = new ProvenanceTracker(NOW);
+    const exa: ExaPort = { search: async () => [{
+      url: PROGRAM, title: 'Financial Aid Funds',
+      text: 'Small grants for patients who meet financial and medical criteria. Register and apply by online here.',
+      links: ['https://www.patientadvocate.org/wp-content/uploads/Disclaimer.pdf', 'https://financialaid.patientadvocate.org/', 'https://financialaid.patientadvocate.org/#/login'],
+    }] };
+    await exaSearchTool(exa, tracker).handler({ query: 'aid' } as never);
+    const org = { kind: 'organization', id: 'org:paf', name: 'Patient Advocate Foundation', organizationKind: 'financial_aid', url: PROGRAM, evidenceRefs: [PROGRAM] } as Resource;
+    // Act
+    const out = finalizeOutput({ records: [org], evidence: [{ claimType: 'financial_aid_program', claim: 'Small grants for patients', sourceUrl: PROGRAM }] }, tracker, { allowedKinds: ['organization'], organizationKinds: ['financial_aid', 'travel_aid'] });
+    // Assert
+    const form = out.evidence.find((e) => e.claimType === 'contact_point.web_form.application_form');
+    expect(form).toMatchObject({ claim: 'https://financialaid.patientadvocate.org/', sourceUrl: PROGRAM, sourceKind: 'exa' });
+    expect(out.records[0]?.evidenceRefs).toContain(form?.id);
+  });
 });

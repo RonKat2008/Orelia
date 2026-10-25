@@ -188,7 +188,7 @@ export function createLivePorts(options: LivePortsOptions = {}): SourcePorts {
   const exaPort = (client: ExaClient): ExaPort => ({
     async search({ query, numResults, includeDomains }) {
       const { records } = await client.search(query, { numResults, ...(includeDomains?.length ? { includeDomains } : {}) });
-      return records.map((r) => ({ url: r.url, title: r.title ?? r.url, text: r.text }));
+      return records.map((r) => ({ url: r.url, title: r.title ?? r.url, text: r.text, ...(r.links ? { links: r.links } : {}) }));
     },
   });
   const exa = exaPort(exaClient);

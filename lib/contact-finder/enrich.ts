@@ -87,7 +87,7 @@ function onOwnSite(target: EnrichTarget, url: string, own: readonly string[]): b
 
 /** Code-stamped contact point rows (role email, intake phone, online form) on one fetched own-site page. */
 function pageRows(r: ExaResult, fetchedAt: string): Array<Evidence & { id: string; channel: string; address: string }> {
-  const page = { url: r.url, title: r.title, text: r.text };
+  const page = { url: r.url, title: r.title, text: r.text, links: r.links };
   const doors = contactPointsFromDoors(classifyIntakeDoors(page)).flatMap((cp) => {
     const row = contactPointEvidence(cp, fetchedAt);
     return row?.id ? [{ ...row, id: row.id, channel: cp.channel as string, address: cp.address }] : [];

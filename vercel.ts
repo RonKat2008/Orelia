@@ -46,6 +46,9 @@ export const buildCommand =
 export const config: VercelConfig = {
   framework: "nextjs",
   buildCommand,
+  // Functions run next to the Neon database (us-east-1 = iad1). Measured: prod already resolved to iad1, so this pins
+  // it explicitly; a function in another region would pay a cross-region round trip on every one of a page's queries.
+  regions: ["iad1"],
   // Keep in sync with `export const maxDuration` in each route file.
   functions: {
     "app/api/inngest/route.ts": { maxDuration: 300 },

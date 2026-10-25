@@ -330,15 +330,20 @@ export class DbPersist implements Persist {
     const idsOf = (k: ResourceKind) => cands.filter((c) => c.targetKind === k).map((c) => c.targetId);
     const names = new Map<string, string>();
     const [ex, ins, tr, org] = [idsOf("expert"), idsOf("institution"), idsOf("trial"), idsOf("organization")];
-    if (ex.length) for (const r of await db.select().from(experts).where(inArray(experts.id, ex))) names.set(r.id, r.name);
-    if (ins.length) for (const r of await db.select().from(institutions).where(inArray(institutions.id, ins))) names.set(r.id, r.name);
-    if (tr.length) for (const r of await db.select().from(trials).where(inArray(trials.id, tr))) names.set(r.id, r.title);
-    if (org.length) for (const r of await db.select().from(organizations).where(inArray(organizations.id, org))) names.set(r.id, r.name);
-
-    const evRows = await db
-      .select()
-      .from(evidenceTable)
-      .where(and(eq(evidenceTable.caseId, caseId), inArray(evidenceTable.targetId, cands.map((c) => c.targetId))));
+    const none = Promise.resolve([] as { id: string; name: string }[]);
+    // Names and evidence are independent: one parallel round (was five sequential queries). Only the columns used.
+    const [exRows, insRows, trRows, orgRows, evRows] = await Promise.all([
+      ex.length ? db.select({ id: experts.id, name: experts.name }).from(experts).where(inArray(experts.id, ex)) : none,
+      ins.length ? db.select({ id: institutions.id, name: institutions.name }).from(institutions).where(inArray(institutions.id, ins)) : none,
+      tr.length ? db.select({ id: trials.id, title: trials.title }).from(trials).where(inArray(trials.id, tr)) : Promise.resolve([] as { id: string; title: string }[]),
+      org.length ? db.select({ id: organizations.id, name: organizations.name }).from(organizations).where(inArray(organizations.id, org)) : none,
+      db
+        .select()
+        .from(evidenceTable)
+        .where(and(eq(evidenceTable.caseId, caseId), inArray(evidenceTable.targetId, cands.map((c) => c.targetId)))),
+    ]);
+    for (const rows of [exRows, insRows, orgRows]) for (const r of rows) names.set(r.id, r.name);
+    for (const r of trRows) names.set(r.id, r.title);
 
     return cands
       .map((c) => ({
@@ -371,16 +376,12 @@ export class DbPersist implements Persist {
     const orgIds = cands.filter((c) => c.targetKind === "organization").map((c) => c.targetId);
     const nct = new Map<string, string>();
     const kinds = new Map<string, ShortlistMeta["organizationKind"]>();
-    if (trialIds.length) {
-      for (const row of await db.select({ id: trials.id, nctId: trials.nctId }).from(trials).where(inArray(trials.id, trialIds))) {
-        nct.set(row.id, row.nctId);
-      }
-    }
-    if (orgIds.length) {
-      for (const row of await db.select({ id: organizations.id, kind: organizations.kind }).from(organizations).where(inArray(organizations.id, orgIds))) {
-        kinds.set(row.id, row.kind);
-      }
-    }
+    const [trialRows, orgRows] = await Promise.all([
+      trialIds.length ? db.select({ id: trials.id, nctId: trials.nctId }).from(trials).where(inArray(trials.id, trialIds)) : Promise.resolve([]),
+      orgIds.length ? db.select({ id: organizations.id, kind: organizations.kind }).from(organizations).where(inArray(organizations.id, orgIds)) : Promise.resolve([]),
+    ]);
+    for (const row of trialRows) nct.set(row.id, row.nctId);
+    for (const row of orgRows) kinds.set(row.id, row.kind);
     return cands.map((c) => ({
       targetKind: c.targetKind,
       targetId: c.targetId,

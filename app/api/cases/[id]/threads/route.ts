@@ -14,9 +14,9 @@ export async function GET(req: Request, { params }: Ctx) {
     if (!id) return jsonError(400, "Invalid case id");
     const denied = await guardCase(req, id);
     if (denied) return denied;
-    const found = await getServices().cases.get(id);
+    const [found, threads] = await Promise.all([getServices().cases.get(id), getCaseActivity().threads(id)]);
     if (!found) return jsonError(404, "Case not found");
-    const body = threadsResponseSchema.parse({ caseId: id, threads: await getCaseActivity().threads(id) });
+    const body = threadsResponseSchema.parse({ caseId: id, threads });
     return NextResponse.json(body);
   } catch (error) {
     return jsonError(500, "Unable to load threads", error);

@@ -14,8 +14,8 @@ export async function GET(req: Request, { params }: Ctx) {
   const denied = await guardCase(req, id);
   if (denied) return denied;
   try {
-    if (!await getServices().cases.get(id)) return jsonError(404, 'Case not found');
-    const applications = await getApplicationStore().listByCase(id);
+    const [found, applications] = await Promise.all([getServices().cases.get(id), getApplicationStore().listByCase(id)]);
+    if (!found) return jsonError(404, 'Case not found');
     return NextResponse.json({ applications });
   } catch (err) {
     return jsonError(500, 'Unable to load applications', err);

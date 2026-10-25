@@ -14,11 +14,11 @@ export async function GET(req: Request, { params }: Ctx) {
     if (!id) return jsonError(400, "Invalid case id");
     const denied = await guardCase(req, id);
     if (denied) return denied;
-    const found = await getServices().cases.get(id);
-    if (!found) return jsonError(404, "Case not found");
     const activity = getCaseActivity();
-    const contacts = await activity.contacts(id);
-    const openTaskCount = (await activity.tasks(id)).filter((task) => task.status === "open").length;
+    // One parallel round; a missing case still answers 404 (the reads are discarded).
+    const [found, contacts, tasks] = await Promise.all([getServices().cases.get(id), activity.contacts(id), activity.tasks(id)]);
+    if (!found) return jsonError(404, "Case not found");
+    const openTaskCount = tasks.filter((task) => task.status === "open").length;
     const body = contactsResponseSchema.parse({ caseId: id, contacts, openTaskCount });
     return NextResponse.json(body);
   } catch (error) {

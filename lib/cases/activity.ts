@@ -142,27 +142,35 @@ export class PostgresCaseActivity implements CaseActivity {
     const institutionIds = ids("institution");
     const trialIds = ids("trial");
     const orgIds = ids("organization");
-    if (expertIds.length) for (const row of await this.db.select({ id: experts.id, name: experts.name }).from(experts).where(inArray(experts.id, expertIds))) named.set(row.id, row.name);
-    if (institutionIds.length) for (const row of await this.db.select({ id: institutions.id, name: institutions.name }).from(institutions).where(inArray(institutions.id, institutionIds))) named.set(row.id, row.name);
-    if (trialIds.length) for (const row of await this.db.select({ id: trials.id, name: trials.title }).from(trials).where(inArray(trials.id, trialIds))) named.set(row.id, row.name);
-    if (orgIds.length) for (const row of await this.db.select({ id: organizations.id, name: organizations.name }).from(organizations).where(inArray(organizations.id, orgIds))) named.set(row.id, row.name);
+    const none = Promise.resolve([] as { id: string; name: string }[]);
+    // One parallel round (was four sequential lookups).
+    const found = await Promise.all([
+      expertIds.length ? this.db.select({ id: experts.id, name: experts.name }).from(experts).where(inArray(experts.id, expertIds)) : none,
+      institutionIds.length ? this.db.select({ id: institutions.id, name: institutions.name }).from(institutions).where(inArray(institutions.id, institutionIds)) : none,
+      trialIds.length ? this.db.select({ id: trials.id, name: trials.title }).from(trials).where(inArray(trials.id, trialIds)) : none,
+      orgIds.length ? this.db.select({ id: organizations.id, name: organizations.name }).from(organizations).where(inArray(organizations.id, orgIds)) : none,
+    ]);
+    for (const rows of found) for (const row of rows) named.set(row.id, row.name);
     return named;
   }
 
   async contacts(caseId: string): Promise<ContactView[]> {
     const rows = await this.db.select().from(contacts).where(eq(contacts.caseId, caseId));
     if (rows.length === 0) return [];
-    const named = await this.names(rows);
     const ids = rows.map((row) => row.id);
-    const consentRows = await this.db.select({ contactId: consents.contactId, approvedAt: consents.approvedAt }).from(consents).where(inArray(consents.contactId, ids));
-    const approvedRows = await this.db
-      .select({ contactId: messages.contactId })
-      .from(messages)
-      .where(and(inArray(messages.contactId, ids), eq(messages.direction, "outbound"), isNotNull(messages.approvedAt)));
-    const pendingFollowUpRows = await this.db
-      .select({ contactId: messages.contactId })
-      .from(messages)
-      .where(and(inArray(messages.contactId, ids), eq(messages.direction, "outbound"), like(messages.classification, "follow_up_%"), isNull(messages.approvedAt), isNull(messages.sentAt)));
+    // Independent reads: one parallel round after the contacts row (was seven sequential queries).
+    const [named, consentRows, approvedRows, pendingFollowUpRows] = await Promise.all([
+      this.names(rows),
+      this.db.select({ contactId: consents.contactId, approvedAt: consents.approvedAt }).from(consents).where(inArray(consents.contactId, ids)),
+      this.db
+        .select({ contactId: messages.contactId })
+        .from(messages)
+        .where(and(inArray(messages.contactId, ids), eq(messages.direction, "outbound"), isNotNull(messages.approvedAt))),
+      this.db
+        .select({ contactId: messages.contactId })
+        .from(messages)
+        .where(and(inArray(messages.contactId, ids), eq(messages.direction, "outbound"), like(messages.classification, "follow_up_%"), isNull(messages.approvedAt), isNull(messages.sentAt))),
+    ]);
     const consented = new Set(consentRows.filter((row) => row.approvedAt).map((row) => row.contactId));
     const approved = new Set(approvedRows.map((row) => row.contactId));
     const awaiting = new Set(pendingFollowUpRows.map((row) => row.contactId));
@@ -203,8 +211,10 @@ export class PostgresCaseActivity implements CaseActivity {
     const people = await this.contacts(caseId);
     if (people.length === 0) return [];
     const ids = people.map((person) => person.id);
-    const mail = await this.db.select().from(messages).where(inArray(messages.contactId, ids));
-    const voice = await this.db.select().from(calls).where(inArray(calls.contactId, ids));
+    const [mail, voice] = await Promise.all([
+      this.db.select().from(messages).where(inArray(messages.contactId, ids)),
+      this.db.select().from(calls).where(inArray(calls.contactId, ids)),
+    ]);
     return people.map((person) => ({
       contactId: person.id,
       label: person.displayName,

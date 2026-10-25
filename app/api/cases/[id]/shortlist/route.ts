@@ -19,18 +19,16 @@ export async function GET(req: Request, { params }: Ctx) {
     const denied = await guardCase(req, id);
     if (denied) return denied;
     const { cases, persist } = getServices();
-    const found = await cases.get(id);
+    // One parallel round (was four sequential reads); a missing case still answers 404.
+    const [found, items, meta, curation] = await Promise.all([
+      cases.get(id),
+      persist.getShortlist(id),
+      persist.getShortlistMeta ? persist.getShortlistMeta(id) : Promise.resolve([] as ShortlistMeta[]),
+      // curation is additive; never fail the shortlist because of it
+      getCurationStore().load(id).catch(() => null),
+    ]);
     if (!found) return jsonError(404, "Case not found");
-
-    const items = await persist.getShortlist(id);
-    const meta: ShortlistMeta[] = persist.getShortlistMeta ? await persist.getShortlistMeta(id) : [];
     const metaByKey = new Map(meta.map((row) => [curationKey(row.targetKind, row.targetId), row]));
-    let curation: Awaited<ReturnType<ReturnType<typeof getCurationStore>["load"]>> = null;
-    try {
-      curation = await getCurationStore().load(id);
-    } catch {
-      curation = null; // curation is additive; never fail the shortlist because of it
-    }
     const groups: Record<string, Array<ShortlistItem & {
       tier: string;
       tierReasons: { text: string; evidenceIds: string[] }[];

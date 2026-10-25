@@ -159,9 +159,13 @@ async function check(req: Request, caseId: string | undefined): Promise<OwnerRes
   if (!caseId || !UUID.test(caseId)) return notFound();
   const sessionId = readSession(req);
   const store = getOwnerStore();
-  const [owner, caseAccount] = await Promise.all([store.ownerOf(caseId), store.accountOf?.(caseId) ?? Promise.resolve(null)]);
+  // One parallel round: every case API call runs this guard, so the account lookup must not wait on the case row.
+  const [owner, caseAccount, account] = await Promise.all([
+    store.ownerOf(caseId),
+    store.accountOf?.(caseId) ?? Promise.resolve(null),
+    currentAccount(req),
+  ]);
   if (owner === undefined) return notFound();
-  const account = await currentAccount(req);
   const accountId = account?.id ?? null;
   if (!canAccessCase({ owner, caseAccount, sessionId, accountId })) return notFound();
   return { ok: true, sessionId, accountId };

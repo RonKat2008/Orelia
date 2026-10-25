@@ -196,6 +196,15 @@ describe("patientStatus: reaching out", () => {
     expect(result.tone).toBe("you");
   });
 
+  it("lists the other messages waiting, so skipping one never hides the rest", () => {
+    const result = status(snapshot({
+      contacts: [contact({ channel: "voice" }), contact({ id: "c2", name: "FIGHT vEDS" }), contact({ id: "c3", name: "Done", approved: true })],
+      plan: { status: "approved" },
+    }));
+    expect(result.nextAction).toMatchObject({ kind: "approve_message", contactId: "c1" });
+    expect(result.nextAction?.alsoWaiting).toEqual([{ contactId: "c2", name: "FIGHT vEDS" }]);
+  });
+
   it("surfaces a drafted follow-up instead of promising one", () => {
     const sent = contact({ state: "sent", approved: true, pendingFollowUp: true, nextFollowUpAt: "2026-10-27T16:00:00.000Z" });
     const result = status(snapshot({ contacts: [sent], plan: { status: "approved" } }));

@@ -262,9 +262,10 @@ function reaching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
     };
   }
 
-  const pending = s.contacts.find(
+  const waitingOn = s.contacts.filter(
     (c) => c.consented && ((c.state === "drafted" && !c.approved) || (c.state === "sent" && c.pendingFollowUp)),
   );
+  const [pending, ...rest] = waitingOn;
   if (pending) {
     const call = pending.channel === "voice";
     const followUp = pending.state === "sent";
@@ -282,6 +283,7 @@ function reaching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
         label: call ? "Read the call script" : "Read the message",
         contactId: pending.id,
         ...(followUp ? { followUp: true } : {}),
+        ...(rest.length ? { alsoWaiting: rest.map((c) => ({ contactId: c.id, name: c.name })) } : {}),
         name: pending.name,
         detailsHref: details(s, "outbox"),
       },

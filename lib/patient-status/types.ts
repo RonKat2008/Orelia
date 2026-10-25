@@ -98,6 +98,8 @@ export interface PatientNextAction {
   followUp?: boolean;
   /** approve_message: this answers their request for records or slides (a reply letter, not a follow-up). */
   reply?: "records" | "slides";
+  /** approve_message: the other first messages and follow-ups also waiting, so skipping this one shows the next. */
+  alsoWaiting?: { contactId: string; name: string }[];
   /** Who it is about, by name, when it is about one contact. */
   name?: string;
   /** The detailed page for this step. */

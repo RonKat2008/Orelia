@@ -66,7 +66,11 @@ function titleFor(action: PatientNextAction, call: boolean): string {
  * patient's click: the server sets approved_at and runs the outbound gate. Nothing here approves on its own.
  * Covers first messages, follow-ups and reply letters (records or slides they asked for).
  */
-export function MessageCard({ caseId, onDone, action }: ActionProps & { action: PatientNextAction; headline?: string }) {
+export function MessageCard({ caseId, onDone, action: first }: ActionProps & { action: PatientNextAction; headline?: string }) {
+  // "Skip for now" moves on to the next message waiting (if any) instead of hiding all of them behind this one.
+  const queue: PatientNextAction[] = [first, ...(first.alsoWaiting ?? []).map((w) => ({ ...first, contactId: w.contactId, name: w.name, followUp: undefined, reply: undefined }))];
+  const [index, setIndex] = useState(0);
+  const action = queue[Math.min(index, queue.length - 1)]!;
   const contactId = action.contactId ?? "";
   const [draft, setDraft] = useState<Shown | null>(null);
   const [record, setRecord] = useState<CaseInput | null>(null);
@@ -89,6 +93,13 @@ export function MessageCard({ caseId, onDone, action }: ActionProps & { action: 
       active = false;
     };
   }, [caseId, contactId]);
+
+  function show(next: number) {
+    if (next === index) return;
+    setDraft(null);
+    setErrors([]);
+    setIndex(next);
+  }
 
   const call = (draft?.channel ?? "email") === "voice";
   const disclosed = draft ? hasDisclosure(draft.body) : false;
@@ -126,7 +137,7 @@ export function MessageCard({ caseId, onDone, action }: ActionProps & { action: 
         title={MESSAGE_COPY.heldTitle}
         lede={MESSAGE_COPY.heldLede}
         action={
-          <Button size="lg" variant="secondary" onClick={() => setHeld(false)}>
+          <Button size="lg" variant="secondary" onClick={() => { show(0); setHeld(false); }}>
             {MESSAGE_COPY.showAgain}
           </Button>
         }
@@ -155,7 +166,7 @@ export function MessageCard({ caseId, onDone, action }: ActionProps & { action: 
             <Button asChild variant="link">
               <Link href={`${action.detailsHref}?view=judge`}>{MESSAGE_COPY.change}</Link>
             </Button>
-            <Button variant="link" onClick={() => setHeld(true)}>
+            <Button variant="link" onClick={() => (index + 1 < queue.length ? show(index + 1) : setHeld(true))}>
               {MESSAGE_COPY.skip}
             </Button>
           </span>

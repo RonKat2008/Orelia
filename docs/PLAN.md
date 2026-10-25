@@ -1,4 +1,4 @@
-# Wayfinder build plan
+# Orelia build plan
 
 > Source of truth for every lane. HARD RULES below are non-negotiable.
 
@@ -22,14 +22,14 @@ Out of scope: pediatric cases, non-U.S. resources, EHR integration, fax, any med
 - Only edit files your task owns; claim them with claim_files.
 
 ## Context
-Wayfinder helps an adult with a rare disease get seen by the right people. The patient enters their case. A swarm of
+Orelia helps an adult with a rare disease get seen by the right people. The patient enters their case. A swarm of
 research agents finds four kinds of resource: specialists and centers, recruiting clinical trials, patient advocacy
 organizations, and financial or travel aid. The patient picks which resources to contact. Each picked resource then
 gets its own **connection agent**, which emails it (AgentMail) or calls it (AgentCall), reads the replies, turns
 requests into tasks the patient approves, and follows up until there is a connection: an appointment, trial screening,
 membership or an aid application.
 
-The pitch stays the same: *expert finders tell you who the expert is; Wayfinder gets you seen.*
+The pitch stays the same: *expert finders tell you who the expert is; Orelia gets you seen.*
 
 This plan changes the original sarcoma spec in four ways, all from your answers:
 - **Diseases:** any adult rare disease, not only rare cancers.

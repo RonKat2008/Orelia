@@ -19,8 +19,8 @@ import { ColorSection, MotionSection, ShapeSection, TypeSection } from "./_compo
 import { JOURNEY } from "./_components/tokens-data";
 
 export const metadata: Metadata = {
-  title: "Design system | Wayfinder",
-  description: "Clear Day: Wayfinder's tokens, type, motion and UI primitives in both themes.",
+  title: "Design system | Orelia",
+  description: "Clear Day: Orelia's tokens, type, motion and UI primitives in both themes.",
 };
 
 const CONTENTS = [
@@ -83,7 +83,7 @@ export default function DesignSystemPage() {
         <div className="page-container grid gap-10 py-section lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
           <div className="grid gap-6">
             <p className="m-0 flex items-center gap-3 text-micro font-semibold uppercase text-ink-3">
-              <span aria-hidden className="h-px w-10 bg-terracotta" /> Wayfinder design system
+              <span aria-hidden className="h-px w-10 bg-terracotta" /> Orelia design system
             </p>
             <h1 className="m-0 max-w-[14ch] font-display text-display font-light text-ink display-soft text-balance">
               <Emph text="A calm place to *find* your way." />
@@ -99,7 +99,7 @@ export default function DesignSystemPage() {
                 </a>
               </Button>
               <Button asChild size="lg" variant="secondary">
-                <Link href="/">Back to Wayfinder</Link>
+                <Link href="/">Back to Orelia</Link>
               </Button>
             </div>
           </div>

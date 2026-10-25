@@ -1,12 +1,12 @@
 {
   "id": "21-quoted-thread-new-text-on-top",
-  "description": "New reply on top, old Wayfinder message quoted below; only the new text counts.",
+  "description": "New reply on top, old Orelia message quoted below; only the new text counts.",
   "event": {
     "channel": "email",
     "providerThreadId": "thr_quoted_thread_new_text_on_top",
     "from": "scheduling@oakmont-health.example.org",
     "subject": "Re: Request for new patient appointment",
-    "body": "Hi,\n\nPlease call us at +1 202-555-0192 on weekdays between 10 am and 2 pm to book.\n\nOn Oct 28, 2026, Wayfinder Assistant <assistant@wayfinder.example.org> wrote:\n> Hello, I am an AI assistant writing on behalf of a patient. Could you tell us how to schedule a new-patient visit? Please send a referral if one is needed.\n> Thank you.",
+    "body": "Hi,\n\nPlease call us at +1 202-555-0192 on weekdays between 10 am and 2 pm to book.\n\nOn Oct 28, 2026, Orelia Assistant <assistant@wayfinder.example.org> wrote:\n> Hello, I am an AI assistant writing on behalf of a patient. Could you tell us how to schedule a new-patient visit? Please send a referral if one is needed.\n> Thank you.",
     "receivedAt": "2026-10-29T15:04:00Z",
     "offlineKey": "21-quoted-thread-new-text-on-top"
   },

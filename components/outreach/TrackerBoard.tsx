@@ -610,7 +610,7 @@ function applicationBadge(status: string): StatusWord {
 }
 
 function applicationNote(application: ApiApplication): string {
-  const where = isDemoFormUrl(application.url) ? "the Wayfinder demo intake form" : "their online form";
+  const where = isDemoFormUrl(application.url) ? "the Orelia demo intake form" : "their online form";
   if (application.status === "submitted") {
     return `Submitted to ${where}${application.submittedAt ? ` on ${formatDay(application.submittedAt)}` : ""}.`;
   }

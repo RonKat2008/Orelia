@@ -1,5 +1,5 @@
 /**
- * Register Wayfinder inbound webhooks. Default is dry-run (no POST/PATCH/DELETE).
+ * Register Orelia inbound webhooks. Default is dry-run (no POST/PATCH/DELETE).
  *
  *   npx tsx scripts/register-webhooks.ts --base-url https://example.com [--dry-run]
  *   npx tsx scripts/register-webhooks.ts --base-url https://example.com --apply
@@ -7,7 +7,7 @@
  * --apply prints AGENTMAIL_WEBHOOK_SECRET and AGENTCALL_WEBHOOK_SECRET to stdout
  * when the provider returns them. It never writes secrets to disk.
  *
- * Vapi (VOICE_PROVIDER=vapi) needs no registration: every call Wayfinder places carries
+ * Vapi (VOICE_PROVIDER=vapi) needs no registration: every call Orelia places carries
  * assistant.server = { url: <base>/api/webhooks/vapi, headers: { x-vapi-secret: VAPI_WEBHOOK_SECRET } },
  * so set VAPI_WEBHOOK_SECRET (any long random value) in Vercel and the route authenticates it.
  * Optionally also set the same URL as the org Server URL in the Vapi dashboard with a Bearer Token credential

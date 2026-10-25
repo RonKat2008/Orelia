@@ -1,7 +1,7 @@
 /**
  * Lane K -> lane F contract: the documents a patient marked "Share with resources" (account_documents.share_with_resources,
  * default false). Resource-facing agents (the agent factory) may read ONLY these, via this module, never the whole
- * document space. Reading is still not sending: anything leaving Wayfinder goes through minimize and checkOutbound.
+ * document space. Reading is still not sending: anything leaving Orelia goes through minimize and checkOutbound.
  */
 import type { MedicalHistoryHit } from './contract';
 import { scopeForCase } from './scope';

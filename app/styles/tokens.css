@@ -1,5 +1,5 @@
 /*
- * Legacy Wayfinder tokens (--wf-*), kept so pre-redesign CSS keeps working.
+ * Legacy Orelia tokens (--wf-*), kept so pre-redesign CSS keeps working.
  * They now resolve to the Clear Day tokens defined in app/styles/theme.css, so
  * every legacy page follows the new palette and both themes automatically.
  *

@@ -170,7 +170,7 @@ function ProfileBody() {
       return;
     }
     if (res.status === 422 && res.error === "adult_only") {
-      setAdultOnly(res.message ?? "Wayfinder is built for adults (18 and over).");
+      setAdultOnly(res.message ?? "Orelia is built for adults (18 and over).");
       focusFirstError({ dateOfBirth: "" });
       return;
     }
@@ -205,7 +205,7 @@ function ProfileBody() {
       ) : null}
       {loadError ? <Callout tone="danger" role="alert">{loadError}</Callout> : null}
 
-      <Section title="About you" description="Your preferred name is how Wayfinder addresses you.">
+      <Section title="About you" description="Your preferred name is how Orelia addresses you.">
         <TextField {...text("preferredName")} label="Preferred name" autoComplete="nickname" required />
         <TextField {...text("legalName")} label="Legal name" optional autoComplete="name" />
         <TextField
@@ -213,7 +213,7 @@ function ProfileBody() {
           label="Date of birth"
           type="date"
           autoComplete="bday"
-          hint="Wayfinder is for adults (18+)."
+          hint="Orelia is for adults (18+)."
           required
           error={errors.dateOfBirth}
         />
@@ -269,7 +269,7 @@ function ProfileBody() {
         </Field>
       </Section>
 
-      <Section title="Medications & allergies" description="For your own reference. Wayfinder never gives medical advice.">
+      <Section title="Medications & allergies" description="For your own reference. Orelia never gives medical advice.">
         <Field label="Medications" htmlFor="pf-medications" optional error={errors.medications} className="wide">
           <Textarea
             id="pf-medications"

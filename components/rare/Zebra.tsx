@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { cn } from "@/lib/ui/cn";
 
 /**
- * The zebra stripe is the international rare-disease symbol. Wayfinder uses it in exactly TWO places: the landing
+ * The zebra stripe is the international rare-disease symbol. Orelia uses it in exactly TWO places: the landing
  * page mark beside the eyebrow and the "Your condition" card. Both are decorative (aria-hidden), low contrast (the
  * ink token at a few percent, so it follows light and dark themes), take no layout space of their own and never move.
  */

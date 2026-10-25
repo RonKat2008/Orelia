@@ -23,7 +23,7 @@ export async function extractPdfPages(bytes: Uint8Array): Promise<ExtractedPage[
     .map((text, i) => ({ page: i + 1, section: null, text: text.replace(/[ \t]+/g, ' ').trim() }))
     .filter(p => p.text.length > 0);
   if (pages.length === 0) {
-    throw new ExtractionError('no_text', 'This PDF looks like a scan with no text layer. Upload photos of the pages (PNG/JPG) and Wayfinder will read them.');
+    throw new ExtractionError('no_text', 'This PDF looks like a scan with no text layer. Upload photos of the pages (PNG/JPG) and Orelia will read them.');
   }
   return pages;
 }

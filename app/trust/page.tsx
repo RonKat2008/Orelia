@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui";
 export const metadata = {
   title: "Trust",
   description:
-    "What Wayfinder will never do for adults with a rare disease, and how to ask for a case to be deleted.",
+    "What Orelia will never do for adults with a rare disease, and how to ask for a case to be deleted.",
 };
 
 /** Anchors the footer links to. */
@@ -22,7 +22,7 @@ export default function TrustPage() {
       <main id="main">
         <div className="page-container pt-8 sm:pt-10">
           <PageHeader
-            title="What Wayfinder will never do"
+            title="What Orelia will never do"
             className="mb-6"
             lede="Your health story is private. These limits are part of the product. They are not settings, and you cannot switch them off."
           />

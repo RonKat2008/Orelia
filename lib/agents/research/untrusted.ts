@@ -1,5 +1,5 @@
 /**
- * Defenses for text that came from outside Wayfinder (web pages, PubMed, ClinicalTrials.gov) before a model
+ * Defenses for text that came from outside Orelia (web pages, PubMed, ClinicalTrials.gov) before a model
  * sees it. This is defense in depth: the hard guarantees live in code (tool inputs are zod-parsed, evidence and
  * identifiers are checked against what tools returned in finalizeOutput, and the verifier drops unevidenced
  * claims). These helpers reduce the chance an injected page steers the model at all.

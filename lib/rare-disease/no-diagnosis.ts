@@ -1,5 +1,5 @@
 /**
- * No-diagnosis guard for the undiagnosed path. Wayfinder never suggests, guesses or names a diagnosis for a patient
+ * No-diagnosis guard for the undiagnosed path. Orelia never suggests, guesses or names a diagnosis for a patient
  * who does not have one. This deterministic check flags text that reads as a diagnostic suggestion ("could be",
  * "consistent with", "rule out ..."), or that names a specific condition. Used on top of flagMedicalAdvice, never
  * instead of it. It is a review aid with a bias toward dropping text, not a classifier.

@@ -13,10 +13,10 @@ export const DEMO_FORM_PATH = '/demo/intake-form';
 export const DEMO_CALL_SIMULATED_NOTE = 'demo: call simulated (no allowlisted number)';
 
 export const DEMO_LABELS = {
-  email: 'Demo: delivered to Wayfinder test inbox',
+  email: 'Demo: delivered to Orelia test inbox',
   voice: 'Demo: call simulated (no real number is dialed)',
-  voiceTestNumber: 'Demo: rings the Wayfinder test phone',
-  web_form: 'Demo: delivered to Wayfinder test form',
+  voiceTestNumber: 'Demo: rings the Orelia test phone',
+  web_form: 'Demo: delivered to Orelia test form',
 } as const;
 
 /** Small stable hash (FNV-1a, hex) usable on server and client. */

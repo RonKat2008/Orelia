@@ -111,7 +111,7 @@ export function calendarWorthy(a: Appointment): boolean {
 
 export function singleEventIcs(a: Appointment, opts: { now: Date; uidDomain: string; appOrigin?: string }): string {
   const url = opts.appOrigin ? `${opts.appOrigin}/cases/${a.caseId}/appointments` : undefined;
-  return buildCalendar([eventLines(a, { now: opts.now, uidDomain: opts.uidDomain, description: eventDescription(a, url ? { appUrl: url } : {}), ...(url ? { url } : {}) })], { name: 'Wayfinder appointment' });
+  return buildCalendar([eventLines(a, { now: opts.now, uidDomain: opts.uidDomain, description: eventDescription(a, url ? { appUrl: url } : {}), ...(url ? { url } : {}) })], { name: 'Orelia appointment' });
 }
 
 export function feedIcs(appts: Appointment[], opts: { now: Date; uidDomain: string; appOrigin?: string }): string {
@@ -119,7 +119,7 @@ export function feedIcs(appts: Appointment[], opts: { now: Date; uidDomain: stri
     const url = opts.appOrigin ? `${opts.appOrigin}/cases/${a.caseId}/appointments` : undefined;
     return eventLines(a, { now: opts.now, uidDomain: opts.uidDomain, description: eventDescription(a, url ? { appUrl: url } : {}), ...(url ? { url } : {}) });
   });
-  return buildCalendar(events, { name: 'Wayfinder appointments' });
+  return buildCalendar(events, { name: 'Orelia appointments' });
 }
 
 export const REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;

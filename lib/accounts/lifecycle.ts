@@ -65,7 +65,7 @@ export async function deleteAccount(accountId: string, deps: LifecycleDeps = {})
   return { cases, documents: removed.length, blobs: pathnames.length };
 }
 
-/** Everything Wayfinder holds for the account, as JSON (document text included; files are downloadable separately). */
+/** Everything Orelia holds for the account, as JSON (document text included; files are downloadable separately). */
 export async function exportAccount(account: Account, deps: Pick<LifecycleDeps, 'store' | 'owners'> = {}) {
   const store = deps.store ?? getAccountStore();
   const owners = deps.owners ?? getOwnerStore();

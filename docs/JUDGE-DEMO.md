@@ -60,7 +60,7 @@ source, score and safety check. Switch to Judge whenever you want to show the ma
 
 ### 1. Landing, How it works, Trust (1 minute)
 
-- `/` The pitch: expert finders tell you who the expert is; Wayfinder gets you seen. Note the banner: never medical
+- `/` The pitch: expert finders tell you who the expert is; Orelia gets you seen. Note the banner: never medical
   advice.
 - `/how-it-works` The four steps and the three channels (call, email, online form).
 - `/trust` What it will never do. These are code, not settings: no medical advice, every claim sourced, nothing sent

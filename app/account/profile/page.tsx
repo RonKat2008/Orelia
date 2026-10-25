@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ProfileForm } from "@/components/account/ProfileForm";
 import { AppShell } from "@/components/shell";
 
-export const metadata: Metadata = { title: "Your profile", description: "Details Wayfinder can reuse when you start a case.", robots: { index: false } };
+export const metadata: Metadata = { title: "Your profile", description: "Details Orelia can reuse when you start a case.", robots: { index: false } };
 
 export default function ProfilePage() {
   return (

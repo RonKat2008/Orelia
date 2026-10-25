@@ -18,7 +18,7 @@ export function CaseDocumentsView({ caseId }: { caseId: string }) {
       <header className="grid gap-1">
         <h1 className="m-0 font-display text-h2 font-normal text-ink display-soft">Your documents</h1>
         <p className="m-0 text-small text-ink-2">
-          Add anything relevant. Wayfinder&rsquo;s agents can read it for this case.{" "}
+          Add anything relevant. Orelia&rsquo;s agents can read it for this case.{" "}
           <Link href="/account/documents" className="text-teal underline underline-offset-4">
             Manage the full library
           </Link>

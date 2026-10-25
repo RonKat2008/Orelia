@@ -49,7 +49,7 @@ function requestError(response: Response, operation: Operation): Error {
       ? `Too many search requests. Try again in ${Math.ceil(seconds)} seconds.`
       : "Too many requests. Please wait a moment and try again.");
   }
-  if (response.status === 403) return new Error("Your request could not be verified. Reload this page and allow cookies for Wayfinder, then try again.");
+  if (response.status === 403) return new Error("Your request could not be verified. Reload this page and allow cookies for Orelia, then try again.");
   if (response.status === 404) return new Error("This case is unavailable in your current browser session. Start a new case from the report.");
   if (response.status === 409) return new Error("Research is already running for this case. Open your case to follow its progress.");
   if (response.status === 400) return new Error(operation === "read"
@@ -68,7 +68,7 @@ async function send(url: string, init: RequestInit, operation: Operation): Promi
   } catch {
     throw new Error(operation === "research"
       ? "Your details were saved, but we could not connect to start research. Check your connection and try again."
-      : "We could not connect to Wayfinder. Check your connection and try again; your details are still here.");
+      : "We could not connect to Orelia. Check your connection and try again; your details are still here.");
   }
 }
 
@@ -97,7 +97,7 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
   if (!response.ok) throw await failure(response, "read");
   const body: unknown = await response.json().catch(() => null);
   const parsed = caseSchema.safeParse(unwrap(body));
-  if (!parsed.success) throw new Error("Wayfinder returned an incomplete case. Your report is still here; please try reading it again.");
+  if (!parsed.success) throw new Error("Orelia returned an incomplete case. Your report is still here; please try reading it again.");
   rememberCase(parsed.data);
   return { record: parsed.data, preview: false };
 }
@@ -112,7 +112,7 @@ export async function createUndiagnosedCase(reportText: string, fields: Partial<
   if (!response.ok) throw await failure(response, "save");
   const body: unknown = await response.json().catch(() => null);
   const parsed = caseSchema.safeParse(unwrap(body));
-  if (!parsed.success) throw new Error("Wayfinder returned an incomplete case. Your answers are still here; please try again.");
+  if (!parsed.success) throw new Error("Orelia returned an incomplete case. Your answers are still here; please try again.");
   rememberCase(parsed.data);
   return { record: parsed.data, preview: false };
 }

@@ -4,7 +4,7 @@ import type { Appointment } from './schema';
  * Minimal RFC 5545 writer: CRLF line endings, 75-octet folding, TEXT escaping, UTC DATE-TIMEs, VALARM reminders.
  * Event text never includes the diagnosis: calendars sync to third-party services and lock screens.
  */
-export const PRODID = '-//Wayfinder//Appointments 1.0//EN';
+export const PRODID = '-//Orelia//Appointments 1.0//EN';
 const CRLF = '\r\n';
 
 export function escapeText(value: string): string {

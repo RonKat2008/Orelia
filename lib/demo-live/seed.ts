@@ -5,7 +5,7 @@
  * contact points are chosen so the contact plan uses every channel:
  *   1. email only           -> the demo coordinator answers "please send records" (records card)
  *   2. call only            -> the allowlisted test phone, or the simulated call sink
- *   3. online form only     -> Kernel fills Wayfinder's own demo intake form
+ *   3. online form only     -> Kernel fills Orelia's own demo intake form
  *   4. email, then call     -> the email is left unanswered, so the follow-up fires after simulated time
  * The resources are fictional on purpose: even if demo routing were off, their addresses (.example domains, 555-01xx
  * numbers) cannot reach anyone. With demo mode on, delivery is swapped for our own test destinations

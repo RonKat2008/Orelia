@@ -31,7 +31,7 @@ function setup(env: Record<string, string>) {
 }
 
 describe('web form demo remap', () => {
-  it('fills the Wayfinder demo intake form instead of the real form, idempotently, and never submits', async () => {
+  it('fills the Orelia demo intake form instead of the real form, idempotently, and never submits', async () => {
     const { demoUrl, provider, port } = setup(DEMO);
     const first = await port.draftFill({ caseId: 'case-1', contactId: 'contact-1', url: REAL, resourceKey: KEY });
     expect(first).toMatchObject({ ok: true, draft: { url: demoUrl, status: 'draft' } });

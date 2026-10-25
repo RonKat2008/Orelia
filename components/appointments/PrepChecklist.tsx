@@ -11,7 +11,7 @@ import type { ApptView } from "./model";
 
 /**
  * Practical prep only. The checklist is fixed, non-clinical items; "My questions" holds the patient's own words.
- * Wayfinder never suggests medical questions or advice here.
+ * Orelia never suggests medical questions or advice here.
  */
 export function PrepChecklist({ id, appointment, onChange }: { id: string; appointment: ApptView; onChange: (next: ApptView) => void }) {
   const [prep, setPrep] = useState<PrepNotes>(appointment.prepNotes);

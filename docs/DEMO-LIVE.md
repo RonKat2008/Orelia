@@ -9,7 +9,7 @@ channel to our own test destinations:
 |---|---|---|---|
 | Demo Connective Tissue Center | email | demo coordinator inbox (AgentMail) | reply "please send the patient's most recent medical records" -> **Send records** card |
 | Demo Vascular Genetics Clinic | call | allowlisted test phone (+13462874886) if it is on `OUTBOUND_ALLOWLIST`, else the simulated call sink | ringing -> connected -> transcript lines -> ended + summary; **referral** task |
-| Demo Rare Travel Fund | online form | Wayfinder's own demo intake form, filled by the Kernel cloud browser | "Application filled" with a screenshot, then (after approval) "submitted" + confirmation |
+| Demo Rare Travel Fund | online form | Orelia's own demo intake form, filled by the Kernel cloud browser | "Application filled" with a screenshot, then (after approval) "submitted" + confirmation |
 | Demo Aortic Care Program | email, then call if no reply | coordinator inbox; the coordinator deliberately stays silent | after **Skip ahead**, a follow-up is drafted for approval |
 
 Nothing is sent without approval. "Approve all" is the patient pressing every approve button in turn through the
@@ -82,7 +82,7 @@ Do the 3-minute script, slower, and add:
 
 ## How replies show up
 - Email: the coordinator inbox replies in the same AgentMail thread (`lib/demo-live/responder.ts`, run by the
-  cron tick). Only threads Wayfinder started are answered, once per thread. AgentMail's webhook stores the
+  cron tick). Only threads Orelia started are answered, once per thread. AgentMail's webhook stores the
   reply, the inbox agent classifies it, and the task appears. The console polls/streams every ~1.5 s.
 - Calls: provider webhooks write status and transcript turns (Vapi: `call_live` / `call_turns`; AgentCall: the
   `calls` row). Browser calls are Vapi web calls (`type: webCall`) and use the same webhook and secret header. The console reads whichever exists. Simulated calls feed a scripted transcript through the same

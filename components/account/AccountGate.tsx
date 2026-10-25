@@ -28,7 +28,7 @@ export function AccountGate({ path, children }: { path: string; children: (accou
       <EmptyState
         icon={<LockKeyhole />}
         title="Accounts are not available yet"
-        description="You can keep using Wayfinder without one. Your cases stay in this browser."
+        description="You can keep using Orelia without one. Your cases stay in this browser."
         className="max-w-xl gap-1 px-5 py-5"
         action={<Button asChild size="lg"><Link href="/start">Start a case</Link></Button>}
       />

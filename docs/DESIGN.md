@@ -1,4 +1,4 @@
-# Wayfinder design system: Clear Day
+# Orelia design system: Clear Day
 
 Live guide: `/system` (`app/(design)/system/page.tsx`). Every token and primitive is shown there in both themes.
 Source of truth: `app/styles/theme.css` (tokens), `app/styles/tokens.css` (legacy), `lib/ui/fonts.ts` (type).
@@ -20,7 +20,7 @@ Source of truth: `app/styles/theme.css` (tokens), `app/styles/tokens.css` (legac
 
 ## Direction
 
-Wayfinder helps worried adults with a rare disease, and the people caring for them, get seen. The interface should
+Orelia helps worried adults with a rare disease, and the people caring for them, get seen. The interface should
 feel like a trusted friend who has done the research and written it down clearly: **crisp, calm, human**. Clear Day
 (successor to "Warm Paper") is a bright, white, trustworthy surface: clinical-clean without being cold.
 

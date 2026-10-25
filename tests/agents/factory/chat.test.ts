@@ -126,7 +126,7 @@ describe('patient updates and email replies', () => {
   it('approves once by a signed code from the verified patient; a replayed token is refused', async () => {
     const { deps, approved, chats } = replyDeps();
     const code = signAgentApproval({ agentId: 'agent-1', draftId: 'draft-1', now: NOW, secret });
-    const body = `APPROVE ${code}\nAlso, I'm free Tuesdays only.\n\nOn Mon, Wayfinder wrote:\n> Updates from your agents`;
+    const body = `APPROVE ${code}\nAlso, I'm free Tuesdays only.\n\nOn Mon, Orelia wrote:\n> Updates from your agents`;
     const first = await handlePatientReply({ caseId: CASE, from: 'Pat <PATIENT@test.example>', body }, deps);
     expect(first).toEqual({ approvals: [{ draftId: 'draft-1', result: 'sent' }], chattedWith: 'agent-1' });
     expect(chats).toEqual(["Also, I'm free Tuesdays only."]);

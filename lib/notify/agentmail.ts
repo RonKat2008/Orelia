@@ -12,7 +12,7 @@ export interface SystemInboxClient {
   };
 }
 
-/** Sends from the Wayfinder system inbox to the patient's own address. */
+/** Sends from the Orelia system inbox to the patient's own address. */
 export function agentMailNotifier(client: SystemInboxClient, inboxId: string): NotifyMailer {
   return {
     async send(input) {

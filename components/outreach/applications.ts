@@ -78,7 +78,7 @@ export function sourceLabel(field: FilledField): string {
     const from = source.origin === "profile" ? " (from your profile)" : source.origin === "demo" ? " (demo patient)" : source.origin === "earlier" ? " (from an earlier form)" : "";
     return `Your answer for this form${from}`;
   }
-  return "AI disclosure, written by Wayfinder";
+  return "AI disclosure, written by Orelia";
 }
 
 export function displayValue(field: FilledField): string {

@@ -59,7 +59,7 @@ export interface VapiCallInfo { callId: string; status?: string; listenUrl?: str
 /** The inline assistant for one approved call. Exported for tests and the docs. */
 export function buildVapiAssistant(gated: GatedDraft, opts: Pick<VapiOptions, 'serverUrl' | 'webhookSecret' | 'model' | 'maxDurationSeconds'>): Record<string, unknown> {
   const model = (opts.model ?? modelFor('voice')).trim();
-  // All models in Wayfinder are Claude (user requirement); refuse anything else before calling out.
+  // All models in Orelia are Claude (user requirement); refuse anything else before calling out.
   if (!/^claude-/.test(model)) throw new ChannelError(P, 'Voice model must be a Claude model');
   const metadata = {
     ...(gated.contactId !== undefined ? { contactId: gated.contactId } : {}),
@@ -69,7 +69,7 @@ export function buildVapiAssistant(gated: GatedDraft, opts: Pick<VapiOptions, 's
     ? { server: { url: opts.serverUrl, headers: { [VAPI_SECRET_HEADER]: opts.webhookSecret }, timeoutSeconds: 20 } }
     : {};
   return {
-    name: 'Wayfinder call',
+    name: 'Orelia call',
     firstMessage: AI_DISCLOSURE_VOICE,
     firstMessageMode: 'assistant-speaks-first',
     firstMessageInterruptionsEnabled: false,
@@ -242,7 +242,7 @@ export function monitorListenUrl(call: unknown): string | undefined {
 // ---------------------------------------------------------------------------
 
 /**
- * Fail closed: true only when the configured secret matches the x-vapi-secret header (what Wayfinder sets inline on
+ * Fail closed: true only when the configured secret matches the x-vapi-secret header (what Orelia sets inline on
  * assistant.server.headers) or an `Authorization: Bearer <secret>` header (a Vapi Bearer credential).
  */
 export function verifyVapiSecret(headers: Headers, secret: string | undefined): boolean {

@@ -2,7 +2,7 @@
  * The agents' retriever over a patient's own document library. Scoped by accountId at the store query AND
  * re-checked against the account's document list, so account A can never retrieve account B's chunks.
  * Returned text is sanitized untrusted DATA with a title/page citation; it is never instructions and it never leaves
- * Wayfinder except through fields/attachments the patient ticks in consent.
+ * Orelia except through fields/attachments the patient ticks in consent.
  */
 import { embed, embeddingModel } from '@/lib/ai/embeddings';
 import { sanitizeRecordText } from '@/lib/history/sanitize';

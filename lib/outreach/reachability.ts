@@ -1,5 +1,5 @@
 /**
- * Single source of truth for "can Wayfinder reach this resource?". Built only on the code-stamped
+ * Single source of truth for "can Orelia reach this resource?". Built only on the code-stamped
  * `contact_point.*` evidence rows (parsePlanContactPoints): email, phone, and online intake/application/referral
  * forms. A plain program page URL is NOT a contact door, and scoring text is never consulted.
  */

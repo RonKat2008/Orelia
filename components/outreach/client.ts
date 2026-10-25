@@ -262,7 +262,7 @@ export async function approveTask(
 export type PreparedLetter = { subject: string; body: string; instructions: string };
 
 /**
- * A letter Wayfinder will not send (the doctor's or office's address is unknown): the patient copies or downloads it
+ * A letter Orelia will not send (the doctor's or office's address is unknown): the patient copies or downloads it
  * and passes it on. Null for every other task.
  */
 export async function loadPreparedLetter(taskId: string, fetchImpl: typeof fetch = fetch): Promise<PreparedLetter | null> {

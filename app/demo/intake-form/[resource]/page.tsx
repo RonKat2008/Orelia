@@ -9,7 +9,7 @@ import { DemoBanner, demoPageStyles } from './demo-chrome';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'New patient request (Wayfinder demo form)',
+  title: 'New patient request (Orelia demo form)',
   robots: { index: false, follow: false },
 };
 

@@ -1,6 +1,6 @@
-# Wayfinder
+# Orelia
 
-Wayfinder helps an adult with a rare disease get seen by the right people. It finds specialists and centers, recruiting trials, advocacy organizations, and financial or travel aid, then helps the patient contact the ones they pick. It does not give medical advice.
+Orelia helps an adult with a rare disease get seen by the right people. It finds specialists and centers, recruiting trials, advocacy organizations, and financial or travel aid, then helps the patient contact the ones they pick. It does not give medical advice.
 
 ## Quickstart
 

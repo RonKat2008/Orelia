@@ -1,6 +1,6 @@
 import type { PacketSection, SpecialistPacket } from '../contract';
 
-export const PACKET_HEADER = 'Prepared by the patient with Wayfinder AI assistance. The patient reviewed this packet and chose each section below.';
+export const PACKET_HEADER = 'Prepared by the patient with Orelia AI assistance. The patient reviewed this packet and chose each section below.';
 
 const CONTROL = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F​-‏‪-‮⁠-⁤﻿]/g;
 const oneLine = (s: string) => s.replace(CONTROL, '').replace(/\s+/g, ' ').trim();

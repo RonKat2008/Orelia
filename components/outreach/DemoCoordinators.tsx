@@ -61,7 +61,7 @@ export function shortDemoLabel(label: string): string {
 }
 
 const DEMO_TITLE =
-  "Demo mode: the real contact point is shown in the plan, but delivery goes to Wayfinder's own test destination. No real organization is contacted.";
+  "Demo mode: the real contact point is shown in the plan, but delivery goes to Orelia's own test destination. No real organization is contacted.";
 
 /**
  * Neutral outline badge for a demo-remapped label (docs/DESIGN-v2.md 4.1): judge view only, never coral. Visible text

@@ -1,4 +1,4 @@
-# Deploying Wayfinder (Vercel + Neon + Inngest + AgentMail + AgentCall)
+# Deploying Orelia (Vercel + Neon + Inngest + AgentMail + AgentCall)
 
 Hand-run checklist for the dashboard work. No credentials live in this file: paste secrets only into the Vercel
 dashboard / `vercel env add`, never into git. Replace `<domain>` with the production domain (for example
@@ -342,7 +342,7 @@ task ("please send slides" etc.). A `contact-connection` run in Inngest resumes 
 | Inngest shows 0 functions | App not synced, or synced to a wrong URL. | Re-sync `https://<domain>/api/inngest` (no trailing path). |
 | Research run stops after ~300 s | Vercel function time limit (`maxDuration = 300`); research deadline is 180 s. | Check the Inngest run log for the failing step. |
 | AgentMail webhook returns 401 (`invalid_signature`) | `AGENTMAIL_WEBHOOK_SECRET` doesn't match the endpoint's secret, was pasted with whitespace, or the deployment wasn't redeployed after setting it. | Re-copy `whsec_...` from the endpoint, redeploy, resend from AgentMail's webhook log. |
-| AgentMail webhook returns 404 (`unknown_thread`) | The reply is on a thread Wayfinder didn't create. | Expected for unrelated mail; only replies to threads we sent are accepted. |
+| AgentMail webhook returns 404 (`unknown_thread`) | The reply is on a thread Orelia didn't create. | Expected for unrelated mail; only replies to threads we sent are accepted. |
 | AgentCall webhook returns 401 | `AGENTCALL_WEBHOOK_SECRET` mismatch; signature is HMAC-SHA256 of the raw body, `X-AgentCall-Signature: sha256=<hex>`. | Re-copy the secret, redeploy. |
 | Send refused `not_allowlisted` | Address/number not in `OUTBOUND_ALLOWLIST` (correct behaviour for non-test targets). | If it is one of our test inboxes, add it exactly (case-insensitive email or E.164) and redeploy. Do **not** set `OUTBOUND_ALLOW_REAL`. |
 | Build error about `@x402/fetch` | The `agentmail` SDK dynamically imports an optional peer that isn't installed. | `next.config.ts` already sets `serverExternalPackages: ["agentmail"]`. If it reappears, check that line wasn't removed; do not install `@x402/fetch`. |

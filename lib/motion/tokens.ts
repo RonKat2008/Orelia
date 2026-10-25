@@ -1,5 +1,5 @@
 /**
- * Wayfinder motion tokens. Every duration, easing, spring and distance used by
+ * Orelia motion tokens. Every duration, easing, spring and distance used by
  * components/motion comes from here — no inline numbers in components.
  *
  * Motion (motion/react) takes seconds; anime.js v4 takes milliseconds. Both are

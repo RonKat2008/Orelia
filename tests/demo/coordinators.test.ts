@@ -78,8 +78,8 @@ describe('planReplies', () => {
   });
 
   it('parses display names and matches case-insensitively', () => {
-    expect(extractAddress('"Wayfinder Case" <Wayfinder-Case@AgentMail.test>')).toBe(CASE);
-    const r = plan([msg('slides', 'a', { from: '"Wayfinder" <WAYFINDER-CASE@agentmail.test>' })], {
+    expect(extractAddress('"Orelia Case" <Wayfinder-Case@AgentMail.test>')).toBe(CASE);
+    const r = plan([msg('slides', 'a', { from: '"Orelia" <WAYFINDER-CASE@agentmail.test>' })], {
       now: T0 + 20_000,
     });
     expect(r.due).toHaveLength(1);

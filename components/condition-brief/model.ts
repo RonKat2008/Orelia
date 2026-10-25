@@ -28,7 +28,7 @@ export const LEVEL_EXPLAINER: Record<EvidenceLevel, string> = {
   uncertain: "Based on case reports or limited sources, so not yet reliable.",
 };
 
-export const QUESTIONS_FRAMING = "Questions you might bring to your care team. Wayfinder does not give medical advice.";
+export const QUESTIONS_FRAMING = "Questions you might bring to your care team. Orelia does not give medical advice.";
 export const EMPTY_SECTION = "Nothing found in the sources we checked.";
 export const EMPTY_FILTERED = "Nothing at this level in this section.";
 

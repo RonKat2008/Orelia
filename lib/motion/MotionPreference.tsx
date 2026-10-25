@@ -22,7 +22,7 @@ const getServerSnapshot = () => false;
 const getSnapshot = () => readPrefersReducedMotion();
 
 /**
- * The single gate every Wayfinder animation goes through. SSR-safe: the server
+ * The single gate every Orelia animation goes through. SSR-safe: the server
  * snapshot is `false`, and the real preference is read during hydration via
  * useSyncExternalStore, so there is no hydration mismatch.
  */

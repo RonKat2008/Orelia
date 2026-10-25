@@ -57,9 +57,9 @@ async function main() {
   }
 
   const [caseRow] = await db.insert(s.cases).values({
-    diseaseName: 'Synthetic rare sarcoma (Wayfinder voice test)', homeCity: 'Houston', homeState: 'TX', status: 'confirmed',
+    diseaseName: 'Synthetic rare sarcoma (Orelia voice test)', homeCity: 'Houston', homeState: 'TX', status: 'confirmed',
   }).returning({ id: s.cases.id });
-  const [inst] = await db.insert(s.institutions).values({ name: 'Wayfinder Test Line (synthetic clinic)', kind: 'rare_disease_center', city: 'Houston', state: 'TX' }).returning({ id: s.institutions.id });
+  const [inst] = await db.insert(s.institutions).values({ name: 'Orelia Test Line (synthetic clinic)', kind: 'rare_disease_center', city: 'Houston', state: 'TX' }).returning({ id: s.institutions.id });
   const [contact] = await db.insert(s.contacts).values({ caseId: caseRow!.id, targetKind: 'institution', targetId: inst!.id, channel: 'voice', address: target, state: 'drafted' }).returning({ id: s.contacts.id });
   console.log(`case ${caseRow!.id} institution ${inst!.id} contact ${contact!.id}`);
 

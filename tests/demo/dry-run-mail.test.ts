@@ -74,11 +74,11 @@ describe("AgentMailDemoMail (mocked client)", () => {
         messages: {
           list: vi.fn(async () => ({
             messages: [
-              { inboxId: "i1", threadId: "t1", messageId: "m1", timestamp: new Date("2026-01-01T00:00:00Z"), from: "Wayfinder <w@x.test>", to: ["u@agentmail.to"], subject: "Hi" },
+              { inboxId: "i1", threadId: "t1", messageId: "m1", timestamp: new Date("2026-01-01T00:00:00Z"), from: "Orelia <w@x.test>", to: ["u@agentmail.to"], subject: "Hi" },
               { inboxId: "i1", threadId: "t1", messageId: "m2", timestamp: new Date("2026-01-01T00:01:00Z"), from: "U <u@agentmail.to>", to: ["w@x.test"], subject: "Re: Hi" },
             ],
           })),
-          get: vi.fn(async () => ({ inboxId: "i1", threadId: "t1", messageId: "m1", timestamp: new Date("2026-01-01T00:00:00Z"), from: "Wayfinder <w@x.test>", to: ["u@agentmail.to"], subject: "Hi", text: "body" })),
+          get: vi.fn(async () => ({ inboxId: "i1", threadId: "t1", messageId: "m1", timestamp: new Date("2026-01-01T00:00:00Z"), from: "Orelia <w@x.test>", to: ["u@agentmail.to"], subject: "Hi", text: "body" })),
           reply: vi.fn(async () => ({ messageId: "m3", threadId: "t1" })),
         },
       },

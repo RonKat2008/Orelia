@@ -19,7 +19,7 @@ export default function NotFound() {
               <Link href="/">Back to the start</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <Link href="/how-it-works">How Wayfinder works</Link>
+              <Link href="/how-it-works">How Orelia works</Link>
             </Button>
           </>
         }

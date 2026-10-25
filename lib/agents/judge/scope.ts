@@ -90,7 +90,7 @@ export function scopeFlags(entry: RankedEntry, c: Pick<CaseInput, "homeState" | 
     case "trial": {
       const reg = r.registry;
       if (reg) {
-        if (enrollsAdults(reg) === false || isPediatricFocused(r.title, reg)) push({ code: "pediatric_only", hard: true, text: "Registry lists children only; Wayfinder serves adults" });
+        if (enrollsAdults(reg) === false || isPediatricFocused(r.title, reg)) push({ code: "pediatric_only", hard: true, text: "Registry lists children only; Orelia serves adults" });
         if (reg.usSiteCount === 0) push({ code: "non_us", hard: true, text: "No U.S. sites listed in the registry" });
         else if (reg.usRecruitingSiteCount === 0) push({ code: "not_recruiting", hard: false, text: "No U.S. site is marked recruiting" });
         push(travelFlag(c.homeState, reg.recruitingSiteStates, c.travelLimitMiles));

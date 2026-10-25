@@ -29,7 +29,7 @@ export type ApprovingDoctor = Pick<Doctor, 'name' | 'email' | 'npi' | 'verified'
 
 export function physicianApprovalLine(doctor: ApprovingDoctor): string {
   const id = doctor.npi
-    ? `${doctor.email}, NPI ${doctor.npi}${doctor.verified ? '' : ', NPI not verified by Wayfinder'}`
+    ? `${doctor.email}, NPI ${doctor.npi}${doctor.verified ? '' : ', NPI not verified by Orelia'}`
     : `${doctor.email}, no NPI provided`;
   return `The referring physician, ${oneLine(doctor.name)} (${id}), reviewed and approved this request before it was sent.`;
 }
@@ -96,7 +96,7 @@ export function buildConsultDraft(input: ConsultDraftInput): { subject: string; 
 
 export type ConsultDraftProblem = 'medical_advice' | 'unshared_field' | 'missing_footer';
 
-/** Checks for text Wayfinder or the patient wrote (before the doctor approves it). */
+/** Checks for text Orelia or the patient wrote (before the doctor approves it). */
 export function draftProblems(draft: { subject: string; body: string }, record: CaseRecord, sharedFields: readonly string[], doctor: ApprovingDoctor): ConsultDraftProblem[] {
   const text = `${draft.subject}\n${draft.body}`;
   const out: ConsultDraftProblem[] = [];
@@ -129,7 +129,7 @@ export function doctorReviewEmail(input: { doctor: Pick<Doctor, 'name'>; expertN
   const until = input.expiresAt.slice(0, 10);
   const body = [
     `Hello ${oneLine(input.doctor.name)},`,
-    `A patient of yours used Wayfinder to prepare a physician-to-physician consultation request to ${expert}. Nothing has been sent to ${expert}. It is sent only if you approve it and your patient then confirms.`,
+    `A patient of yours used Orelia to prepare a physician-to-physician consultation request to ${expert}. Nothing has been sent to ${expert}. It is sent only if you approve it and your patient then confirms.`,
     `Review, edit, approve or decline it here (the link works until ${until}):\n${input.url}`,
     'If you did not expect this message, you can ignore it.',
   ].join('\n\n');

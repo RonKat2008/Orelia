@@ -3,7 +3,7 @@ import { SHAREABLE_FIELDS } from "@/components/outreach/fields";
 import { TASK_KIND_LABELS, type OutreachTask } from "@/components/outreach/types";
 
 export const CLINICAL_NOTICE =
-  "Wayfinder can't give medical advice. Contact your care team or call 911 for urgent symptoms.";
+  "Orelia can't give medical advice. Contact your care team or call 911 for urgent symptoms.";
 
 const CLINICAL =
   /\b(symptom|symptoms|fever|pain|nausea|dosage|medication|prognosis|chemo|chemotherapy|surgery|worsening|urgent)\b/i;

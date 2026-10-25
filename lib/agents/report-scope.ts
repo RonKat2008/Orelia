@@ -1,5 +1,5 @@
 /**
- * Scope check for a pasted report (pure). Wayfinder serves adults in the United States. This only catches the
+ * Scope check for a pasted report (pure). Orelia serves adults in the United States. This only catches the
  * unambiguous pediatric cases up front: every stated age is under 18, or the text says infant / newborn /
  * "pediatric patient". Anything murkier is left to the extractor's own out-of-scope flag.
  */
@@ -33,7 +33,7 @@ export class OutOfScopeError extends Error {
 
 export const OUT_OF_SCOPE_MESSAGE: Record<OutOfScope, string> = {
   pediatric:
-    "Wayfinder is built for adult patients, so it cannot search for a child's case. A children's hospital or your child's care team is the right place to ask for referrals.",
+    "Orelia is built for adult patients, so it cannot search for a child's case. A children's hospital or your child's care team is the right place to ask for referrals.",
   non_us:
-    "Wayfinder currently covers specialists, trials and aid in the United States only, so it cannot search for a patient who lives elsewhere.",
+    "Orelia currently covers specialists, trials and aid in the United States only, so it cannot search for a patient who lives elsewhere.",
 };

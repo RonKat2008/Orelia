@@ -78,7 +78,7 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
     setErrors(null);
     onChange({ ...application, status: "submitted", submittedAt: result.submittedAt, approvedAt: result.submittedAt });
     toast.success("Application submitted", {
-      description: demoForm ? "Demo: delivered to Wayfinder test form after the safety check." : `Sent to ${host} after the safety check.`,
+      description: demoForm ? "Demo: delivered to Orelia test form after the safety check." : `Sent to ${host} after the safety check.`,
     });
   }
 
@@ -96,7 +96,7 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
         </div>
         <p className="m-0 flex flex-wrap items-center gap-2 break-words text-small text-ink-2">
           <FileText aria-hidden className="size-4 shrink-0 text-ch-apply" />
-          Online form · {demoForm ? "Wayfinder demo intake form" : host}
+          Online form · {demoForm ? "Orelia demo intake form" : host}
           <DemoCoordinatorBadge address={application.url} />
         </p>
         {stepContext ? <p className="m-0 text-small text-ink-2">{stepContext}</p> : null}

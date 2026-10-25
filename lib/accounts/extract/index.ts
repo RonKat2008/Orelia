@@ -14,7 +14,7 @@ export interface ExtractionInput { bytes: Uint8Array; contentType: string; fileN
 export interface ExtractionDeps { vision?: VisionFn; offline?: boolean }
 
 const NO_TEXT = 'No readable text was found in that file.';
-const HEIC_NOTE = 'HEIC photos are stored safely, but Wayfinder cannot read their text yet. Convert to JPG to have it read.';
+const HEIC_NOTE = 'HEIC photos are stored safely, but Orelia cannot read their text yet. Convert to JPG to have it read.';
 const VISION_OFF_NOTE = 'Text reading for images needs the AI service, which is not configured here.';
 
 const none = (note: string): ExtractionOutput => ({ pages: [], method: 'none', note });
@@ -43,9 +43,9 @@ async function extractImage(input: ExtractionInput, deps: ExtractionDeps): Promi
   } catch (err) {
     if (err instanceof ExtractionError) throw err;
     console.warn('accounts.extract.vision_failed', err instanceof Error ? err.name : 'Error');
-    throw new ExtractionError('vision_failed', 'Wayfinder could not read the text in that image right now. Please try again later.');
+    throw new ExtractionError('vision_failed', 'Orelia could not read the text in that image right now. Please try again later.');
   }
-  return finish('vision', [{ page: null, section: null, text }], 'Wayfinder could not find any readable text in that image.');
+  return finish('vision', [{ page: null, section: null, text }], 'Orelia could not find any readable text in that image.');
 }
 
 export async function extractDocumentText(input: ExtractionInput, deps: ExtractionDeps = {}): Promise<ExtractionOutput> {

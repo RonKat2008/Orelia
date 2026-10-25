@@ -23,8 +23,8 @@ describe('plan evidence badges', () => {
   });
 
   it('labels demo destinations honestly per channel', () => {
-    expect(demoStepLabel('email', false)).toBe('Demo: delivered to Wayfinder test inbox');
-    expect(demoStepLabel('web_form', false)).toBe('Demo: delivered to Wayfinder test form');
+    expect(demoStepLabel('email', false)).toBe('Demo: delivered to Orelia test inbox');
+    expect(demoStepLabel('web_form', false)).toBe('Demo: delivered to Orelia test form');
     expect(demoStepLabel('voice', false)).toMatch(/simulated/);
     expect(demoStepLabel('voice', true)).toMatch(/test phone/);
   });

@@ -13,7 +13,7 @@ export function AboutPitch() {
     <>
       <div className="page-container pt-8 sm:pt-10">
         <PageHeader
-          title="Why we built Wayfinder"
+          title="Why we built Orelia"
           className="mb-5"
           lede="When a disease is rare, the hardest part is finding the few specialists who have seen it before."
           action={
@@ -33,7 +33,7 @@ export function AboutPitch() {
       <div className="page-container grid gap-8 pb-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-14">
         <section aria-labelledby="about-body-heading">
           <h2 id="about-body-heading" className="sr-only">
-            What Wayfinder does
+            What Orelia does
           </h2>
           <div className="grid max-w-prose gap-3 text-body text-pretty text-ink-2">
             <p className="m-0">
@@ -43,7 +43,7 @@ export function AboutPitch() {
               from zero.
             </p>
             <p className="m-0">
-              Wayfinder does the searching and the chasing. We look in public
+              Orelia does the searching and the chasing. We look in public
               sources and check every claim. You choose who to contact, and you
               approve every message. Then we reach out and follow up, until
               there is an appointment, a screening or an answer. No diagnosis

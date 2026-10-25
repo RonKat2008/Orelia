@@ -7,7 +7,7 @@
  *   - call     -> an allowlisted test phone number from OUTBOUND_ALLOWLIST when one is configured; otherwise the
  *                 reserved never-dialed DEMO_CALL_SINK. A send to the sink is simulated (DemoCallSimulator): no
  *                 provider is called and a scripted transcript is fed through the normal transcript ingest.
- *   - web form -> Wayfinder's own demo intake form (/demo/intake-form/...), whose host is added to the web
+ *   - web form -> Orelia's own demo intake form (/demo/intake-form/...), whose host is added to the web
  *                 allowlist only while the mode is on.
  * Nothing else changes: approval, checkOutbound (allowlist, ticked fields, disclosure, no medical advice, <=5 cap,
  * cadence) runs exactly as for a real destination. A real resource is never emailed, dialed or submitted to.

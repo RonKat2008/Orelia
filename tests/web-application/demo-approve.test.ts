@@ -26,7 +26,7 @@ async function run(env: Record<string, string>, url: string, fields = [{ fieldKe
 describe('web application approval in demo mode', () => {
   const demoUrl = demoFormUrl(DEMO, { caseId: 'case-1', applicationId: 'app-1', resourceKey: 'institution:i-1', realUrl: 'https://clinic.example.org/request' });
 
-  it('passes the unchanged gate for the Wayfinder demo form and submits through the channel', async () => {
+  it('passes the unchanged gate for the Orelia demo form and submits through the channel', async () => {
     const { result, submit } = await run(DEMO, demoUrl);
     expect(result).toMatchObject({ ok: true, status: 'submitted' });
     expect(submit).toHaveBeenCalledTimes(1);
@@ -46,10 +46,10 @@ describe('web application approval in demo mode', () => {
 });
 
 describe('demo application review task', () => {
-  it('names the Wayfinder demo intake form instead of the deployment host', async () => {
+  it('names the Orelia demo intake form instead of the deployment host', async () => {
     const { MemoryApplicationStore } = await import('../../lib/web-application/store');
     const store = new MemoryApplicationStore();
     await store.createReviewTask({ id: 'a1', caseId: 'c1', contactId: 'k1', url: 'https://wayfinder.example.app/demo/intake-form/institution-x-0000abcd?case=c1&app=a1&t=t' } as never);
-    expect(store.reviewTasks[0]?.title).toBe('Review application (Wayfinder demo intake form)');
+    expect(store.reviewTasks[0]?.title).toBe('Review application (Orelia demo intake form)');
   });
 });

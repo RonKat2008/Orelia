@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Demo control",
-  description: "Seed the fictional Wayfinder demo and rehearse scripted replies.",
+  description: "Seed the fictional Orelia demo and rehearse scripted replies.",
 };
 
 /**

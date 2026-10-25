@@ -43,6 +43,6 @@ export async function apiRequest<T>(url: string, init?: RequestInit & { json?: u
       issues: Array.isArray(err.issues) ? err.issues : [],
     };
   } catch {
-    return { ok: false, status: 0, data: null, error: "network", message: "We could not reach Wayfinder. Check your connection and try again.", issues: [] };
+    return { ok: false, status: 0, data: null, error: "network", message: "We could not reach Orelia. Check your connection and try again.", issues: [] };
   }
 }

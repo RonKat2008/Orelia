@@ -28,7 +28,7 @@ export function CaseMenu({ caseId, caseName }: CaseMenuProps) {
     { href: "/start", label: "Start a new case", Icon: Plus },
     { href: "/how-it-works", label: "How it works", Icon: Info },
     { href: "/trust", label: "Trust & safety", Icon: ShieldCheck },
-    { href: "/", label: "Wayfinder home", Icon: House },
+    { href: "/", label: "Orelia home", Icon: House },
   ];
   return (
     <DropdownMenu.Root>

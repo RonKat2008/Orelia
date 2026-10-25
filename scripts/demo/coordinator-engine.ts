@@ -2,7 +2,7 @@
  * Pure planning logic for the fictional demo coordinators. No I/O, clock injected.
  *
  * Safety: coordinators reply ONLY to senders on an explicit allowlist (our own
- * Wayfinder case inboxes). An empty allowlist means they reply to nobody.
+ * Orelia case inboxes). An empty allowlist means they reply to nobody.
  */
 import { parseTimeScale as parseWorkflowTimeScale } from '../../lib/workflows/clock';
 import type { CoordinatorSpec, DemoInbox, DemoMessage } from './mail';
@@ -45,7 +45,7 @@ function splitList(v: string | undefined): string[] {
 }
 
 /**
- * Reply targets come from DEMO_REPLY_ALLOWLIST (our Wayfinder case inboxes).
+ * Reply targets come from DEMO_REPLY_ALLOWLIST (our Orelia case inboxes).
  * Falls back to OUTBOUND_ALLOWLIST entries that are not coordinator addresses.
  */
 export function parseReplyAllowlist(

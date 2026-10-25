@@ -16,7 +16,7 @@ export const HERO_REASSURANCE = "Nothing is sent without your OK." as const;
 export const HOW_LEDE = "Most doctors may never have seen a case. We find the ones who have." as const;
 export const NO_DIAGNOSIS_LINE = "No diagnosis yet? We can help you look for one too." as const;
 
-export const HERO_PROMISE = "Expert finders tell you who the expert is. Wayfinder gets you seen." as const;
+export const HERO_PROMISE = "Expert finders tell you who the expert is. Orelia gets you seen." as const;
 
 export interface HowStep {
   id: string;
@@ -67,7 +67,7 @@ export type ChannelId = "call" | "email" | "web";
 export interface Channel {
   id: ChannelId;
   label: string;
-  /** What Wayfinder does on this channel, in plain words. */
+  /** What Orelia does on this channel, in plain words. */
   body: string;
 }
 
@@ -139,7 +139,7 @@ export const PROMISES: readonly SafetyPromise[] = [
     id: "advice",
     title: "Never medical advice",
     body: "We find people and groups and help you reach them. We never guess a diagnosis, read your results or suggest treatments.",
-    more: "Wayfinder does not interpret reports, recommend treatments or choose care for you. Every fact about a person or group links to the public page it came from, and anything without a source is dropped.",
+    more: "Orelia does not interpret reports, recommend treatments or choose care for you. Every fact about a person or group links to the public page it came from, and anything without a source is dropped.",
   },
   {
     id: "approval",
@@ -163,7 +163,7 @@ export const PROMISES: readonly SafetyPromise[] = [
     id: "urgent",
     title: "Urgent? Call 911",
     body: "If symptoms are new, worsening or urgent, contact your care team or call 911.",
-    more: "Wayfinder is not for emergencies.",
+    more: "Orelia is not for emergencies.",
   },
 ] as const;
 

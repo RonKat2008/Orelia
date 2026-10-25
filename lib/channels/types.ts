@@ -90,7 +90,7 @@ export function assertGated(gated: GatedDraft, kind: ChannelKind, provider: Prov
   return address;
 }
 
-/** Inbound reply or call result, already matched to a provider thread/call that Wayfinder created. */
+/** Inbound reply or call result, already matched to a provider thread/call that Orelia created. */
 export interface ProviderInbound {
   readonly provider: ProviderName;
   readonly channel: ChannelKind;
@@ -107,5 +107,5 @@ export interface ProviderInbound {
   readonly status?: string;
 }
 
-/** Looks up a stored provider id; returns the contact id only for threads/calls Wayfinder created. */
+/** Looks up a stored provider id; returns the contact id only for threads/calls Orelia created. */
 export type KnownThreadLookup = (providerId: string) => string | undefined | Promise<string | undefined>;

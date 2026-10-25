@@ -1,5 +1,5 @@
 /**
- * Point the Vapi phone number's server URL at Wayfinder's webhook (fallback for calls without an inline server).
+ * Point the Vapi phone number's server URL at Orelia's webhook (fallback for calls without an inline server).
  * Default is dry-run (GET only). Never prints the API key or the webhook secret.
  *
  *   npx tsx scripts/configure-vapi-number.ts --base-url https://wayfinder-amber-seven.vercel.app [--apply]

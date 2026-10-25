@@ -1,5 +1,5 @@
 /**
- * Adult-scope filter (pure). Wayfinder serves adults, so a children's institution or pediatric-only
+ * Adult-scope filter (pure). Orelia serves adults, so a children's institution or pediatric-only
  * program is out of scope. Mixed programs ("adult and pediatric", "adults and children") keep their rank,
  * and a children's-named program is kept when its own evidence says it serves adults.
  */
@@ -26,6 +26,6 @@ export function assessAdultScope(input: AdultScopeInput): AdultScopeVerdict {
   if ((input.texts ?? []).some((t) => ADULT_WORDS.test(t))) return { keep: true };
   return {
     keep: false,
-    reason: `out of scope: children's/pediatric program ("${input.name}") with no adult care stated; Wayfinder serves adults`,
+    reason: `out of scope: children's/pediatric program ("${input.name}") with no adult care stated; Orelia serves adults`,
   };
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AccountOverview } from "@/components/account/AccountOverview";
 import { AppShell } from "@/components/shell";
 
-export const metadata: Metadata = { title: "Your account", description: "Your Wayfinder profile, documents and data.", robots: { index: false } };
+export const metadata: Metadata = { title: "Your account", description: "Your Orelia profile, documents and data.", robots: { index: false } };
 
 export default function AccountPage() {
   return (

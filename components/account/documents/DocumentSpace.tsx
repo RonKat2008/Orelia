@@ -20,7 +20,7 @@ import { useUploadQueue } from "./useUploadQueue";
 
 const POLL_MS = 3000;
 const PRIVACY =
-  "Your documents are private. Wayfinder's agents read them to organise your history and cite them by title; nothing is shared unless you tick it when you contact someone.";
+  "Your documents are private. Orelia's agents read them to organise your history and cite them by title; nothing is shared unless you tick it when you contact someone.";
 
 const isPending = (doc: LibraryDocument) => doc.status === "uploaded" || doc.status === "extracting";
 

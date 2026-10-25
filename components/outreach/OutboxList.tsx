@@ -336,7 +336,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
                 <ListRow
                   key={app.id}
                   data-channel="web_form"
-                  title={isDemoFormUrl(app.url) ? "Wayfinder demo intake form" : hostOf(app.url)}
+                  title={isDemoFormUrl(app.url) ? "Orelia demo intake form" : hostOf(app.url)}
                   meta="Online form · review application"
                   leading={<FileText aria-hidden className="text-ch-apply" />}
                   badges={[

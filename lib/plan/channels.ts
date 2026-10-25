@@ -120,7 +120,7 @@ export class KernelPlanWebForm implements WebFormChannel {
     if (!channel) return unavailable('Online forms are not configured (no cloud browser key)');
     const store = this.deps.applications();
     const env = this.deps.env ?? process.env;
-    // Demo mode: the real form URL stays in the plan; the application is filled on Wayfinder's own demo intake form.
+    // Demo mode: the real form URL stays in the plan; the application is filled on Orelia's own demo intake form.
     const demo = demoDestinationsEnabled(env) && !!input.resourceKey;
     const sameForm = (a: WebApplicationDraft) => a.url === input.url || (!!input.resourceKey && isDemoFormFor(a.url, input.resourceKey, input.url));
     const existing = (await store.listByCase(input.caseId))

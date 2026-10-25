@@ -100,7 +100,7 @@ export function DeleteDocumentDialog({
         <DialogHeader>
           <DialogTitle>Delete this document?</DialogTitle>
           <DialogDescription>
-            {doc ? <>&ldquo;{doc.title}&rdquo; and the text Wayfinder read from it will be removed from this space. This cannot be undone.</> : null}
+            {doc ? <>&ldquo;{doc.title}&rdquo; and the text Orelia read from it will be removed from this space. This cannot be undone.</> : null}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

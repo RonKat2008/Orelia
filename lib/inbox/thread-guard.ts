@@ -21,10 +21,10 @@ export class InboxRejected extends Error {
     this.name = 'InboxRejected';
   }
 }
-/** Only replies on a thread/call Wayfinder stored are processed; nothing is classified otherwise. */
+/** Only replies on a thread/call Orelia stored are processed; nothing is classified otherwise. */
 export async function assertWayfinderThread(event: InboxEvent, lookup: ThreadLookup): Promise<string> {
   if (!event.providerThreadId && !event.providerCallId) throw new InboxRejected('no_thread_id', 'Inbound event has no provider thread or call id');
   const contactId = await lookup({ providerThreadId: event.providerThreadId, providerCallId: event.providerCallId });
-  if (!contactId) throw new InboxRejected('unknown_thread', 'Inbound event is not on a stored Wayfinder thread');
+  if (!contactId) throw new InboxRejected('unknown_thread', 'Inbound event is not on a stored Orelia thread');
   return contactId;
 }

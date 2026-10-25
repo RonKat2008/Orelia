@@ -22,7 +22,7 @@ export async function approveTask(taskId: string, deps: ApproveDeps, input: Appr
   if (task.status !== 'open') throw new OutreachError(409, ['already_approved']);
   // Application tasks are approved on the application draft itself (web_application store), never through this generic path.
   if (task.kind === 'application') throw new OutreachError(422, ['use_application_approval']);
-  // A letter Wayfinder will not send (no known recipient): approving hands it to the patient to pass on.
+  // A letter Orelia will not send (no known recipient): approving hands it to the patient to pass on.
   if (task.details?.delivery === DELIVERY_PREPARED && task.letter) return approvePrepared(task, now, deps);
   if (['referral', 'slides', 'records', 'redirect'].includes(task.kind)) return approveLetter(task, now, deps, input);
   if (!await tasks.markApproved(taskId, now)) throw new OutreachError(409, ['already_approved']);

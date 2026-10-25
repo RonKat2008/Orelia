@@ -35,12 +35,12 @@ export function composeDigest(items: PendingUpdate[], codes: Map<string, string>
   const lines = items.map(i => `- ${safeLabel(i.agentName, names.indexOf(i.agentName) + 1)}: ${i.text}`);
   const approvals = items.filter(i => i.draft && codes.has(i.draft.draftId)).map(i => `  To send "${i.draft!.label}" now, reply with: APPROVE ${codes.get(i.draft!.draftId)}`);
   const text = [
-    'Updates from your Wayfinder agents:', ...lines, '',
+    'Updates from your Orelia agents:', ...lines, '',
     ...(approvals.length ? ['Quick approvals (each code works once, for 24 hours, only from your account email):', ...approvals, ''] : []),
     'You can also reply in plain words to answer an agent or give it an instruction (start with the agent name if you have several).',
-    `Open Wayfinder: ${appUrl}`,
+    `Open Orelia: ${appUrl}`,
   ].join('\n');
-  return { subject: items.some(i => i.urgent) ? 'Wayfinder: an agent needs you' : 'Wayfinder: agent updates', text };
+  return { subject: items.some(i => i.urgent) ? 'Orelia: an agent needs you' : 'Orelia: agent updates', text };
 }
 
 export function signAgentApproval(input: { agentId: string; draftId: string; now: Date; secret: string; ttlMs?: number }): string {

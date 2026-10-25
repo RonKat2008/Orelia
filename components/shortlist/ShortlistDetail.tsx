@@ -111,7 +111,7 @@ export function ShortlistDetail({
         <Details summary="Contact route" label={null}>
           <p className="m-0 text-small text-ink">
             <span className="font-semibold">{door.found ? "Contact found. " : "No contact found yet. "}</span>
-            {door.text || "Wayfinder found no public office, intake line or form for this one."}
+            {door.text || "Orelia found no public office, intake line or form for this one."}
           </p>
           <VerifiedBadges caseId={caseId} badges={badges} />
         </Details>

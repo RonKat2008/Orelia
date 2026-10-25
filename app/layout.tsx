@@ -9,7 +9,7 @@ import { fontVariables } from "@/lib/ui/fonts";
 import "./styles/theme.css";
 
 export const metadata = {
-  title: "Wayfinder",
+  title: "Orelia",
   description: "Find specialists, trials, advocacy, and aid, then get seen.",
 };
 

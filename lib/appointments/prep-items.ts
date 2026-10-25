@@ -1,7 +1,7 @@
 import type { Appointment } from './schema';
 
 /**
- * Practical, non-clinical things to bring or do. Wayfinder never writes questions for the visit: the patient's own
+ * Practical, non-clinical things to bring or do. Orelia never writes questions for the visit: the patient's own
  * questions are stored as they typed them.
  */
 export interface PrepItem { id: string; label: string; hint?: string; when?: (a: Pick<Appointment, 'kind' | 'telehealthUrl' | 'location'>) => boolean }

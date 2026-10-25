@@ -11,7 +11,7 @@ import { KIND_LABELS, type Appointment } from './schema';
 import { formatInZone } from './timezone';
 
 /**
- * Reschedule / cancel requests. Wayfinder drafts a short message to the office; it is sent only when the patient
+ * Reschedule / cancel requests. Orelia drafts a short message to the office; it is sent only when the patient
  * approves it, and only through checkOutbound (allowlist, consent fields, disclosure, cadence, cap, advice filter).
  */
 export const REQUEST_CLASSIFICATION = 'appointment_request';

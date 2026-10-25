@@ -15,7 +15,7 @@ export function eventDescription(a: Appointment, opts: { appUrl?: string } = {})
     ...(a.telehealthUrl ? ['', `Join: ${a.telehealthUrl}`] : []),
     ...(opts.appUrl ? ['', `Details: ${opts.appUrl}`] : []),
     '',
-    'Added by Wayfinder. Not medical advice.',
+    'Added by Orelia. Not medical advice.',
   ];
   const text = parts.join('\n');
   // Generated text is screened; patient questions are theirs, so only the generated lines are checked.

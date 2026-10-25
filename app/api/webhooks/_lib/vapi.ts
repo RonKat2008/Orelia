@@ -12,7 +12,7 @@ const json = (status: number, body: Record<string, unknown>) => Response.json(bo
 
 /**
  * POST /api/webhooks/vapi. Fails closed: no secret configured -> 503, wrong/missing secret -> 401, both before the
- * body is parsed. Only calls Wayfinder placed (provider call id on a calls row) are accepted. Every write is
+ * body is parsed. Only calls Orelia placed (provider call id on a calls row) are accepted. Every write is
  * idempotent: turns by dedupe key, live state by upsert, transcript ingest under the same ledger AgentCall uses.
  */
 export async function handleVapiWebhook(req: Request, deps: VapiInboundDeps): Promise<Response> {

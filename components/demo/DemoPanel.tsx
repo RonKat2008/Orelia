@@ -78,7 +78,7 @@ export function DemoPanel() {
       <main id="main" className="page-container grid gap-8 py-10 sm:py-14">
         <header className="grid gap-3">
           <Link href="/about" className="w-fit rounded-sm text-small font-semibold text-teal no-underline hover:underline focus-ring">
-            Back to Wayfinder
+            Back to Orelia
           </Link>
           <h1 className="m-0 max-w-none font-display text-h1 font-light display-soft text-balance">
             Demo <em className="emph">console</em>

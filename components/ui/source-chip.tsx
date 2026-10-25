@@ -9,7 +9,7 @@ export interface SourceChipProps {
   domain?: string;
   /** When the source was retrieved or published (ISO string or Date). */
   date?: string | Date | null;
-  /** True when Wayfinder confirmed the claim on the page. */
+  /** True when Orelia confirmed the claim on the page. */
   verified: boolean;
   /** Optional title of the page, used in the accessible name. */
   title?: string;

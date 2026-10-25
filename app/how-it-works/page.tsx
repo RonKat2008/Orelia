@@ -9,9 +9,9 @@ import {
 import { HowPageAdapts } from "@/components/landing/info/HowPageAdapts";
 
 export const metadata = {
-  title: "How Wayfinder works",
+  title: "How Orelia works",
   description:
-    "How Wayfinder finds the few specialists who know a rare disease, in four steps. What we do, and what we never send on our own.",
+    "How Orelia finds the few specialists who know a rare disease, in four steps. What we do, and what we never send on our own.",
 };
 
 const LINK =
@@ -24,7 +24,7 @@ export default function HowItWorksPage() {
       <main id="main">
         <div className="page-container pt-8 sm:pt-10">
           <PageHeader
-            title="How Wayfinder works"
+            title="How Orelia works"
             lede="Most doctors may never have seen a case. We find the ones who have. Four steps, and you approve every message."
             className="mb-6"
             action={

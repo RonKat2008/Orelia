@@ -106,10 +106,10 @@ export function CalendarSettings({ googleResult }: { googleResult?: string }) {
         ) : google.connected ? (
           <>
             <p className="m-0 inline-flex items-center gap-2 text-body font-semibold text-ok"><ShieldCheck aria-hidden className="size-4" /> Connected</p>
-            <p className="m-0 text-body text-ink-2">When you confirm an appointment it is added with reminders a day and two hours before. Wayfinder can only manage the events it creates.</p>
+            <p className="m-0 text-body text-ink-2">When you confirm an appointment it is added with reminders a day and two hours before. Orelia can only manage the events it creates.</p>
             {!google.freeBusy ? (
               <div className="grid gap-1">
-                <p className="m-0 text-small text-ink-2">Optional: let Wayfinder see when you are busy (not event details) so reschedule requests can suggest times you are free.</p>
+                <p className="m-0 text-small text-ink-2">Optional: let Orelia see when you are busy (not event details) so reschedule requests can suggest times you are free.</p>
                 <Button variant="link" className="min-h-11 w-fit text-small" asChild><a href="/api/integrations/google/connect?scope=freebusy">Allow free/busy</a></Button>
               </div>
             ) : <p className="m-0 text-small text-ink-2">Free/busy is on: reschedule requests suggest times you are free.</p>}
@@ -117,7 +117,7 @@ export function CalendarSettings({ googleResult }: { googleResult?: string }) {
           </>
         ) : (
           <>
-            <p className="m-0 text-body text-ink-2">Adds confirmed appointments to your Google Calendar. Wayfinder asks only to manage events, nothing else.</p>
+            <p className="m-0 text-body text-ink-2">Adds confirmed appointments to your Google Calendar. Orelia asks only to manage events, nothing else.</p>
             <div>
               <Button asChild variant="secondary"><a href="/api/integrations/google/connect">Connect Google Calendar</a></Button>
             </div>

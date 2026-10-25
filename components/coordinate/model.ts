@@ -100,7 +100,7 @@ const REFUSAL_COPY: Record<string, string> = {
   address_not_evidence_backed: 'We could not find a verified clinician address for this expert, so nothing can be sent.',
   control_characters: 'The subject or message contains characters that cannot be sent in an email.',
   approval_not_verified: 'We could not confirm your doctor\'s approval of this exact request and address, so it needs their approval again.',
-  doctor_email_not_allowed: 'Use your doctor\'s own practice email, not yours or a Wayfinder address.',
+  doctor_email_not_allowed: 'Use your doctor\'s own practice email, not yours or a Orelia address.',
   rate_limited: 'Too many review emails were sent today. Try again tomorrow.',
   // outbound gate (lib/safety/outbound-gate.ts)
   not_approved: 'This message has not been approved yet.',
@@ -109,7 +109,7 @@ const REFUSAL_COPY: Record<string, string> = {
   follow_up_cadence: 'It is too soon to write to this contact again.',
   unshared_field: 'The message includes a detail you did not choose to share.',
   missing_disclosure: 'The AI-drafted notice is missing from the message.',
-  medical_advice: 'The message reads like medical advice, which Wayfinder cannot send.',
+  medical_advice: 'The message reads like medical advice, which Orelia cannot send.',
   invalid_draft: 'The message or address is not valid.',
   consent_mismatch: 'Your sharing choices changed, so please review the request again.',
   inactive_contact: 'This contact is closed, so nothing can be sent.',

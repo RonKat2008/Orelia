@@ -140,7 +140,7 @@ export async function parseAgentCallWebhook(
   const callId = typeof data?.callId === 'string' ? data.callId : undefined;
   if (!data || !event || !callId) throw new ChannelError(P, 'Malformed webhook envelope', 400);
   const contactId = await isKnownCall(callId);
-  if (!contactId) throw new ChannelError(P, 'Call is not a Wayfinder call', 404);
+  if (!contactId) throw new ChannelError(P, 'Call is not a Orelia call', 404);
   const receivedAt = typeof env.timestamp === 'string' ? env.timestamp : new Date().toISOString();
   const base = { provider: P, channel: 'voice' as const, eventType: event, callId, receivedAt, contactId };
   if (event === 'call.transcript') {

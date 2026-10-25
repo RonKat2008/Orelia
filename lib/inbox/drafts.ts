@@ -66,18 +66,18 @@ function letter(ctx: DraftContext, to: Party | undefined, subject: string, lead:
   return { to: to?.email, toName: to?.name, subject, body: withDisclosure(body) };
 }
 
-/** Letters Wayfinder writes but never sends: the patient copies or downloads them and passes them on. */
+/** Letters Orelia writes but never sends: the patient copies or downloads them and passes them on. */
 export const DELIVERY_PREPARED = 'prepared';
 
 const PREPARED_INSTRUCTIONS = (res: string, doctor: string) => [
-  `Wayfinder does not have ${doctor}'s email address and will not guess one, so it sends nothing for this request.`,
+  `Orelia does not have ${doctor}'s email address and will not guess one, so it sends nothing for this request.`,
   'Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).',
   `Ask them to send the referral to ${res}. Nothing here leaves your account until you pass it on.`,
 ].join('\n');
 
-/** A letter with no known recipient: kept for the patient to send themselves, never emailed by Wayfinder. */
+/** A letter with no known recipient: kept for the patient to send themselves, never emailed by Orelia. */
 function markPrepared(draft: TaskDraft, res: string): void {
-  const instructions = `${res} did not reply from an email address Wayfinder can use, and Wayfinder will not guess one. Copy or download the letter and send it the way ${res} asked.`;
+  const instructions = `${res} did not reply from an email address Orelia can use, and Orelia will not guess one. Copy or download the letter and send it the way ${res} asked.`;
   draft.draftBody = `${instructions}\n\n${draft.draftBody ?? ''}`;
   draft.details = { ...draft.details, delivery: DELIVERY_PREPARED, instructions };
 }
@@ -90,7 +90,7 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
   let draft: TaskDraft;
   switch (c.class) {
     case 'needs_referral': {
-      // The patient's own doctor is never emailed by Wayfinder: this is a letter to forward, with instructions.
+      // The patient's own doctor is never emailed by Orelia: this is a letter to forward, with instructions.
       const doctor = ctx.currentPhysician?.name ?? 'your doctor';
       const l = letter(ctx, ctx.currentPhysician ? { name: ctx.currentPhysician.name } : undefined, `Referral request for ${res}`, `${res} has said they need a referral before they can schedule the patient. Could you please send a referral to ${res}${where}?`);
       const instructions = PREPARED_INSTRUCTIONS(res, doctor);
@@ -134,7 +134,7 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
         const phone = r.phone ?? undefined;
         const lines = phone
           ? [`${res} suggested contacting ${who}${r.department && r.name ? ` (${r.department})` : ''}.`, `Call ${phone}.`]
-          : [`${res} suggested contacting ${who}, but their reply did not include a phone number or email.`, `Please look up the number on the official website or main line for ${r.department ?? who}; Wayfinder will not show a number it could not find in their reply.`];
+          : [`${res} suggested contacting ${who}, but their reply did not include a phone number or email.`, `Please look up the number on the official website or main line for ${r.department ?? who}; Orelia will not show a number it could not find in their reply.`];
         if (c.hours) lines.push(`Hours: ${c.hours}`);
         const details = { phone, hours: c.hours, haveReady: c.haveReady ?? [], redirect: r, quote: c.quote, ...(phone ? {} : { lookupNumber: true }) };
         draft = { ...base, kind: 'call', title: phone ? `Call ${who} at ${phone}` : `Look up a phone number for ${who}`, draftBody: lines.join('\n'), details };
@@ -152,7 +152,7 @@ export function draftTasks(c: InboxClassification, ctx: DraftContext): TaskDraft
       break;
     }
     default:
-      draft = { ...base, kind: 'unclear', title: `Review the reply from ${res}`, draftBody: `We could not tell what ${res} is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.`, details: { quote: c.quote, rationale: c.rationale } };
+      draft = { ...base, kind: 'unclear', title: `Review the reply from ${res}`, draftBody: `We could not tell what ${res} is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Orelia can't answer medical questions.`, details: { quote: c.quote, rationale: c.rationale } };
   }
   // Answer administrative questions only from the current consented record, never retrieved text.
   if (/insurance|insurer|plan\b/i.test(ctx.coordinatorQuestion ?? '')) {

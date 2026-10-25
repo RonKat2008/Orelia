@@ -1,6 +1,6 @@
 # Voice provider: Vapi
 
-Wayfinder places resource phone calls through **Vapi** (vapi.ai). AgentCall is still supported and is the default
+Orelia places resource phone calls through **Vapi** (vapi.ai). AgentCall is still supported and is the default
 when Vapi is not configured. Every call still goes through the same path: patient approval, then `checkOutbound`
 (the outbound gate), then `channel.send`. Nothing about the gate changed.
 
@@ -50,7 +50,7 @@ number) and an inline `assistant`:
 
 - **Auth, fail closed:** `VAPI_WEBHOOK_SECRET` unset -> 503. The request must carry `x-vapi-secret: <secret>` or
   `Authorization: Bearer <secret>` (constant-time compare), else 401, before the body is parsed or the DB touched.
-  Only calls Wayfinder placed (provider call id on a `calls` row) are accepted; others get 404.
+  Only calls Orelia placed (provider call id on a `calls` row) are accepted; others get 404.
 - **status-update** -> `call_live.status`, `ended_reason`, `listen_url`; `calls.outcome` = status (or the end
   reason once ended).
 - **transcript (final)** -> one `call_turns` row per utterance as it arrives (dedupe key, so retries are no-ops).
@@ -84,7 +84,7 @@ Offline mode always uses the mock caller. The webhook URL is `VAPI_SERVER_URL`, 
    - `VAPI_API_KEY` (private key, dashboard -> API Keys)
    - `VAPI_PHONE_NUMBER_ID`
    - `VAPI_WEBHOOK_SECRET` (any long random value, e.g. `openssl rand -hex 32`)
-4. Webhook URL: `https://wayfinder-amber-seven.vercel.app/api/webhooks/vapi`. Wayfinder sends it on every call, so
+4. Webhook URL: `https://wayfinder-amber-seven.vercel.app/api/webhooks/vapi`. Orelia sends it on every call, so
    nothing has to be registered. As a fallback, point the number at it too:
    `npx tsx scripts/configure-vapi-number.ts --base-url https://wayfinder-amber-seven.vercel.app --apply`.
 5. Apply the migration: `npm run db:migrate` (adds `call_live` and `call_turns`).
@@ -93,7 +93,7 @@ Offline mode always uses the mock caller. The webhook URL is `VAPI_SERVER_URL`, 
 ### What is configured now (2026-10-24)
 
 - Number `+16198262002` (Vapi-provided), id `49e55186-a4d6-4670-9f63-efcd6b9af24b`, status active, no assistant
-  (Wayfinder sends an inline assistant per call). Every resource agent uses this one number for now; calls are told
+  (Orelia sends an inline assistant per call). Every resource agent uses this one number for now; calls are told
   apart by their call records, not by number.
 - `PATCH /phone-number/49e55186-...` set `server = { url: "https://wayfinder-amber-seven.vercel.app/api/webhooks/vapi",
   headers: { "x-vapi-secret": <VAPI_WEBHOOK_SECRET> }, timeoutSeconds: 20 }` (done with

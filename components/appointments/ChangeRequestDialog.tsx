@@ -26,7 +26,7 @@ import { reasonText, type ApptView } from "./model";
 type Kind = "reschedule" | "cancel";
 
 /**
- * Reschedule or cancel: Wayfinder drafts a short message, the patient reads it and approves it. Sending runs the
+ * Reschedule or cancel: Orelia drafts a short message, the patient reads it and approves it. Sending runs the
  * normal outbound gate (allowlist, consent fields, AI disclosure, pacing, cap). Calling the office is always offered.
  */
 export function ChangeRequestDialog({ appointment, onChange }: { appointment: ApptView; onChange: (next: ApptView) => void }) {
@@ -76,7 +76,7 @@ export function ChangeRequestDialog({ appointment, onChange }: { appointment: Ap
         <DialogHeader>
           <DialogTitle>{draft ? "Read it, then approve" : "Change this appointment"}</DialogTitle>
           <DialogDescription>
-            {draft ? "Nothing is sent until you approve. The office sees that an AI assistant wrote it for you." : "Wayfinder drafts a short message to the office for you to approve."}
+            {draft ? "Nothing is sent until you approve. The office sees that an AI assistant wrote it for you." : "Orelia drafts a short message to the office for you to approve."}
           </DialogDescription>
         </DialogHeader>
         {draft ? (

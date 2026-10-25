@@ -17,7 +17,7 @@ const KNOWN_FIELDS = new Set<string>([
 const ACCEPTING = new Set(['approved', 'submitting', 'submitted']);
 
 const page = (status: number, message: string) =>
-  new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Wayfinder demo form</title></head><body><p>${message}</p></body></html>`, {
+  new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Orelia demo form</title></head><body><p>${message}</p></body></html>`, {
     status,
     headers: { 'content-type': 'text/html; charset=utf-8' },
   });
@@ -59,7 +59,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ resource: stri
         caseId,
         kind: 'application',
         status: 'done',
-        title: 'Demo intake form received the application (Wayfinder test form)',
+        title: 'Demo intake form received the application (Orelia test form)',
         details: { demo: true, applicationId, receivedAt: new Date().toISOString(), fieldsReceived, resource },
         sourceId,
       });

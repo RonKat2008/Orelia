@@ -50,10 +50,10 @@ export function longDate(iso: string, timeZone: string): string {
 
 export const REQUEST_REASON_COPY: Record<string, string> = {
   not_allowlisted: "This office's address is not on the outbound allowlist for this deployment, so nothing was sent.",
-  follow_up_cadence: "Wayfinder paces messages to each office, and it is too soon to write again. Calling the office is the quickest way to change the time.",
+  follow_up_cadence: "Orelia paces messages to each office, and it is too soon to write again. Calling the office is the quickest way to change the time.",
   consent_required: "Share settings for this contact are missing. Review consent first.",
   call_the_office: "This office was reached by phone. Call them to change the time.",
-  no_contact: "This appointment is not linked to an office Wayfinder wrote to. Call the office directly.",
+  no_contact: "This appointment is not linked to an office Orelia wrote to. Call the office directly.",
   medical_advice: "The message was held back because it read like medical advice.",
   unshared_field: "The message mentions details you have not chosen to share with this office.",
   missing_disclosure: "The message was missing the AI disclosure, so it was not sent.",

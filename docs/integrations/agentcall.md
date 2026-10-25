@@ -15,12 +15,12 @@ Sources: https://agentcall.co/docs, https://agentcall.co/docs/post-call-webhook,
 - Signing: header `X-AgentCall-Signature: sha256=<hex>`, the HMAC-SHA256 of the raw request body keyed with the webhook secret. Compared in constant time. No timestamp tolerance is documented, so replay protection must come from our own event dedupe.
 - Rate limits: none documented.
 
-## How Wayfinder uses it
+## How Orelia uses it
 
 - `send()` runs `assertGated` before any network call and requires the script to start with `AI_DISCLOSURE_VOICE`.
 - `firstMessage` is the disclosure sentence, so it is spoken first. The full approved script goes into `systemPrompt` with an instruction to stay on script, give no medical advice and share nothing beyond it.
 - `idempotencyKey` = first 32 hex of sha256(address, approvedAt, body), so retries do not double-dial.
-- Webhooks are matched to calls Wayfinder created through `KnownThreadLookup`; others are rejected with 404.
+- Webhooks are matched to calls Orelia created through `KnownThreadLookup`; others are rejected with 404.
 - Errors: `ChannelError` with status, `retryable` = 429 or >= 500, and the parsed body.
 
 ## UNVERIFIED assumptions (confirm against the API reference UI before going live)

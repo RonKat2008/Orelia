@@ -22,7 +22,7 @@ import { cn } from "@/lib/ui/cn";
 
 const PREPARED_KINDS = new Set<string>(["referral", "slides", "records"]);
 
-/** The letter Wayfinder wrote but will not send: copy it or download it, then pass it on yourself. */
+/** The letter Orelia wrote but will not send: copy it or download it, then pass it on yourself. */
 function PreparedLetterPanel({ letter }: { letter: PreparedLetter }) {
   const text = preparedLetterText(letter);
   async function copy() {

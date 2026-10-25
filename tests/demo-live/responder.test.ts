@@ -28,7 +28,7 @@ function mail(received: DemoMessage[]): DemoMail & { reply: ReturnType<typeof vi
 }
 
 const msg = (over: Partial<DemoMessage>): DemoMessage => ({
-  messageId: 'm1', threadId: 't1', inboxId: 'i-coord', from: `Wayfinder <${OURS}>`, to: [COORD], subject: 'Patient intake inquiry', text: 'hi',
+  messageId: 'm1', threadId: 't1', inboxId: 'i-coord', from: `Orelia <${OURS}>`, to: [COORD], subject: 'Patient intake inquiry', text: 'hi',
   receivedAt: new Date(NOW.getTime() - 60_000).toISOString(), ...over,
 });
 
@@ -43,7 +43,7 @@ describe('server-side demo coordinator', () => {
     expect(m.reply).toHaveBeenCalledWith(COORD, 'm3', DEMO_RECORDS_REPLY);
   });
 
-  it('never replies outside a thread Wayfinder started, nor to a coordinator', async () => {
+  it('never replies outside a thread Orelia started, nor to a coordinator', async () => {
     const m = mail([msg({ threadId: 'foreign', from: 'someone@hospital.org' }), msg({ messageId: 'm2', threadId: 't2', from: COORD })]);
     const r = await runDemoResponder({ env, mail: m, isOurThread: async (t) => t !== 'foreign', once: new InMemoryOnceStore(), now: NOW });
     expect(r.replied).toBe(0);

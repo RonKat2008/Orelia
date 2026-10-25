@@ -43,7 +43,7 @@ export async function provisionAgentInbox(
   if (!deps.provider) return { mode: 'none', inboxId: null, address: null, reason: 'email provider not configured (mock mailer)' };
   try {
     const made = await deps.provider.create({
-      clientId: `wayfinder-agent-${agent.id}`, username: inboxUsername(agent), displayName: `Wayfinder for ${agent.name}`.slice(0, 60),
+      clientId: `wayfinder-agent-${agent.id}`, username: inboxUsername(agent), displayName: `Orelia for ${agent.name}`.slice(0, 60),
       metadata: { caseId: agent.caseId, agentId: agent.id },
     });
     return { mode: 'own', inboxId: made.inboxId, address: made.email };

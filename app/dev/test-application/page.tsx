@@ -15,7 +15,7 @@ export default function TestApplicationPage() {
       <header>
         <p style={{ letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 12, margin: 0 }}>Synthetic test fixture</p>
         <h1 style={{ margin: '4px 0 8px' }}>Patient assistance application</h1>
-        <p>This form exists only to test Wayfinder&apos;s web application channel. Nothing entered here is stored or sent anywhere.</p>
+        <p>This form exists only to test Orelia&apos;s web application channel. Nothing entered here is stored or sent anywhere.</p>
       </header>
       <form method="post" action="/dev/test-application/submit" encType="multipart/form-data" aria-label="Test application">
         <label style={field}>Full name<input style={input} name="fullName" type="text" required autoComplete="off" /></label>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AuthPage } from "@/components/account/auth/AuthPage";
 import { SignUpForm } from "@/components/account/auth/SignUpForm";
 
-export const metadata: Metadata = { title: "Create account", description: "Create a Wayfinder account.", robots: { index: false } };
+export const metadata: Metadata = { title: "Create account", description: "Create a Orelia account.", robots: { index: false } };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
   const { next } = await searchParams;

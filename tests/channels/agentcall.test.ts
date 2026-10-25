@@ -10,7 +10,7 @@ const KEY = 'ac_live_SECRETKEY123';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 function make(res: Response = json({ id: 'call_1', status: 'initiated' })) {
   const fetcher = vi.fn(async () => res.clone());
-  const ch = new AgentCallChannel({ apiKey: KEY, fromNumberId: 'num_abc', guard, fetcher: fetcher as unknown as typeof fetch, systemPrompt: 'You are Wayfinder.', voice: 'alloy', maxDurationSecs: 300 });
+  const ch = new AgentCallChannel({ apiKey: KEY, fromNumberId: 'num_abc', guard, fetcher: fetcher as unknown as typeof fetch, systemPrompt: 'You are Orelia.', voice: 'alloy', maxDurationSecs: 300 });
   return { fetcher, ch };
 }
 const caught = async (p: Promise<unknown>) => p.then(() => { throw new Error('expected rejection'); }, e => e as ChannelError);
@@ -28,7 +28,7 @@ describe('AgentCallChannel.send', () => {
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({ from: 'num_abc', to: TEST_PHONE, voice: 'alloy', maxDurationSecs: 300 });
     expect(body.firstMessage).toBe(AI_DISCLOSURE_VOICE);
-    expect(body.systemPrompt).toContain('You are Wayfinder.');
+    expect(body.systemPrompt).toContain('You are Orelia.');
     expect(body.systemPrompt).toContain('how to schedule a new patient visit');
     expect(body.systemPrompt).toContain('no medical advice');
     expect(body.idempotencyKey).toMatch(/^[0-9a-f]{32}$/);
@@ -159,7 +159,7 @@ describe('parseAgentCallWebhook', () => {
     expect((await caught(parseAgentCallWebhook(transcriptEvt, { 'x-agentcall-signature': 'sha256=' + '0'.repeat(64) }, SECRET, known))).status).toBe(401);
     const unk = JSON.stringify({ event: 'call.transcript', timestamp: 't', data: { callId: 'other', transcript: [] } });
     const e = await caught(parseAgentCallWebhook(unk, hdr(unk), SECRET, known));
-    expect(e.status).toBe(404); expect(e.message).toMatch(/not a Wayfinder call/i);
+    expect(e.status).toBe(404); expect(e.message).toMatch(/not a Orelia call/i);
     expect((await caught(parseAgentCallWebhook('{nope', hdr('{nope'), SECRET, known))).status).toBe(400);
   });
 });

@@ -1,8 +1,8 @@
 /** Approval notices carry a count and a link. They never include case or clinical text. */
 export function approvalNotice(count: number, link: string): { subject: string; text: string } {
   const n = Math.max(0, Math.floor(count));
-  const text = `You have ${n} item(s) waiting for your approval in Wayfinder.\n${link}`;
-  return { subject: 'Wayfinder: approval waiting', text };
+  const text = `You have ${n} item(s) waiting for your approval in Orelia.\n${link}`;
+  return { subject: 'Orelia: approval waiting', text };
 }
 
 const HEALTH_LEAK = /\b(diagnos\w*|symptom|prognosis|treatment|biopsy|tumor|tumour|cancer|disease|medication|dosage|icd|orpha)\b/i;

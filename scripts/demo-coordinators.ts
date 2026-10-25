@@ -1,6 +1,6 @@
 /**
  * Runs the fictional demo coordinators: polls their AgentMail test inboxes and
- * sends scripted replies ONLY to allowlisted senders (our Wayfinder case inboxes).
+ * sends scripted replies ONLY to allowlisted senders (our Orelia case inboxes).
  *
  *   npx tsx scripts/demo-coordinators.ts [--dry-run] [--live] [--once] [--interval 5]
  *

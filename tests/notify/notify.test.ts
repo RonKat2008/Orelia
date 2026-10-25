@@ -24,7 +24,7 @@ describe("patient approval notifications", () => {
     const sent = await notifyPending(first.input);
     expect(sent.sent).toBe(true);
     if (!sent.sent) return;
-    expect(sent.text.startsWith("You have 2 item(s) waiting for your approval in Wayfinder.")).toBe(true);
+    expect(sent.text.startsWith("You have 2 item(s) waiting for your approval in Orelia.")).toBe(true);
     expect(noticeHasHealthDetails(sent.text)).toBe(false);
     expect(sent.text).not.toContain("synthetic");
     expect(first.send).toHaveBeenCalledTimes(1);

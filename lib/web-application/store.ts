@@ -66,7 +66,7 @@ export class MemoryApplicationStore implements ApplicationStore {
 }
 
 const titleFor = (draft: WebApplicationDraft) =>
-  isDemoFormUrl(draft.url) ? 'Review application (Wayfinder demo intake form)' : `Review application at ${new URL(draft.url).host}`;
+  isDemoFormUrl(draft.url) ? 'Review application (Orelia demo intake form)' : `Review application at ${new URL(draft.url).host}`;
 
 type Row = typeof webApplications.$inferSelect;
 function toDraft(row: Row): WebApplicationDraft {

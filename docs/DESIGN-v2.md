@@ -1,4 +1,4 @@
-# Wayfinder design v2: "Clear Day, quieter"
+# Orelia design v2: "Clear Day, quieter"
 
 Status: spec, not yet implemented. Extends `docs/DESIGN.md` (Clear Day) and replaces it wherever the two disagree.
 Palette, fonts and the hero particle field are kept. What changes is **how much** we put on each screen.
@@ -39,7 +39,7 @@ Audience:
 
 ## 1. Researched rules (sources)
 
-All URLs were fetched during research unless marked *(unverified)*. Wayfinder decisions in later sections cite
+All URLs were fetched during research unless marked *(unverified)*. Orelia decisions in later sections cite
 these rules as **R1 to R37**.
 
 ### Structure and flow
@@ -150,7 +150,7 @@ The top problems, in ranked order:
 5. **Competing CTAs.** Plan, Tracker and Threads have 10 primary-weight controls each, Consent has 9 and Review has
    19. The black active pill has the same weight as the primary button.
 6. **Jargon reaches patients:** agent swarm, curator, verifier, final judge, allowlist, "Demo: delivered to
-   Wayfinder test inbox" (in coral-red), "Ties break by candidate id".
+   Orelia test inbox" (in coral-red), "Ties break by candidate id".
 7. **Too many sizes and colours.** The landing page uses 12 font sizes, 14 text colours and 28 badges. Case pages
    use 8 to 10 sizes.
 8. **Repetition.**
@@ -336,7 +336,7 @@ html { scroll-padding-top: 6rem; }  /* sticky header never hides focus (R31) */
 
 ```
 ┌ Safety banner (1 line) ───────────────────────────────────────────┐
-├ Header: Wayfinder · [Your case ▾]           [Patient|Judge] [☰]   ┤
+├ Header: Orelia · [Your case ▾]           [Patient|Judge] [☰]   ┤
 │                                                                   │
 │  ‹ Back to your case                     (sub-pages only)         │
 │                                                                   │
@@ -373,7 +373,7 @@ html { scroll-padding-top: 6rem; }  /* sticky header never hides focus (R31) */
 ### 5.3 Judge view: two-pane console
 
 ```
-┌ Header: Wayfinder · EDS (suspected) · case 1324…   [Patient|Judge] ┐
+┌ Header: Orelia · EDS (suspected) · case 1324…   [Patient|Judge] ┐
 ├ Stage bar: Case ✓  Search ✓  Shortlist ✓  [Consent]  Plan  Outbox  Tracker   · Tools ▾ ┤
 │ ┌ List pane (≈ 26rem) ───────────┐ ┌ Detail pane (flex) ─────────────────────────┐ │
 │ │ Filter: All 16 · Clinics · …   │ │ Stanford EDS Clinic                Best fit │ │
@@ -462,7 +462,7 @@ two-pane console and its density rules apply.
 | # | Element | Change |
 |---|---|---|
 | H1 | Eyebrow "FOR ADULTS WITH A RARE DISEASE" with the coral rule | **Keep the words, drop the uppercase.** Sentence case, `text-small font-semibold text-ink-2`. The coral rule stays: it is the one coral accent. |
-| H2 | Tagline "Expert finders tell you who the expert is. Wayfinder gets you seen." (`text-h3` serif) | **Keep.** It becomes the only supporting line. |
+| H2 | Tagline "Expert finders tell you who the expert is. Orelia gets you seen." (`text-h3` serif) | **Keep.** It becomes the only supporting line. |
 | H3 | 4-line body paragraph "Give your details once. Research agents find…" | **Remove** from the hero. Its content moves to the first section ("How it works", below the fold). |
 | H4 | Primary "Start your case →" | **Keep.** It is the only primary. |
 | H5 | Secondary outlined button "See how it works ↓" | **Demote** to a quiet text link with `ArrowDown`, placed beside the primary (`Button variant="link"`). |
@@ -482,7 +482,7 @@ BEFORE (1440)                                             AFTER (1440)
 │ Get seen.                          │2/5 ━━─ │ │        │ Get seen.                       │ Example  │  │
 │ Expert finders tell you…           │• Lit 6 │ │        │                                 │ Found 8  │  │
 │ Give your details once. Research   │• Tri 2 │ │        │ Expert finders tell you who     │ ━━━━━──  │  │
-│ agents find the specialists, …     │• Cen ◌ │ │        │ the expert is. Wayfinder gets   └──────────┘  │
+│ agents find the specialists, …     │• Cen ◌ │ │        │ the expert is. Orelia gets   └──────────┘  │
 │ (4 lines)                          │• Adv ◌ │ │        │ you seen.                                     │
 │ [Start your case →] [See how ↓]    │• Aid ◌ │ │        │                                               │
 │ Judge view: watch the agents work  │Sources │ │        │ [Start your case →]   See how it works ↓      │
@@ -516,7 +516,7 @@ Remove `ProblemSection`, `HowItAdapts` (its 3 coloured channel cards and table) 
   - Remove 7 "Example" pills. Cap the page at 2 badges.
 - **/trust**: 5 numbered promises, then Details for each. Remove the duplicate 3-column block (Fields, AI disclosure,
   Demo allowlist). "Demo allowlist" becomes "In this demo, messages only go to our own test inboxes."
-- **/about**: replace the 4-line h1 with "Why we built Wayfinder". Remove "Seven steps"; link to /how-it-works
+- **/about**: replace the 4-line h1 with "Why we built Orelia". Remove "Seven steps"; link to /how-it-works
   instead. Use one step count site-wide: **4 steps for patients**, 7 stages for judges.
 - Copy: "agent swarm" becomes "a team of search helpers (AI)" for patients and stays "agent swarm" in judge text.
 
@@ -699,7 +699,7 @@ Copy: "Only what you say yes to is shared. Every message says an AI helped write
 - Remove:
   - Reorder arrows when there is 1 step (show them only when there are 2 or more).
   - The "Start here" pill (row order says it).
-  - The coral "Demo: delivered to Wayfinder test inbox" pill. It becomes a neutral "Test inbox" badge in judge view
+  - The coral "Demo: delivered to Orelia test inbox" pill. It becomes a neutral "Test inbox" badge in judge view
     only.
 - "Rebuild plan" moves to a "More" menu.
 - The h1 changes from "How we will *reach* each resource" to "How we'll contact them".
@@ -810,7 +810,7 @@ The rules:
 | Resource | person, clinic, group, study or help program (be specific) | Resource |
 | "How we order fit: score = …" | (not shown) | Score breakdown (in Details) |
 | "Not on file" | (row hidden) | Not on file |
-| "Demo: delivered to Wayfinder test inbox" | (not shown) | Test inbox |
+| "Demo: delivered to Orelia test inbox" | (not shown) | Test inbox |
 | "Nothing is sent until you approve it." (×4 or more) | Nothing is sent without your OK. (once, by the button) | same |
 | "This draft could not be written. Save what this contact may see…" | We need one more answer first. | Draft blocked: no consented fields |
 | "Every conversation, one calm view" | Who we've contacted | Replies and follow-ups |

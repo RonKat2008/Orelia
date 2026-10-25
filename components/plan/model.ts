@@ -71,7 +71,7 @@ export function evidenceBadgeText(id: string, meta?: { label: string } | null): 
   return meta?.label ? `Source: ${meta.label}` : shortEvidenceId(id);
 }
 
-/** Honest note on a plan step while demo mode swaps its destination for a Wayfinder test one. */
+/** Honest note on a plan step while demo mode swaps its destination for a Orelia test one. */
 export function demoStepLabel(channel: PlanChannel, callsRingTestNumber: boolean): string {
   if (channel === 'email') return DEMO_LABELS.email;
   if (channel === 'web_form') return DEMO_LABELS.web_form;

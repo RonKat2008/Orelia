@@ -14,7 +14,7 @@ export function SourceDetails({ source }: { source: BriefSource }) {
       <dl className="m-0 grid gap-3 text-small">
         <Row term="From">{[kindLabel(source.kind), source.publisher].filter(Boolean).join(" · ")}</Row>
         {source.year ? <Row term="Year">{source.year}</Row> : null}
-        {fetched ? <Row term="Fetched by Wayfinder">{fetched}</Row> : null}
+        {fetched ? <Row term="Fetched by Orelia">{fetched}</Row> : null}
         <Row term="What kind of source">{DESIGN_PLAIN[source.design]}</Row>
       </dl>
       {source.excerpt ? (

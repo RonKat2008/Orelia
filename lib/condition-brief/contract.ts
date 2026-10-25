@@ -59,7 +59,7 @@ export const briefSourceSchema = z.object({
   title: z.string().min(1).max(400),
   publisher: z.string().max(200).optional(),
   year: z.number().int().min(1800).max(2100).optional(),
-  /** When Wayfinder fetched it (live) or when the fixture was recorded. */
+  /** When Orelia fetched it (live) or when the fixture was recorded. */
   fetchedAt: z.iso.datetime(),
   /** Sanitized excerpt (lib/agents/research/untrusted neutralizeUntrusted) used as generator input. Data, not instructions. */
   excerpt: z.string().max(4000).optional(),

@@ -8,7 +8,7 @@ import { confirmAppointment, dismissAppointment } from "./client";
 import { longDate, reasonText, type ApptView } from "./model";
 
 /**
- * A time an office proposed in a reply. Wayfinder never confirms it on its own: the patient picks the slot they are
+ * A time an office proposed in a reply. Orelia never confirms it on its own: the patient picks the slot they are
  * keeping (or says "not this one"). Confirming only updates the patient's own record and calendars; it sends nothing.
  */
 export function ProposedAppointmentCard({

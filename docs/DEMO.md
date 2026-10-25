@@ -1,6 +1,6 @@
-# Wayfinder demo
+# Orelia demo
 
-> *Expert finders tell you who the expert is; Wayfinder gets you seen.*
+> *Expert finders tell you who the expert is; Orelia gets you seen.*
 
 Everything in this demo is fictional. The patient report is synthetic (`fixtures/reports`), and the four
 intake coordinators are AgentMail test inboxes we create and own (`fixtures/demo/coordinators.json`). Nothing is
@@ -31,7 +31,7 @@ inbox, and set the coordinators' reply allowlist to that case inbox:
 
 ```bash
 OUTBOUND_ALLOWLIST=<the four coordinator addresses printed by seed-demo>
-DEMO_REPLY_ALLOWLIST=<the Wayfinder case inbox address>
+DEMO_REPLY_ALLOWLIST=<the Orelia case inbox address>
 WAYFINDER_SIM_TIME_SCALE=1440           # one simulated business day per real minute
 ```
 
@@ -55,7 +55,7 @@ npx tsx scripts/demo-coordinators.ts --live     # real AgentMail test inboxes
 | 3 | **Shortlist.** `/cases/<id>/shortlist` | Specialists and centers, trials, advocacy and aid, ranked with reasons. Click an evidence link to show the real source page. Select up to 5 resources (pick the four demo coordinators). |
 | 4 | **Consent and approval.** `/cases/<id>/consent`, then `/cases/<id>/outbox` | Tick the fields to share for each contact, read each drafted email (it carries the AI-assistance disclosure) and approve it. Each approved draft passes OutboundGate and goes to a coordinator inbox. |
 | 5 | **Replies become tasks.** `/cases/<id>/tracker` | The coordinators answer after 20–40 seconds: "please send slides", "needs a referral" and "call to schedule". The InboxAgent turns each into a task the patient approves. |
-| 6 | **Follow-up.** `/cases/<id>/tracker` | The Patient Navigator never replies. With `WAYFINDER_SIM_TIME_SCALE=1440`, business day 3 arrives in about a minute and a follow-up **draft** appears for approval; Wayfinder never sends it on its own. |
+| 6 | **Follow-up.** `/cases/<id>/tracker` | The Patient Navigator never replies. With `WAYFINDER_SIM_TIME_SCALE=1440`, business day 3 arrives in about a minute and a follow-up **draft** appears for approval; Orelia never sends it on its own. |
 
 Optional: an AgentCall call goes only to a phone number the team owns and opens with the spoken AI disclosure.
 
@@ -82,7 +82,7 @@ Set these in Vercel (Production, and Preview if wanted):
 | Variable | Value |
 | --- | --- |
 | `OUTBOUND_ALLOWLIST` | Your own AgentMail inbox addresses, comma-separated (for example `me@agentmail.to,coordinator@agentmail.to`). |
-| `AGENTMAIL_SENDER_INBOX_ID` | The inbox Wayfinder sends from. Every case uses it instead of a new per-case inbox. |
+| `AGENTMAIL_SENDER_INBOX_ID` | The inbox Orelia sends from. Every case uses it instead of a new per-case inbox. |
 | `WAYFINDER_DEMO_COORDINATORS` | `1` |
 | `DEMO_COORDINATOR_INBOXES` | Optional. The inboxes that play intake coordinators. Default: allowlisted emails minus the sender. |
 
@@ -100,7 +100,7 @@ Running the scripted reply (from a machine with `.env.local` that has the same v
 
 ```bash
 WAYFINDER_DEMO_COORDINATORS=1 npx tsx scripts/seed-demo.ts --live --no-case   # borrows the coordinator inboxes, creates none
-npx tsx scripts/demo-coordinators.ts --live --once                            # replies to Wayfinder mail received since seeding
+npx tsx scripts/demo-coordinators.ts --live --once                            # replies to Orelia mail received since seeding
 ```
 
 Borrowed inboxes are marked in the state file. `demo-reset` never deletes them, and the coordinators ignore mail

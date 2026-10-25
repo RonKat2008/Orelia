@@ -103,7 +103,7 @@ export function ReviewForm({ token }: { token: string }) {
           <dd className="m-0 text-small text-ink-2">Your approval covers this address as well as the text. The message names you, your email and NPI so the team can confirm it came from you.</dd>
         </dl>
         {r.doctorVerified ? null : (
-          <p className="m-0 text-small text-ink-2">Doctor not verified — request will be checked by the standard filter. Wayfinder could not match an NPI to your name with an email at a practice domain it has on record for you, so clinical recommendations in the text may stop it from being sent.</p>
+          <p className="m-0 text-small text-ink-2">Doctor not verified — request will be checked by the standard filter. Orelia could not match an NPI to your name with an email at a practice domain it has on record for you, so clinical recommendations in the text may stop it from being sent.</p>
         )}
       </section>
 

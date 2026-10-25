@@ -383,7 +383,7 @@ export function NavigationSection() {
             <SubHead>Accordion</SubHead>
             <Accordion type="single" collapsible defaultValue="a">
               <AccordionItem value="a">
-                <AccordionTrigger>Does Wayfinder give medical advice?</AccordionTrigger>
+                <AccordionTrigger>Does Orelia give medical advice?</AccordionTrigger>
                 <AccordionContent>
                   No. We find and contact resources, and show where every claim came from. Decisions about care stay
                   with you and your care team.

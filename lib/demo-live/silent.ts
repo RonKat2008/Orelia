@@ -33,7 +33,7 @@ export async function isSilentDemoThread(threadId: string, messageId?: string): 
   return planWantsSilence((planRow?.plan ?? null) as unknown as ContactPlan | null, row.contactId, `${row.targetKind}:${row.targetId}`);
 }
 
-/** True when Wayfinder itself sent a message in this provider thread (so a reply there goes back to our own inbox). */
+/** True when Orelia itself sent a message in this provider thread (so a reply there goes back to our own inbox). */
 export async function isWayfinderThread(threadId: string, messageId?: string): Promise<boolean> {
   const [row] = await getDb()
     .select({ id: messages.id })

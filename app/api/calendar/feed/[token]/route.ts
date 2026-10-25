@@ -35,7 +35,7 @@ export async function GET(req: Request, { params }: Ctx) {
     return new Response(feedIcs(appointments, { now, uidDomain: new URL(origin).host, appOrigin: origin }), {
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': 'inline; filename="wayfinder.ics"',
+        'Content-Disposition': 'inline; filename="orelia.ics"',
         'Cache-Control': 'private, no-cache', // revalidate every fetch so a revoked feed stops at once
         'X-Robots-Tag': 'noindex',
         'Referrer-Policy': 'no-referrer',

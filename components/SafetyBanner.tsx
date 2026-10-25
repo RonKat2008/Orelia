@@ -15,7 +15,7 @@ export function SafetyBanner() {
       <p className="page-container m-0 flex items-start gap-2.5 py-2.5 text-small leading-snug sm:items-center">
         <Info aria-hidden className="mt-px size-4 shrink-0 text-warn-ink sm:mt-0" strokeWidth={2.25} />
         <span data-sb="long">
-          <strong className="font-semibold">Wayfinder never gives medical advice.</strong> If symptoms are urgent,
+          <strong className="font-semibold">Orelia never gives medical advice.</strong> If symptoms are urgent,
           contact your care team or call 911.
         </span>
         <span data-sb="short" hidden>

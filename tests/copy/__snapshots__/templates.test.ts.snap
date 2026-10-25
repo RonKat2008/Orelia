@@ -34,7 +34,7 @@ Have ready: referral",
       "title": "Example Specialty Center is not able to help",
     },
     "needs_referral": {
-      "draftBody": "Wayfinder does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
+      "draftBody": "Orelia does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
 Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).
 Ask them to send the referral to Example Specialty Center. Nothing here leaves your account until you pass it on.
 
@@ -129,7 +129,7 @@ About this message: an AI assistant wrote it on behalf of the patient, and the p
       "title": "Request slides for Example Specialty Center",
     },
     "unclear": {
-      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.",
+      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Orelia can't answer medical questions.",
       "title": "Review the reply from Example Specialty Center",
     },
   },
@@ -534,7 +534,7 @@ Have ready: referral",
       "title": "Example Specialty Center is not able to help",
     },
     "needs_referral": {
-      "draftBody": "Wayfinder does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
+      "draftBody": "Orelia does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
 Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).
 Ask them to send the referral to Example Specialty Center. Nothing here leaves your account until you pass it on.
 
@@ -629,7 +629,7 @@ About this message: an AI assistant wrote it on behalf of the patient, and the p
       "title": "Request slides for Example Specialty Center",
     },
     "unclear": {
-      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.",
+      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Orelia can't answer medical questions.",
       "title": "Review the reply from Example Specialty Center",
     },
   },
@@ -1034,7 +1034,7 @@ Have ready: referral",
       "title": "Example Specialty Center is not able to help",
     },
     "needs_referral": {
-      "draftBody": "Wayfinder does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
+      "draftBody": "Orelia does not have Dr. Example's email address and will not guess one, so it sends nothing for this request.
 Copy or download the letter below, then give it to your doctor yourself (patient portal message, email you already use with them, or at your next visit).
 Ask them to send the referral to Example Specialty Center. Nothing here leaves your account until you pass it on.
 
@@ -1129,7 +1129,7 @@ About this message: an AI assistant wrote it on behalf of the patient, and the p
       "title": "Request slides for Example Specialty Center",
     },
     "unclear": {
-      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Wayfinder can't answer medical questions.",
+      "draftBody": "We could not tell what Example Specialty Center is asking. Please read their reply and choose the next step. If they asked a medical question, please share it with your care team; Orelia can't answer medical questions.",
       "title": "Review the reply from Example Specialty Center",
     },
   },

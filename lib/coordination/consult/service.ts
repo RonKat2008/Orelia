@@ -108,7 +108,7 @@ export class ConsultService {
     if (!name.success || (practice && !practice.success) || (npi && !npi.success)) throw new ConsultError(400, 'Check the doctor\'s name, practice and NPI (no links; NPI is 10 digits)');
     const email = body.email.trim().toLowerCase();
     if (await this.emailRefused(caseId, email)) {
-      throw new ConsultError(422, 'Use your doctor\'s own practice email, not yours or a Wayfinder address', ['doctor_email_not_allowed']);
+      throw new ConsultError(422, 'Use your doctor\'s own practice email, not yours or a Orelia address', ['doctor_email_not_allowed']);
     }
     if ((await this.deps.store.list(caseId, 'doctor')).length >= MAX_DOCTORS_PER_CASE) throw new ConsultError(409, `You can add up to ${MAX_DOCTORS_PER_CASE} doctors`);
     const npiValue = npi?.success ? npi.data : null;
@@ -233,7 +233,7 @@ export class ConsultService {
     if (c.status !== 'drafted' && c.status !== 'sent_to_doctor') throw new ConsultError(409, 'The review link can only be sent before your doctor decides');
     const doctor = await this.doctorOf(c);
     if (await this.emailRefused(c.caseId, doctor.email)) {
-      throw new ConsultError(422, 'Use your doctor\'s own practice email, not yours or a Wayfinder address', ['doctor_email_not_allowed']);
+      throw new ConsultError(422, 'Use your doctor\'s own practice email, not yours or a Orelia address', ['doctor_email_not_allowed']);
     }
     const record = await this.recordOf(c.caseId);
     const now = this.deps.now();

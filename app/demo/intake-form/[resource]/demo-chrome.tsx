@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-/** Neutral, light clinic look shared by the demo intake form and its confirmation page (deliberately not Wayfinder-branded). */
+/** Neutral, light clinic look shared by the demo intake form and its confirmation page (deliberately not Orelia-branded). */
 const base: CSSProperties = { boxSizing: 'border-box', width: '100%', maxWidth: '100%' };
 
 export const demoPageStyles = {
@@ -24,7 +24,7 @@ export const demoPageStyles = {
 export function DemoBanner({ name }: { name: string }) {
   return (
     <div role="note" style={demoPageStyles.banner}>
-      Demo form hosted by Wayfinder — stands in for {name}&rsquo;s online form. Nothing here reaches a real clinic.
+      Demo form hosted by Orelia — stands in for {name}&rsquo;s online form. Nothing here reaches a real clinic.
     </div>
   );
 }

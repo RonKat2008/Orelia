@@ -172,7 +172,7 @@ export function IntakeFlow({ demos }: { demos: DemoReport[] }) {
       setError(
         error instanceof ScopeRefusal
           ? error.message
-          : "Wayfinder could not read that report. Try a sample case, or paste the text again.",
+          : "Orelia could not read that report. Try a sample case, or paste the text again.",
       );
     } finally {
       busyRef.current = false;

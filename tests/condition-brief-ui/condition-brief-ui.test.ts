@@ -105,7 +105,7 @@ describe("sections and content", () => {
   it("frames questions as questions, with no advice wording", () => {
     const html = doc("all");
     expect(html).toContain(QUESTIONS_FRAMING);
-    expect(QUESTIONS_FRAMING).toBe("Questions you might bring to your care team. Wayfinder does not give medical advice.");
+    expect(QUESTIONS_FRAMING).toBe("Questions you might bring to your care team. Orelia does not give medical advice.");
     for (const q of sampleBrief.questions) expect(q.text.endsWith("?")).toBe(true);
     const copy = html.replace(/<[^>]+>/g, " ");
     expect(copy).not.toMatch(/\byou should\b|\bwe recommend\b|\bwe advise\b|\btake this\b|\bstart taking\b/i);

@@ -53,7 +53,7 @@ export function SignInForm({ next }: { next?: string }) {
       lede="Sign in to see your documents and cases."
       footer={
         <p className="m-0">
-          New to Wayfinder?{" "}
+          New to Orelia?{" "}
           <Link href={`/auth/sign-up${suffix}`} className={AUTH_LINK}>
             Create an account
           </Link>

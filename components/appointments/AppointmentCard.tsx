@@ -18,7 +18,7 @@ const LINK = "inline-flex min-h-11 items-center gap-2 rounded-sm text-small font
 
 function calendarDetails(a: ApptView): string {
   const items = prepItemsFor(a).map((i) => `- ${i.label}`);
-  return ["Bring / prepare:", ...items, ...(a.phone ? [`Office phone: ${a.phone}`] : []), "Added from Wayfinder. Not medical advice."].join("\n");
+  return ["Bring / prepare:", ...items, ...(a.phone ? [`Office phone: ${a.phone}`] : []), "Added from Orelia. Not medical advice."].join("\n");
 }
 
 /** A confirmed appointment: date block, countdown, the practical links, prep and change requests. */

@@ -8,7 +8,7 @@ describe("threads", () => {
     expect(looksClinical("Can you describe the symptoms and fever?")).toBe(true);
     expect(looksClinical("Please send the referral packet.")).toBe(false);
     expect(CLINICAL_NOTICE).toBe(
-      "Wayfinder can't give medical advice. Contact your care team or call 911 for urgent symptoms.",
+      "Orelia can't give medical advice. Contact your care team or call 911 for urgent symptoms.",
     );
   });
 

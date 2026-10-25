@@ -164,7 +164,7 @@ export function ConsultCard({ caseId, consult, doctor, primary, onUpdate, onMess
           <DialogHeader>
             <DialogTitle>Send this to {consult.expertName}?</DialogTitle>
             <DialogDescription>
-              {doctorName} approved this exact text. By agreeing, you let Wayfinder send it to {consult.expertName} now, marked as AI-assisted, with only the details you ticked.
+              {doctorName} approved this exact text. By agreeing, you let Orelia send it to {consult.expertName} now, marked as AI-assisted, with only the details you ticked.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -21,7 +21,7 @@ describe('outbox applications client', () => {
 
   it('labels each value with where it came from', () => {
     expect(row.fields.map(f => sourceLabel(f as never))).toEqual([
-      'Your case: Diagnosis (you ticked this)', 'Your document: "lives in Boston"', 'AI disclosure, written by Wayfinder',
+      'Your case: Diagnosis (you ticked this)', 'Your document: "lives in Boston"', 'AI disclosure, written by Orelia',
     ]);
     expect(docIdsOf(row.fields as never)).toEqual(['d1']);
   });

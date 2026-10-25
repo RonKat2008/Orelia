@@ -3,7 +3,7 @@
  *
  * An account (Neon Auth user) owns a profile and a medical-document library. Library text is embedded into a
  * per-account vector space that agents retrieve from. Everything here is organisation only: document text is DATA,
- * never instructions, and nothing in a library leaves Wayfinder except through fields/attachments the patient ticks.
+ * never instructions, and nothing in a library leaves Orelia except through fields/attachments the patient ticks.
  * PHI hygiene: never log document text or profile values.
  */
 import { z } from 'zod';
@@ -16,7 +16,7 @@ export interface Account { id: string; email: string; name: string | null }
 // ---- Profile ------------------------------------------------------------------------------------------------
 export const ADULT_AGE = 18;
 export const ADULT_ONLY_MESSAGE =
-  'Wayfinder is built for adults (18 and over), so we cannot set up a profile for someone younger. ' +
+  'Orelia is built for adults (18 and over), so we cannot set up a profile for someone younger. ' +
   'If you are a parent or caregiver, a children\'s hospital patient-navigation team is the best place to start.';
 
 export const SEX_AT_BIRTH = ['female', 'male', 'intersex', 'prefer_not_to_say'] as const;
@@ -29,7 +29,7 @@ const partialDate = z.string().regex(/^\d{4}(-\d{2}(-\d{2})?)?$/, 'Use YYYY, YYY
 export const profileSchema = z.object({
   preferredName: z.string().trim().min(1, 'Tell us what to call you').max(80),
   legalName: opt(120),
-  /** Required: Wayfinder serves adults only (see ADULT_AGE). */
+  /** Required: Orelia serves adults only (see ADULT_AGE). */
   dateOfBirth: isoDate,
   sexAtBirth: z.enum(SEX_AT_BIRTH).optional(),
   city: opt(80),

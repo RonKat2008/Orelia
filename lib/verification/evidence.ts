@@ -1,7 +1,7 @@
 /**
  * Verification result -> evidence rows (claimType "verification.<key>", sourceKind "phone_call"). Only decisive
  * yes/no answers and the how_to_start detail become evidence; unclear / not-asked answers never do. The source URL
- * identifies the call record inside Wayfinder (the transcript lives in the case threads), not a third-party page.
+ * identifies the call record inside Orelia (the transcript lives in the case threads), not a third-party page.
  */
 import { createHash } from 'node:crypto';
 import { neutralizeUntrusted } from '../agents/research/untrusted';

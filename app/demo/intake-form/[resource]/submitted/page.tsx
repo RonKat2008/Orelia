@@ -6,7 +6,7 @@ import { DemoBanner, demoPageStyles } from '../demo-chrome';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Request received (Wayfinder demo form)',
+  title: 'Request received (Orelia demo form)',
   robots: { index: false, follow: false },
 };
 

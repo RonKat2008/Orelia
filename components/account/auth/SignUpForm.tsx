@@ -112,7 +112,7 @@ export function SignUpForm({ next }: { next?: string }) {
         <Button type="submit" size="lg" loading={pending} loadingText="Creating account" className="w-full text-body">
           Create account
         </Button>
-        <p className="m-0 text-small text-ink-2">Wayfinder is for adults, 18 and over.</p>
+        <p className="m-0 text-small text-ink-2">Orelia is for adults, 18 and over.</p>
       </form>
     </AuthCard>
   );

@@ -90,7 +90,7 @@ export function MotionLab() {
           <div>
             <h1 className="lab-title">Motion lab</h1>
             <p className="lab-lede">
-              Every Wayfinder motion component with sample data. Turn on reduced motion to check that each one shows
+              Every Orelia motion component with sample data. Turn on reduced motion to check that each one shows
               its finished state at once.
             </p>
           </div>
@@ -169,7 +169,7 @@ export function MotionLab() {
         </section>
 
         <footer className="lab-safety" role="note">
-          Wayfinder finds and contacts people who can help. It does not give medical advice. If you have new or
+          Orelia finds and contacts people who can help. It does not give medical advice. If you have new or
           worsening symptoms, contact your care team or call 911.
         </footer>
       </PageTransition>

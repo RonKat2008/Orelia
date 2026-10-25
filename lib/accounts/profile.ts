@@ -16,7 +16,7 @@ export type ProfileValidation =
   | { ok: false; status: 422; error: 'invalid'; issues: { path: string; message: string }[] }
   | { ok: false; status: 422; error: 'adult_only'; message: string };
 
-/** Zod validation plus the adult-only rule (Wayfinder serves adults; same scope as the pediatric filter). */
+/** Zod validation plus the adult-only rule (Orelia serves adults; same scope as the pediatric filter). */
 export function validateProfile(input: unknown, now: Date = new Date()): ProfileValidation {
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) {

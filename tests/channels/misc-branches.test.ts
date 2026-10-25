@@ -335,7 +335,7 @@ describe('AgentCall webhook parsing', () => {
     await expect(parse({ event: 'call.status', data: { callId: 7 } })).rejects.toMatchObject({ status: 400 });
   });
 
-  it('rejects calls Wayfinder did not place with 404', async () => {
+  it('rejects calls Orelia did not place with 404', async () => {
     await expect(parse({ event: 'call.status', data: { callId: 'k' } }, () => undefined)).rejects.toMatchObject({ status: 404 });
   });
 

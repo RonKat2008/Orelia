@@ -99,7 +99,7 @@ export const specialistPacketSchema = z.object({
 
 // ---------------------------------------------------------------- (c) doctors + consultation requests
 
-/** No links in text that goes into emails Wayfinder sends (review-link relay abuse, security review #2). */
+/** No links in text that goes into emails Orelia sends (review-link relay abuse, security review #2). */
 const LINKISH = /(https?:|ftp:|mailto:|\/\/|www\.|@|[a-z0-9-]\.(com|org|net|edu|gov|io|co|us|uk|info|biz|me|ly|app|xyz|site|online|link|click|health|md|ru|cn|top)\b)/i;
 export const MAX_DOCTOR_NAME = 120;
 export const doctorNameSchema = shortText(MAX_DOCTOR_NAME).refine(v => !LINKISH.test(v), 'Names cannot contain links or web addresses');
@@ -140,7 +140,7 @@ export const consultProcessSchema = z.object({
 });
 
 export const consultStatusSchema = z.enum([
-  'drafted', // Wayfinder drafted it; patient reviewing
+  'drafted', // Orelia drafted it; patient reviewing
   'sent_to_doctor', // review link emailed to the patient's doctor
   'doctor_approved', // doctor approved (possibly edited) the text
   'doctor_declined',
@@ -157,7 +157,7 @@ export const consultRequestSchema = z.object({
   expertName: shortText(200),
   doctorId: z.string().uuid(),
   process: consultProcessSchema,
-  /** Latest text (Wayfinder draft, then the doctor's edit). Always clinician-to-clinician, never advice to the patient. */
+  /** Latest text (Orelia draft, then the doctor's edit). Always clinician-to-clinician, never advice to the patient. */
   subject: shortText(200),
   body: shortText(8000),
   /** Packet attached (only its included sections), when the patient chose one. */
@@ -204,7 +204,7 @@ export const reviewViewSchema = z.object({
   processDetail: z.string(),
   processSourceUrl: httpUrlSchema,
   doctorName: z.string(),
-  /** Whether Wayfinder verified the doctor (NPI + practice domain); unverified requests get the standard filter. */
+  /** Whether Orelia verified the doctor (NPI + practice domain); unverified requests get the standard filter. */
   doctorVerified: z.boolean(),
   /** Where the request will be sent: the doctor approves this address too (security review #3). */
   expertAddress: z.string().nullable(),

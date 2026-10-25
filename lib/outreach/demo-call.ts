@@ -42,7 +42,7 @@ export class DemoCallSimulator implements Channel {
 export function demoCallTranscript(): string {
   return [
     `AI: ${AI_DISCLOSURE_VOICE}`,
-    'Callee: Thanks for calling the new-patient office, this is the intake coordinator. (Demo: Wayfinder test line, no real clinic.)',
+    'Callee: Thanks for calling the new-patient office, this is the intake coordinator. (Demo: Orelia test line, no real clinic.)',
     'AI: I am calling on behalf of a patient who would like to be seen for the condition in the approved script. How do they get started?',
     'Callee: We do see adults with that condition. To get them on the schedule we need a referral from their current doctor and their most recent records, including any imaging reports.',
     'AI: Thank you. Is there anything else you need before scheduling?',

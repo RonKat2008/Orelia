@@ -95,7 +95,7 @@ describe('packet routes', () => {
     const ok = await write(ATTACH, 'POST', { resourceKey: KEY, contactId: CONTACT }, '/attach');
     expect(ok.status).toBe(200);
     expect(await ok.json()).toEqual({ draftId: 'd1' });
-    expect(draftBody).toContain('Prepared by the patient with Wayfinder AI assistance');
+    expect(draftBody).toContain('Prepared by the patient with Orelia AI assistance');
     approved = true;
     expect((await write(ATTACH, 'POST', { resourceKey: KEY, contactId: CONTACT }, '/attach')).status).toBe(409);
     expect((await write(ATTACH, 'POST', { resourceKey: KEY, contactId: 'not-a-uuid' }, '/attach')).status).toBe(400);

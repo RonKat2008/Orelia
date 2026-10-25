@@ -1,6 +1,6 @@
 /**
  * Medical history lane: frozen contract shared by extraction, storage, routes, share links and UI.
- * Everything here is organisation only. Wayfinder never interprets, resolves or advises on medical content:
+ * Everything here is organisation only. Orelia never interprets, resolves or advises on medical content:
  * events quote what a patient's own record says, with a pointer back to the exact span of the source document.
  */
 import { z } from 'zod';
@@ -77,7 +77,7 @@ export const conflictSchema = z.object({
 }).strict();
 export type Conflict = z.infer<typeof conflictSchema>;
 
-export const CONFLICT_NOTE = 'These records say different things. Wayfinder does not decide which is right — bring both to your doctor to discuss.';
+export const CONFLICT_NOTE = 'These records say different things. Orelia does not decide which is right — bring both to your doctor to discuss.';
 
 export interface HistoryTimeline {
   documents: Omit<HistoryDocument, 'text'>[];
@@ -134,7 +134,7 @@ export interface HistorySummary {
   sections: SummarySection[];
   disclaimer: string;
 }
-export const SUMMARY_DISCLAIMER = 'Organised by Wayfinder from the patient\'s own records. Not a medical interpretation; each line cites the record it came from.';
+export const SUMMARY_DISCLAIMER = 'Organised by Orelia from the patient\'s own records. Not a medical interpretation; each line cites the record it came from.';
 
 // ---- Search ------------------------------------------------------------------------------------------------
 export const searchQuerySchema = z.object({ q: z.string().trim().min(1).max(200), k: z.coerce.number().int().min(1).max(50).optional() });

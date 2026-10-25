@@ -5,7 +5,7 @@ import { Wordmark } from "./Wordmark";
 
 const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
-    heading: "Wayfinder",
+    heading: "Orelia",
     links: [
       { href: "/start", label: "Start a case" },
       { href: "/how-it-works", label: "How it works" },
@@ -61,7 +61,7 @@ export function SiteFooter({ className }: { className?: string }) {
       </div>
       <div className="border-t border-line">
         <p className="page-container m-0 py-6 text-small text-ink-2">
-          Wayfinder never gives medical advice. In an emergency call 911 or contact your care team.
+          Orelia never gives medical advice. In an emergency call 911 or contact your care team.
         </p>
       </div>
     </footer>

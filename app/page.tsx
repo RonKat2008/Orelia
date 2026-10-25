@@ -9,7 +9,7 @@ import { SiteFooter } from "@/components/shell/SiteFooter";
 import { SiteHeader } from "@/components/shell/SiteHeader";
 
 export const metadata: Metadata = {
-  title: "Wayfinder: find the experts, get seen",
+  title: "Orelia: find the experts, get seen",
   description:
     "For adults with a rare disease. We find specialists, studies, patient groups and aid, check every claim against its source, and reach out for you after you approve each message.",
 };

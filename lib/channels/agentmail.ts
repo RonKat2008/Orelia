@@ -44,7 +44,7 @@ export class AgentMailChannel implements Channel {
     if (this.opts.senderInboxId) return { inboxId: this.opts.senderInboxId, email: this.opts.senderInboxId };
     try {
       const inbox = await this.client.inboxes.create({
-        clientId: `wayfinder-case-${caseId}`, displayName: 'Wayfinder', metadata: { caseId },
+        clientId: `wayfinder-case-${caseId}`, displayName: 'Orelia', metadata: { caseId },
         ...(this.opts.inboxDomain ? { domain: this.opts.inboxDomain } : {}),
       }, NO_RETRY);
       const made = { inboxId: inbox.inboxId, email: inbox.email };
@@ -85,7 +85,7 @@ export class AgentMailChannel implements Channel {
   }
 
   async listThreadMessages(threadId: string, isKnownThread: KnownThreadLookup): Promise<ThreadMessage[]> {
-    if (!(await isKnownThread(threadId))) throw new ChannelError(PROVIDER, 'not a Wayfinder thread', 404);
+    if (!(await isKnownThread(threadId))) throw new ChannelError(PROVIDER, 'not a Orelia thread', 404);
     try {
       const thread = await this.client.threads.get(threadId, undefined, NO_RETRY);
       return thread.messages.map(m => ({
@@ -159,7 +159,7 @@ export async function parseAgentMailWebhook(
   const m = event.message;
   if (!m || typeof m !== 'object' || typeof m.thread_id !== 'string' || typeof m.message_id !== 'string') throw new ChannelError(PROVIDER, 'malformed message.received payload', 400);
   const contactId = await isKnownThread(m.thread_id);
-  if (!contactId) throw new ChannelError(PROVIDER, 'not a Wayfinder thread', 404);
+  if (!contactId) throw new ChannelError(PROVIDER, 'not a Orelia thread', 404);
   const at = new Date(typeof m.timestamp === 'string' || typeof m.timestamp === 'number' ? m.timestamp : NaN);
   return {
     provider: PROVIDER, channel: 'email', eventType, contactId, threadId: m.thread_id, messageId: m.message_id,

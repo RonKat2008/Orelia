@@ -56,7 +56,7 @@ export class OutreachService {
     for (const c of fresh) {
       const mine = proposed.find(p => p.targetId === c.targetId && p.targetKind === c.targetKind);
       if (mine && !created.some(x => x.targetId === c.targetId && x.targetKind === c.targetKind)) {
-        unavailable.push({ candidateId: c.id, channel: 'none', reason: 'Its only address is already used by another contact on this case, and Wayfinder never writes to one address twice.' });
+        unavailable.push({ candidateId: c.id, channel: 'none', reason: 'Its only address is already used by another contact on this case, and Orelia never writes to one address twice.' });
       }
     }
     const own = (x: Contact) => candidates.some(c => x.targetId === c.targetId && x.targetKind === c.targetKind);

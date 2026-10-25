@@ -9,7 +9,7 @@ export default function DocumentsPage() {
     <AppShell
       eyebrow="Account"
       title="Your documents"
-      lede="Keep lab results, scans and letters in one private library that Wayfinder can read for you."
+      lede="Keep lab results, scans and letters in one private library that Orelia can read for you."
     >
       <DocumentLibrary />
     </AppShell>

@@ -74,7 +74,7 @@ export async function verifyDoctor(
 const AGENTMAIL_DOMAIN = /@([a-z0-9-]+\.)*agentmail\.to$/;
 
 /**
- * Addresses that are never a doctor: the patient's own email, Wayfinder's AgentMail inboxes (sender and any
+ * Addresses that are never a doctor: the patient's own email, Orelia's AgentMail inboxes (sender and any
  * @agentmail.to inbox) and the demo coordinator inboxes. Returns true when the address must be refused.
  */
 export function doctorEmailRefused(email: string, ctx: { patientEmail: string | null; env: Env }): boolean {

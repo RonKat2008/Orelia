@@ -7,7 +7,7 @@
  * Safety:
  *   - Off unless demo destinations are on (WAYFINDER_DEMO_COORDINATORS=1 plus an allowlisted coordinator inbox)
  *     and AGENTMAIL_API_KEY is set.
- *   - It only ever replies from a coordinator inbox (which is on OUTBOUND_ALLOWLIST), in a thread that Wayfinder itself
+ *   - It only ever replies from a coordinator inbox (which is on OUTBOUND_ALLOWLIST), in a thread that Orelia itself
  *     started (an outbound message with that provider thread id exists in our database), and never to a coordinator
  *     address. A reply in such a thread goes back to our own case inbox, so it cannot reach a third party.
  *   - One scripted reply per provider thread, ever: claimed in the OnceStore before sending (overlapping cron runs
@@ -27,7 +27,7 @@ export const DEMO_RECORDS_REPLY = [
   '',
   'Before we can offer a new-patient appointment, please send the patient\'s most recent medical records, including the genetic test report and any imaging reports. Once we have them, our team will review and contact the patient to schedule.',
   '',
-  '— Intake Coordinator, Wayfinder Demo Clinic (fictional, demo only)',
+  '— Intake Coordinator, Orelia Demo Clinic (fictional, demo only)',
 ].join('\n');
 
 /** Only mail this recent is answered (a coordinator inbox also holds older demo traffic). */
@@ -56,7 +56,7 @@ export async function runDemoResponder(opts: {
   /** Ignore mail received before this (e.g. only one demo case's start). */
   notBefore?: Date;
   /**
-   * True when Wayfinder sent this message (our own outbound row exists). AgentMail threads are per inbox, so the
+   * True when Orelia sent this message (our own outbound row exists). AgentMail threads are per inbox, so the
    * coordinator inbox's thread id differs from ours; the RFC Message-ID is the same on both sides.
    */
   isOurThread: (threadId: string, messageId: string) => Promise<boolean>;

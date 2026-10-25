@@ -119,7 +119,7 @@ export function ShareDialog({ caseId, disabled }: { caseId: string; disabled?: b
           <DialogTitle>Share with a doctor</DialogTitle>
           <DialogDescription>
             Anyone with the link can read the sections you tick, until it expires or you revoke it. Records are shown
-            as written; Wayfinder adds no medical interpretation.
+            as written; Orelia adds no medical interpretation.
           </DialogDescription>
         </DialogHeader>
 

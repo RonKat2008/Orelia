@@ -1,5 +1,5 @@
 /**
- * ContactPlan contract: for each resource the patient selected, HOW Wayfinder will reach it (email, call, online
+ * ContactPlan contract: for each resource the patient selected, HOW Orelia will reach it (email, call, online
  * form or a combination), in what order, and why. A plan is a proposal the patient reviews; it never sends anything.
  * Every outbound step still goes through the existing approval + checkOutbound gate when it is executed.
  *

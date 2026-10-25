@@ -35,7 +35,7 @@ const JourneyContext = createContext<{ plan: JourneyPlan; data: JourneyData | nu
 /** Same height as the stage bar, so the page does not jump when the case loads. */
 function StageBarSkeleton() {
   return (
-    <div role="status" aria-busy="true" className="flex h-11 items-center gap-3 border-b border-line">
+    <div role="status" aria-busy="true" className="flex h-11 items-center gap-3 overflow-hidden border-b border-line">
       <span className="sr-only">Loading case stages</span>
       {[0, 1, 2, 3, 4, 5, 6].map((n) => (
         <Skeleton key={n} className="h-4 w-16 shrink-0" />

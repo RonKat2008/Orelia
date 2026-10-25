@@ -105,7 +105,7 @@ export function PlanView({ caseId }: { caseId: string }) {
       if (result.count > 0) {
         toast.success(result.headline);
         // The drafts are written: go straight to reading them (the next click is the approval itself).
-        router.push(`/cases/${caseId}/outbox`);
+        router.push(`/cases/${caseId}/outbox?review=all`);
       } else toast.info(result.headline);
     }
   };

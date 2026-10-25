@@ -45,22 +45,29 @@ export function CoordinateView({ caseId }: { caseId: string }) {
     );
   }
 
-  return (
-    <div className="grid gap-12">
-      <BoardPanel caseId={caseId} />
-      {resources.length === 0 ? (
+  if (resources.length === 0) {
+    return (
+      <div className="grid min-w-0 gap-8">
+        <BoardPanel caseId={caseId} />
         <EmptyState
           title="Choose who to contact first"
           description={error || 'The checklist, packet and doctor requests are built for the specialists you chose.'}
           action={<Button asChild><Link href={`/cases/${caseId}/shortlist`}>Open the shortlist</Link></Button>}
         />
-      ) : (
-        <>
-          <RequirementsPanel caseId={caseId} resources={resources} primary={focus === 'requirements'} onNeeds={onNeeds('requirements')} />
-          <PacketPanel caseId={caseId} resources={resources} contacts={contacts} primary={focus === 'packet'} onNeeds={onNeeds('packet')} />
-          <ConsultPanel caseId={caseId} resources={resources} primary={focus === 'consult'} onNeeds={onNeeds('consult')} />
-        </>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:items-start lg:gap-x-10">
+      <div className="grid min-w-0 gap-8">
+        <BoardPanel caseId={caseId} />
+        <RequirementsPanel caseId={caseId} resources={resources} primary={focus === 'requirements'} onNeeds={onNeeds('requirements')} />
+      </div>
+      <div className="grid min-w-0 gap-8">
+        <PacketPanel caseId={caseId} resources={resources} contacts={contacts} primary={focus === 'packet'} onNeeds={onNeeds('packet')} />
+        <ConsultPanel caseId={caseId} resources={resources} primary={focus === 'consult'} onNeeds={onNeeds('consult')} />
+      </div>
     </div>
   );
 }

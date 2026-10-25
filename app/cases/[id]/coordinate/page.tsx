@@ -7,7 +7,6 @@ export default async function CoordinatePage({ params }: { params: Promise<{ id:
   return (
     // LANE C SWITCH POINT: patient={<Patient… />}
     <CasePage
-      width="wide"
       eyebrow="Care team"
       title="Coordinate your care team"
       lede="We organize and explain. We never give medical advice."

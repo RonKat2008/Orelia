@@ -170,6 +170,17 @@ export function OutboxList({ caseId }: { caseId: string }) {
 
   const waitingRows = rows.filter(isApprovable);
 
+  // Arriving from "Approve plan" (?review=all): open the approve-all list as soon as every draft is written, so the
+  // next click is the approval itself. The list shows every draft in full and nothing is sent until "Send" is pressed.
+  const [autoOpened, setAutoOpened] = useState(false);
+  useEffect(() => {
+    if (autoOpened || phase !== "ready" || pending || waitingRows.length < 2) return;
+    // One-time snapshot of the drafts for the list (it must not shrink while approvals run), so state is set here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAutoOpened(true);
+    if (new URLSearchParams(window.location.search).get("review") === "all") setBatchSnapshot(batchOf(waitingRows));
+  }, [autoOpened, pending, phase, waitingRows]);
+
   // Keyboard: A approves the open draft (after its confirmation), Shift+A opens "approve all" with every draft listed,
   // N moves to the next draft that is waiting. A key alone never approves anything: both open a confirmation first.
   const onKey = useCallback(

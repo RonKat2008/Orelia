@@ -6,6 +6,13 @@ export const valueSourceSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('doc'), docId: z.string().min(1), snippet: z.string().min(1).max(500) }),
   /** Code-composed text (the AI disclosure note); never model-written. */
   z.object({ kind: z.literal('disclosure') }),
+  /**
+   * Typed (or confirmed) by the patient for THIS application only, in answer to the form's own question. The gate
+   * checks the value against the answers stored on this application, so it can never be reused elsewhere.
+   * `origin` says where the pre-fill came from: the patient's profile, an earlier form, the synthetic demo patient,
+   * or nothing (typed).
+   */
+  z.object({ kind: z.literal('patient'), origin: z.enum(['typed', 'profile', 'earlier', 'demo']) }),
 ]);
 export type ValueSource = z.infer<typeof valueSourceSchema>;
 
@@ -25,6 +32,8 @@ export const missingFieldSchema = z.object({
   reason: z.enum(['no_consented_source', 'medical_question', 'file_not_ticked', 'needs_patient']),
   /** Plain-language question shown to the patient. */
   question: z.string(),
+  /** The page's input type (email, date, tel, text...), so the answer can be validated. Older drafts lack it. */
+  type: z.string().optional(),
 });
 export type MissingField = z.infer<typeof missingFieldSchema>;
 
@@ -51,4 +60,12 @@ export interface WebApplicationDraft {
   submittedAt: string | null;
   result: Record<string, unknown> | null;
   createdAt: string;
+  /** The patient's answers to this form's questions (fieldKey -> answer). Consent for this application only. */
+  answers?: Record<string, PatientAnswer>;
 }
+
+export const patientAnswerSchema = z.object({
+  value: z.string(),
+  origin: z.enum(['typed', 'profile', 'earlier', 'demo']),
+});
+export type PatientAnswer = z.infer<typeof patientAnswerSchema>;

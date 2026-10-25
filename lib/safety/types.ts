@@ -16,7 +16,9 @@ export interface SafetyContact {
 export type WebFormValueSource =
   | { readonly kind: 'consent'; readonly key: string }
   | { readonly kind: 'doc'; readonly docId: string; readonly snippet: string }
-  | { readonly kind: 'disclosure' };
+  | { readonly kind: 'disclosure' }
+  /** The patient's own answer to this form's question; valid only if it matches SafetyConsent.formAnswers. */
+  | { readonly kind: 'patient'; readonly origin: string };
 export interface WebFormFieldValue {
   readonly fieldKey: string;
   readonly label: string;
@@ -59,6 +61,11 @@ export interface SafetyConsent {
   readonly sharedDocIds?: readonly string[];
   readonly contactId?: string;
   readonly approvedAt?: Timestamp | null;
+  /**
+   * web_form only: answers the patient typed or confirmed for THIS application (fieldKey -> value). They are the
+   * patient's consent for this one form; a 'patient' field whose value is not here is refused.
+   */
+  readonly formAnswers?: Readonly<Record<string, string>>;
 }
 export type GateRefusal =
   | 'not_approved' | 'not_allowlisted' | 'contact_cap' | 'follow_up_cadence'

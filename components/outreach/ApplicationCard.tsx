@@ -19,6 +19,7 @@ import { formatWhen } from "./format";
 import { DemoCoordinatorBadge } from "./DemoCoordinators";
 import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 import { CASE_SECTION_HEADING } from "./CasePage";
+import { FormQuestionsCard } from "./FormQuestionsCard";
 
 const SectionH = CASE_SECTION_HEADING;
 
@@ -138,6 +139,8 @@ export function ApplicationCard({ caseId, application, stepContext, onChange }: 
           </figure>
         ) : null}
       </div>
+
+      <FormQuestionsCard caseId={caseId} application={application} onSaved={(next) => { setErrors(null); onChange(next); }} />
 
       {application.missing.length > 0 ? (
         <div className="grid gap-2">

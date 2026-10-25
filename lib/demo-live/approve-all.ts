@@ -77,12 +77,32 @@ async function approveMessages(caseId: string, f: FetchFn): Promise<ApproveItem[
   return out;
 }
 
+interface QuestionsBody { questions: { fieldKey: string; suggestion: { value: string; origin: string } | null }[] }
+
+/**
+ * Demo only: answers the form's own questions (name, date of birth, email...) from the synthetic demo patient. Only
+ * pre-fills the server labels 'demo' are used, so a real patient's profile is never submitted without them seeing it.
+ */
+async function fillDemoAnswers(caseId: string, appId: string, f: FetchFn): Promise<ApproveItem | null> {
+  const base = `/api/cases/${caseId}/applications/${appId}/answers`;
+  const q = await f(base);
+  if (!q.ok) return null;
+  const { questions } = (await q.json()) as QuestionsBody;
+  const answers = Object.fromEntries(questions.flatMap((x) => (x.suggestion?.origin === 'demo' ? [[x.fieldKey, { value: x.suggestion.value, origin: 'demo' }]] : [])));
+  if (!Object.keys(answers).length) return null;
+  const s = await f(base, { method: 'POST', headers: json, body: JSON.stringify({ answers }) });
+  return { kind: 'application', id: appId, label: 'Form questions', ok: s.ok, detail: s.ok ? `${Object.keys(answers).length} answered from the demo patient` : await errorText(s) };
+}
+
 async function approveApplications(caseId: string, f: FetchFn): Promise<ApproveItem[]> {
   const res = await f(`/api/cases/${caseId}/applications`);
   if (!res.ok) return [];
   const { applications } = (await res.json()) as AppsBody;
   const out: ApproveItem[] = [];
   for (const app of applications.filter((a) => a.status === 'draft')) {
+    const filled = await fillDemoAnswers(caseId, app.id, f);
+    if (filled) out.push(filled);
+    if (filled && !filled.ok) continue;
     const a = await f(`/api/cases/${caseId}/applications/${app.id}/approve`, { method: 'POST', headers: json, body: '{}' });
     out.push({ kind: 'application', id: app.id, label: 'Online application', ok: a.ok, detail: a.ok ? 'approved; submitting' : await errorText(a) });
   }

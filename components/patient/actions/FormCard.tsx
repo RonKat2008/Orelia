@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Skeleton, SummaryList, toast } from "@/components/ui";
 import { approveApplicationRequest, displayValue, docIdsOf, loadApplications, requiredMissing, type ApiApplication } from "@/components/outreach/applications";
 import type { PatientNextAction } from "@/lib/patient-status/types";
+import { FormQuestionsCard } from "@/components/outreach/FormQuestionsCard";
 import { PATIENT_HOME_COPY } from "../copy";
 import { ActionError, ActionFrame, type ActionProps } from "./ActionFrame";
 
@@ -60,6 +61,7 @@ export function FormCard({ caseId, onDone, action }: ActionProps & { action: Pat
       {application ? (
         <>
           <SummaryList rows={application.fields.map((field) => ({ label: field.label || field.fieldKey, value: displayValue(field) }))} />
+          <FormQuestionsCard caseId={caseId} application={application} onSaved={(next) => { setErrors([]); setApplication(next); }} />
           {missing.length > 0 ? <p className="m-0 text-small text-ink-2">{COPY.blank(missing.length)}</p> : null}
         </>
       ) : null}

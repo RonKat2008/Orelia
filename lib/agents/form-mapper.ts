@@ -80,7 +80,7 @@ const norm = (s: string): string => s.normalize("NFKC").replace(/\s+/g, " ").tri
 const AUTHORIZE = /\b(authori[sz]e|consent|agree|certify|confirm|acknowledge|terms|permission)\b/i;
 
 function missingFor(field: PageField, reason: MissingField["reason"], question: string): MissingField {
-  return { fieldKey: field.key, label: cleanField(field.label, LABEL_CHARS) ?? "", required: field.required, reason, question };
+  return { fieldKey: field.key, label: cleanField(field.label, LABEL_CHARS) ?? "", required: field.required, reason, question, type: field.type };
 }
 
 const askFor = (field: PageField): string => `What should we enter for "${cleanField(field.label, LABEL_CHARS) ?? ""}"?`;

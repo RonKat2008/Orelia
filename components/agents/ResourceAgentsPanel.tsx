@@ -1,5 +1,6 @@
 "use client";
 
+import { PendingFormQuestions } from "@/components/outreach/FormQuestionsCard";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Check, MessageSquare, Play } from "lucide-react";
@@ -231,6 +232,9 @@ function AgentCard({
         <li>{callsLine(agent)}</li>
         <li>{applicationsLine(agent)}</li>
       </ul>
+      {agent.applications.some((a) => a.status === "draft") ? (
+        <PendingFormQuestions caseId={caseId} applicationIds={agent.applications.filter((a) => a.status === "draft").map((a) => a.id)} />
+      ) : null}
       {events.length > 0 ? (
         <ol
           className="m-0 grid list-none gap-1 border-t border-line p-0 pt-2 text-small"

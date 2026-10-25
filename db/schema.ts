@@ -423,6 +423,8 @@ export const webApplications = pgTable("web_applications", {
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   result: jsonb("result").$type<Record<string, unknown>>(),
+  /** The patient's answers to this form's own questions (fieldKey -> {value, origin}); consent for this row only. */
+  answers: jsonb("answers").$type<Record<string, { value: string; origin: string }>>().notNull().default({}),
   ...timestamps,
 }, (table) => [index("web_applications_case_idx").on(table.caseId)]);
 

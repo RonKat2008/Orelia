@@ -24,6 +24,11 @@ type Env = Record<string, string | undefined>;
 export const DEMO_LIVE_FIXTURE = 'vascular-eds';
 /** Fields the demo pre-ticks for consent (the patient can still change them on the consent page). */
 export const DEMO_CONSENT_FIELDS = ['diseaseName', 'subtype', 'homeState', 'goals'] as const;
+/**
+ * The demo patient's clearly synthetic identity (Jordan Demo, 1990-01-01, a project-owned test inbox). Forms that ask
+ * for name, date of birth or email get these as pre-fills labelled "demo patient"; "Approve all" saves them.
+ */
+export { DEMO_PATIENT_PROFILE } from '../web-application/answers';
 
 export type DemoResourceRole = 'email' | 'call' | 'web_form' | 'email_then_call';
 

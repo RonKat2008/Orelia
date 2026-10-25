@@ -2,7 +2,14 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { tasks, webApplications } from '@/db/schema';
 import { isDemoFormUrl } from '@/lib/outreach/demo-destinations-shared';
-import type { ApplicationStatus, FilledField, MissingField, WebApplicationDraft } from './types';
+import type { ApplicationStatus, FilledField, MissingField, PatientAnswer, WebApplicationDraft } from './types';
+
+export interface SaveAnswersInput {
+  caseId: string;
+  answers: Record<string, PatientAnswer>;
+  fields: FilledField[];
+  missing: MissingField[];
+}
 
 /** Persistence for web_application drafts. approve/claim are compare-and-set so a double click cannot submit twice. */
 export interface ApplicationStore {
@@ -14,6 +21,11 @@ export interface ApplicationStore {
   /** approved -> submitting claim; 'submitted' is stored only after success. False if not currently approved. */
   claimSubmit(id: string): Promise<boolean>;
   finish(id: string, status: Extract<ApplicationStatus, 'submitted' | 'stale' | 'refused' | 'failed'>, result: Record<string, unknown>, at: string): Promise<void>;
+  /**
+   * Stores the patient's answers and the re-mapped fields/missing on ONE draft. Compare-and-set on (id, caseId,
+   * status 'draft'): false for another case's application or one already approved, so nothing changes.
+   */
+  saveAnswers(id: string, input: SaveAnswersInput): Promise<WebApplicationDraft | undefined>;
   /** Review-application task in the tracker/outbox; created when a draft is saved. */
   createReviewTask(draft: WebApplicationDraft): Promise<string | null>;
 }
@@ -29,6 +41,13 @@ export class MemoryApplicationStore implements ApplicationStore {
     if (!row || row.status !== 'draft') return false;
     this.rows.set(id, { ...row, status: 'approved', approvedAt: input.approvedAt, sharedFields: [...input.sharedFields], sharedDocIds: [...input.sharedDocIds] });
     return true;
+  }
+  async saveAnswers(id: string, input: SaveAnswersInput) {
+    const row = this.rows.get(id);
+    if (!row || row.caseId !== input.caseId || row.status !== 'draft') return undefined;
+    const next = { ...row, answers: structuredClone(input.answers), fields: structuredClone(input.fields), missing: structuredClone(input.missing) };
+    this.rows.set(id, next);
+    return structuredClone(next);
   }
   async claimSubmit(id: string) {
     const row = this.rows.get(id);
@@ -59,6 +78,7 @@ function toDraft(row: Row): WebApplicationDraft {
     status: row.status as ApplicationStatus,
     approvedAt: row.approvedAt?.toISOString() ?? null, submittedAt: row.submittedAt?.toISOString() ?? null,
     result: row.result ?? null, createdAt: row.createdAt.toISOString(),
+    answers: (row.answers ?? {}) as Record<string, PatientAnswer>,
   };
 }
 
@@ -84,6 +104,14 @@ export class PostgresApplicationStore implements ApplicationStore {
       status: 'approved', approvedAt: new Date(input.approvedAt), sharedFields: input.sharedFields, sharedDocIds: input.sharedDocIds,
     }).where(and(eq(webApplications.id, id), eq(webApplications.status, 'draft'))).returning({ id: webApplications.id });
     return rows.length === 1;
+  }
+  async saveAnswers(id: string, input: SaveAnswersInput) {
+    const [row] = await this.db.update(webApplications).set({ answers: input.answers, fields: input.fields, missing: input.missing })
+      .where(and(eq(webApplications.id, id), eq(webApplications.caseId, input.caseId), eq(webApplications.status, 'draft'))).returning();
+    if (row?.taskId) {
+      await this.db.update(tasks).set({ details: { applicationId: id, url: row.url, missingCount: input.missing.length } }).where(eq(tasks.id, row.taskId));
+    }
+    return row ? toDraft(row) : undefined;
   }
   async claimSubmit(id: string) {
     const rows = await this.db.update(webApplications).set({ status: 'submitting' })

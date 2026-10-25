@@ -37,6 +37,9 @@ function checkFieldSources(form: WebFormDraftPayload, input: WebGateInput, refus
       if (!docIds.includes(source.docId)) refuse('unshared_field');
     } else if (source.kind === 'disclosure') {
       if (typeof field.value !== 'string' || !field.value.includes(AI_DISCLOSURE_EMAIL)) refuse('missing_disclosure');
+    } else if (source.kind === 'patient') {
+      const answers = consent.formAnswers ?? {};
+      if (!Object.hasOwn(answers, field.fieldKey) || typeof field.value !== 'string' || answers[field.fieldKey] !== field.value) refuse('unshared_field');
     } else {
       refuse('invalid_draft');
     }
@@ -79,8 +82,13 @@ export function checkWebFormDraft(input: WebGateInput): GateRefusal[] {
   if (!form || !Array.isArray(form.fields) || !Array.isArray(form.uploads)) return reasons;
 
   checkFieldSources(form, input, refuse);
-  const text = [...form.fields.map(f => f.value).filter((v): v is string => typeof v === 'string'), draft.subject ?? '', draft.body].join('\n');
-  if (containsUnsharedField(text, caseRecord, consent.sharedFields)) refuse('unshared_field');
+  const strings = (fields: typeof form.fields) => fields.map(f => f.value).filter((v): v is string => typeof v === 'string');
+  // The patient's own answers are their consent for this form (checked above), so they are not scanned for unshared
+  // case values (a typed city may equal an unticked case field). Everything is still scanned for medical advice.
+  const machine = form.fields.filter(f => f.source.kind !== 'patient');
+  const leakText = [...strings(machine), draft.subject ?? '', draft.body].join('\n');
+  if (containsUnsharedField(leakText, caseRecord, consent.sharedFields)) refuse('unshared_field');
+  const text = [...strings(form.fields), draft.subject ?? '', draft.body].join('\n');
   if (flagMedicalAdvice(text).flagged) refuse('medical_advice');
   return reasons;
 }

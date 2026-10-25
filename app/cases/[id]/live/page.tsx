@@ -2,6 +2,7 @@ import { CasePage } from "@/components/outreach/CasePage";
 import { LiveConsole } from "@/components/live/LiveConsole";
 import { JudgeOnly } from "@/components/ui";
 import { LiveDemoControls } from "@/components/demo/LiveDemoControls";
+import { PendingFormQuestions } from "@/components/outreach/FormQuestionsCard";
 import { liveDemoEnabled } from "@/lib/demo-live/start";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,7 @@ export default async function LiveActivityPage({ params }: { params: Promise<{ i
     >
       <CasePage title="Live activity" lede="Agents, emails, calls and follow-ups as they happen." eyebrow="Live">
         {demo ? <div className="mb-3"><LiveDemoControls caseId={id} /></div> : null}
+        <PendingFormQuestions caseId={id} className="mb-3" />
         <LiveConsole caseId={id} />
       </CasePage>
     </JudgeOnly>

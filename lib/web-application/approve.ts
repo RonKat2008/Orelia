@@ -10,6 +10,7 @@ import { PageChangedError } from '../channels/web-form';
 import { webAllowlist } from '../outreach/demo-destinations';
 import { checkOutbound, type GatedDraft } from '../safety/outbound-gate';
 import type { CaseRecord, SafetyContact, WebFormDraftPayload } from '../safety/types';
+import { usedAnswers } from './answers';
 import type { ApplicationStore } from './store';
 import type { ApplicationStatus, WebApplicationDraft } from './types';
 
@@ -83,7 +84,8 @@ export async function approveApplication(id: string, input: ApproveApplicationIn
       ...(targetId ? { targetId } : {}),
     },
     caseRecord,
-    consent: { sharedFields: consent.sharedFields, sharedDocIds },
+    // The patient's own answers on THIS application (never another one's) are the consent for 'patient' fields.
+    consent: { sharedFields: consent.sharedFields, sharedDocIds, formAnswers: usedAnswers(draft) },
     contacts,
     allowlist: [],
     // OUTBOUND_WEB_ALLOWLIST, plus (demo mode only) this deployment's own host for the demo intake form.

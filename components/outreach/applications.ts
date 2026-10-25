@@ -74,6 +74,10 @@ export function sourceLabel(field: FilledField): string {
     return `Your case: ${label} (you ticked this)`;
   }
   if (source.kind === "doc") return `Your document: "${source.snippet}"`;
+  if (source.kind === "patient") {
+    const from = source.origin === "profile" ? " (from your profile)" : source.origin === "demo" ? " (demo patient)" : source.origin === "earlier" ? " (from an earlier form)" : "";
+    return `Your answer for this form${from}`;
+  }
   return "AI disclosure, written by Wayfinder";
 }
 

@@ -37,6 +37,19 @@ describe('createRuntimeClassifier failure handling', () => {
   });
 });
 
+describe('createRuntimeClassifier: an over-long rationale', () => {
+  it('is accepted from the model and shortened, so a real reply still becomes a task instead of a webhook 500', async () => {
+    const body = 'Please send the most recent pathology report and recent lab results.';
+    let schema: { safeParse(v: unknown): { success: boolean } } | undefined;
+    const raw = { class: 'send_records', confidence: 0.9, rationale: 'They ask for records. '.repeat(30), quote: body };
+    const run = (async (opts: { output: typeof schema }) => { schema = opts.output; return raw; }) as never;
+    const res = await createRuntimeClassifier({ store, run }).classify({ ...input, body });
+    expect(schema?.safeParse(raw).success).toBe(true);
+    expect(res.class).toBe('send_records');
+    expect(res.rationale.length).toBeLessThanOrEqual(300);
+  });
+});
+
 describe('FixtureClassifier', () => {
   it('is empty and answers unclear/0 when the fixture directory does not exist', async () => {
     const c = new FixtureClassifier(path.join(os.tmpdir(), 'wayfinder-no-such-fixture-dir'));

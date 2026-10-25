@@ -7,7 +7,7 @@ import { MedicalAdviceError, runAgent, type MessagesClient, type AgentTool } fro
 import type { RunStore } from '../agents/run-store';
 import { skeleton } from '../safety/confusables';
 import { isPhoneGrounded } from '../safety/phone-grounding';
-import { inboxClassificationSchema, type InboxClassification } from './schema';
+import { inboxClassificationSchema, inboxModelOutputSchema, RATIONALE_MAX, type InboxClassification } from './schema';
 
 export interface ClassifyInput {
   tools?: AgentTool[];
@@ -66,7 +66,9 @@ export function looksLikeInjection(body: string): boolean {
 
 /** Validates model output and drops any extracted value that is not literally in the message. */
 export function parseClassification(raw: unknown, body: string): InboxClassification {
-  const parsed = inboxClassificationSchema.parse(raw);
+  const loose = inboxModelOutputSchema.parse(raw);
+  const rationale = loose.rationale.length > RATIONALE_MAX ? `${loose.rationale.slice(0, RATIONALE_MAX - 1).trimEnd()}…` : loose.rationale;
+  const parsed = inboxClassificationSchema.parse({ ...loose, rationale });
   const text = norm(body);
   const inBody = (value?: string) => !!value && norm(value) !== '' && text.includes(norm(value));
   // A phone must be one phone-shaped token in the message; digits are never joined across unrelated numbers.
@@ -123,7 +125,7 @@ export function createRuntimeClassifier(deps: RuntimeClassifierDeps): InboxClass
           system: INBOX_SYSTEM_PROMPT,
           prompt: buildClassifierPrompt(input),
           tools: input.tools ?? [],
-          output: inboxClassificationSchema,
+          output: inboxModelOutputSchema,
           caseId: input.caseId,
           store: deps.store,
           offlineKey: input.offlineKey ?? defaultOfflineKey(input.body),

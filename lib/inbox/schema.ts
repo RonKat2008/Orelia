@@ -30,5 +30,13 @@ export const inboxClassificationSchema = z.object({
   lab: z.object({ name: z.string().optional(), accession: z.string().optional() }).optional(),
 });
 
+export const RATIONALE_MAX = 300;
+
+/**
+ * What the model may return: the same shape, but a long rationale is not a reason to reject a real reply (the
+ * webhook would 500 on every retry and the reply would never become a task). parseClassification shortens it.
+ */
+export const inboxModelOutputSchema = inboxClassificationSchema.extend({ rationale: z.string().min(1).max(4000) });
+
 export type InboxClass = z.infer<typeof inboxClassSchema>;
 export type InboxClassification = z.infer<typeof inboxClassificationSchema>;

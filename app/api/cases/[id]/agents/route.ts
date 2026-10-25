@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: Ctx) {
   if (!id) return jsonError(400, 'Invalid case id');
   const denied = await guardCase(req, id);
   if (denied) return denied;
-  if (!process.env.DATABASE_URL) return NextResponse.json({ agents: [] });
+  if (!process.env.DATABASE_URL) return jsonError(503, 'Agents need the database');
   try {
     const n = Number(new URL(req.url).searchParams.get('events') ?? '3');
     return NextResponse.json({ agents: await agentCards(id, Number.isFinite(n) ? n : 3) }, { headers: { 'Cache-Control': 'no-store' } });

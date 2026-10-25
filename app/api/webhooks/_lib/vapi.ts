@@ -4,7 +4,7 @@ import type { CallLiveStore } from '../../../../lib/outreach/call-live';
 import { contactReplyEvent } from '../../../../lib/workflows/events';
 import { ingestOnce, type InboundDeps, type Owner } from './inbound';
 
-export type VapiInboundDeps = Pick<InboundDeps, 'secret' | 'lookupCall' | 'storeCallEvent' | 'sendEvents' | 'ingestLedger' | 'ingestInbound' | 'now'> & {
+export type VapiInboundDeps = Pick<InboundDeps, 'secret' | 'lookupCall' | 'storeCallEvent' | 'sendEvents' | 'ingestLedger' | 'ingestInbound' | 'now' | 'wakeAgent'> & {
   live: CallLiveStore;
 };
 
@@ -67,10 +67,14 @@ async function apply(deps: VapiInboundDeps, owner: Owner, event: Exclude<VapiEve
   });
   // Voicemail, no answer, or the callee never spoke: kept on the record, but nobody answered, so no task and no
   // reply event (the contact stays 'sent' and its follow-ups continue), like an automated email reply.
-  if (!event.humanSpoke) return json(200, { ok: true, ingested: false, reason: 'no_human_speech' });
+  // The call's own ResourceAgent is woken either way (a voicemail is also news to it); errors never fail the webhook.
+  const wake = async () => { try { await deps.wakeAgent?.(owner.contactId, 'webhook:voice'); } catch { /* cron retries */ } };
+  if (!event.humanSpoke) { await wake(); return json(200, { ok: true, ingested: false, reason: 'no_human_speech' }); }
   const callId = event.callId;
-  return ingestOnce(deps, { kind: 'call', providerCallId: callId, contactId: owner.contactId }, async () => {
+  const res = await ingestOnce(deps, { kind: 'call', providerCallId: callId, contactId: owner.contactId }, async () => {
     await deps.ingestInbound({ channel: 'voice', contactId: owner.contactId, caseId: owner.caseId, body: event.transcript, providerId: callId, receivedAt: receivedAt.toISOString() });
     await deps.sendEvents(contactReplyEvent({ contactId: owner.contactId, caseId: owner.caseId, dedupeKey: `${callId}-transcript`, callId, receivedAt: receivedAt.toISOString() }));
   });
+  if (res.ok) await wake();
+  return res;
 }

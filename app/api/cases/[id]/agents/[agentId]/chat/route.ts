@@ -8,16 +8,17 @@ import { jsonError, parseBody, parseId } from '../../../../_lib/http';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-type Ctx = { params: Promise<{ id: string; agentId: string }> };
+type Ctx = { params: Promise<{ id: string; agentId?: string }> };
 const bodySchema = z.object({ message: z.string().trim().min(1).max(MAX_CHAT_CHARS) }).strict();
 
 async function load(req: Request, params: Ctx['params']) {
   const p = await params;
   const id = parseId(p.id);
-  const agentId = parseId(p.agentId);
-  if (!id || !agentId) return { error: jsonError(400, 'Invalid id') };
+  if (!id) return { error: jsonError(400, 'Invalid case id') };
   const denied = await guardCase(req, id);
   if (denied) return { error: denied };
+  const agentId = parseId(p.agentId ?? '');
+  if (!agentId) return { error: jsonError(400, 'Invalid agent id') };
   if (!process.env.DATABASE_URL) return { error: jsonError(503, 'Agents need the database') };
   const agent = await getAgentStore().get(agentId);
   if (!agent || agent.caseId !== id) return { error: jsonError(404, 'Agent not found') };

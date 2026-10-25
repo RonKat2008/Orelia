@@ -33,7 +33,9 @@ export async function POST(req: Request, { params }: Ctx) {
     if (!app || app.caseId !== id) return NextResponse.json({ reasons: ['application_not_found'] }, { status: 404 });
     const res = await approveApplication(applicationId, parsed.data, defaultApproveDeps());
     // Kernel completion: the owning resource agent records the submission and plans its next step.
-    if (res.ok) after(() => wakeAgentForApplication(id, app.contactId ?? null));
+    if (res.ok) {
+      try { after(() => wakeAgentForApplication(id, app.contactId ?? null)); } catch { void wakeAgentForApplication(id, app.contactId ?? null); }
+    }
     return res.ok ? NextResponse.json(res) : NextResponse.json({ reasons: res.reasons }, { status: res.status });
   } catch (err) {
     return jsonError(500, 'Unable to approve the application', err);

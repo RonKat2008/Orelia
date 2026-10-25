@@ -12,6 +12,12 @@ export const MAX_STEPS_PER_RUN = 3;
 export const DEFAULT_SWEEP_LIMIT = 10;
 export const agentHookToken = (agentId: string) => `resource-agent:${agentId}`;
 
+/** A short, secret-free error message for the agent's event log (no connection strings, no query params). */
+function errorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  return raw.split('\nparams:')[0].replace(/postgres(ql)?:\/\/\S+/gi, '[redacted]').slice(0, 300);
+}
+
 export type RunOutcome = { agentId: string; skipped: 'lease' | 'not_found' } | { agentId: string; steps: StepResult[] };
 
 export async function runAgent(agentId: string, deps: StepDeps & { leaseMs?: number }, trigger: AgentTrigger): Promise<RunOutcome> {
@@ -30,7 +36,8 @@ export async function runAgent(agentId: string, deps: StepDeps & { leaseMs?: num
     }
   } catch (err) {
     const agent = await deps.store.get(agentId).catch(() => null);
-    if (agent) await deps.store.appendEvent({ agentId, caseId: agent.caseId, kind: 'error', trigger, reason: null, action: null, result: err instanceof Error ? err.name : 'error' }).catch(() => undefined);
+    if (agent) await deps.store.appendEvent({ agentId, caseId: agent.caseId, kind: 'error', trigger, reason: null, action: null, result: err instanceof Error ? err.name : 'error', data: { message: errorMessage(err) } }).catch(() => undefined);
+    console.error('[resource-agent] step failed', errorMessage(err));
     throw err;
   } finally {
     await deps.store.releaseLease(agentId, owner).catch(() => undefined);

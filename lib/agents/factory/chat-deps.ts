@@ -96,7 +96,7 @@ export async function sendDigests(env: Env = process.env, now = new Date()): Pro
     const res = await new AgentMailClient({ apiKey: env.AGENTMAIL_API_KEY }).inboxes.messages.send(inboxId, { to: email, subject: digest.subject, text: digest.text, labels: ['wayfinder', 'agent-digest', `case:${caseId}`] }, { maxRetries: 0 });
     await q(sql`INSERT INTO agent_messages (agent_id, case_id, role, body, via, data) VALUES (NULL, ${caseId}::uuid, 'agent', ${digest.subject}, 'email',
       ${JSON.stringify({ kind: 'digest', threadId: res.threadId, messageId: res.messageId, items: rows.length })}::jsonb)`);
-    await q(sql`UPDATE agent_messages SET data = data || '{"notify":"sent"}'::jsonb WHERE id = ANY(${rows.map(r => String(r.id))}::uuid[])`);
+    await q(sql`UPDATE agent_messages SET data = data || '{"notify":"sent"}'::jsonb WHERE id IN (SELECT jsonb_array_elements_text(${JSON.stringify(rows.map(r => String(r.id)))}::jsonb)::uuid)`);
     out.sent += 1;
   }
   return out;

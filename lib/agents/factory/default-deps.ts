@@ -35,7 +35,7 @@ export async function observeAgent(agent: ResourceAgent, now = new Date()): Prom
     cid ? q(sql`SELECT id, approved_at, started_at, ended_at, outcome, left(transcript, 1500) AS transcript FROM calls WHERE contact_id = ${cid}::uuid ORDER BY started_at NULLS LAST LIMIT 20`) : Promise.resolve([]),
     cid ? q(sql`SELECT id, kind, title, status FROM tasks WHERE contact_id = ${cid}::uuid ORDER BY id LIMIT 30`) : Promise.resolve([]),
     q(sql`SELECT id, url, status, approved_at, submitted_at FROM web_applications WHERE case_id = ${agent.caseId}::uuid
-          AND (${cid ? sql`contact_id = ${cid}::uuid OR ` : sql``}(contact_id IS NULL AND url = ANY(${webUrls}::text[]))) LIMIT 10`),
+          AND (${cid ? sql`contact_id = ${cid}::uuid OR ` : sql``}(contact_id IS NULL AND url IN (SELECT jsonb_array_elements_text(${JSON.stringify(webUrls)}::jsonb)))) LIMIT 10`),
     q(sql`SELECT count(*)::int AS n FROM verification_requests WHERE case_id = ${agent.caseId}::uuid AND resource_key = ${agent.resourceKey} AND status = 'awaiting_approval'`),
   ]);
   const c = contactRows[0];

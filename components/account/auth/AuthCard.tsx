@@ -1,19 +1,4 @@
 import type { ReactNode } from "react";
-import { SiteFooter, SiteHeader } from "@/components/shell";
-
-/** Shared frame for the auth pages: header, a single centred card, footer. */
-export function AuthPage({ children }: { children: ReactNode }) {
-  return (
-    <div className="ds-root min-h-dvh bg-paper text-ink">
-      <SiteHeader cta={null} />
-      <main id="main" className="page-container grid justify-items-center pb-section pt-10 sm:pt-16">
-        {children}
-      </main>
-      <SiteFooter />
-    </div>
-  );
-}
-
 export function AuthCard({ title, lede, children, footer }: { title: string; lede?: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <section aria-labelledby="auth-title" className="grid w-full min-w-0 max-w-md gap-6 animate-rise motion-reduce:animate-none">

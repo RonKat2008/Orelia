@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/ui/cn";
 import { authClient } from "@/lib/auth/client";
+import { authErrorMessage } from "./auth-error";
 import { Callout, TextField } from "../FormBits";
 import { safeNext } from "../helpers/safe-next";
 import { AUTH_LINK, AuthCard } from "./AuthCard";
@@ -33,15 +34,15 @@ export function SignInForm({ next }: { next?: string }) {
     try {
       const { error: authError } = await authClient.signIn.email({ email: email.trim(), password });
       if (authError) {
-        setError(authError.message ?? "We could not sign you in. Check your email and password.");
+        setError(authErrorMessage(authError, "sign-in"));
         setPending(false);
         return;
       }
       await claimAnonymousCases();
       router.push(destination);
       router.refresh();
-    } catch {
-      setError("We could not reach the sign-in service. Please try again.");
+    } catch (cause) {
+      setError(authErrorMessage(cause, "sign-in"));
       setPending(false);
     }
   }
@@ -84,7 +85,7 @@ export function SignInForm({ next }: { next?: string }) {
           required
         />
         <p className="-mt-2 m-0 flex flex-wrap items-center gap-x-5 text-small">
-          <Link href="/auth/forgot-password" className={cn(AUTH_LINK, "inline-flex min-h-11 items-center")}>
+          <Link href={`/auth/forgot-password${suffix}`} className={cn(AUTH_LINK, "inline-flex min-h-11 items-center")}>
             Forgot your password?
           </Link>
           {/* TODO(auth): offer "Email me a sign-in link" here once the auth backend enables the magic-link plugin. */}

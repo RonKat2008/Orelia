@@ -2,9 +2,13 @@ import type { NeonAuth } from "@neondatabase/auth/next/server";
 
 type Env = Record<string, string | undefined>;
 
-/** Accounts exist only when Neon Auth is configured; anonymous use keeps working either way. */
+/** Account access can be enabled independently of fixture-based research. */
 export function accountsEnabled(env: Env = process.env): boolean {
-  return Boolean(env.NEON_AUTH_BASE_URL && (env.NEON_AUTH_COOKIE_SECRET?.length ?? 0) >= 32 && env.WAYFINDER_OFFLINE !== "1");
+  const setting = env.WAYFINDER_ACCOUNTS_ENABLED?.trim().toLowerCase();
+  if (setting === "false" || setting === "0") return false;
+  const offline = ["1", "true"].includes((env.WAYFINDER_OFFLINE ?? "").trim().toLowerCase());
+  const explicitlyEnabled = setting === "true" || setting === "1";
+  return Boolean(env.NEON_AUTH_BASE_URL?.trim() && (env.NEON_AUTH_COOKIE_SECRET?.length ?? 0) >= 32 && (!offline || explicitlyEnabled));
 }
 
 let instance: Promise<NeonAuth> | undefined;

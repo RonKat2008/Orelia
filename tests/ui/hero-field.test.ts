@@ -100,9 +100,9 @@ describe("hero convergence field geometry", () => {
     expect(targetInField({ targetX: 0.5, targetY: 0.5 }, 2)).toEqual({ x: 0, y: 0 });
     // The headline is centred, so the convergence point sits centred above it on every width.
     expect(DESKTOP_LAYOUT.targetX).toBe(0.5);
-    expect(DESKTOP_LAYOUT.targetY).toBeLessThan(0.2);
+    expect(DESKTOP_LAYOUT.targetY).toBe(0.5);
     expect(MOBILE_LAYOUT.targetX).toBe(0.5);
-    expect(MOBILE_LAYOUT.targetY).toBeLessThan(0.1);
+    expect(MOBILE_LAYOUT.targetY).toBe(0.5);
   });
 
   it("keeps mobile body copy clear of particles", () => {

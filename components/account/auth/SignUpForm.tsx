@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
+import { authErrorMessage } from "./auth-error";
 import { Callout, TextField } from "../FormBits";
 import { safeNext } from "../helpers/safe-next";
 import { AUTH_LINK, AuthCard } from "./AuthCard";
@@ -23,6 +24,7 @@ export function SignUpForm({ next }: { next?: string }) {
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -37,19 +39,32 @@ export function SignUpForm({ next }: { next?: string }) {
 
     setPending(true);
     try {
-      const { error } = await authClient.signUp.email({ name: name.trim(), email: email.trim(), password });
+      const { data, error } = await authClient.signUp.email({ name: name.trim(), email: email.trim(), password, callbackURL: destination });
       if (error) {
-        setFormError(error.message ?? "We could not create your account. Please try again.");
+        setFormError(authErrorMessage(error, "sign-up"));
+        setPending(false);
+        return;
+      }
+      if (!data?.token) {
+        setVerificationSent(true);
         setPending(false);
         return;
       }
       await claimAnonymousCases();
       router.push(destination);
       router.refresh();
-    } catch {
-      setFormError("We could not reach the sign-up service. Please try again.");
+    } catch (cause) {
+      setFormError(authErrorMessage(cause, "sign-up"));
       setPending(false);
     }
+  }
+
+  if (verificationSent) {
+    return (
+      <AuthCard title="Check your email" lede="Your account was created. Follow the verification link in your email, then sign in to continue.">
+        <Button asChild size="lg"><Link href={`/auth/sign-in${suffix}`}>Go to sign in</Link></Button>
+      </AuthCard>
+    );
   }
 
   return (

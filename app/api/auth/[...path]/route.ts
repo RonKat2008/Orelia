@@ -14,9 +14,14 @@ async function handle(method: "GET" | "POST", req: Request, ctx: Ctx): Promise<R
   try {
     auth = await getNeonAuth();
   } catch {
-    return Response.json({ error: "Accounts are not available" }, { status: 404 });
+    return Response.json({ error: "Accounts are not available", code: "AUTH_UNAVAILABLE", message: "Accounts are not available right now. You can still start a case without an account." }, { status: 404 });
   }
-  return auth.handler()[method](req, ctx);
+  try {
+    return await auth.handler()[method](req, ctx);
+  } catch (error) {
+    console.error("[auth] account service request failed", error instanceof Error ? error.name : "unknown");
+    return Response.json({ code: "AUTH_UNAVAILABLE", message: "The account service is temporarily unavailable. Please try again." }, { status: 503 });
+  }
 }
 
 export const GET = (req: Request, ctx: Ctx) => handle("GET", req, ctx);

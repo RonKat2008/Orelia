@@ -5,12 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
+import { authErrorMessage } from "./auth-error";
 import { Callout, TextField } from "../FormBits";
+import { safeNext } from "../helpers/safe-next";
 import { AUTH_LINK, AuthCard } from "./AuthCard";
 
 const MIN_PASSWORD = 8;
 
-export function ResetPasswordForm({ token }: { token?: string }) {
+export function ResetPasswordForm({ token, next }: { token?: string; next?: string }) {
+  const destination = safeNext(next);
+  const suffix = next ? `?next=${encodeURIComponent(destination)}` : "";
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -25,7 +29,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
         lede="The reset link is missing its token. Request a new one and use the latest email."
         footer={
           <p className="m-0">
-            <Link href="/auth/forgot-password" className={AUTH_LINK}>
+            <Link href={`/auth/forgot-password${suffix}`} className={AUTH_LINK}>
               Request a new link
             </Link>
           </p>
@@ -50,13 +54,13 @@ export function ResetPasswordForm({ token }: { token?: string }) {
     try {
       const { error } = await authClient.resetPassword({ newPassword: password, token });
       if (error) {
-        setFormError(error.message ?? "That link has expired. Request a new one.");
+        setFormError(authErrorMessage(error, "reset-password"));
         setPending(false);
         return;
       }
-      router.push("/auth/sign-in");
-    } catch {
-      setFormError("We could not reach the service. Please try again.");
+      router.push(`/auth/sign-in${suffix}`);
+    } catch (cause) {
+      setFormError(authErrorMessage(cause, "reset-password"));
       setPending(false);
     }
   }

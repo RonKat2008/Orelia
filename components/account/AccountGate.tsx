@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/display";
 import { Skeleton } from "@/components/ui/feedback";
 import { LoadingState } from "@/components/ui/states";
-import { signInHref } from "./helpers/safe-next";
+import { safeNext, signInHref } from "./helpers/safe-next";
 import { useAccount } from "./helpers/use-account";
 
 /** Renders children only for a signed-in person; otherwise a friendly prompt. Client-side check, no middleware. */
@@ -42,7 +42,7 @@ export function AccountGate({ path, children }: { path: string; children: (accou
         action={
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
             <Button asChild size="lg"><Link href={signInHref(path)}>Sign in</Link></Button>
-            <Button asChild variant="link" className="min-h-11 text-body"><Link href="/auth/sign-up">Create an account</Link></Button>
+            <Button asChild variant="link" className="min-h-11 text-body"><Link href={`/auth/sign-up?next=${encodeURIComponent(safeNext(path))}`}>Create an account</Link></Button>
           </div>
         }
       />

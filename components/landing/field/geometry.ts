@@ -51,10 +51,10 @@ export interface FieldLayout {
   fadeSpanPx: number;
 }
 
-/** Desktop: centred just above the centred headline, so the ring crowns the copy instead of sitting on it. */
-export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.13, ringPx: 26, glowPx: 120, fadeTopPx: 1e5, fadeSpanPx: 1 };
-/** Mobile: top-centre, above the headline, so the copy stays on clean paper. */
-export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.03, ringPx: 18, glowPx: 84, fadeTopPx: 60, fadeSpanPx: 170 };
+/** Desktop: converge at the centre of the full hero. */
+export const DESKTOP_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.5, ringPx: 26, glowPx: 120, fadeTopPx: 1e5, fadeSpanPx: 1 };
+/** Mobile uses the same centred composition; keep the convergence point visible. */
+export const MOBILE_LAYOUT: FieldLayout = { targetX: 0.5, targetY: 0.5, ringPx: 18, glowPx: 84, fadeTopPx: 1e5, fadeSpanPx: 1 };
 export const WIDE_BREAKPOINT_PX = 1024;
 
 export const PARTICLE_COUNT_DESKTOP = 880;

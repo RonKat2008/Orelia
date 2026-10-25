@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
+import { authErrorMessage } from "./auth-error";
 import { markClaimPending } from "../helpers/use-account";
 
 function GoogleMark() {
@@ -28,11 +29,11 @@ export function GoogleButton({ callbackURL, onError }: { callbackURL: string; on
         try {
           const result = await authClient.signIn.social({ provider: "google", callbackURL });
           if (result?.error) {
-            onError(result.error.message ?? "Google sign-in is not available right now.");
+            onError(authErrorMessage(result.error, "google"));
             setPending(false);
           }
-        } catch {
-          onError("Google sign-in is not available right now.");
+        } catch (cause) {
+          onError(authErrorMessage(cause, "google"));
           setPending(false);
         }
       }}

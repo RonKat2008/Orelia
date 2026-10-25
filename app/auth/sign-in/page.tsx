@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AuthPage } from "@/components/account/auth/AuthCard";
+import { AuthPage } from "@/components/account/auth/AuthPage";
 import { SignInForm } from "@/components/account/auth/SignInForm";
 
 export const metadata: Metadata = { title: "Sign in", description: "Sign in to your Wayfinder account.", robots: { index: false } };

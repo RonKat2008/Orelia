@@ -4,10 +4,14 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/client";
+import { authErrorMessage } from "./auth-error";
 import { Callout, TextField } from "../FormBits";
+import { safeNext } from "../helpers/safe-next";
 import { AUTH_LINK, AuthCard } from "./AuthCard";
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ next }: { next?: string }) {
+  const destination = safeNext(next);
+  const suffix = next ? `?next=${encodeURIComponent(destination)}` : "";
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -25,15 +29,15 @@ export function ForgotPasswordForm() {
     try {
       const { error: authError } = await authClient.requestPasswordReset({
         email: email.trim(),
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-password${suffix}`,
       });
       if (authError) {
-        setError(authError.message ?? "We could not send the email. Please try again.");
+        setError(authErrorMessage(authError, "forgot-password"));
       } else {
         setSent(true);
       }
-    } catch {
-      setError("We could not reach the service. Please try again.");
+    } catch (cause) {
+      setError(authErrorMessage(cause, "forgot-password"));
     }
     setPending(false);
   }
@@ -44,7 +48,7 @@ export function ForgotPasswordForm() {
       lede="Enter your email and we will send a link to choose a new password."
       footer={
         <p className="m-0">
-          <Link href="/auth/sign-in" className={AUTH_LINK}>
+          <Link href={`/auth/sign-in${suffix}`} className={AUTH_LINK}>
             Back to sign in
           </Link>
         </p>

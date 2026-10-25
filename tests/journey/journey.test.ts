@@ -127,6 +127,21 @@ describe("loadJourney", () => {
     expect(loaded.planStatus).toBeNull();
   });
 
+  it("requests every endpoint in one parallel round, not a waterfall", async () => {
+    let started = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const fetchImpl = vi.fn(async () => {
+      started += 1;
+      if (started === 5) release();
+      await gate;
+      return new Response(JSON.stringify({ case: { diseaseName: "Vascular EDS", status: "ready", goals: [] } }), { status: 200 });
+    });
+    const loaded = await loadJourney(caseId, fetchImpl as unknown as typeof fetch);
+    expect(started).toBe(5);
+    expect(loaded.summary?.diseaseName).toBe("Vascular EDS");
+  });
+
   it("records a missing case", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 404 }));
     const loaded = await loadJourney(caseId, fetchImpl as unknown as typeof fetch);

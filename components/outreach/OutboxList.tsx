@@ -87,8 +87,8 @@ export function OutboxList({ caseId }: { caseId: string }) {
     let active = true;
     void (async () => {
       const stored = readStoredOutreach(caseId);
-      const live = await loadCaseContacts(caseId);
-      const [record, titles, planResult, apps] = await Promise.all([
+      const [live, record, titles, planResult, apps] = await Promise.all([
+        loadCaseContacts(caseId),
         loadCase(caseId),
         loadDocumentTitles(caseId),
         getPlan(caseId),

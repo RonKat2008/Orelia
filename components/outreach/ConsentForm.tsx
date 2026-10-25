@@ -74,12 +74,12 @@ export function ConsentForm({ caseId }: { caseId: string }) {
   useEffect(() => {
     let active = true;
     void (async () => {
-      const record = await loadCase(caseId);
+      // Independent reads: one parallel round.
+      const [record, plan] = await Promise.all([loadCase(caseId), loadFollowUpPlan(caseId)]);
       if (!active) return;
       setCaseRecord(record);
       const ids = readSelectedCandidateIds(caseId);
-      const plan = await loadFollowUpPlan(caseId);
-      if (active) setFollowUps(plan);
+      setFollowUps(plan);
       if (ids.length === 0) {
         const stored = readStoredOutreach(caseId);
         const live = await loadCaseContacts(caseId);

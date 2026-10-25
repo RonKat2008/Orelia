@@ -43,32 +43,32 @@ export async function loadJourney(caseId: string, fetchImpl: typeof fetch = fetc
   };
 
   try {
-    const caseResponse = await fetchImpl(`/api/cases/${caseId}`);
+    // One parallel round instead of five sequential requests: this runs on every stage switch.
+    const optional = (url: string) => fetchImpl(url).catch(() => null);
+    const [caseResponse, shortlistResponse, contactsResponse, tasksResponse, planResponse] = await Promise.all([
+      fetchImpl(`/api/cases/${caseId}`),
+      optional(`/api/cases/${caseId}/shortlist`),
+      optional(`/api/cases/${caseId}/contacts`),
+      optional(`/api/cases/${caseId}/tasks`),
+      optional(`/api/cases/${caseId}/plan?optional=1`),
+    ]);
     if (caseResponse.status === 404) return { ...empty, missingCase: true };
     if (!caseResponse.ok) return empty;
-    const summary = summarizeCase(await readJson(caseResponse));
+    const okJson = async (response: Response | null) => (response && response.ok ? readJson(response) : undefined);
+    const [caseBody, shortlistBody, contactsBody, tasksBody, planBody] = await Promise.all([
+      readJson(caseResponse),
+      okJson(shortlistResponse),
+      okJson(contactsResponse),
+      okJson(tasksResponse),
+      okJson(planResponse),
+    ]);
+    const summary = summarizeCase(caseBody);
     const status = summary?.status ?? null;
-
-    const shortlistResponse = await fetchImpl(`/api/cases/${caseId}/shortlist`).catch(() => null);
-    const selectedCount =
-      shortlistResponse && shortlistResponse.ok ? countSelected(await readJson(shortlistResponse)) : null;
-
-    const contactsResponse = await fetchImpl(`/api/cases/${caseId}/contacts`).catch(() => null);
-    let contacts: JourneyContact[] | null = null;
-    let openTaskCount: number | null = null;
-    let tasks: JourneyTask[] | null = null;
-    if (contactsResponse && contactsResponse.ok) {
-      const body = await readJson(contactsResponse);
-      contacts = readContacts(body);
-      openTaskCount = readOpenTaskCount(body);
-    }
-    const tasksResponse = await fetchImpl(`/api/cases/${caseId}/tasks`).catch(() => null);
-    if (tasksResponse && tasksResponse.ok) {
-      tasks = readTasks(await readJson(tasksResponse));
-    }
-
-    const planResponse = await fetchImpl(`/api/cases/${caseId}/plan?optional=1`).catch(() => null);
-    const planStatus = planResponse && planResponse.ok ? readPlanStatus(await readJson(planResponse)) : null;
+    const selectedCount = shortlistBody === undefined ? null : countSelected(shortlistBody);
+    const contacts = contactsBody === undefined ? null : readContacts(contactsBody);
+    const openTaskCount = contactsBody === undefined ? null : readOpenTaskCount(contactsBody);
+    const tasks = tasksBody === undefined ? null : readTasks(tasksBody);
+    const planStatus = planBody === undefined ? null : readPlanStatus(planBody);
 
     return { summary, status, selectedCount, openTaskCount, contacts, tasks, planStatus, missingCase: false };
   } catch {

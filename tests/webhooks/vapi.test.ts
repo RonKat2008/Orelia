@@ -158,3 +158,31 @@ describe('Vapi end-of-call-report', () => {
     expect(await tasks.task(result.tasks[0]!.id)).toBeDefined();
   });
 });
+
+describe('Vapi webhook: browser (web) calls run the same pipeline', () => {
+  const webCall = { id: 'vcall-1', type: 'webCall' };
+  const webMsg = (message: Record<string, unknown>) => JSON.stringify({ message: { call: webCall, ...message } });
+
+  it('still requires the secret header (Vapi sends assistant.server.headers on web calls too)', async () => {
+    const s = setup();
+    expect((await handleVapiWebhook(post(webMsg({ type: 'status-update', status: 'in-progress' }), {}), s.deps)).status).toBe(401);
+    expect(s.live.state(s.key)).toBeUndefined();
+  });
+
+  it('marks live state vapi-web, streams the disclosure turn, and ingests the end-of-call transcript once', async () => {
+    const s = setup();
+    expect((await handleVapiWebhook(post(webMsg({ type: 'status-update', status: 'in-progress' })), s.deps)).status).toBe(200);
+    expect(s.live.state(s.key)).toEqual({ provider: 'vapi-web', status: 'in-progress' });
+    const turn = webMsg({ type: 'transcript[transcriptType="final"]', transcriptType: 'final', role: 'assistant', transcript: AI_DISCLOSURE_VOICE, timestamp: 1_000 });
+    expect((await handleVapiWebhook(post(turn), s.deps)).status).toBe(200);
+    expect(s.live.turns(s.key).map(t => [t.role, t.text])).toEqual([['ai', AI_DISCLOSURE_VOICE]]);
+    const end = webMsg({ type: 'end-of-call-report', endedReason: 'customer-ended-call', artifact: { messages: [
+      { role: 'bot', message: AI_DISCLOSURE_VOICE, time: 1_000 }, { role: 'user', message: 'Yes, we take referrals by fax.', time: 2_000 },
+    ] } });
+    expect((await handleVapiWebhook(post(end), s.deps)).status).toBe(200);
+    expect((await handleVapiWebhook(post(end), s.deps)).status).toBe(200);
+    expect(s.ingested).toHaveLength(1);
+    expect(s.ingested[0]).toMatchObject({ channel: 'voice', contactId: 'contact-1', providerId: 'vcall-1' });
+    expect(s.live.state(s.key)).toMatchObject({ provider: 'vapi-web', status: 'ended' });
+  });
+});

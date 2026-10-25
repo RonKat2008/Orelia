@@ -44,7 +44,7 @@ export function LiveCallPanel({ call }: { call: LiveCall }) {
   return (
     <section aria-label="Live call" className="grid gap-1.5 rounded-md border border-line bg-paper-2 p-2" data-live={live}>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small">
-        <span className="font-semibold text-ink">{live ? "Live call" : "Call"}</span>
+        <span className="font-semibold text-ink">{call.provider === "vapi-web" ? (live ? "Live browser call" : "Browser call") : live ? "Live call" : "Call"}</span>
         <span className={cn("inline-flex items-center gap-1 text-ink-2", live && "font-semibold text-ch-call")}>
           {live ? <span aria-hidden className="live-pulse size-2 rounded-pill bg-current" /> : null}
           {STATUS_TEXT[call.status]}

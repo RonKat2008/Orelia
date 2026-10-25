@@ -92,7 +92,7 @@ export function overlayLive(records: CallRecord[], live: LiveOverlay[], turns: T
     const status = normalizeCallStatus(l?.status) ?? rec.status;
     const merged: CallRecord = {
       ...rec,
-      provider: l?.provider === "vapi" ? "vapi" : rec.provider,
+      provider: l?.provider === "vapi" || l?.provider === "vapi-web" ? l.provider : rec.provider,
       status,
       live: status !== "ended",
       endedReason: l?.endedReason ?? rec.endedReason,

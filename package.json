@@ -40,6 +40,7 @@
     "@neondatabase/serverless": "1.2.0",
     "@onkernel/sdk": "0.129.0",
     "@tailwindcss/postcss": "4.3.3",
+    "@vapi-ai/web": "2.7.1",
     "@vercel/blob": "^2.8.2",
     "agentmail": "0.5.46",
     "animejs": "4.5.0",

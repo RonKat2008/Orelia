@@ -46,7 +46,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 }
 
 /** The judge console: lane list (top on mobile, left on desktop) beside a live timeline. */
-export function LiveConsole({ caseId }: { caseId: string }) {
+export function LiveConsole({ caseId, browserCall = false }: { caseId: string; browserCall?: boolean }) {
   const judge = useIsJudgeView();
   const { snapshot, mode, skewMs, freshIds } = useActivityFeed(caseId, judge);
   const clientNow = useNowMs();
@@ -76,7 +76,7 @@ export function LiveConsole({ caseId }: { caseId: string }) {
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
           <section aria-labelledby="live-lanes-heading" className="grid min-w-0 gap-1.5">
             <h2 id="live-lanes-heading" className="m-0 text-body font-semibold text-ink">Contacts ({snapshot.lanes.length})</h2>
-            <LaneList lanes={snapshot.lanes} selected={selected} onSelect={setSelected} nowMs={nowMs} />
+            <LaneList lanes={snapshot.lanes} selected={selected} onSelect={setSelected} nowMs={nowMs} browserCall={browserCall} />
           </section>
           <section aria-labelledby="live-timeline-heading" className="grid min-w-0 gap-1.5">
             <div className="flex flex-wrap items-center gap-1.5">

@@ -97,7 +97,11 @@ export class OutreachService {
     await this.store.saveDraft(draft);
     return draft;
   }
-  async approve(id: string, draftId: string): Promise<ApproveResult> {
+  /**
+   * `opts.voiceChannel` (DEMO ONLY, see browser-call.ts) sends an approved first call through a different voice
+   * transport (the presenter's browser). Everything before the send is identical: consent, checkOutbound, cap, reserve.
+   */
+  async approve(id: string, draftId: string, opts: ApproveOptions = {}): Promise<ApproveResult> {
     const contact = await this.requireContact(id);
     const draft = await this.store.draft(draftId, contact);
     if (!draft || draft.contactId !== id) throw new OutreachError(404, ['draft_not_found']);
@@ -107,13 +111,17 @@ export class OutreachService {
     const record = await this.store.getCase(contact.caseId);
     if (!record) throw new OutreachError(404, ['case_not_found']);
     const now = this.clock().toISOString();
-    if (isReplyClassification(draft.classification)) return this.approveReply(contact, draft, consent, record, now);
+    if (isReplyClassification(draft.classification)) {
+      if (opts.voiceChannel) throw new OutreachError(409, ['first_call_only']);
+      return this.approveReply(contact, draft, consent, record, now);
+    }
     const contacts = await this.store.contacts(contact.caseId);
     const gate = checkOutbound({ draft: { ...draft, approvedAt: now }, caseRecord: record, consent, contacts, allowlist: outboundAllowlist(this.env), now, mode: this.env.NODE_ENV === 'production' ? 'prod' : 'dev' });
     const reasons = gate.ok ? [] : [...gate.reasons];
     if (activeContactCount(contacts) > MAX_ACTIVE_CONTACTS && !reasons.includes('contact_cap')) reasons.push('contact_cap');
     if (reasons.length || !gate.ok) throw new OutreachError(422, reasons);
-    const channel = this.channels.find(c => c.kind === contact.channel);
+    if (opts.voiceChannel && contact.channel !== 'voice') throw new OutreachError(422, ['not_a_call']);
+    const channel = opts.voiceChannel ?? this.channels.find(c => c.kind === contact.channel);
     if (!channel) throw new OutreachError(503, ['channel_unavailable']);
     if (!await this.store.reserve(draft, now)) throw new OutreachError(409, ['already_approved_or_consent_changed']);
     let ref: ProviderRef;
@@ -151,5 +159,6 @@ export class OutreachService {
   }
 }
 
+export interface ApproveOptions { voiceChannel?: Channel }
 export type SentApproveResult = { draftId: string; approvedAt: string; sentAt: string; provider: ProviderRef };
 export type ApproveResult = SentApproveResult | { draftId: string; approvedAt: string; queued: true; sentAt?: never; provider?: never };

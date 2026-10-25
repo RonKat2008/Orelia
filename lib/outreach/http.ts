@@ -25,25 +25,28 @@ export function providerDetail(error: ChannelError): string | undefined {
   return error.status || body ? detail.slice(0, DETAIL_MAX) : undefined;
 }
 
-export function outreachHandlers(service: OutreachService) {
-  async function respond(run: () => Promise<unknown>) {
-    try { return Response.json(await run()); }
-    catch (error) {
-      if (error instanceof OutreachError) return Response.json({ reasons: error.reasons }, { status: error.status });
-      if (error instanceof z.ZodError || error instanceof SyntaxError) return Response.json({ reasons: ['invalid_request'] }, { status: 400 });
-      // The provider answered or timed out while sending. A 4xx means it rejected the message (undone, retry is fine);
-      // anything else is ambiguous: it stays reserved, will not be retried automatically, and the patient must check.
-      if (error instanceof ChannelError) {
-        const detail = providerDetail(error);
-        console.error('Outreach send failed:', error.name, error.status ?? 'no-status', detail ?? '');
-        return isDefiniteNonDelivery(error)
-          ? Response.json({ reasons: ['send_rejected'], ...(detail ? { detail } : {}) }, { status: 502 })
-          : Response.json({ reasons: ['send_status_unknown'], ...(detail ? { detail } : {}) }, { status: 502 });
-      }
-      console.error('Outreach operation failed:', error instanceof Error ? error.name : 'unknown');
-      return Response.json({ reasons: ['outreach_unavailable'] }, { status: 503 });
+/** Runs one outreach operation and maps its errors to the API's { reasons, detail } responses. */
+export async function outreachRespond(run: () => Promise<unknown>): Promise<Response> {
+  try { return Response.json(await run()); }
+  catch (error) {
+    if (error instanceof OutreachError) return Response.json({ reasons: error.reasons }, { status: error.status });
+    if (error instanceof z.ZodError || error instanceof SyntaxError) return Response.json({ reasons: ['invalid_request'] }, { status: 400 });
+    // The provider answered or timed out while sending. A 4xx means it rejected the message (undone, retry is fine);
+    // anything else is ambiguous: it stays reserved, will not be retried automatically, and the patient must check.
+    if (error instanceof ChannelError) {
+      const detail = providerDetail(error);
+      console.error('Outreach send failed:', error.name, error.status ?? 'no-status', detail ?? '');
+      return isDefiniteNonDelivery(error)
+        ? Response.json({ reasons: ['send_rejected'], ...(detail ? { detail } : {}) }, { status: 502 })
+        : Response.json({ reasons: ['send_status_unknown'], ...(detail ? { detail } : {}) }, { status: 502 });
     }
+    console.error('Outreach operation failed:', error instanceof Error ? error.name : 'unknown');
+    return Response.json({ reasons: ['outreach_unavailable'] }, { status: 503 });
   }
+}
+
+export function outreachHandlers(service: OutreachService) {
+  const respond = outreachRespond;
   const validId = (id: string) => z.uuid().parse(id);
   return {
     select: (req: Request) => respond(async () => { const body = selection.parse(await req.json()); return service.select(body.caseId, body.candidateIds); }),

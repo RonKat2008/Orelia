@@ -4,6 +4,8 @@
  * application approve), so checkOutbound, consent, the allowlist, the 5-contact cap and cadence all run unchanged.
  * Client-safe: only fetch, no server imports. `fetchFn` carries the patient's session (browser cookie or script jar).
  */
+import { isVapiDailyLimit, PHONE_LINE_DAILY_LIMIT_REASON, PHONE_LINE_UNAVAILABLE } from '../channels/vapi-limits';
+
 export type FetchFn = (path: string, init?: RequestInit) => Promise<Response>;
 
 export interface ApproveItem {
@@ -12,6 +14,8 @@ export interface ApproveItem {
   label: string;
   ok: boolean;
   detail: string;
+  /** DEMO ONLY: the phone line could not place this call; offer "Take the call in your browser" for this contact. */
+  browserCall?: { contactId: string; reason: string };
 }
 
 interface PlanBody { plan: { version: number; status: string; resources?: { contactId: string | null; steps: { channel: string; enabled: boolean }[] }[] } | null }
@@ -20,13 +24,30 @@ interface AppsBody { applications: { id: string; status: string; url?: string }[
 
 const json = { 'content-type': 'application/json' };
 
-async function errorText(res: Response): Promise<string> {
+async function errorBody(res: Response): Promise<{ text: string; detail?: string }> {
   try {
-    const body = (await res.json()) as { error?: unknown; reasons?: unknown };
-    if (Array.isArray(body.reasons) && body.reasons.length) return body.reasons.join(', ');
-    if (typeof body.error === 'string') return body.error;
+    const body = (await res.json()) as { error?: unknown; reasons?: unknown; detail?: unknown };
+    const detail = typeof body.detail === 'string' ? body.detail : undefined;
+    if (Array.isArray(body.reasons) && body.reasons.length) return { text: body.reasons.join(', '), ...(detail ? { detail } : {}) };
+    if (typeof body.error === 'string') return { text: body.error };
   } catch { /* not JSON */ }
-  return `HTTP ${res.status}`;
+  return { text: `HTTP ${res.status}` };
+}
+
+async function errorText(res: Response): Promise<string> {
+  return (await errorBody(res)).text;
+}
+
+/**
+ * A call the phone line refused. Vapi's daily limit gets a friendly reason and the browser-call offer (demo
+ * console); any other rejection keeps the plain reasons.
+ */
+async function callFailure(contactId: string, label: string, res: Response): Promise<ApproveItem> {
+  const { text, detail } = await errorBody(res);
+  if (isVapiDailyLimit(detail) || isVapiDailyLimit(text)) {
+    return { kind: 'message', id: contactId, label, ok: false, detail: `${PHONE_LINE_UNAVAILABLE}. ${PHONE_LINE_DAILY_LIMIT_REASON}`, browserCall: { contactId, reason: PHONE_LINE_DAILY_LIMIT_REASON } };
+  }
+  return { kind: 'message', id: contactId, label, ok: false, detail: detail ? `${text}: ${detail}` : text };
 }
 
 /** Approves the plan (if needed). Approval writes drafts and fills applications; nothing is sent by this step. */
@@ -72,6 +93,7 @@ async function approveMessages(caseId: string, f: FetchFn): Promise<ApproveItem[
     const draft = (await d.json()) as { id: string; approvedAt?: string | null; sentAt?: string | null };
     if (draft.approvedAt || draft.sentAt) continue;
     const a = await f(`/api/contacts/${c.id}/approve`, { method: 'POST', headers: json, body: JSON.stringify({ draftId: draft.id }) });
+    if (!a.ok && c.channel === 'voice') { out.push(await callFailure(c.id, label, a)); continue; }
     out.push({ kind: 'message', id: c.id, label, ok: a.ok, detail: a.ok ? (c.channel === 'voice' ? 'call placed' : 'sent') : await errorText(a) });
   }
   return out;

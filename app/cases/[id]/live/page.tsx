@@ -4,6 +4,7 @@ import { JudgeOnly } from "@/components/ui";
 import { LiveDemoControls } from "@/components/demo/LiveDemoControls";
 import { PendingFormQuestions } from "@/components/outreach/FormQuestionsCard";
 import { liveDemoEnabled } from "@/lib/demo-live/start";
+import { browserCallAvailability } from "@/lib/outreach/browser-call";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export const metadata = { title: "Live activity" };
 export default async function LiveActivityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const demo = await showDemoControls(id);
+  // DEMO ONLY: this page is the judge view, so the judge-in-demo-mode rule applies (the route re-checks it).
+  const browserCall = browserCallAvailability(process.env, { judge: true }).ok;
   return (
     <JudgeOnly
       fallback={
@@ -33,9 +36,9 @@ export default async function LiveActivityPage({ params }: { params: Promise<{ i
       }
     >
       <CasePage title="Live activity" lede="Agents, emails, calls and follow-ups as they happen." eyebrow="Live">
-        {demo ? <div className="mb-3"><LiveDemoControls caseId={id} /></div> : null}
+        {demo ? <div className="mb-3"><LiveDemoControls caseId={id} browserCall={browserCall} /></div> : null}
         <PendingFormQuestions caseId={id} className="mb-3" />
-        <LiveConsole caseId={id} />
+        <LiveConsole caseId={id} browserCall={browserCall} />
       </CasePage>
     </JudgeOnly>
   );

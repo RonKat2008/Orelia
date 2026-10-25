@@ -39,16 +39,18 @@ export async function handleVapiWebhook(req: Request, deps: VapiInboundDeps): Pr
 async function apply(deps: VapiInboundDeps, owner: Owner, event: Exclude<VapiEvent, { kind: 'ignored' }>, now: () => Date): Promise<Response> {
   const key = { providerCallId: event.callId, contactId: owner.contactId };
   const listen = event.listenUrl ? { listenUrl: event.listenUrl } : {};
+  // Browser (web) calls run the same pipeline; only the provider mark differs so the console can label them.
+  const provider = event.web ? 'vapi-web' as const : 'vapi' as const;
 
   if (event.kind === 'status') {
-    await deps.live.upsertState(key, { provider: 'vapi', ...(event.status ? { status: event.status } : {}), ...(event.endedReason ? { endedReason: event.endedReason } : {}), ...listen });
+    await deps.live.upsertState(key, { provider, ...(event.status ? { status: event.status } : {}), ...(event.endedReason ? { endedReason: event.endedReason } : {}), ...listen });
     const outcome = event.status === 'ended' ? event.endedReason ?? 'ended' : event.status;
     await deps.storeCallEvent({ contactId: owner.contactId, providerCallId: event.callId, eventType: 'call.status', ...(outcome ? { status: outcome } : {}) });
     return json(200, { ok: true });
   }
 
   if (event.kind === 'turn') {
-    if (event.listenUrl) await deps.live.upsertState(key, { provider: 'vapi', ...listen });
+    if (event.listenUrl) await deps.live.upsertState(key, { provider, ...listen });
     const added = await deps.live.appendTurns(key, [event.turn]);
     return json(200, added ? { ok: true } : { duplicate: true });
   }
@@ -56,7 +58,7 @@ async function apply(deps: VapiInboundDeps, owner: Owner, event: Exclude<VapiEve
   // end-of-call-report: backfill turns only when none arrived live (live and report turns have different keys).
   if (await deps.live.countTurns(key) === 0) await deps.live.appendTurns(key, event.turns);
   await deps.live.upsertState(key, {
-    provider: 'vapi', status: 'ended', ...(event.endedReason ? { endedReason: event.endedReason } : {}),
+    provider, status: 'ended', ...(event.endedReason ? { endedReason: event.endedReason } : {}),
     ...(event.summary ? { summary: event.summary } : {}), ...listen,
   });
   const at = event.endedAt ? new Date(event.endedAt) : now();

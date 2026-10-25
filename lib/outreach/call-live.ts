@@ -9,7 +9,9 @@ import * as s from '../../db/schema';
 
 export interface CallKey { providerCallId: string; contactId: string }
 export interface LiveTurnInput { seq: number; role: 'ai' | 'human'; text: string; at?: string; dedupeKey: string }
-export interface LiveStateInput { provider: 'vapi'; status?: string; endedReason?: string; summary?: string; listenUrl?: string }
+/** 'vapi-web' marks a DEMO browser call (Vapi web call answered by the presenter), 'vapi' a phone call. */
+export type LiveProvider = 'vapi' | 'vapi-web';
+export interface LiveStateInput { provider: LiveProvider; status?: string; endedReason?: string; summary?: string; listenUrl?: string }
 
 export interface CallLiveStore {
   /** Merges the given fields into the call's live row (missing fields keep their stored value). */

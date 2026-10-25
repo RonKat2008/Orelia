@@ -15,6 +15,9 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { AI_DISCLOSURE_VOICE } from '../safety/disclosure';
 import { modelFor } from '../../config/models';
 import { assertGated, ChannelError, type Channel, type ChannelGuardOptions, type GatedDraft, type ProviderRef } from './types';
+import { isVapiStartError } from './vapi-limits';
+
+export { isVapiDailyLimit, isVapiStartError, PHONE_LINE_UNAVAILABLE } from './vapi-limits';
 
 const P = 'vapi' as const;
 export const VAPI_BASE_URL = 'https://api.vapi.ai';
@@ -110,6 +113,14 @@ export class VapiChannel implements Channel {
     const res = await this.request('POST', '/call', body);
     const callId = typeof res.id === 'string' && res.id ? res.id : undefined;
     if (!callId) throw new ChannelError(P, 'Response did not include a call id');
+    // Vapi can accept the request yet end the call before dialing (e.g. its free number's daily outbound limit:
+    // status 'ended', endedReason 'call.start.error-vapi-number-outbound-daily-limit'). Nothing was dialed, so it is
+    // a definite non-delivery (4xx): the approval is undone and the patient sees why.
+    const endedReason = typeof res.endedReason === 'string' ? res.endedReason : undefined;
+    if (res.status === 'ended' && isVapiStartError(endedReason)) {
+      const endedMessage = typeof res.endedMessage === 'string' ? res.endedMessage.slice(0, 300) : undefined;
+      throw new ChannelError(P, `Call did not start: ${endedReason}`, 422, false, { code: endedReason, ...(endedMessage ? { message: endedMessage } : {}) });
+    }
     return { provider: P, channel: 'voice', callId, ...(typeof res.status === 'string' ? { status: res.status } : {}) };
   }
 
@@ -138,6 +149,75 @@ export class VapiChannel implements Channel {
     if (!res.ok) throw new ChannelError(P, `HTTP ${res.status} from ${method} ${path}`, res.status, res.status === 429 || res.status >= 500, errorSummary(parsed));
     return (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
   }
+}
+
+export interface VapiWebCallOptions {
+  /** Vapi PUBLIC key (designed to be public; /call/web accepts only it). The private key is never used here. */
+  publicKey: string;
+  /** Same guard (allowlist) the gate used; the destination is the presenter's browser, the address is never dialed. */
+  guard: ChannelGuardOptions;
+  serverUrl?: string;
+  webhookSecret?: string;
+  model?: string;
+  maxDurationSeconds?: number;
+  fetcher?: typeof fetch;
+  baseUrl?: string;
+}
+
+/** Daily rooms Vapi web calls run in. Anything else is refused before it reaches the browser. */
+const WEB_CALL_HOST = /(^|\.)daily\.co$/i;
+
+/**
+ * DEMO ONLY: the same approved call, answered in the presenter's browser instead of over the phone line.
+ *
+ * The SERVER creates the web call (POST /call/web) with the exact assistant the phone path sends (buildVapiAssistant:
+ * same rules, script, Claude model, disclosure-first message, webhook URL + secret header, metadata). Only the call
+ * id and the Daily room URL go back to the browser, which joins with @vapi-ai/web. The assistant config (and so the
+ * webhook secret) never leaves the server, and the private API key is never used for this.
+ */
+export class VapiWebCallChannel implements Channel {
+  readonly kind = 'voice' as const;
+  private fetcher: typeof fetch;
+  private baseUrl: string;
+  constructor(private opts: VapiWebCallOptions) {
+    this.fetcher = opts.fetcher ?? fetch;
+    this.baseUrl = (opts.baseUrl ?? VAPI_BASE_URL).replace(/\/+$/, '');
+  }
+
+  async send(gated: GatedDraft): Promise<ProviderRef> {
+    assertGated(gated, 'voice', P, this.opts.guard);
+    if (!gated.body.trimStart().startsWith(AI_DISCLOSURE_VOICE)) throw new ChannelError(P, 'Script must begin with the spoken AI disclosure');
+    const assistant = buildVapiAssistant(gated, this.opts);
+    let res: Response;
+    try {
+      res = await this.fetcher(`${this.baseUrl}/call/web`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.opts.publicKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ assistant }),
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (err) {
+      throw new ChannelError(P, `Network error: ${scrub((err as Error)?.message ?? 'request failed', [this.opts.webhookSecret])}`, undefined, true);
+    }
+    const text = await res.text();
+    let parsed: unknown;
+    try { parsed = text ? JSON.parse(text) : {}; } catch { parsed = text; }
+    if (!res.ok) throw new ChannelError(P, `HTTP ${res.status} from POST /call/web`, res.status, res.status === 429 || res.status >= 500, errorSummary(parsed));
+    const body = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
+    const callId = typeof body.id === 'string' && body.id ? body.id : undefined;
+    const webCallUrl = safeWebCallUrl(body.webCallUrl);
+    // A created call we cannot hand to the browser is ambiguous (no status): it stays reserved, never retried blindly.
+    if (!callId || !webCallUrl) throw new ChannelError(P, 'Web call response did not include a call id and room URL');
+    return { provider: P, channel: 'voice', callId, webCallUrl, ...(typeof body.status === 'string' ? { status: body.status } : {}) };
+  }
+}
+
+function safeWebCallUrl(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' && WEB_CALL_HOST.test(u.hostname) ? u.toString() : undefined;
+  } catch { return undefined; }
 }
 
 function errorSummary(parsed: unknown): unknown {
@@ -177,9 +257,9 @@ export type TurnRole = 'ai' | 'human';
 export interface VapiTurn { seq: number; role: TurnRole; text: string; at?: string; dedupeKey: string }
 
 export type VapiEvent =
-  | { kind: 'status'; callId: string; status?: string; endedReason?: string; listenUrl?: string }
-  | { kind: 'turn'; callId: string; turn: VapiTurn; listenUrl?: string }
-  | { kind: 'report'; callId: string; transcript: string; turns: VapiTurn[]; humanSpoke: boolean; summary?: string; endedReason?: string; endedAt?: string; listenUrl?: string }
+  | { kind: 'status'; callId: string; status?: string; endedReason?: string; listenUrl?: string; web?: boolean }
+  | { kind: 'turn'; callId: string; turn: VapiTurn; listenUrl?: string; web?: boolean }
+  | { kind: 'report'; callId: string; transcript: string; turns: VapiTurn[]; humanSpoke: boolean; summary?: string; endedReason?: string; endedAt?: string; listenUrl?: string; web?: boolean }
   | { kind: 'ignored'; callId?: string; type: string };
 
 const MAX_TURN_CHARS = 4000;
@@ -243,7 +323,8 @@ export function parseVapiMessage(rawBody: string, now: () => Date = () => new Da
   const callId = str(call?.id);
   if (!callId) return { kind: 'ignored', type };
   const listenUrl = monitorListenUrl(call);
-  const extra = listenUrl ? { listenUrl } : {};
+  // Vapi labels browser calls `type: 'webCall'` (phone calls: outboundPhoneCall / inboundPhoneCall).
+  const extra = { ...(listenUrl ? { listenUrl } : {}), ...(call?.type === 'webCall' ? { web: true } : {}) };
 
   if (type === 'status-update') {
     const status = str(msg.status); const endedReason = str(msg.endedReason);

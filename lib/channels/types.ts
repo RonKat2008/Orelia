@@ -16,6 +16,8 @@ export interface ProviderRef {
   readonly messageId?: string;
   readonly callId?: string;
   readonly status?: string;
+  /** Vapi browser (web) call only: the Daily room the presenter's browser joins. Never stored. */
+  readonly webCallUrl?: string;
 }
 
 /** Existing AgentMail thread a follow-up must reply inside. Still only accepted with a GatedDraft. */

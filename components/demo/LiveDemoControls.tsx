@@ -4,9 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { CheckCheck, FastForward, Inbox, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { approveAll, pendingApprovals, type ApproveItem } from "@/lib/demo-live/approve-all";
+import { BrowserCallButton } from "@/components/live/BrowserCallButton";
 
 interface Props {
   caseId: string;
+  /** DEMO ONLY: the browser call is available (server-checked again when started). */
+  browserCall?: boolean;
 }
 
 type Pending = Awaited<ReturnType<typeof pendingApprovals>>;
@@ -18,7 +21,7 @@ const sameOrigin = (path: string, init?: RequestInit) => fetch(path, { ...init, 
  * the normal routes (each send still passes checkOutbound); the list below it shows what it approved, item by item.
  * "Deliver replies now" and "Skip ahead 3 business days" run the same per-minute cron tick early.
  */
-export function LiveDemoControls({ caseId }: Props) {
+export function LiveDemoControls({ caseId, browserCall = false }: Props) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [items, setItems] = useState<ApproveItem[]>([]);
@@ -95,8 +98,13 @@ export function LiveDemoControls({ caseId }: Props) {
       {items.length > 0 ? (
         <ul className="mt-1.5 space-y-0.5 text-xs" aria-label="Approved items">
           {items.map((it, i) => (
-            <li key={`${it.kind}-${it.id}-${i}`} className={it.ok ? "" : "text-[var(--color-terracotta,#a4532f)]"}>
-              {it.ok ? "✓" : "✕"} {it.label}: {it.detail}
+            <li key={`${it.kind}-${it.id}-${i}`} className={it.ok || it.browserCall ? "" : "text-[var(--color-terracotta,#a4532f)]"}>
+              {it.browserCall ? "☎" : it.ok ? "✓" : "✕"} {it.label}: {it.detail}
+              {it.browserCall && browserCall ? (
+                <div className="mt-1 text-ink">
+                  <BrowserCallButton contactId={it.browserCall.contactId} phoneFailed reason={it.browserCall.reason} onStarted={() => void refresh()} />
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

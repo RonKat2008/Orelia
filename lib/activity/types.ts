@@ -32,7 +32,8 @@ export type LiveCallStatus = "queued" | "ringing" | "connected" | "ended";
 
 export interface LiveCall {
   id: string;
-  provider: "vapi" | "agentcall" | null;
+  /** "vapi-web": a DEMO browser call (the presenter answered in the browser; same agent and pipeline). */
+  provider: "vapi" | "vapi-web" | "agentcall" | null;
   status: LiveCallStatus;
   live: boolean;
   endedReason: string | null;

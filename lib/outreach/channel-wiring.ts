@@ -17,7 +17,7 @@ import { FOLLOW_UP_BUSINESS_DAYS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
 import { parseTimeScale } from '../workflows/clock';
 import { contactApprovedEvent, followUpApprovedEvent, type SendEvents } from '../workflows/events';
-import { OutreachService } from './service';
+import { OutreachService, type ApproveOptions } from './service';
 import { isReplyClassification, OutreachError, type Channel, type OutreachStore, type ProviderRef } from './types';
 
 type Env = Record<string, string | undefined>;
@@ -253,13 +253,17 @@ export class WiredOutreachService extends OutreachService {
     private readonly simulatedCallIngest?: SimulatedCallIngest,
   ) { super(store, channels, env, clock); }
 
-  override async approve(id: string, draftId: string): Promise<WiredApproveResult> {
+  override async approve(id: string, draftId: string, opts: ApproveOptions = {}): Promise<WiredApproveResult> {
     const followUp = await this.followUps.get(draftId, id);
+    // A browser call (opts.voiceChannel) is only ever the first call: follow-ups and reply letters keep their own path.
+    if (opts.voiceChannel && followUp && (isFollowUpClassification(followUp.classification) || isReplyClassification(followUp.classification))) {
+      throw new OutreachError(409, ['first_call_only']);
+    }
     if (followUp && isFollowUpClassification(followUp.classification)) return this.approveFollowUp(id, draftId, followUp.caseId);
     // A reply letter (records, slides) is sent by OutreachService under the gate's reply rule. It is not a first
     // message: no first-send stamp and no contact/approved event (that would restart the follow-up timers).
     if (followUp && isReplyClassification(followUp.classification)) return super.approve(id, draftId);
-    const result = await super.approve(id, draftId);
+    const result = await super.approve(id, draftId, opts);
     if ('queued' in result) return result;
     const contact = await this.requireContact(id);
     try {

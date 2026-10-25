@@ -9,7 +9,7 @@ export interface Draft extends Omit<SafetyDraft, 'channel'> { channel: 'email' |
 /** Reply letters (records, slides) answer a request the contact made; see checkOutbound's reply rule. */
 export const REPLY_CLASSIFICATION_PREFIX = 'reply_';
 export const isReplyClassification = (c: string | null | undefined): c is string => !!c && c.startsWith(REPLY_CLASSIFICATION_PREFIX);
-export interface ProviderRef { messageId?: string; threadId?: string; callId?: string }
+export interface ProviderRef { messageId?: string; threadId?: string; callId?: string; webCallUrl?: string }
 export interface Channel { kind: 'email' | 'voice'; send(draft: GatedDraft): Promise<ProviderRef> }
 export interface SelectOptions { sharedAddresses?: readonly string[] }
 /** Atomic methods must serialize competing requests in the backing store. */

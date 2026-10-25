@@ -143,7 +143,7 @@ export function SiteHeader({
         >
           {viewToggle ? <ViewToggle /> : null}
           {isCase ? null : <SignInLink />}
-          <ThemeButton />
+          <ThemeButton className="hidden sm:inline-flex" />
           <AccountMenu />
           {cta && !isCase ? (
             <Button

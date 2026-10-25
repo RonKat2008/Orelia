@@ -97,7 +97,7 @@ export function PatientTracker({ caseId, titleAs = "h1", focusContactId = null }
   const caseHref = `/cases/${caseId}`;
 
   return (
-    <div data-testid="patient-tracker" className="grid max-w-patient gap-8">
+    <div data-testid="patient-tracker" className="grid max-w-patient gap-4 sm:gap-6">
       <PageHeader as={titleAs} className="mb-0" title={copy.title} lede={copy.lede} />
       {ordered.length === 0 ? (
         <EmptyState

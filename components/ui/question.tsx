@@ -87,7 +87,7 @@ export function Question({
       {optional ? <span className="font-sans text-body font-normal text-ink-2"> (optional)</span> : null}
     </>
   );
-  const headingClass = "m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance";
+  const headingClass = "m-0 max-w-none font-display text-h2 font-light sm:text-h1 text-ink display-soft text-balance";
 
   const messages = (
     <>
@@ -113,7 +113,7 @@ export function Question({
         event.preventDefault();
         onSubmit(event);
       }}
-      className={cn("grid max-w-patient gap-6", className)}
+      className={cn("grid max-w-patient gap-4 sm:gap-6", className)}
     >
       {back ? <div>{back}</div> : null}
       <ErrorSummary errors={summary} />
@@ -138,14 +138,13 @@ export function Question({
           {body}
         </div>
       )}
-      <div className="grid gap-4">
-        <div>
-          <Button type="submit" size="lg" loading={submitting}>
-            {submitLabel}
-          </Button>
-        </div>
-        {secondary}
+      {/* On a phone the button stays at the bottom of the screen, so the next step is never below the fold. */}
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <Button type="submit" size="lg" loading={submitting}>
+          {submitLabel}
+        </Button>
       </div>
+      {secondary}
     </form>
   );
 }

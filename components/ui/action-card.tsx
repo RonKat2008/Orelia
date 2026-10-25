@@ -16,6 +16,8 @@ export interface ActionCardProps extends Omit<ComponentProps<"section">, "title"
   reassurance?: ReactNode;
   /** The question's controls or the decision's content. */
   children?: ReactNode;
+  /** Phone only: keep the action pinned to the bottom of the screen so it never sits below the fold. */
+  stickyAction?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export function ActionCard({
   secondaryAction,
   reassurance,
   children,
+  stickyAction = false,
   className,
   ...props
 }: ActionCardProps) {
@@ -52,7 +55,13 @@ export function ActionCard({
       </div>
       {children ? <div className="grid gap-4">{children}</div> : null}
       {action || secondaryAction || reassurance ? (
-        <div className="grid gap-3">
+        <div
+          className={cn(
+            "grid gap-3",
+            stickyAction &&
+              "max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-4 max-sm:-mb-4 max-sm:rounded-b-lg max-sm:border-t max-sm:border-line max-sm:bg-card max-sm:px-4 max-sm:py-3",
+          )}
+        >
           {action || secondaryAction ? (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
               {action}

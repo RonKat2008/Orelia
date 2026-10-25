@@ -21,6 +21,24 @@ export const INTAKE_COPY = {
     tryAgain: "Try again",
   },
   questions: {
+    diagnosis: {
+      question: "Do you have a diagnosis?",
+      hint: "That means a doctor has named your condition.",
+      yes: "Yes, I have one",
+      no: "Not yet",
+      error: "Choose yes or not yet",
+    },
+    symptoms: {
+      question: "What are you dealing with?",
+      hint: "Say it in your own words, and we quote you without guessing what it is.",
+      label: "In your own words",
+    },
+    needs: {
+      question: "How far could you go, and what do you hope for?",
+      hint: "We picked common answers, and you can change any of them.",
+      travelLegend: "How far could you travel?",
+      goalsLegend: "What are you hoping for?",
+    },
     condition: {
       question: "What condition do you need help with?",
       hint: "Use the name on your report, such as vascular Ehlers-Danlos syndrome.",
@@ -110,18 +128,21 @@ export const INTAKE_COPY = {
     hint: "Change anything that is not right.",
     rows: {
       condition: "Condition",
+      symptoms: "In your own words",
       home: "Where you live",
       travel: "How far you could travel",
       goals: "What you are hoping for",
-      insurance: "Insurance",
     },
     changeHidden: {
       condition: "your condition",
+      symptoms: "your own words",
       home: "where you live",
       travel: "how far you could travel",
       goals: "what you are hoping for",
-      insurance: "your insurance",
     },
+    undiagnosedValue: "No diagnosis yet",
+    insuranceLabel: "Insurance company (optional)",
+    insuranceHint: "This helps us check which centers may take your plan.",
     reassurance: "Nothing is sent to anyone until you say so.",
   },
   errors: {

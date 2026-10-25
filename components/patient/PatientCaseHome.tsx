@@ -10,6 +10,7 @@ import { LiveStatus } from "./LiveStatus";
 import { NextActionCard } from "./NextActionCard";
 import { usePatientStatus } from "./usePatientStatus";
 import { WhatsHappened } from "./WhatsHappened";
+import { ConditionCard } from "@/components/rare/ConditionCard";
 
 
 
@@ -59,15 +60,16 @@ export function PatientCaseHome({ caseId }: { caseId: string }) {
 
   const { status, timeline } = body;
   return (
-    <div data-testid="patient-home" data-step={status.step} className="grid max-w-patient grid-cols-[minmax(0,1fr)] gap-8">
+    <div data-testid="patient-home" data-step={status.step} className="grid max-w-patient grid-cols-[minmax(0,1fr)] gap-4 sm:gap-6">
       <LiveStatus status={status} mode={mode} />
       {error ? (
-        <p role="status" className="m-0 -mt-4 text-small text-warn-ink">
+        <p role="status" className="m-0 -mt-2 text-small text-warn-ink">
           {error}
         </p>
       ) : null}
       <PatientProgress current={status.step} />
       <NextActionCard caseId={caseId} status={status} onDone={refresh} />
+      <ConditionCard caseId={caseId} />
       <DocumentsCard caseId={caseId} />
       <WhatsHappened items={timeline} seeAllHref={`/cases/${caseId}/tracker`} />
       <ManageCase caseId={caseId} />

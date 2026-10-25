@@ -8,7 +8,7 @@ import { ActionError, ActionFrame } from "./actions/ActionFrame";
 import { FormCard } from "./actions/FormCard";
 import { MessageCard } from "./actions/MessageCard";
 import { PickContactsCard } from "./actions/PickContactsCard";
-import { PlanCard } from "./actions/PlanCard";
+import { ApproveAllCard } from "./actions/ApproveAllCard";
 import { ReplyCard } from "./actions/ReplyCard";
 import { ShareCard } from "./actions/ShareCard";
 import { ConfirmCard } from "./actions/ConfirmCard";
@@ -68,7 +68,7 @@ export function NextActionCard({
     case "share_details":
       return <ShareCard key={key} {...common} detailsHref={action.detailsHref} />;
     case "approve_plan":
-      return <PlanCard key={key} {...common} detailsHref={action.detailsHref} />;
+      return <ApproveAllCard key={key} {...common} detailsHref={action.detailsHref} />;
     case "approve_message":
       return <MessageCard key={key} {...common} action={action} />;
     case "approve_application":

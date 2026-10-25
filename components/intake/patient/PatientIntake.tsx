@@ -18,6 +18,7 @@ import {
   Label,
   Progress,
   Question,
+  Textarea,
   RadioGroup,
   RadioGroupItem,
   SummaryList,
@@ -26,13 +27,12 @@ import type { DemoReport } from "../demos";
 import {
   InvalidFields,
   confirmAndResearch,
+  createUndiagnosedCase,
   extractCase,
 } from "../case-client";
 import { checkUpload, fallbackFor } from "../fallback";
 import { ReportStep } from "../ReportStep";
 import {
-  PATIENT_QUESTIONS,
-  TRAVEL_HINTS,
   TRAVEL_LABELS,
   TRAVEL_MILES,
   answersToCaseInput,
@@ -43,6 +43,9 @@ import {
   mergeExtracted,
   recordToAnswers,
   questionError,
+  questionsFor,
+  undiagnosedFields,
+  withNeedsDefaults,
   type PatientAnswers,
   type PatientQuestionId,
   type TravelChoice,
@@ -56,7 +59,6 @@ import { useProfilePrefill } from "./useProfilePrefill";
 type Phase = "questions" | "upload" | "documents" | "reading" | "confirm";
 
 const COPY = INTAKE_COPY;
-const TOTAL = PATIENT_QUESTIONS.length;
 const TRAVEL_CHOICES: readonly TravelChoice[] = [
   "local",
   "regional",
@@ -70,9 +72,16 @@ const GOALS = [
   "support",
   "aid",
 ] as const;
+/** Short travel names for the two-column picker. The long forms stay as each radio's accessible name. */
+const TRAVEL_SHORT: Record<TravelChoice, string> = {
+  local: "Up to 25 miles",
+  regional: "Up to 100 miles",
+  far: "Up to 500 miles",
+  anywhere: "No limit",
+};
 const START_BUTTON_ID = "start-search";
 const HEADING_CLASS =
-  "m-0 max-w-none font-display text-h1 font-light text-ink display-soft text-balance outline-none";
+  "m-0 max-w-none font-display text-h2 font-light sm:text-h1 text-ink display-soft text-balance outline-none";
 
 const fieldName = (key: string) => COPY.errors.fieldNames[key] ?? key;
 
@@ -87,12 +96,15 @@ function travelSummary(travel: TravelChoice | null, exactMiles?: number): string
 type FieldProps = {
   answers: PatientAnswers;
   onChange: (next: PatientAnswers) => void;
+  /** Single-choice screens: set the answer and move on in one tap. */
+  onAnswer?: (next: PatientAnswers) => void;
 };
 
 function QuestionFields({
   id,
   answers,
   onChange,
+  onAnswer,
 }: FieldProps & { id: PatientQuestionId }): ReactNode {
   switch (id) {
     case "home":
@@ -124,49 +136,65 @@ function QuestionFields({
           </div>
         </div>
       );
-    case "travel":
+    case "needs":
+      return (
+        <div className="grid gap-5">
+          <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0">
+            <legend className="mb-1 p-0 text-body font-semibold text-ink">{COPY.questions.needs.travelLegend}</legend>
+            <RadioGroup
+              aria-label={COPY.questions.needs.travelLegend}
+              className="grid-cols-2 gap-2"
+              value={answers.travel ?? ""}
+              onValueChange={(value) =>
+                onChange({ ...answers, travel: value as TravelChoice, travelLimitMiles: undefined })
+              }
+            >
+              {TRAVEL_CHOICES.map((choice) => (
+                <ChoiceRow
+                  key={choice}
+                  title={TRAVEL_SHORT[choice]}
+                  className="items-center p-3"
+                >
+                  <RadioGroupItem value={choice} aria-label={TRAVEL_LABELS[choice]} />
+                </ChoiceRow>
+              ))}
+            </RadioGroup>
+          </fieldset>
+          <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0">
+            <legend className="mb-1 p-0 text-body font-semibold text-ink">{COPY.questions.needs.goalsLegend}</legend>
+            {GOALS.map((goal) => (
+              <ChoiceRow key={goal} title={COPY.goals[goal]} className="items-center p-3">
+                <Checkbox
+                  checked={answers.goals.includes(goal)}
+                  onCheckedChange={() =>
+                    onChange({
+                      ...answers,
+                      goals: answers.goals.includes(goal)
+                        ? answers.goals.filter((item) => item !== goal)
+                        : [...answers.goals, goal],
+                    })
+                  }
+                  aria-label={COPY.goals[goal]}
+                />
+              </ChoiceRow>
+            ))}
+          </fieldset>
+        </div>
+      );
+    case "diagnosis":
       return (
         <RadioGroup
-          aria-label={COPY.questions.travel.question}
-          value={answers.travel ?? ""}
-          onValueChange={(value) =>
-            onChange({ ...answers, travel: value as TravelChoice, travelLimitMiles: undefined })
-          }
+          aria-label={COPY.questions.diagnosis.question}
+          value={answers.diagnosed === true ? "yes" : answers.diagnosed === false ? "no" : ""}
+          onValueChange={(value) => onAnswer?.({ ...answers, diagnosed: value === "yes" })}
         >
-          {TRAVEL_CHOICES.map((choice) => (
-            <ChoiceRow
-              key={choice}
-              title={TRAVEL_LABELS[choice]}
-              description={TRAVEL_HINTS[choice]}
-            >
-              <RadioGroupItem
-                value={choice}
-                aria-label={TRAVEL_LABELS[choice]}
-              />
-            </ChoiceRow>
-          ))}
+          <ChoiceRow title={COPY.questions.diagnosis.yes} className="items-center p-3">
+            <RadioGroupItem value="yes" aria-label={COPY.questions.diagnosis.yes} />
+          </ChoiceRow>
+          <ChoiceRow title={COPY.questions.diagnosis.no} className="items-center p-3">
+            <RadioGroupItem value="no" aria-label={COPY.questions.diagnosis.no} />
+          </ChoiceRow>
         </RadioGroup>
-      );
-    case "goals":
-      return (
-        <div className="grid gap-3">
-          {GOALS.map((goal) => (
-            <ChoiceRow key={goal} title={COPY.goals[goal]}>
-              <Checkbox
-                checked={answers.goals.includes(goal)}
-                onCheckedChange={() =>
-                  onChange({
-                    ...answers,
-                    goals: answers.goals.includes(goal)
-                      ? answers.goals.filter((item) => item !== goal)
-                      : [...answers.goals, goal],
-                  })
-                }
-                aria-label={COPY.goals[goal]}
-              />
-            </ChoiceRow>
-          ))}
-        </div>
       );
     default:
       return null;
@@ -186,6 +214,7 @@ function QuestionScreen({
   id,
   answers,
   onChange,
+  onAnswer,
   showError,
   back,
   secondary,
@@ -195,9 +224,8 @@ function QuestionScreen({
   const error = showError ? questionError(id, answers) : undefined;
   const copy = COPY.questions[id];
 
-  if (id === "condition" || id === "insurance") {
+  if (id === "condition" || id === "symptoms") {
     const isCondition = id === "condition";
-    const value = isCondition ? answers.condition : answers.insurer;
     return (
       <Question
         question={copy.question}
@@ -210,22 +238,27 @@ function QuestionScreen({
         onSubmit={onSubmit}
         secondary={secondary}
       >
-        {(control) => (
-          <Input
-            id={`q-${id}`}
-            autoComplete="off"
-            enterKeyHint={isCondition ? "next" : "done"}
-            value={value}
-            onChange={(event) =>
-              onChange(
-                isCondition
-                  ? { ...answers, condition: event.target.value }
-                  : { ...answers, insurer: event.target.value },
-              )
-            }
-            {...control}
-          />
-        )}
+        {(control) =>
+          isCondition ? (
+            <Input
+              id="q-condition"
+              autoComplete="off"
+              enterKeyHint="next"
+              value={answers.condition}
+              onChange={(event) => onChange({ ...answers, condition: event.target.value })}
+              {...control}
+            />
+          ) : (
+            <Textarea
+              id="q-symptoms"
+              rows={4}
+              maxLength={2000}
+              value={answers.symptoms ?? ""}
+              onChange={(event) => onChange({ ...answers, symptoms: event.target.value })}
+              {...control}
+            />
+          )
+        }
       </Question>
     );
   }
@@ -243,11 +276,13 @@ function QuestionScreen({
         onSubmit={onSubmit}
         secondary={secondary}
       >
-        <QuestionFields id={id} answers={answers} onChange={onChange} />
+        <QuestionFields id={id} answers={answers} onChange={onChange} onAnswer={onAnswer} />
       </Question>
     </div>
   );
 }
+
+type CheckRow = { id: "condition" | "symptoms" | "home" | "needs"; label: string; hidden: string; value: string };
 
 type CheckProps = {
   answers: PatientAnswers;
@@ -255,47 +290,28 @@ type CheckProps = {
   error: string | null;
   back: ReactNode;
   note?: string;
-  onChange: (id: PatientQuestionId) => void;
+  onChange: (id: CheckRow["id"]) => void;
+  onInsurer: (value: string) => void;
   onStart: () => void;
 };
 
-function CheckScreen({
-  answers,
-  busy,
-  error,
-  back,
-  note,
-  onChange,
-  onStart,
-}: CheckProps) {
-  const rows: Array<{ id: PatientQuestionId; value: string }> = [
-    { id: "condition", value: answers.condition.trim() },
-    {
-      id: "home",
-      value: [answers.city.trim(), answers.state.trim()]
-        .filter(Boolean)
-        .join(", "),
-    },
-    { id: "travel", value: travelSummary(answers.travel, answers.travelLimitMiles) },
-    {
-      id: "goals",
-      value: answers.goals.map((goal) => COPY.goals[goal]).join(", "),
-    },
-    { id: "insurance", value: answers.insurer.trim() },
+function CheckScreen({ answers, busy, error, back, note, onChange, onInsurer, onStart }: CheckProps) {
+  const undiagnosed = answers.diagnosed === false;
+  const rows: CheckRow[] = [
+    undiagnosed
+      ? { id: "symptoms", label: COPY.check.rows.symptoms, hidden: COPY.check.changeHidden.symptoms, value: (answers.symptoms ?? "").trim() || COPY.check.undiagnosedValue }
+      : { id: "condition", label: COPY.check.rows.condition, hidden: COPY.check.changeHidden.condition, value: answers.condition.trim() },
+    { id: "home", label: COPY.check.rows.home, hidden: COPY.check.changeHidden.home, value: [answers.city.trim(), answers.state.trim()].filter(Boolean).join(", ") },
+    { id: "needs", label: COPY.check.rows.travel, hidden: COPY.check.changeHidden.travel, value: travelSummary(answers.travel, answers.travelLimitMiles) },
+    { id: "needs", label: COPY.check.rows.goals, hidden: COPY.check.changeHidden.goals, value: answers.goals.map((goal) => COPY.goals[goal]).join(", ") },
   ];
   return (
-    <div className="grid max-w-patient gap-6">
+    <div className="grid max-w-patient gap-4">
       <div>{back}</div>
-      {error ? (
-        <ErrorSummary errors={[{ fieldId: START_BUTTON_ID, message: error }]} />
-      ) : null}
-      <div className="grid gap-3">
-        <h1 className={HEADING_CLASS} tabIndex={-1}>
-          {COPY.check.title}
-        </h1>
-        <p className="m-0 max-w-prose text-body text-ink-2">
-          {COPY.check.hint}
-        </p>
+      {error ? <ErrorSummary errors={[{ fieldId: START_BUTTON_ID, message: error }]} /> : null}
+      <div className="grid gap-2">
+        <h1 className={HEADING_CLASS} tabIndex={-1}>{COPY.check.title}</h1>
+        <p className="m-0 max-w-prose text-body text-ink-2">{COPY.check.hint}</p>
         {note ? (
           <p role="status" className="m-0 max-w-prose text-small font-semibold text-teal-ink dark:text-teal">
             {note}
@@ -304,28 +320,31 @@ function CheckScreen({
       </div>
       <SummaryList
         rows={rows.map((row) => ({
-          label: COPY.check.rows[row.id],
+          label: row.label,
           value: row.value,
           onChange: busy ? undefined : () => onChange(row.id),
-          changeLabel: COPY.check.changeHidden[row.id],
+          changeLabel: row.hidden,
         }))}
       />
-      <div className="grid gap-3">
-        <div>
-          <Button
-            id={START_BUTTON_ID}
-            size="lg"
-            onClick={onStart}
-            loading={busy}
-            loadingText={COPY.actions.startingSearch}
-          >
-            {error ? COPY.actions.tryAgain : COPY.actions.startSearch}
-          </Button>
-        </div>
-        <p className="m-0 max-w-prose text-small text-ink-2">
-          {COPY.check.reassurance}
-        </p>
+      <div className="grid gap-1">
+        <Label htmlFor="q-insurer">{COPY.check.insuranceLabel}</Label>
+        <Input
+          id="q-insurer"
+          autoComplete="off"
+          enterKeyHint="done"
+          aria-describedby="q-insurer-hint"
+          value={answers.insurer}
+          disabled={busy}
+          onChange={(event) => onInsurer(event.target.value)}
+        />
+        <p id="q-insurer-hint" className="m-0 text-small text-ink-2">{COPY.check.insuranceHint}</p>
       </div>
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <Button id={START_BUTTON_ID} size="lg" onClick={onStart} loading={busy} loadingText={COPY.actions.startingSearch}>
+          {error ? COPY.actions.tryAgain : COPY.actions.startSearch}
+        </Button>
+      </div>
+      <p className="m-0 max-w-prose text-small text-ink-2">{COPY.check.reassurance}</p>
     </div>
   );
 }
@@ -377,7 +396,9 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     heading.focus();
   }, []);
 
-  const questionId = PATIENT_QUESTIONS[step];
+  const questions = questionsFor(answers);
+  const total = questions.length;
+  const questionId = questions[Math.min(step, total - 1)]!;
 
   function go(next: () => void) {
     if (busyRef.current) return;
@@ -392,14 +413,30 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       setSubmitted(true);
       return;
     }
+    proceed(answers);
+  }
+
+  function proceed(current: PatientAnswers) {
     go(() => {
-      if (fromCheck || step === TOTAL - 1) {
+      const list = questionsFor(current);
+      // Entering the travel-and-goals screen: show the common answers ticked, ready to change.
+      const next = list[step + 1];
+      if (next === "needs") setAnswers(withNeedsDefaults(current));
+      if (fromCheck || step >= list.length - 1) {
         setFromCheck(false);
         setPhase("confirm");
       } else {
         setStep(step + 1);
       }
     });
+  }
+
+  /** Single-choice screens: record the answer and move on in one tap. */
+  function answerAndAdvance(next: PatientAnswers) {
+    setAnswers(next);
+    if (canAdvance(questionId, next)) {
+      proceed(next);
+    }
   }
 
   function back() {
@@ -415,23 +452,15 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
 
   function backFromCheck() {
     go(() => {
-      setStep(TOTAL - 1);
+      setStep(total - 1);
       setPhase("questions");
-    });
-  }
-
-  function skipInsurance() {
-    go(() => {
-      setAnswers((current) => ({ ...current, insurer: "" }));
-      setFromCheck(false);
-      setPhase("confirm");
     });
   }
 
   function jumpTo(id: PatientQuestionId) {
     if (busy) return;
     go(() => {
-      setStep(PATIENT_QUESTIONS.indexOf(id));
+      setStep(Math.max(0, questions.indexOf(id)));
       setPhase("questions");
       setFromCheck(true);
     });
@@ -529,10 +558,11 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
 
   async function startLooking() {
     if (busyRef.current || phase !== "confirm") return;
-    if (!answers.condition.trim()) {
+    const undiagnosed = answers.diagnosed === false;
+    if (!undiagnosed && !answers.condition.trim()) {
       // The condition is the one thing the search cannot run without: ask for it on its own screen.
       moved.current = true;
-      setStep(PATIENT_QUESTIONS.indexOf("condition"));
+      setStep(Math.max(0, questions.indexOf("condition")));
       setPhase("questions");
       setFromCheck(true);
       setSubmitted(true);
@@ -543,6 +573,11 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     setError(null);
     try {
       let extracted = record;
+      if (!extracted && undiagnosed) {
+        // No diagnosis: the case comes from their answers only. No model reads it and no condition is named.
+        extracted = (await createUndiagnosedCase(answersToReport({ ...answers, condition: "" }), undiagnosedFields(answers))).record;
+        setRecord(extracted);
+      }
       if (!extracted) {
         const own = answersToCaseInput(answers);
         const fallback: CaseInput = {
@@ -631,6 +666,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
               </BackButton>
             }
             onChange={jumpTo}
+            onInsurer={(value) => setAnswers((current) => ({ ...current, insurer: value }))}
             onStart={() => void startLooking()}
           />
         ),
@@ -638,16 +674,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     }
     const secondary = (
       <div className="flex flex-wrap items-center gap-x-6">
-        {questionId === "insurance" ? (
-          <Button variant="link" className="py-3" onClick={skipInsurance}>
-            {COPY.actions.skip}
-          </Button>
-        ) : null}
-        <Button
-          variant="link"
-          className="py-3"
-          onClick={() => go(() => setPhase("upload"))}
-        >
+        <Button variant="link" className="py-3" onClick={() => go(() => setPhase("upload"))}>
           {COPY.actions.uploadInstead}
         </Button>
         <Button
@@ -666,6 +693,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
           id={questionId}
           answers={answers}
           onChange={setAnswers}
+          onAnswer={answerAndAdvance}
           showError={submitted}
           back={
             step > 0 || fromCheck ? (
@@ -690,9 +718,9 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       {phase === "questions" ? (
         <Progress
           value={step + 1}
-          max={TOTAL}
+          max={total}
           label={COPY.progress.label}
-          valueText={COPY.progress.valueText(step + 1, TOTAL)}
+          valueText={COPY.progress.valueText(step + 1, total)}
         />
       ) : null}
       <StepTransition stepKey={body.key}>

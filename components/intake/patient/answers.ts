@@ -15,11 +15,34 @@ export type PatientAnswers = {
   travelLimitMiles?: number;
   goals: Goal[];
   insurer: string;
+  /** null or undefined until asked. false sends the patient down the undiagnosed path. */
+  diagnosed?: boolean | null;
+  /** Undiagnosed path: the patient's own words about what they are dealing with. Quoted back, never interpreted. */
+  symptoms?: string;
 };
 
-export type PatientQuestionId = "condition" | "home" | "travel" | "goals" | "insurance";
+export type PatientQuestionId = "diagnosis" | "condition" | "symptoms" | "home" | "needs";
 
-export const PATIENT_QUESTIONS: readonly PatientQuestionId[] = ["condition", "home", "travel", "goals", "insurance"];
+/** Diagnosed path. Insurance is an optional line on the check screen, and travel plus goals share one screen. */
+export const PATIENT_QUESTIONS: readonly PatientQuestionId[] = ["diagnosis", "condition", "home", "needs"];
+export const UNDIAGNOSED_QUESTIONS: readonly PatientQuestionId[] = ["diagnosis", "symptoms", "home", "needs"];
+
+/** The screens for these answers: "Not yet" swaps the condition screen for the patient's own words. */
+export function questionsFor(answers: Pick<PatientAnswers, "diagnosed">): readonly PatientQuestionId[] {
+  return answers.diagnosed === false ? UNDIAGNOSED_QUESTIONS : PATIENT_QUESTIONS;
+}
+
+/** Common answers for the travel-and-goals screen. Shown ticked, never hidden, and the patient can change them. */
+export const DEFAULT_TRAVEL: TravelChoice = "regional";
+export const DEFAULT_GOALS: readonly Goal[] = ["second_opinion", "treatment"];
+
+export function withNeedsDefaults(answers: PatientAnswers): PatientAnswers {
+  return {
+    ...answers,
+    travel: answers.travel ?? (answers.travelLimitMiles === undefined ? DEFAULT_TRAVEL : null),
+    goals: answers.goals.length > 0 ? answers.goals : [...DEFAULT_GOALS],
+  };
+}
 
 export type ProfilePrefill = {
   condition?: string;
@@ -104,6 +127,14 @@ export function answersToCaseInput(answers: PatientAnswers): Partial<CaseInput> 
   };
 }
 
+/** Fields for POST /api/cases with undiagnosed:true. Built from the patient's answers only: no model reads them. */
+export function undiagnosedFields(answers: PatientAnswers): Partial<CaseInput> {
+  const { diseaseName: _name, ...rest } = answersToCaseInput(answers);
+  void _name;
+  const notes = (answers.symptoms ?? "").trim();
+  return { ...rest, ...(notes ? { symptomNotes: notes } : {}) };
+}
+
 /** The patient's own answers win; extraction-only fields (subtype, stage, codes, plan) are kept. */
 export function mergeExtracted(record: Case, answers: PatientAnswers): Case {
   const own = answersToCaseInput(answers);
@@ -116,6 +147,11 @@ export function mergeExtracted(record: Case, answers: PatientAnswers): Case {
     travelLimitMiles: own.travelLimitMiles,
     goals: own.goals ?? [],
   };
+  if (record.undiagnosed === true) {
+    // An undiagnosed case keeps the fixed label. Their own words are the only description, and nothing guesses a name.
+    const notes = (answers.symptoms ?? "").trim();
+    return { ...merged, diseaseName: record.diseaseName, undiagnosed: true, ...(notes ? { symptomNotes: notes } : {}) };
+  }
   if (merged.diseaseName.trim().toLowerCase() !== record.diseaseName.trim().toLowerCase()) {
     merged.diseaseCodes = undefined;
     merged.subtype = undefined;
@@ -127,18 +163,18 @@ export function mergeExtracted(record: Case, answers: PatientAnswers): Case {
 
 export function canAdvance(id: PatientQuestionId, answers: PatientAnswers): boolean {
   switch (id) {
+    case "diagnosis":
+      return answers.diagnosed === true || answers.diagnosed === false;
+    case "symptoms":
+      return true;
     case "condition": {
       const length = answers.condition.trim().length;
       return length > 0 && length <= MAX_CONDITION_LENGTH;
     }
     case "home":
       return Boolean(answers.city.trim() || answers.state.trim());
-    case "travel":
-      return answers.travel !== null;
-    case "goals":
-      return answers.goals.length > 0;
-    case "insurance":
-      return true;
+    case "needs":
+      return (answers.travel !== null || answers.travelLimitMiles !== undefined) && answers.goals.length > 0;
   }
 }
 
@@ -147,18 +183,18 @@ export function questionError(id: PatientQuestionId, answers: PatientAnswers): s
   if (canAdvance(id, answers)) return undefined;
   const q = INTAKE_COPY.questions;
   switch (id) {
+    case "diagnosis":
+      return q.diagnosis.error;
+    case "symptoms":
+      return undefined;
     case "condition":
       return answers.condition.trim().length > MAX_CONDITION_LENGTH
         ? q.condition.errorTooLong(MAX_CONDITION_LENGTH)
         : q.condition.errorEmpty;
     case "home":
       return q.home.error;
-    case "travel":
-      return q.travel.error;
-    case "goals":
-      return q.goals.error;
-    case "insurance":
-      return undefined;
+    case "needs":
+      return answers.travel === null && answers.travelLimitMiles === undefined ? q.travel.error : q.goals.error;
   }
 }
 

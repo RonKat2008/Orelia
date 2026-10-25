@@ -102,6 +102,21 @@ export async function extractCase(reportText: string, fallback: CaseInput): Prom
   return { record: parsed.data, preview: false };
 }
 
+/** The patient has no diagnosis yet: the case is built from their answers, with no model call and no condition name. */
+export async function createUndiagnosedCase(reportText: string, fields: Partial<CaseInput>): Promise<{ record: Case; preview: boolean }> {
+  const response = await send("/api/cases", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ reportText, undiagnosed: true, fields }),
+  }, "save");
+  if (!response.ok) throw await failure(response, "save");
+  const body: unknown = await response.json().catch(() => null);
+  const parsed = caseSchema.safeParse(unwrap(body));
+  if (!parsed.success) throw new Error("Wayfinder returned an incomplete case. Your answers are still here; please try again.");
+  rememberCase(parsed.data);
+  return { record: parsed.data, preview: false };
+}
+
 const OPTIONAL_FIELDS = ["diseaseCodes", "subtype", "stageSummary", "homeCity", "homeState", "insurer", "planId", "travelLimitMiles"] as const;
 
 async function researchAlreadyStarted(id: string): Promise<boolean> {

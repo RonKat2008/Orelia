@@ -108,3 +108,31 @@ export function summaryRows(order: readonly ShareableFieldKey[], items: ConsentI
     };
   });
 }
+
+/**
+ * The least each kind of resource needs to answer well. Everything else starts unticked. The patient sees these
+ * ticks and can change every one. Details we do not have are never ticked.
+ */
+const MINIMUM_BY_KIND: Record<string, readonly ShareableFieldKey[]> = {
+  expert: ["diseaseName", "homeState"],
+  institution: ["diseaseName", "homeState", "insurer"],
+  trial: ["diseaseName", "homeState"],
+  organization: ["diseaseName", "goals"],
+};
+const MINIMUM_FALLBACK: readonly ShareableFieldKey[] = ["diseaseName"];
+
+/** Why a detail is ticked, in plain words, for the checklist. */
+export const NEEDED_FOR: Partial<Record<ShareableFieldKey, string>> = {
+  diseaseName: "Everyone needs this to know what you are asking about.",
+  homeState: "Doctors and trials use it to check if you can take part.",
+  insurer: "Specialist centers use it to see if they take your plan.",
+  goals: "Support groups use it to point you to the right help.",
+};
+
+/** The details to tick by default for these kinds of resource, limited to details we have. */
+export function minimumFields(kinds: readonly string[], known: readonly ShareableFieldKey[]): ShareableFieldKey[] {
+  const wanted = new Set<ShareableFieldKey>();
+  const lists = kinds.length === 0 ? [MINIMUM_FALLBACK] : kinds.map((kind) => MINIMUM_BY_KIND[kind] ?? MINIMUM_FALLBACK);
+  for (const list of lists) for (const key of list) wanted.add(key);
+  return known.filter((key) => wanted.has(key));
+}

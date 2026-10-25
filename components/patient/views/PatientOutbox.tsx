@@ -49,7 +49,7 @@ export function PatientOutbox({ caseId, titleAs = "h1" }: PatientViewProps) {
   const common = { caseId, onDone: refresh, headline: status.headline };
 
   return (
-    <div data-testid="patient-outbox" data-screen={screen} className="grid max-w-patient gap-8">
+    <div data-testid="patient-outbox" data-screen={screen} className="grid max-w-patient gap-4 sm:gap-6">
       <PageHeader as={titleAs} className="mb-0" title={copy.title} lede={copy.lede} />
       {screen === "message" && action ? <MessageCard key={outboxKey(status)} {...common} action={action} /> : null}
       {screen === "form" && action ? <FormCard key={outboxKey(status)} {...common} action={action} /> : null}

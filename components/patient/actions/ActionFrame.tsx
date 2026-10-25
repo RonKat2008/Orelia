@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
 import { CircleAlert } from "lucide-react";
 import { ActionCard } from "@/components/ui";
+import { cn } from "@/lib/ui/cn";
 import { PATIENT_HOME_COPY } from "../copy";
 
 export interface ActionFrameProps {
@@ -22,6 +23,7 @@ export interface ActionFrameProps {
   secondaryAction?: ReactNode;
   /** One short line under the button. Say it once per screen. */
   reassurance?: ReactNode;
+  className?: string;
 }
 
 const QUIET_LINK =
@@ -41,6 +43,7 @@ export function ActionFrame({
   action,
   secondaryAction,
   reassurance,
+  className,
 }: ActionFrameProps) {
   const details = detailsHref ? (
     <Link href={detailsHref} className={QUIET_LINK}>
@@ -59,6 +62,8 @@ export function ActionFrame({
       action={action}
       secondaryAction={secondary}
       reassurance={footer}
+      stickyAction
+      className={cn("gap-4 p-4 sm:p-6", className)}
     >
       {children}
     </ActionCard>

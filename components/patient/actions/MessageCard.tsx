@@ -147,6 +147,8 @@ export function MessageCard({ caseId, onDone, action: first }: ActionProps & { a
   const primary = action.reply ? MESSAGE_COPY.sendReply : call ? MESSAGE_COPY.okCall : MESSAGE_COPY.sendEmail;
   return (
     <ActionCard
+      stickyAction
+      className="gap-4 p-4 sm:p-6"
       data-testid="patient-action"
       data-action="approve_message"
       data-reply={action.reply ?? undefined}

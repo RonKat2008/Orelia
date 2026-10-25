@@ -30,7 +30,7 @@ export function LiveStatus({ status, mode }: { status: PatientStatus; mode: Live
       data-testid="patient-status"
       data-tone={status.tone}
       data-live-mode={mode}
-      className="grid gap-3"
+      className="grid gap-2"
     >
       <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ink-2">
         <span role="status" aria-live="polite" aria-atomic="true">
@@ -39,15 +39,15 @@ export function LiveStatus({ status, mode }: { status: PatientStatus; mode: Live
         {ago ? <span>{PATIENT_HOME_COPY.updated(ago)}</span> : null}
       </p>
 
-      <div role="status" aria-live="polite" aria-atomic="true" className="grid gap-3">
+      <div role="status" aria-live="polite" aria-atomic="true" className="grid gap-2">
         <h1
           id="patient-status-heading"
           data-testid="patient-status-headline"
-          className="m-0 font-display text-h1 font-light text-ink display-soft text-balance"
+          className="m-0 font-display text-h3 font-light sm:text-h1 text-ink display-soft text-balance"
         >
           {status.headline}
         </h1>
-        {status.detail ? <p className="m-0 max-w-prose text-body text-ink-2 text-pretty">{status.detail}</p> : null}
+        {status.detail ? <p className={`m-0 max-w-prose text-body text-ink-2 text-pretty${status.nextAction ? " hidden sm:block" : ""}`}>{status.detail}</p> : null}
       </div>
 
       {status.progress ? (

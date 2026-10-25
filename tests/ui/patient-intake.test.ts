@@ -9,7 +9,10 @@ import {
   emptyAnswers,
   mergeExtracted,
   questionError,
+  questionsFor,
   recordToAnswers,
+  undiagnosedFields,
+  withNeedsDefaults,
   type PatientAnswers,
 } from "@/components/intake/patient/answers";
 import { INTAKE_COPY, intakeCopyStrings } from "@/components/intake/patient/copy";
@@ -24,8 +27,14 @@ const base: PatientAnswers = {
 };
 
 describe("PATIENT_QUESTIONS", () => {
-  it("lists the five questions in order", () => {
-    expect(PATIENT_QUESTIONS).toEqual(["condition", "home", "travel", "goals", "insurance"]);
+  it("lists four screens: diagnosis, condition, home, then travel and goals together", () => {
+    expect(PATIENT_QUESTIONS).toEqual(["diagnosis", "condition", "home", "needs"]);
+  });
+
+  it("swaps the condition screen for the patient's own words when they have no diagnosis", () => {
+    expect(questionsFor({ diagnosed: false })).toEqual(["diagnosis", "symptoms", "home", "needs"]);
+    expect(questionsFor({ diagnosed: true })).toEqual(PATIENT_QUESTIONS);
+    expect(questionsFor({})).toEqual(PATIENT_QUESTIONS);
   });
 });
 
@@ -179,15 +188,35 @@ describe("canAdvance", () => {
     expect(canAdvance("home", { ...emptyAnswers(), state: "TX" })).toBe(true);
   });
 
-  it("needs a travel choice and at least one goal", () => {
-    expect(canAdvance("travel", emptyAnswers())).toBe(false);
-    expect(canAdvance("travel", { ...emptyAnswers(), travel: "local" })).toBe(true);
-    expect(canAdvance("goals", emptyAnswers())).toBe(false);
-    expect(canAdvance("goals", { ...emptyAnswers(), goals: ["aid"] })).toBe(true);
+  it("needs a travel choice and at least one goal on the same screen", () => {
+    expect(canAdvance("needs", emptyAnswers())).toBe(false);
+    expect(canAdvance("needs", { ...emptyAnswers(), travel: "local" })).toBe(false);
+    expect(canAdvance("needs", { ...emptyAnswers(), goals: ["aid"] })).toBe(false);
+    expect(canAdvance("needs", { ...emptyAnswers(), travel: "local", goals: ["aid"] })).toBe(true);
   });
 
-  it("always allows insurance", () => {
-    expect(canAdvance("insurance", emptyAnswers())).toBe(true);
+  it("needs a yes or not-yet on the diagnosis screen, and always allows the symptoms screen", () => {
+    expect(canAdvance("diagnosis", emptyAnswers())).toBe(false);
+    expect(canAdvance("diagnosis", { ...emptyAnswers(), diagnosed: true })).toBe(true);
+    expect(canAdvance("diagnosis", { ...emptyAnswers(), diagnosed: false })).toBe(true);
+    expect(canAdvance("symptoms", emptyAnswers())).toBe(true);
+  });
+
+  it("fills common travel and goal answers without overriding what the patient chose", () => {
+    const filled = withNeedsDefaults(emptyAnswers());
+    expect(filled.travel).toBe("regional");
+    expect(filled.goals).toEqual(["second_opinion", "treatment"]);
+    const kept = withNeedsDefaults({ ...emptyAnswers(), travel: "local", goals: ["aid"] });
+    expect(kept.travel).toBe("local");
+    expect(kept.goals).toEqual(["aid"]);
+    expect(withNeedsDefaults({ ...emptyAnswers(), travelLimitMiles: 80 }).travel).toBeNull();
+  });
+
+  it("builds undiagnosed fields from the answers with no condition name", () => {
+    const fields = undiagnosedFields({ ...base, condition: "should not appear", symptoms: " tired all the time " });
+    expect(fields).not.toHaveProperty("diseaseName");
+    expect(fields.symptomNotes).toBe("tired all the time");
+    expect(fields.homeCity).toBe("Austin");
   });
 });
 
@@ -228,9 +257,10 @@ describe("questionError", () => {
     expect(questionError("condition", emptyAnswers())).toMatch(/Tell us your condition/);
     expect(questionError("condition", { ...emptyAnswers(), condition: "x".repeat(201) })).toMatch(/200/);
     expect(questionError("home", emptyAnswers())).toMatch(/city or your state/);
-    expect(questionError("travel", emptyAnswers())).toMatch(/Choose how far/);
-    expect(questionError("goals", emptyAnswers())).toMatch(/Choose at least one/);
-    expect(questionError("insurance", emptyAnswers())).toBeUndefined();
+    expect(questionError("needs", emptyAnswers())).toMatch(/Choose how far/);
+    expect(questionError("needs", { ...emptyAnswers(), travel: "local" })).toMatch(/Choose at least one/);
+    expect(questionError("diagnosis", emptyAnswers())).toMatch(/Choose yes/);
+    expect(questionError("symptoms", emptyAnswers())).toBeUndefined();
     expect(questionError("condition", base)).toBeUndefined();
   });
 });

@@ -180,14 +180,14 @@ export function ShortlistPicker({ caseId, layout, titleAs = "h1", detailsHref, o
   }
 
   return (
-    <div className="grid max-w-patient gap-6">
+    <div className="grid max-w-patient gap-4 sm:gap-6">
       <PageHeader as={titleAs} title={COPY.title} lede={lede} className="mb-0" />
       {content}
       {action ? (
-        <div className="grid gap-3">
-          <div>{action}</div>
+        <>
+          <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">{action}</div>
           <p className="m-0 text-small text-ink-2">{COPY.reassurance}</p>
-        </div>
+        </>
       ) : null}
     </div>
   );

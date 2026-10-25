@@ -101,7 +101,7 @@ export function PatientSearch({ caseId, titleAs = "h1" }: PatientViewProps) {
   const progressName = copy.progressName(progress.done, progress.total);
 
   return (
-    <div data-testid="patient-search" data-phase={phase} className="grid max-w-patient gap-8">
+    <div data-testid="patient-search" data-phase={phase} className="grid max-w-patient gap-4 sm:gap-6">
       <PageHeader
         as={titleAs}
         className="mb-0"

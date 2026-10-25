@@ -72,11 +72,11 @@ function ApproveCardView({ card }: { card: ApproveCard }) {
 function Bubble({ msg, variant }: { msg: ChatMsg; variant: Variant }) {
   const mine = msg.role === "user";
   return (
-    <li className={cn("m-0 flex list-none", mine ? "justify-end" : "justify-start")}>
+    <div className={cn("m-0 flex", mine ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[85%] rounded-lg px-3 py-2",
-          variant === "patient" ? "text-body" : "text-small",
+          "max-w-[85%] rounded-lg px-3.5 py-2.5 leading-relaxed",
+          variant === "patient" ? "text-body" : "text-body sm:max-w-[min(85%,62ch)]",
           mine ? "bg-teal-soft text-ink" : "border border-line bg-card text-ink",
         )}
       >
@@ -89,7 +89,7 @@ function Bubble({ msg, variant }: { msg: ChatMsg; variant: Variant }) {
           </p>
         ) : null}
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -110,7 +110,7 @@ export function AgentChat({
   const [error, setError] = useState<string | null>(null);
   const sendingRef = useRef(false);
   const pendingSeq = useRef(0);
-  const endRef = useRef<HTMLLIElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const inputId = useId();
   const url = `/api/cases/${caseId}/agents/${agentId}/chat`;
 
@@ -186,17 +186,21 @@ export function AgentChat({
 
   return (
     <div className="grid gap-2" data-variant={variant}>
-      <ol
+      <div
         role="log"
         aria-live="polite"
         aria-label={`Conversation with ${agentName}`}
-        className="m-0 grid max-h-80 list-none gap-2 overflow-y-auto p-0"
+        className={cn(
+          "grid content-start gap-2.5 overflow-y-auto",
+          patient ? "max-h-80" : "max-h-[26rem]",
+          !patient && messages.length > 0 && "min-h-40 rounded-md bg-paper-2 p-3",
+        )}
       >
         {messages.map((msg) => (
           <Bubble key={msg.id} msg={msg} variant={variant} />
         ))}
-        <li ref={endRef} aria-hidden className="m-0 list-none" />
-      </ol>
+        <div ref={endRef} aria-hidden />
+      </div>
       {messages.length === 0 ? (
         <div className="flex flex-wrap gap-1.5" aria-label="Suggestions">
           {SUGGESTIONS.map((suggestion) => (
@@ -221,7 +225,7 @@ export function AgentChat({
         </p>
       ) : null}
       <form
-        className="grid gap-2"
+        className={cn("grid gap-2", !patient && "sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end")}
         onSubmit={(event) => {
           event.preventDefault();
           void send(text);

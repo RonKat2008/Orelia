@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Loader2, Mic, MicOff, PhoneOff, PhoneOutgoing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PHONE_LINE_UNAVAILABLE } from "@/lib/channels/vapi-limits";
@@ -12,7 +13,12 @@ export interface BrowserCallButtonProps {
   /** The phone send failed: use the "Phone line unavailable" wording. */
   phoneFailed?: boolean;
   onStarted?: () => void;
+  /** Row use (live console): a small secondary button while idle; the full widget only once a call is under way. */
+  compact?: boolean;
 }
+
+/** Shown under the button (full widget) or as its description (compact). Truthful: the call never dials a number. */
+export const BROWSER_CALL_HINT = "Approves this call and connects it to your mic. No real number is dialed in safe mode.";
 
 /**
  * DEMO ONLY. The presenter plays the clinic coordinator and talks to the same call agent through the laptop mic.
@@ -20,10 +26,33 @@ export interface BrowserCallButtonProps {
  * joins the room. The call lives in browser-call-store, so a console re-render never drops it. Transcript turns
  * reach the console through the normal Vapi webhook.
  */
-export function BrowserCallButton({ contactId, reason, phoneFailed, onStarted }: BrowserCallButtonProps) {
+export function BrowserCallButton({ contactId, reason, phoneFailed, onStarted, compact = false }: BrowserCallButtonProps) {
   const { phase, error, stage, muted, lines } = useBrowserCall(contactId);
+  const hintId = useId();
   const busy = phase === "starting" || phase === "connecting";
   const inCall = phase === "connecting" || phase === "live";
+
+  if (compact && !inCall && lines.length === 0) {
+    return (
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-small" data-browser-call={phase} data-stage={stage}>
+        <Button
+          size="sm"
+          variant="secondary"
+          aria-describedby={hintId}
+          title={BROWSER_CALL_HINT}
+          onClick={() => void startBrowserCall(contactId, onStarted)}
+          disabled={busy || phase === "ended"}
+        >
+          {busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <PhoneOutgoing className="size-4" aria-hidden />}
+          {phase === "ended" ? "Browser call ended" : "Take the call in your browser"}
+        </Button>
+        <span id={hintId} className="sr-only">{BROWSER_CALL_HINT}</span>
+        {phoneFailed ? <span className="text-ink-2">{PHONE_LINE_UNAVAILABLE}</span> : null}
+        {reason ? <span className="text-ink-2">{reason}</span> : null}
+        {error ? <p role="alert" className="m-0 basis-full text-[var(--color-terracotta,#a4532f)]">{error}</p> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-1 rounded-md border border-dashed border-line-strong bg-paper-2 p-2 text-small" data-browser-call={phase} data-stage={stage}>
@@ -49,7 +78,7 @@ export function BrowserCallButton({ contactId, reason, phoneFailed, onStarted }:
             {busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <PhoneOutgoing className="size-4" aria-hidden />}
             {phase === "ended" ? "Browser call ended" : "Take the call in your browser"}
           </Button>
-          {phase === "idle" ? <span className="text-ink-2">Approves this call and connects it to your mic. Demo only; no number is dialed.</span> : null}
+          {phase === "idle" ? <span className="text-ink-2">{BROWSER_CALL_HINT}</span> : null}
         </div>
       )}
       {lines.length > 0 ? (

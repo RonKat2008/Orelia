@@ -9,7 +9,6 @@ import {
   IconButton,
   JudgeOnly,
   List,
-  ListRow,
   Popover,
   PopoverClose,
   PopoverContent,
@@ -31,6 +30,8 @@ import {
   waitText,
 } from './model';
 import { CASE_SECTION_HEADING } from "@/components/outreach/CasePage";
+import { cn } from '@/lib/ui/cn';
+import { ClampText } from './ClampText';
 
 const SectionH = CASE_SECTION_HEADING;
 
@@ -61,11 +62,12 @@ export function PlanBoard({ plan, evidence = {}, busy = false, onToggle, onMove,
   const enabled = enabledStepCount(plan);
   const showApproved = plan.status === 'approved' && !editing;
   return (
-    <div className="ds-root flex min-w-0 flex-col gap-4">
+    <div className="ds-root @container flex min-w-0 flex-col gap-4">
       <p className="m-0 max-w-prose text-body text-ink-2 text-pretty" data-testid="plan-summary">
         {plan.summary}
       </p>
-      <ul className="m-0 grid list-none gap-x-10 gap-y-5 p-0 lg:grid-cols-2 lg:items-start">
+      {/* Two resources side by side only when each column keeps a comfortable ~30rem; otherwise one column. */}
+      <ul className="m-0 grid list-none gap-x-8 gap-y-6 p-0 @min-[62rem]:grid-cols-2 @min-[62rem]:items-start">
         {plan.resources.map(resource => (
           <li key={resource.resourceKey} className="min-w-0">
             <ResourceSection resource={resource} evidence={evidence} busy={busy} onToggle={onToggle} onMove={onMove} />
@@ -207,99 +209,95 @@ function StepRow({
   const isLast = index === total - 1;
   const wait = index === 0 && step.waitFor === 'none' ? null : waitText(step.waitFor, index === 0);
 
-  // Badge budget: Skipped and the test-inbox label come first, then sources; anything beyond the cap is plain text.
-  const pool: ReactNode[] = [];
+  // Status badges only (Skipped, the test-destination label); sources are calm secondary text below.
+  const badges: ReactNode[] = [];
   if (!step.enabled) {
-    pool.push(
+    badges.push(
       <Badge key="skipped" tone="outline" size="sm">
         Skipped
       </Badge>,
     );
   }
-  if (demoLabel) pool.push(<DemoLabelBadge key="demo" label={demoLabel} />);
-  const sourceIds = step.evidenceIds;
-  // One source badge at most, and none beside a status badge: two nowrap badges overflow a 320 px row.
-  const sourceSlots = pool.length > 0 ? 0 : 1;
-  sourceIds.slice(0, sourceSlots).forEach(id => {
-    pool.push(
-      <JudgeOnly key={id}>
-        <Badge tone="outline" size="sm" title={evidence[id]?.host ? `Source: ${evidence[id]!.host}` : id}>
-          {evidenceBadgeText(id, evidence[id])}
-        </Badge>
-      </JudgeOnly>,
-    );
-  });
-  const extraSources = sourceIds.slice(sourceSlots).map(id => evidenceBadgeText(id, evidence[id]));
-
-  const controls = (
-    <div className="flex flex-wrap items-center gap-3">
-      <label className="flex min-h-11 items-center gap-2 text-small font-semibold text-ink">
-        <Switch checked={step.enabled} disabled={busy} onCheckedChange={onToggle} />
-        <span>
-          Include<span className="sr-only"> step {index + 1}: {label} for {resourceName}</span>
-        </span>
-      </label>
-      {total >= 2 ? (
-        <div className="flex items-center gap-1">
-          <IconButton
-            label={`Move step ${index + 1} earlier for ${resourceName}`}
-            size="sm"
-            disabled={busy || index === 0}
-            onClick={() => onMove(-1)}
-          >
-            <ArrowUp aria-hidden />
-          </IconButton>
-          <IconButton
-            label={`Move step ${index + 1} later for ${resourceName}`}
-            size="sm"
-            disabled={busy || isLast}
-            onClick={() => onMove(1)}
-          >
-            <ArrowDown aria-hidden />
-          </IconButton>
-        </div>
-      ) : null}
-    </div>
-  );
+  if (demoLabel) badges.push(<DemoLabelBadge key="demo" label={demoLabel} />);
+  const sources = step.evidenceIds.map(id => evidenceBadgeText(id, evidence[id]));
+  const formLink = step.channel === 'web_form' && isHttpUrl(step.targetRef);
 
   return (
-    <ListRow
+    <li
+      data-slot="list-row"
       data-testid="plan-step"
-      trailing={<div className="hidden sm:block">{controls}</div>}
-      title={label}
-      maxBadges={MAX_ROW_BADGES}
-      badges={pool}
-      leading={
-        <span className="flex flex-col items-center gap-1 text-ink-2">
-          <Icon aria-hidden className="size-4" />
-          {isLast ? null : <span aria-hidden data-testid="plan-connector" className="h-3 w-px bg-line-strong" />}
-        </span>
-      }
-      meta={
-        <>
-          {wait ? <span>{wait} · </span> : null}
-          <span className="text-pretty">{step.reason}</span>
-        </>
-      }
+      data-enabled={step.enabled}
+      className="relative grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 border-b border-line py-3"
     >
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        {extraSources.length > 0 ? (
-          <JudgeOnly>
-            <span className="text-small text-ink-2">Also from {extraSources.join(', ')}</span>
-          </JudgeOnly>
-        ) : null}
-        {step.channel === 'web_form' && isHttpUrl(step.targetRef) ? (
-          <a
-            href={step.targetRef}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="focus-ring rounded-sm text-small text-teal underline underline-offset-4"
-          >
-            Open the form<span className="sr-only"> for {resourceName} (opens in a new tab)</span>
-          </a>
+      <span className="flex flex-col items-center gap-1 pt-1 text-ink-2">
+        <Icon aria-hidden className="size-4 shrink-0" />
+        {isLast ? null : <span aria-hidden data-testid="plan-connector" className="w-px flex-1 bg-line-strong" />}
+      </span>
+      <div className="grid min-w-0 gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <div className="flex min-w-0 flex-[1_1_12rem] flex-wrap items-center gap-x-1.5 gap-y-1">
+            <span className={cn('min-w-0 text-body font-semibold leading-snug', step.enabled ? 'text-ink' : 'text-ink-2')}>{label}</span>
+            {badges.length > 0 ? (
+              <span data-slot="list-row-badges" className="flex shrink-0 items-center gap-1.5">
+                {badges.slice(0, MAX_ROW_BADGES)}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <label className="flex min-h-10 items-center gap-1.5 pr-0.5 text-small font-semibold text-ink">
+              <Switch checked={step.enabled} disabled={busy} onCheckedChange={onToggle} />
+              <span>
+                Include<span className="sr-only"> step {index + 1}: {label} for {resourceName}</span>
+              </span>
+            </label>
+            {total >= 2 ? (
+              <div className="flex items-center">
+                <IconButton
+                  label={`Move step ${index + 1} earlier for ${resourceName}`}
+                  size="sm"
+                  className="size-8"
+                  disabled={busy || index === 0}
+                  onClick={() => onMove(-1)}
+                >
+                  <ArrowUp aria-hidden />
+                </IconButton>
+                <IconButton
+                  label={`Move step ${index + 1} later for ${resourceName}`}
+                  size="sm"
+                  className="size-8"
+                  disabled={busy || isLast}
+                  onClick={() => onMove(1)}
+                >
+                  <ArrowDown aria-hidden />
+                </IconButton>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <ClampText>
+          {wait ? <span className="font-semibold text-ink">{wait} · </span> : null}
+          {step.reason}
+        </ClampText>
+        {sources.length > 0 || formLink ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-small text-ink-3">
+            {sources.length > 0 ? (
+              <JudgeOnly>
+                <span className="min-w-0 [overflow-wrap:anywhere]">{sources.join(' · ')}</span>
+              </JudgeOnly>
+            ) : null}
+            {formLink ? (
+              <a
+                href={step.targetRef}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="focus-ring rounded-sm text-small text-teal underline underline-offset-4"
+              >
+                Open the form<span className="sr-only"> for {resourceName} (opens in a new tab)</span>
+              </a>
+            ) : null}
+          </div>
         ) : null}
       </div>
-      <div className="mt-1 sm:hidden">{controls}</div>
-    </ListRow>
+    </li>
   );
 }

@@ -100,7 +100,7 @@ function inboxLine(agent: AgentView): string {
     case "none":
       return "Mock mailer";
     case "demo":
-      return "Demo inbox";
+      return "Test inbox (safe mode)";
     default:
       return "Inbox pending";
   }
@@ -205,21 +205,20 @@ function AgentCard({
     }
   }
 
-  return (
-    <li
-      className="m-0 grid list-none content-start gap-2 rounded-lg border border-line bg-card p-3"
-      data-agent-state={agent.state}
-    >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <h3 className="m-0 min-w-0 flex-1 text-body font-semibold text-ink [overflow-wrap:anywhere]">
+  const details = (
+    <div className="grid min-w-0 content-start gap-2.5">
+      <header className="grid min-w-0 gap-1.5">
+        <h3 className="m-0 min-w-0 truncate text-body font-semibold text-ink" title={agent.name}>
           {agent.name}
         </h3>
-        <Badge tone="outline">
-          {GOAL_LABELS[agent.goal] ?? humanize(agent.goal)}
-        </Badge>
-        <Badge tone={state.tone}>{state.label}</Badge>
-      </div>
-      <StrategyChips strategy={agent.strategy} step={agent.strategyStep} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge tone={state.tone}>{state.label}</Badge>
+          <Badge tone="outline">
+            {GOAL_LABELS[agent.goal] ?? humanize(agent.goal)}
+          </Badge>
+          <StrategyChips strategy={agent.strategy} step={agent.strategyStep} />
+        </div>
+      </header>
       {agent.nextAction ? (
         <p className="m-0 text-small text-ink">
           <span className="text-ink-2">Next: </span>
@@ -227,23 +226,21 @@ function AgentCard({
           {nextWhen ? <span className="text-ink-2"> · {nextWhen}</span> : null}
         </p>
       ) : null}
-      <ul className="m-0 grid list-none gap-0.5 p-0 text-small text-ink-2">
-        <li className="[overflow-wrap:anywhere]">{inboxLine(agent)}</li>
-        <li>{callsLine(agent)}</li>
-        <li>{applicationsLine(agent)}</li>
-      </ul>
+      <p className="m-0 text-small text-ink-2 [overflow-wrap:anywhere]">
+        {inboxLine(agent)} · {callsLine(agent)} · {applicationsLine(agent)}
+      </p>
       {agent.applications.some((a) => a.status === "draft") ? (
         <PendingFormQuestions caseId={caseId} applicationIds={agent.applications.filter((a) => a.status === "draft").map((a) => a.id)} />
       ) : null}
       {events.length > 0 ? (
         <ol
-          className="m-0 grid list-none gap-1 border-t border-line p-0 pt-2 text-small"
+          className="m-0 grid list-none gap-1.5 border-t border-line p-0 pt-2.5 text-small"
           aria-label={`Recent events for ${agent.name}`}
         >
           {events.map((event) => (
-            <li key={event.id} className="grid gap-0.5">
-              <div className="flex items-baseline gap-2">
-                <code className="font-mono text-small text-ink">
+            <li key={event.id} className="grid min-w-0 gap-0.5">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <code className="min-w-0 truncate font-mono text-small text-ink">
                   {event.action ?? event.kind}
                 </code>
                 <span className="ml-auto shrink-0 text-ink-3">
@@ -259,13 +256,13 @@ function AgentCard({
           ))}
         </ol>
       ) : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 pt-0.5">
         <Button
           size="sm"
           variant="secondary"
           loading={running}
           loadingText="Running"
-          aria-label={`Run ${agent.name} now`}
+          aria-label={`Run now: ${agent.name}`}
           onClick={() => void runNow()}
         >
           <Play aria-hidden />
@@ -280,11 +277,27 @@ function AgentCard({
           onClick={onToggleChat}
         >
           <MessageSquare aria-hidden />
-          Chat
+          {chatOpen ? "Close chat" : "Chat"}
         </Button>
       </div>
+    </div>
+  );
+
+  return (
+    <li
+      className={cn(
+        "m-0 grid min-w-0 list-none content-start gap-4 rounded-lg border border-line bg-card p-4",
+        // An open chat takes the whole row: details on the left, a roomy conversation on the right.
+        chatOpen && "col-span-full lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-6",
+      )}
+      data-agent-state={agent.state}
+    >
+      {details}
       {chatOpen ? (
-        <div id={`agent-chat-${agent.id}`} className="border-t border-line pt-2">
+        <div
+          id={`agent-chat-${agent.id}`}
+          className="min-w-0 border-t border-line pt-3 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"
+        >
           <AgentChat caseId={caseId} agentId={agent.id} agentName={agent.name} variant="judge" />
         </div>
       ) : null}
@@ -332,7 +345,7 @@ export function ResourceAgentsPanel({ caseId }: { caseId: string }) {
         </p>
       ) : agents === null ? (
         <div
-          className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),1fr))] gap-3"
           aria-busy="true"
         >
           <Skeleton className="h-40 w-full rounded-lg" />
@@ -343,7 +356,7 @@ export function ResourceAgentsPanel({ caseId }: { caseId: string }) {
           Agents start when you approve the contact plan.
         </p>
       ) : (
-        <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),1fr))] grid-flow-row-dense gap-3 p-0">
           {agents.map((agent) => (
             <AgentCard
               key={agent.id}

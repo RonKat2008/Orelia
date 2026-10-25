@@ -30,31 +30,37 @@ function LaneRow({ lane, active, onSelect, nowMs, browserCall }: { lane: Activit
   const showBrowserCall = browserCall === true && (startedHere || canTakeInBrowser(lane));
   const countdown = countdownLabel(lane.nextFollowUpAt, nowMs);
   return (
-    <li className={cn("grid gap-1.5 border-b border-line px-2 py-1.5 last:border-b-0", active && "bg-teal-soft")}>
+    <li className={cn("grid grid-cols-[1rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 border-b border-line px-3 py-2.5 last:border-b-0", active && "bg-teal-soft")}>
+      <Icon aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-2" />
       <button
         type="button"
         aria-pressed={active}
         onClick={onSelect}
-        className="grid w-full min-w-0 gap-0.5 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+        className="flex w-full min-w-0 flex-col items-stretch gap-0.5 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
       >
-        <span className="flex min-w-0 items-center gap-1.5">
-          <Icon aria-label={CHANNEL_LABEL[lane.channel]} role="img" className="size-4 shrink-0 text-ink-2" />
-          <span className="min-w-0 flex-1 truncate text-small font-semibold text-ink">{lane.resourceName}</span>
-          <Badge tone={stateTone(lane.state)} dot>{stateLabel(lane.state)}</Badge>
+        <span className="flex w-full min-w-0 items-center justify-start gap-2">
+          <span className="sr-only">{CHANNEL_LABEL[lane.channel]}: </span>
+          <span className="min-w-0 flex-1 truncate text-left text-small font-semibold text-ink">{lane.resourceName}</span>
+          <Badge tone={stateTone(lane.state)} dot className="shrink-0">{stateLabel(lane.state)}</Badge>
         </span>
-        <span className="flex min-w-0 flex-wrap items-center gap-x-2 text-small text-ink-2">
+        <span className="flex w-full min-w-0 items-center justify-start gap-x-2 text-left text-small text-ink-2">
           <span className="min-w-0 truncate">{lane.destinationLabel || CHANNEL_LABEL[lane.channel]}</span>
-          <span className="tabular-nums">{relativeTime(lane.lastActivityAt, nowMs)}</span>
+          <span aria-hidden className="text-ink-3">·</span>
+          <span className="shrink-0 tabular-nums">{relativeTime(lane.lastActivityAt, nowMs)}</span>
         </span>
-        {countdown ? <span className="text-small tabular-nums text-ink-2">{countdown}</span> : null}
+        {countdown ? <span className="w-full text-left text-small tabular-nums text-ink-2">{countdown}</span> : null}
       </button>
-      {lane.call ? <LiveCallPanel call={lane.call} /> : null}
-      {showBrowserCall ? <BrowserCallButton contactId={lane.contactId} phoneFailed={isVapiStartError(lane.call?.endedReason ?? lane.call?.outcome)} /> : null}
-      {lane.application ? (
-        <p className="m-0 break-words text-small text-ink-2">
-          Form: {stateLabel(lane.application.status)}
-          {lane.application.confirmation ? ` · ${lane.application.confirmation}` : ""}
-        </p>
+      {lane.call || showBrowserCall || lane.application ? (
+        <div className="col-start-2 grid min-w-0 gap-1.5">
+          {lane.call ? <LiveCallPanel call={lane.call} /> : null}
+          {showBrowserCall ? <BrowserCallButton compact contactId={lane.contactId} phoneFailed={isVapiStartError(lane.call?.endedReason ?? lane.call?.outcome)} /> : null}
+          {lane.application ? (
+            <p className="m-0 break-words text-small text-ink-2">
+              Form: {stateLabel(lane.application.status)}
+              {lane.application.confirmation ? ` · ${lane.application.confirmation}` : ""}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </li>
   );

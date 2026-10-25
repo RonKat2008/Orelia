@@ -10,7 +10,7 @@ export default async function PlanPage({ params }: { params: Promise<{ id: strin
       patient={<PatientPlan caseId={id} titleAs={CASE_PAGE_HEADING} />}
       title="How we'll contact them"
       lede="Check how we'll reach each one. Nothing is sent until you read it."
-      width="wide"
+      width="judge"
     >
       <PlanView caseId={id} />
     </CasePage>

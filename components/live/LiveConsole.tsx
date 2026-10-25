@@ -76,7 +76,7 @@ export function LiveConsole({ caseId, browserCall = false }: { caseId: string; b
       {!snapshot ? (
         <p className="m-0 text-small text-ink-2">Loading activity…</p>
       ) : (
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
           <section aria-labelledby="live-lanes-heading" className="grid min-w-0 gap-1.5">
             <h2 id="live-lanes-heading" className="m-0 text-body font-semibold text-ink">Contacts ({snapshot.lanes.length})</h2>
             <LaneList lanes={snapshot.lanes} selected={selected} onSelect={setSelected} nowMs={nowMs} browserCall={browserCall} />

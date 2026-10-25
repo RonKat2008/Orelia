@@ -205,6 +205,12 @@ describe("patientStatus: reaching out", () => {
     expect(result.nextAction?.alsoWaiting).toEqual([{ contactId: "c2", name: "FIGHT vEDS" }]);
   });
 
+  it("never offers a web-form contact as a message to read (its form comes as an application)", () => {
+    const result = status(snapshot({ contacts: [contact({ id: "w1", channel: "web", name: "Form Clinic" }), contact({ id: "c2", name: "FIGHT vEDS" })], plan: { status: "approved" } }));
+    expect(result.nextAction).toMatchObject({ kind: "approve_message", contactId: "c2" });
+    expect(result.nextAction?.alsoWaiting).toBeUndefined();
+  });
+
   it("surfaces a drafted follow-up instead of promising one", () => {
     const sent = contact({ state: "sent", approved: true, pendingFollowUp: true, nextFollowUpAt: "2026-10-27T16:00:00.000Z" });
     const result = status(snapshot({ contacts: [sent], plan: { status: "approved" } }));

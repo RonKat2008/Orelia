@@ -5,7 +5,7 @@ import { checkOutbound } from '../safety/outbound-gate';
 import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
 import { demoDestinationFor, outboundAllowlist, sharedDemoAddresses } from './demo-destinations';
-import { isWebFormOnly, type ReachabilityEvidence } from './reachability';
+import { contactRoutesOf, isWebFormOnly, type ReachabilityEvidence } from './reachability';
 import { isReplyClassification, OutreachError, type Candidate, type Channel, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
 /**
  * The only addresses outreach may use are contact points stamped by code from tool output (intake-door
@@ -29,12 +29,15 @@ export class OutreachService {
     // Demo mode (demo only, see demo-destinations.ts): the channel is chosen from the resource's REAL contact points
     // exactly as without demo mode; only the destination is swapped for our own test inbox / test phone / sink.
     const shared = sharedDemoAddresses(this.env);
-    const proposed = fresh.flatMap(c => {
+    const proposed = fresh.flatMap((c): Contact[] => {
       const door = address(c);
       if (!door && isWebFormOnly(c.evidence as ReachabilityEvidence[])) {
-        // Reachable only through an online intake/application form (Kernel web-application channel), which has no email/phone contact row.
-        unavailable.push({ candidateId: c.id, channel: 'none', route: 'web_form', reason: 'Its only route is an online intake form. That is handled as an online application in the plan step, not sent as email or a call.' });
-        return [];
+        // Reachable only through an online intake/application form: a 'web' contact (address = the tool-sourced form
+        // URL) carries the patient's consent, and the plan step fills the form as an application. It never gets an
+        // email or call draft, and the filled form is submitted only after the patient approves it (approved_at).
+        const form = contactRoutesOf(c.evidence as ReachabilityEvidence[]).find(r => r.channel === 'web_form');
+        if (!form) return [];
+        return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: 'web' as const, address: form.address, state: 'drafted' } satisfies Contact];
       }
       if (!door) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'No tool-sourced intake email or phone is available.' }); return []; }
       const demo = demoDestinationFor(this.env, door.channel, `${c.targetKind}:${c.targetId}`);

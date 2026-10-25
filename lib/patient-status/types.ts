@@ -15,7 +15,8 @@ export interface PatientRun {
 export interface PatientContact {
   id: string;
   name: string;
-  channel: "email" | "voice";
+  /** "web": reachable only by online form; it gets an application, never a message. */
+  channel: "email" | "voice" | "web";
   /** contact_state: drafted | sent | replied | task_open | records_sent | appointment_booked | connected | declined | stalled */
   state: string;
   consented: boolean;

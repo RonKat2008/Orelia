@@ -53,7 +53,8 @@ export const sourceKindEnum = pgEnum("source_kind", [
   "phone_call",
 ]);
 
-export const channelEnum = pgEnum("channel", ["email", "voice"]);
+/** "web": a resource reachable only through an online form (address = form URL). It never gets an email or call draft. */
+export const channelEnum = pgEnum("channel", ["email", "voice", "web"]);
 
 export const contactStateEnum = pgEnum("contact_state", [
   "drafted",
@@ -260,7 +261,7 @@ export const messages = pgTable("messages", {
     .notNull()
     .references(() => contacts.id, { onDelete: "cascade" }),
   direction: text("direction").notNull(),
-  channel: channelEnum("channel").notNull(),
+  channel: channelEnum("channel").notNull().$type<"email" | "voice">(), // messages are only ever email or a call script
   providerThreadId: text("provider_thread_id"),
   providerMessageId: text("provider_message_id"),
   subject: text("subject"),

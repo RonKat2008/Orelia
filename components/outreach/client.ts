@@ -8,7 +8,8 @@ export type ApiContact = {
   caseId: string;
   targetId: string;
   targetKind: string;
-  channel: "email" | "voice";
+  /** "web": reachable only by online form (address = form URL); it gets an application, not a message. */
+  channel: "email" | "voice" | "web";
   address: string;
   state: string;
   purpose?: string;

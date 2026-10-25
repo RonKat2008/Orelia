@@ -99,7 +99,8 @@ export function OutboxList({ caseId }: { caseId: string }) {
       setDocTitles(titles);
       setPlan(planResult.ok ? planResult.plan : null);
       setApplications(apps);
-      const people = live && live.length > 0 ? live : stored?.contacts ?? [];
+      // A web-form contact has no message: its filled form is reviewed below as an application.
+      const people = (live && live.length > 0 ? live : stored?.contacts ?? []).filter((c) => c.channel !== "web");
       if (people.length === 0 && apps.length === 0) {
         setPhase("empty");
         return;
@@ -441,7 +442,8 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
   const followUp = followUpLabel(draft?.classification);
   const docIds = draft?.contextDocIds ?? [];
   const blocked = !draft || !disclosed || approved || row.held;
-  const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? row.contact.channel });
+  const rowChannel = row.contact.channel === "web" ? undefined : row.contact.channel; // web contacts are filtered out of rows
+  const stepCtx = draftStepContext(plan, { contactId: row.contact.id, channel: draft?.channel ?? rowChannel ?? "email" });
   const demoLabel = demoDestinationLabel(draft?.address ?? row.contact.address, useDemoDestinations());
 
   const header = (

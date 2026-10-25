@@ -4,7 +4,7 @@ import { DemoCoordinatorBadge, demoDestinationLabel, useDemoDestinations } from 
 import { DEMO_LABELS } from "@/lib/outreach/demo-destinations-shared";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Mail, PhoneCall } from "lucide-react";
+import { ArrowRight, FileText, Mail, PhoneCall } from "lucide-react";
 import {
   Button,
   Details,
@@ -226,8 +226,11 @@ export function ConsentForm({ caseId }: { caseId: string }) {
 
         {summary.map(({ contact, shared, preview, withheld }) => {
           const name = properName(contactLabel(contact));
-          const ChannelIcon = contact.channel === "email" ? Mail : PhoneCall;
-          const letter = buildLetterPreview(contact.channel, preview);
+          const web = contact.channel === "web";
+          // A web-form contact shares the same ticked fields, typed into their online form instead of a letter.
+          const channel = contact.channel === "web" ? "email" : contact.channel;
+          const ChannelIcon = web ? FileText : contact.channel === "email" ? Mail : PhoneCall;
+          const letter = buildLetterPreview(channel, preview);
           const onFile = SHAREABLE_FIELDS.filter((field) => !caseRecord || hasValue(caseRecord, field.key));
           const notOnFile = caseRecord ? SHAREABLE_FIELDS.filter((field) => !hasValue(caseRecord, field.key)) : [];
           const row = (field: (typeof SHAREABLE_FIELDS)[number]) => (
@@ -263,11 +266,11 @@ export function ConsentForm({ caseId }: { caseId: string }) {
                       className={cn("size-4 shrink-0", contact.channel === "email" ? "text-ch-email" : "text-ch-call")}
                     />
                     <span className="min-w-0 [overflow-wrap:anywhere]">
-                      {contact.channel === "email" ? "Email" : "Phone call"} · {contact.address}
+                      {web ? "Online form" : contact.channel === "email" ? "Email" : "Phone call"} · {contact.address}
                     </span>
                     <DemoCoordinatorBadge address={contact.address} />
                   </p>
-                  <ReachedNote channel={contact.channel} address={contact.address} />
+                  {web ? null : <ReachedNote channel={channel} address={contact.address} />}
                 </div>
 
                 <dl aria-label={`What ${name} may see`} className="m-0 grid border-t border-line">
@@ -292,9 +295,9 @@ export function ConsentForm({ caseId }: { caseId: string }) {
                   </p>
                 ) : (
                   <LetterSheet
-                    channel={contact.channel}
+                    channel={channel}
                     recipient={contact.address}
-                    label={contact.channel === "email" ? "Preview of the email" : "Preview of the call"}
+                    label={web ? "What their online form will include" : contact.channel === "email" ? "Preview of the email" : "Preview of the call"}
                     subject={contact.channel === "email" ? "Patient intake inquiry" : null}
                   >
                     {letter.opening ? <p className="m-0">{letter.opening}</p> : null}

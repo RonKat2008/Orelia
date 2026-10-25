@@ -263,7 +263,7 @@ function reaching(ctx: Ctx): Omit<PatientStatus, "updatedAt"> {
   }
 
   const waitingOn = s.contacts.filter(
-    (c) => c.consented && ((c.state === "drafted" && !c.approved) || (c.state === "sent" && c.pendingFollowUp)),
+    (c) => c.channel !== "web" && c.consented && ((c.state === "drafted" && !c.approved) || (c.state === "sent" && c.pendingFollowUp)),
   );
   const [pending, ...rest] = waitingOn;
   if (pending) {

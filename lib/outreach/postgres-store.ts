@@ -140,6 +140,7 @@ export class PostgresOutreachStore implements OutreachStore {
     ]);
   }
   async pendingDraft(contact: Contact, sharedFields: readonly string[]): Promise<Draft | undefined> {
+    if (contact.channel === 'web') return undefined; // web-form contacts have applications, not messages
     const rows = await this.db.select().from(s.messages).where(and(
       eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'), eq(s.messages.channel, contact.channel),
       isNull(s.messages.approvedAt), isNull(s.messages.sentAt), isNull(s.messages.classification),
@@ -149,12 +150,14 @@ export class PostgresOutreachStore implements OutreachStore {
     return row ? { ...row, channel: contact.channel, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: null, sentAt: null } : undefined;
   }
   async sentDraft(contact: Contact): Promise<Draft | undefined> {
+    if (contact.channel === 'web') return undefined; // web-form contacts have applications, not messages
     const [row] = await this.db.select().from(s.messages).where(and(
       eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'), isNotNull(s.messages.sentAt),
     )).orderBy(desc(s.messages.sentAt)).limit(1);
     return row ? { ...row, channel: contact.channel, subject: row.subject ?? undefined, caseId: contact.caseId, address: contact.address, approvedAt: row.approvedAt?.toISOString() ?? null, sentAt: row.sentAt?.toISOString() ?? null } : undefined;
   }
   async pendingFollowUp(contact: Contact): Promise<Draft | undefined> {
+    if (contact.channel === 'web') return undefined; // web-form contacts have applications, not messages
     const [row] = await this.db.select().from(s.messages).where(and(
       eq(s.messages.contactId, contact.id), eq(s.messages.direction, 'outbound'), eq(s.messages.channel, contact.channel),
       isNull(s.messages.approvedAt), isNull(s.messages.sentAt), like(s.messages.classification, 'follow_up_%'),

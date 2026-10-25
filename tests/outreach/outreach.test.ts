@@ -81,13 +81,19 @@ describe('outreach API and safety boundary', () => {
     const response = await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }));
     const body = await response.json(); expect(body.contacts).toHaveLength(0); expect(body.unavailable[0].channel).toBe('none');
   });
-  it('marks a web-form-only resource as reachable by online form, not as having no route', async () => {
+  it('gives a web-form-only resource a web contact (consent + plan), never an email or call draft', async () => {
     const ctx = setup(); const c = ctx.store.candidate([]);
     c.evidence = [{ claim: 'https://example.com/intake-form', claimType: 'contact_point.web_form.intake_form', sourceUrl: 'https://example.com/program', sourceKind: 'exa' } as Candidate['evidence'][number]];
     const body = await (await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [c.id] }))).json();
-    expect(body.contacts).toHaveLength(0);
-    expect(body.unavailable[0]).toMatchObject({ channel: 'none', route: 'web_form' });
-    expect(body.unavailable[0].reason).toMatch(/online/i);
+    // It gets a contact row of its own (channel 'web', the form URL), so consent and the plan's online application work.
+    expect(body.unavailable).toHaveLength(0);
+    expect(body.contacts).toHaveLength(1);
+    expect(body.contacts[0]).toMatchObject({ channel: 'web', address: 'https://example.com/intake-form', targetId: c.targetId });
+    // ...but it never gets an email or call draft: the form is filled and approved as an application.
+    await ctx.api.consent(req({ sharedFields: ['diseaseName'] }), body.contacts[0].id);
+    const draft = await ctx.api.draft(req({}), body.contacts[0].id);
+    expect(draft.status).toBe(422);
+    expect((await draft.json()).reasons).toEqual(['web_form_contact']);
     const none = ctx.store.candidate([]);
     const noneBody = await (await ctx.api.select(req({ caseId: ctx.store.caseId, candidateIds: [none.id] }))).json();
     expect(noneBody.unavailable[0].route).toBeUndefined();

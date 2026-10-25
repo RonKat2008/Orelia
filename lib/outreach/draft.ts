@@ -1,7 +1,7 @@
 import { createCallScript, renderCallScript, requestFor, resourceContext, sharedFieldLines, type ContextDocument } from './call-script';
 import { withDisclosure } from '../safety/disclosure';
 import type { CaseRecord } from '../safety/types';
-import type { Contact, Consent, Draft } from './types';
+import { OutreachError, type Contact, type Consent, type Draft } from './types';
 export const SHARED_FIELDS = ['diseaseName', 'subtype', 'stageSummary', 'homeCity', 'homeState', 'insurer', 'planId', 'travelLimitMiles', 'goals'] as const;
 export const INTAKE_SUBJECT = 'Patient intake inquiry';
 /** Opening line: who is writing, for whom, and that the patient approved it. */
@@ -20,5 +20,6 @@ export function createDraft(contact: Contact, consent: Consent, record: CaseReco
     'Thank you for your time.',
   ];
   const body = sections.filter(Boolean).join('\n\n');
+  if (contact.channel === 'web') throw new OutreachError(422, ['web_form_contact']);
   return { id: crypto.randomUUID(), contactId: contact.id, caseId: contact.caseId, channel: contact.channel, address: contact.address, subject: contact.channel === 'email' ? INTAKE_SUBJECT : undefined, body: contact.channel === 'voice' ? renderCallScript(createCallScript(contact, consent, record, docs)) : withDisclosure(body), contextDocIds: context.map(doc => doc.id), sharedFields: [...consent.sharedFields] };
 }

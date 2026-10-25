@@ -109,19 +109,22 @@ export class PostgresContactContextStore implements ContactContextStore {
     const classification = `follow_up_${input.followUpNumber}`;
     const [contact] = await this.db.select().from(s.contacts).where(eq(s.contacts.id, input.contactId));
     if (!contact) throw new Error(`Contact ${input.contactId} not found`);
+    // A web-form contact is followed up through its application, never with an email or a call.
+    if (contact.channel === 'web') throw new Error(`Contact ${input.contactId} is a web-form contact; no follow-up message`);
+    const channel = contact.channel;
     const out = await this.outbound(input.contactId);
     const existing = out.find((m) => m.classification === classification);
     if (existing) return { messageId: existing.id };
 
     const [consent] = await this.db.select().from(s.consents).where(eq(s.consents.contactId, input.contactId));
     const initial = out.find((m) => !m.classification?.startsWith('follow_up_'));
-    const { subject, body } = followUpContent(contact.channel);
+    const { subject, body } = followUpContent(channel);
     const [created] = await this.db
       .insert(s.messages)
       .values({
         contactId: input.contactId,
         direction: 'outbound',
-        channel: contact.channel,
+        channel,
         providerThreadId: initial?.providerThreadId ?? null,
         subject: subject ?? null,
         body,

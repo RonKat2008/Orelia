@@ -28,7 +28,8 @@ function defaultDeps(): MaterializeDeps {
     async contact(id) {
       if (!process.env.DATABASE_URL) return undefined; // memory/demo mode has no contact rows
       const c = await (await service()).store.contact(id);
-      return c ? { id: c.id, channel: c.channel } : undefined;
+      // A web-form contact has no email/call channel; its web_form steps are filled without this lookup.
+      return c && c.channel !== 'web' ? { id: c.id, channel: c.channel } : undefined;
     },
     createDraft: defaultCreateDraft,
     webForm: getWebFormChannel(),

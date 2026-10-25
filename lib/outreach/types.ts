@@ -3,7 +3,7 @@ import type { GatedDraft } from '../safety/outbound-gate';
 import type { OrganizationKind } from '@/lib/contracts';
 export type Kind = 'expert' | 'institution' | 'trial' | 'organization';
 export interface Candidate { id: string; caseId: string; targetId: string; targetKind: Kind; purpose?: OrganizationKind; evidence: { claim: string; claimType: string; sourceUrl: string }[] }
-export interface Contact extends SafetyContact { id: string; caseId: string; targetId: string; targetKind: Kind; channel: 'email' | 'voice'; address: string; purpose?: Candidate['purpose'] }
+export interface Contact extends SafetyContact { id: string; caseId: string; targetId: string; targetKind: Kind; /** 'web': reachable only by online form (address = form URL); never gets an email/call draft. */ channel: 'email' | 'voice' | 'web'; address: string; purpose?: Candidate['purpose'] }
 export interface Consent { contactId: string; sharedFields: string[]; approvedAt: string }
 export interface Draft extends Omit<SafetyDraft, 'channel'> { channel: 'email' | 'voice'; contextDocIds?: string[]; id: string; contactId: string; caseId: string; sharedFields: string[]; sentAt?: string | null; approvedAt?: string | null; /** follow_up_1 / follow_up_2 for follow-up messages, reply_records / reply_slides for reply letters; null/absent for the first message. */ classification?: string | null }
 /** Reply letters (records, slides) answer a request the contact made; see checkOutbound's reply rule. */

@@ -27,7 +27,7 @@ export const TRACKER_COPY = {
   },
   followUp: (day: string) => `We'll follow up on ${day}`,
   noFollowUp: "No follow-up planned",
-  sentVia: (channel: "email" | "voice") => (channel === "voice" ? "We called them" : "We emailed them"),
+  sentVia: (channel: "email" | "voice" | "web") => (channel === "voice" ? "We called them" : channel === "web" ? "We sent their online form" : "We emailed them"),
   repliedLine: "They replied",
   lastMessage: (summary: string) => `Last message: ${summary}`,
   noMessage: "No reply to show yet",

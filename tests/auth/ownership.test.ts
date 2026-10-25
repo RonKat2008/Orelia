@@ -145,3 +145,16 @@ describe("contact, task and select routes", () => {
     expect(await forwarded.text()).toBe(body);
   });
 });
+
+describe("malformed contact and task ids", () => {
+  it("answers 404 without querying the store (Postgres rejects a non-uuid with an error)", async () => {
+    const pgLike = () => Promise.reject(new Error('invalid input syntax for type uuid: "not-a-uuid"'));
+    vi.spyOn(store, "caseIdForContact").mockImplementation(pgLike);
+    vi.spyOn(store, "caseIdForTask").mockImplementation(pgLike);
+    const post = () => new Request(`${ORIGIN}/x`, { method: "POST", headers: { origin: ORIGIN, cookie: cookie(uuid()) }, body: "{}" });
+    expect((await contactApprove(post(), ctx("not-a-uuid"))).status).toBe(404);
+    expect((await taskApprove(post(), ctx("not-a-uuid"))).status).toBe(404);
+    expect(store.caseIdForContact).not.toHaveBeenCalled();
+    expect(store.caseIdForTask).not.toHaveBeenCalled();
+  });
+});

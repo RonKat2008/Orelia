@@ -168,10 +168,13 @@ async function check(req: Request, caseId: string | undefined): Promise<OwnerRes
 }
 
 export const requireCaseOwner = (req: Request, caseId: string) => check(req, caseId);
+// A malformed id is a 404 before any lookup: Postgres rejects a non-uuid with an error, which would surface as a 500.
 export async function requireContactOwner(req: Request, contactId: string) {
+  if (!UUID.test(contactId)) return notFound();
   return check(req, await getOwnerStore().caseIdForContact(contactId));
 }
 export async function requireTaskOwner(req: Request, taskId: string) {
+  if (!UUID.test(taskId)) return notFound();
   return check(req, await getOwnerStore().caseIdForTask(taskId));
 }
 

@@ -127,7 +127,8 @@ describe('startBrowserCall runs the normal approval and outbound gate', () => {
 
   it('refuses a script without the spoken disclosure', async () => {
     const ctx = await setup();
-    ctx.store.drafts.get(ctx.draft!.id)!.body = 'Hello, I am calling about a patient.';
+    const row = ctx.store.drafts.get(ctx.draft!.id)!;
+    ctx.store.drafts.set(row.id, { ...row, body: 'Hello, I am calling about a patient.' });
     const err = await refusal(startBrowserCall(ctx.deps, ctx.contact.id, ctx.draft!.id, { judge: true }));
     expect(err.status).toBe(422);
     expect(ctx.web.sent).toHaveLength(0);
@@ -136,8 +137,7 @@ describe('startBrowserCall runs the normal approval and outbound gate', () => {
   it('refuses fields the patient did not tick', async () => {
     const ctx = await setup();
     const row = ctx.store.drafts.get(ctx.draft!.id)!;
-    row.sharedFields = ['diseaseName', 'insurer'];
-    row.body = `${row.body} Their insurer is Fictional Plan.`;
+    ctx.store.drafts.set(row.id, { ...row, sharedFields: ['diseaseName', 'insurer'], body: `${row.body} Their insurer is Fictional Plan.` });
     expect((await refusal(startBrowserCall(ctx.deps, ctx.contact.id, ctx.draft!.id, { judge: true }))).status).toBe(422);
     expect(ctx.web.sent).toHaveLength(0);
   });
@@ -151,7 +151,7 @@ describe('startBrowserCall runs the normal approval and outbound gate', () => {
 
   it('refuses over the 5-contact cap', async () => {
     const ctx = await setup();
-    for (let i = 0; i < 5; i++) ctx.store.people.push({ id: id(), caseId: ctx.store.caseId, targetId: id(), targetKind: 'expert', purpose: 'x', channel: 'email', address: `x${i}@example.com`, state: 'sent' } as Contact);
+    for (let i = 0; i < 5; i++) ctx.store.people.push({ id: id(), caseId: ctx.store.caseId, targetId: id(), targetKind: 'expert', purpose: 'x', channel: 'email', address: `x${i}@example.com`, state: 'sent' } as unknown as Contact);
     const err = await refusal(startBrowserCall(ctx.deps, ctx.contact.id, ctx.draft!.id, { judge: true }));
     expect(err.reasons).toContain('contact_cap');
     expect(ctx.web.sent).toHaveLength(0);

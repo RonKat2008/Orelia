@@ -5,6 +5,7 @@
  *
  *   npx tsx scripts/vapi-test-call.ts --to +1XXXXXXXXXX            # dry run: creates rows, drafts, does not approve
  *   npx tsx scripts/vapi-test-call.ts --to +1XXXXXXXXXX --approve  # places the call
+ *   npx tsx scripts/vapi-test-call.ts --to +1XXXXXXXXXX --contact <id>  # approves a dry run's pending draft
  *   npx tsx scripts/vapi-test-call.ts --cleanup <caseId> --institution <id>  # deletes the synthetic rows
  *
  * Never prints secrets or the monitor listen URL. Synthetic data only.
@@ -44,6 +45,17 @@ async function main() {
   const selected = selectChannels(process.env);
   if (selected.providers.voice !== 'vapi') throw new Error(`voice provider is ${selected.providers.voice}, expected vapi`);
 
+  const service = new WiredOutreachService(new PostgresOutreachStore(), selected.channels, workflowSendEvents(), process.env, () => new Date(), new PostgresFollowUpStore());
+  const existing = arg('--contact');
+  if (existing) {
+    // Approve the pending draft of a contact created by an earlier dry run (same consent, same script).
+    const draft = await service.draft(existing);
+    const result = await service.approve(existing, draft.id);
+    const provider = ('provider' in result ? result.provider : {}) as { provider?: string; callId?: string; status?: string };
+    console.log(`approved; provider=${provider.provider ?? '?'} callId=${provider.callId ?? '?'} status=${provider.status ?? '?'}`);
+    return;
+  }
+
   const [caseRow] = await db.insert(s.cases).values({
     diseaseName: 'Synthetic rare sarcoma (Wayfinder voice test)', homeCity: 'Houston', homeState: 'TX', status: 'confirmed',
   }).returning({ id: s.cases.id });
@@ -51,7 +63,6 @@ async function main() {
   const [contact] = await db.insert(s.contacts).values({ caseId: caseRow!.id, targetKind: 'institution', targetId: inst!.id, channel: 'voice', address: target, state: 'drafted' }).returning({ id: s.contacts.id });
   console.log(`case ${caseRow!.id} institution ${inst!.id} contact ${contact!.id}`);
 
-  const service = new WiredOutreachService(new PostgresOutreachStore(), selected.channels, workflowSendEvents(), process.env, () => new Date(), new PostgresFollowUpStore());
   await service.consent(contact!.id, ['diseaseName', 'homeState']);
   const draft = await service.draft(contact!.id);
   console.log('--- draft (the approved script) ---');

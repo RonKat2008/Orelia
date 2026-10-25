@@ -49,7 +49,8 @@ export interface WebFormChannel {
   probeForm(url: string): Promise<ProbeResult>;
   draftFill(input: DraftFillInput): Promise<DraftFillResult>;
   /** Accepts only a gated payload; a raw draft is refused. */
-  submitGated(gated: GatedDraft): Promise<SubmitResult>;
+  /** `liveViewContactId` scopes the live view when the gated draft has no contact (applications). */
+  submitGated(gated: GatedDraft, liveViewContactId?: string): Promise<SubmitResult>;
 }
 
 /** Server log for a failed browser step: error class and a short message with query strings (tokens) removed. */
@@ -153,12 +154,12 @@ export class KernelPlanWebForm implements WebFormChannel {
     return { ok: true, draft: ref(saved) };
   }
 
-  async submitGated(gated: GatedDraft): Promise<SubmitResult> {
+  async submitGated(gated: GatedDraft, liveViewContactId?: string): Promise<SubmitResult> {
     if (!isGatedDraft(gated) || gated.channel !== 'web_form') return unavailable('Only an approved, safety-checked application can be submitted');
     const channel = this.ready();
     if (!channel) return unavailable('Online forms are not configured (no cloud browser key)');
     const run = () => submitGatedWebForm(channel, gated);
-    if (gated.caseId) await withLiveViewScope({ caseId: gated.caseId, contactId: gated.contactId, phase: 'submitting' }, run); else await run();
+    if (gated.caseId) await withLiveViewScope({ caseId: gated.caseId, contactId: gated.contactId ?? liveViewContactId, phase: 'submitting' }, run); else await run();
     return { ok: true, status: 'submitted' };
   }
 }

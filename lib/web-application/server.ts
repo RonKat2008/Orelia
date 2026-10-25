@@ -16,8 +16,8 @@ export function defaultApproveDeps(): ApproveApplicationDeps {
       async consent(contactId) { return hasDb() ? (await outreach()).consent(contactId) : undefined; },
       async contacts(caseId) { return hasDb() ? (await outreach()).contacts(caseId) : []; },
     },
-    async submit(gated) {
-      const res = await getWebFormChannel().submitGated(gated);
+    async submit(gated, meta) {
+      const res = await getWebFormChannel().submitGated(gated, meta?.contactId ?? undefined);
       if (!res.ok) throw new Error('web form channel unavailable');
     },
   };

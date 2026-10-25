@@ -42,6 +42,13 @@ async function setup(over: Partial<ApproveApplicationDeps> = {}, d: WebApplicati
 }
 
 describe('approveApplication', () => {
+  it('passes the contact to submit so the Kernel live view is scoped to that agent lane', async () => {
+    const seen: (string | null | undefined)[] = [];
+    const { deps } = await setup({ submit: async (_gated, meta) => { seen.push(meta?.contactId); } });
+    await approveApplication('app-1', {}, deps);
+    expect(seen).toEqual(['contact-1']);
+  });
+
   it('runs the outbound gate, then submits exactly once with a GatedDraft', async () => {
     const { applications, deps, submitted } = await setup();
     const res = await approveApplication('app-1', {}, deps);

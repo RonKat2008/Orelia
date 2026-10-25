@@ -4,7 +4,7 @@ import { AI_DISCLOSURE_EMAIL, withDisclosure } from '@/lib/safety/disclosure';
 import { checkOutbound, type GatedDraft } from '@/lib/safety/outbound-gate';
 import { MemoryApplicationStore } from '@/lib/web-application/store';
 import type { WebApplicationDraft } from '@/lib/web-application/types';
-import { gatedWeb } from '../channels/web-helpers';
+import { gatedWeb, webInput } from '../channels/web-helpers';
 
 const kernel = vi.hoisted(() => ({
   probeApplicationForm: vi.fn(), draftFillWebForm: vi.fn(), submitGatedWebForm: vi.fn(),
@@ -146,6 +146,17 @@ describe('KernelPlanWebForm.submitGated', () => {
     kernel.submitGatedWebForm.mockResolvedValue(undefined);
     expect(await port().p.submitGated(gatedWeb())).toEqual({ ok: true, status: 'submitted' });
     expect(kernel.submitGatedWebForm).toHaveBeenCalledTimes(1);
+  });
+
+  it('scopes the submit live view to the given contact when the gated draft has none', async () => {
+    const { currentLiveViewScope } = await import('@/lib/channels/live-view');
+    let scope: unknown;
+    kernel.submitGatedWebForm.mockImplementation(async () => { scope = currentLiveViewScope(); });
+    const input = webInput();
+    const result = checkOutbound({ ...input, draft: { ...input.draft, caseId: 'case-1' } });
+    if (!result.ok) throw new Error(result.reasons.join(','));
+    await port().p.submitGated(result.payload, 'contact-9');
+    expect(scope).toMatchObject({ caseId: 'case-1', contactId: 'contact-9', phase: 'submitting' });
   });
 });
 

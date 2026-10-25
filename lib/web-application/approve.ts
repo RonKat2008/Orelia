@@ -24,7 +24,8 @@ export interface ApproveApplicationDeps {
     contacts(caseId: string): Promise<readonly SafetyContact[]>;
   };
   /** Sends a GatedDraft through the web channel; throws on failure. */
-  submit(gated: GatedDraft): Promise<void>;
+  /** `meta.contactId` only scopes the Kernel live view to the resource's agent lane; the gate payload stays contact-free. */
+  submit(gated: GatedDraft, meta?: { contactId?: string | null }): Promise<void>;
   env?: Env;
   clock?: () => Date;
 }
@@ -99,7 +100,7 @@ export async function approveApplication(id: string, input: ApproveApplicationIn
   if (!await deps.applications.approve(id, { approvedAt: now, sharedFields: consent.sharedFields, sharedDocIds })) return fail(409, 'already_approved');
   if (!await deps.applications.claimSubmit(id)) return fail(409, 'already_approved');
   try {
-    await deps.submit(gate.payload);
+    await deps.submit(gate.payload, { contactId: draft.contactId });
   } catch (error) {
     if (error instanceof PageChangedError) {
       await deps.applications.finish(id, 'stale', { reason: 'page_changed' }, now);

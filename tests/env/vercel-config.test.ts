@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import config, { browserCallContentSecurityPolicy, contentSecurityPolicy, DEFAULT_HEADERS_SOURCE, LIVE_CONSOLE_SOURCE } from "@/vercel";
+import config, { BROWSER_CALL_SOURCES, browserCallContentSecurityPolicy, contentSecurityPolicy, DEFAULT_HEADERS_SOURCE } from "@/vercel";
+import { documentAllowsBrowserCall } from "@/lib/live/browser-call-scope";
 
 function directive(name: string): string {
   const d = contentSecurityPolicy.split(";").map((s) => s.trim()).find((s) => s.startsWith(`${name} `) || s === name);
@@ -59,11 +60,19 @@ describe("vercel.ts", () => {
     expect(cmd.endsWith("&& next build")).toBe(true);
   });
 
-  it("relaxes CSP and the microphone only on the live console (demo browser call)", () => {
+  it("relaxes CSP and the microphone only on /demo and case pages (demo browser call; client nav keeps the first document's CSP)", () => {
     const re = new RegExp(`^${DEFAULT_HEADERS_SOURCE}$`);
-    expect(re.test("/cases/abc/live")).toBe(false);
-    for (const p of ["/", "/cases/abc", "/cases/abc/live/x", "/cases/abc/outbox", "/api/cases/abc/calls/live"]) expect(re.test(p)).toBe(true);
-    const live = config.headers?.find((h) => h.source === LIVE_CONSOLE_SOURCE);
+    for (const p of ["/demo", "/cases/abc/live", "/cases/abc", "/cases/abc/outbox"]) {
+      expect(re.test(p)).toBe(false);
+      expect(documentAllowsBrowserCall(p)).toBe(true);
+    }
+    for (const p of ["/", "/start", "/demo/intake-form/x", "/cases", "/account", "/api/cases/abc/calls/live"]) {
+      expect(re.test(p)).toBe(true);
+      expect(documentAllowsBrowserCall(p)).toBe(false);
+    }
+    expect(BROWSER_CALL_SOURCES).toEqual(["/demo", "/cases/:path*"]);
+    for (const source of BROWSER_CALL_SOURCES) expect(config.headers?.some((h) => h.source === source)).toBe(true);
+    const live = config.headers?.find((h) => h.source === "/cases/:path*");
     const get = (k: string) => live?.headers.find((h) => h.key === k)?.value ?? "";
     expect(get("Permissions-Policy")).toContain("microphone=(self)");
     expect(get("Permissions-Policy")).toContain("camera=()");

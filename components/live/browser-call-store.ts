@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { documentAllowsBrowserCall } from "@/lib/live/browser-call-scope";
 
 /**
  * DEMO ONLY: browser-call sessions, one per contact, kept outside React so a re-render or remount of the console
@@ -88,12 +89,28 @@ function wire(contactId: string, vapi: VapiLike): void {
   });
 }
 
+/** Path the current document was loaded at (not the client-side route). */
+function firstDocumentPath(): string {
+  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  try {
+    return new URL(nav?.name ?? window.location.href).pathname;
+  } catch {
+    return window.location.pathname;
+  }
+}
+
 /**
  * Approves the drafted call and joins it: the server runs the normal gate and creates the Vapi web call; the browser
  * gets only the call id and room URL and joins with @vapi-ai/web.
  */
 export async function startBrowserCall(contactId: string, onStarted?: () => void): Promise<void> {
   if (calls.has(contactId) || ["starting", "connecting", "live"].includes(get(contactId).phase)) return;
+  // Client-side navigation keeps the first document's CSP. Without the browser-call policy Daily cannot load, so reload
+  // this page first (nothing is approved yet); the presenter clicks again on a document that has it.
+  if (!documentAllowsBrowserCall(firstDocumentPath())) {
+    window.location.reload();
+    return;
+  }
   set(contactId, { phase: "starting", error: null, stage: "", lines: [] });
   try {
     const d = await fetch(`/api/contacts/${contactId}/drafts`, { method: "POST", headers: json, body: "{}", credentials: "same-origin" });

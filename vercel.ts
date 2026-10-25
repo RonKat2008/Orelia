@@ -1,4 +1,5 @@
 import type { VercelConfig } from "@vercel/config/v1";
+import { BROWSER_CALL_SOURCES, DEFAULT_HEADERS_SOURCE } from "./lib/live/browser-call-scope";
 
 /**
  * Vercel project configuration (compiled to vercel.json by the Vercel CLI).
@@ -28,8 +29,8 @@ export const contentSecurityPolicy = [
 ].join("; ");
 
 /**
- * DEMO "take the call in your browser" (components/live/BrowserCallButton.tsx) runs only on the live console
- * (/cases/<id>/live). That one page may load Daily's call machine (c.daily.co), talk to Daily/Vapi realtime servers
+ * DEMO "take the call in your browser" (components/live/BrowserCallButton.tsx) runs on the live console. Its pages
+ * (/demo and /cases/*, see lib/live/browser-call-scope.ts) may load Daily's call machine (c.daily.co), talk to Daily/Vapi realtime servers
  * and use the microphone. Daily's always-on Krisp noise filter needs 'wasm-unsafe-eval' (WebAssembly compile only, not
  * JS eval) and a blob: audio worklet; without them the mic track never reaches Vapi (verified in Chrome).
  * Every other page keeps the policy above and microphone=().
@@ -40,10 +41,7 @@ export const browserCallContentSecurityPolicy = contentSecurityPolicy
   .replace("connect-src 'self' https://vercel.com/api/blob/", `connect-src 'self' https://vercel.com/api/blob/ ${BROWSER_CALL_ORIGINS.connect}`)
   .concat("; media-src 'self' blob:; worker-src 'self' blob:");
 
-/** Path of the live console, the only page with the browser-call policy. */
-export const LIVE_CONSOLE_SOURCE = "/cases/:id/live";
-/** Every other path (Vercel path-to-regexp with a negative lookahead). */
-export const DEFAULT_HEADERS_SOURCE = "/((?!cases/[^/]+/live$).*)";
+export { BROWSER_CALL_SOURCES, DEFAULT_HEADERS_SOURCE };
 
 export const securityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
@@ -96,7 +94,7 @@ export const config: VercelConfig = {
   ],
   headers: [
     { source: DEFAULT_HEADERS_SOURCE, headers: securityHeaders },
-    { source: LIVE_CONSOLE_SOURCE, headers: browserCallHeaders },
+    ...BROWSER_CALL_SOURCES.map((source) => ({ source, headers: browserCallHeaders })),
   ],
 };
 

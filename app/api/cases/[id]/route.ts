@@ -14,7 +14,17 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 // Edits are partial; the merged result must still satisfy the full CaseInput contract.
-const patchSchema = z.strictObject({ fields: caseInputSchema.partial().default({}) });
+const patchFields = caseInputSchema.partial().extend({
+  diseaseCodes: caseInputSchema.shape.diseaseCodes.nullable(),
+  subtype: caseInputSchema.shape.subtype.nullable(),
+  stageSummary: caseInputSchema.shape.stageSummary.nullable(),
+  homeCity: caseInputSchema.shape.homeCity.nullable(),
+  homeState: caseInputSchema.shape.homeState.nullable(),
+  insurer: caseInputSchema.shape.insurer.nullable(),
+  planId: caseInputSchema.shape.planId.nullable(),
+  travelLimitMiles: caseInputSchema.shape.travelLimitMiles.nullable(),
+});
+const patchSchema = z.strictObject({ fields: patchFields.default({}) });
 
 export async function GET(req: Request, { params }: Ctx) {
   try {
@@ -47,7 +57,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (existing.status === "researching") return jsonError(409, "Research is running; case cannot be edited");
 
     const current = omit(existing, ["id", "status", "createdAt"]);
-    const merged = caseInputSchema.safeParse({ ...current, ...stripUndefined(body.data.fields) });
+    const merged = caseInputSchema.safeParse({ ...current, ...Object.fromEntries(Object.entries(stripUndefined(body.data.fields)).map(([key, value]) => [key, value === null ? undefined : value])) });
     if (!merged.success) return jsonError(400, "Edited case is invalid", z.treeifyError(merged.error), fieldPaths(merged.error));
 
     const updated = await cases.update(id, merged.data, "confirmed");

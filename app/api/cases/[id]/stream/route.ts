@@ -30,29 +30,47 @@ export async function GET(req: Request, { params }: Ctx) {
     if (!(await cases.get(id))) return jsonError(404, "Case not found");
 
     const encoder = new TextEncoder();
+    let cancelled = false;
+    let wakePoll: (() => void) | undefined;
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const send = (event: string, data: unknown) =>
-          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        const stopped = () => cancelled || req.signal.aborted;
+        const send = (event: string, data: unknown) => {
+          if (!stopped()) controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+        const onAbort = () => wakePoll?.();
+        req.signal.addEventListener("abort", onAbort, { once: true });
         const deadline = Date.now() + MAX_STREAM_MS;
         try {
           let tick = 0;
-          while (!req.signal.aborted && Date.now() < deadline) {
+          while (!stopped() && Date.now() < deadline) {
             if (tick++ % REAP_EVERY_TICKS === 0) await reapIfStuck(id, { cases, runs }).catch(() => undefined);
+            if (stopped()) break;
             const progress = await loadProgress(id, { cases, runs });
+            if (stopped()) break;
             send("runs", progress);
             if (isFinished(progress)) {
               send("done", { caseId: id, caseStatus: progress.caseStatus });
               break;
             }
-            await new Promise((r) => setTimeout(r, POLL_MS));
+            await new Promise<void>((resolve) => {
+              const timer = setTimeout(() => { wakePoll = undefined; resolve(); }, POLL_MS);
+              wakePoll = () => { clearTimeout(timer); wakePoll = undefined; resolve(); };
+            });
           }
         } catch (e) {
-          console.error("[stream] Unable to load research progress", e);
-          send("error", { message: "Unable to load research progress" });
+          if (!stopped()) {
+            console.error("[stream] Unable to load research progress", e);
+            send("error", { message: "Unable to load research progress" });
+          }
         } finally {
-          controller.close();
+          req.signal.removeEventListener("abort", onAbort);
+          if (!cancelled) controller.close();
         }
+      },
+      cancel() {
+        cancelled = true;
+        wakePoll?.();
       },
     });
 

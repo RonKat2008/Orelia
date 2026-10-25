@@ -362,7 +362,7 @@ export function SwarmView({ caseId }: { caseId: string }) {
                   <RefreshCw aria-hidden />
                   Try the search again
                 </Button>
-                {retryError ? <p className="m-0 mt-3 text-small text-danger" role="status">{retryError}</p> : null}
+                {retryError ? <p className="m-0 mt-3 text-small text-danger" role="alert">{retryError}</p> : null}
               </div>
             </motion.div>
           ) : null}

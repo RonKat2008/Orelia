@@ -62,6 +62,7 @@ export function ManageCase({ caseId }: { caseId: string }) {
  * Child pages render inside the only <main id="main">.
  */
 export function JourneyShell({ caseId, children }: { caseId: string; children: ReactNode }) {
+  const pathname = usePathname() ?? `/cases/${caseId}`;
   const [plan, setPlan] = useState<JourneyPlan>(waiting);
   const [data, setData] = useState<JourneyData | null>(null);
 
@@ -83,9 +84,8 @@ export function JourneyShell({ caseId, children }: { caseId: string; children: R
     return () => {
       cancelled = true;
     };
-  }, [caseId]);
+  }, [caseId, pathname]);
 
-  const pathname = usePathname() ?? `/cases/${caseId}`;
   const hydrated = useHydrated();
   const view = useViewMode();
   const judge = hydrated && view === "judge";

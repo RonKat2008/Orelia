@@ -2,6 +2,7 @@ import type { Case, CaseInput } from "@/lib/contracts";
 import { goalSchema } from "@/lib/contracts";
 import type { Goal } from "../goals";
 import { INTAKE_COPY } from "./copy";
+import { NEEDS_REVIEW } from "../fallback";
 
 export type TravelChoice = "local" | "regional" | "far" | "anywhere";
 
@@ -10,6 +11,8 @@ export type PatientAnswers = {
   city: string;
   state: string;
   travel: TravelChoice | null;
+  /** Exact uploaded/profile limit, retained until a travel choice is changed. */
+  travelLimitMiles?: number;
   goals: Goal[];
   insurer: string;
 };
@@ -62,9 +65,9 @@ function homeText(answers: PatientAnswers): string {
   return [answers.city.trim(), answers.state.trim()].filter(Boolean).join(", ");
 }
 
-function travelText(travel: TravelChoice | null): string {
-  if (!travel) return "";
-  const miles = TRAVEL_MILES[travel];
+function travelText(travel: TravelChoice | null, exactMiles?: number): string {
+  if (!travel && exactMiles === undefined) return "";
+  const miles = exactMiles ?? (travel ? TRAVEL_MILES[travel] : undefined);
   return miles === undefined ? "anywhere in the country" : `up to ${miles} miles`;
 }
 
@@ -73,7 +76,7 @@ export function answersToReport(answers: PatientAnswers): string {
   const parts: Array<[string, string]> = [
     ["Diagnosis", answers.condition.trim()],
     ["Home", homeText(answers)],
-    ["Can travel", travelText(answers.travel)],
+    ["Can travel", travelText(answers.travel, answers.travelLimitMiles)],
     ["Hoping for", goals.join(", ")],
     ["Insurance", answers.insurer.trim()],
   ];
@@ -86,7 +89,7 @@ export function answersToReport(answers: PatientAnswers): string {
 }
 
 export function answersToCaseInput(answers: PatientAnswers): Partial<CaseInput> {
-  const miles = answers.travel ? TRAVEL_MILES[answers.travel] : undefined;
+  const miles = answers.travelLimitMiles ?? (answers.travel ? TRAVEL_MILES[answers.travel] : undefined);
   const city = answers.city.trim();
   const state = answers.state.trim();
   const insurer = answers.insurer.trim();
@@ -104,13 +107,21 @@ export function answersToCaseInput(answers: PatientAnswers): Partial<CaseInput> 
 /** The patient's own answers win; extraction-only fields (subtype, stage, codes, plan) are kept. */
 export function mergeExtracted(record: Case, answers: PatientAnswers): Case {
   const own = answersToCaseInput(answers);
-  const merged: Case = { ...record };
-  if (own.diseaseName) merged.diseaseName = own.diseaseName;
-  if (own.homeCity) merged.homeCity = own.homeCity;
-  if (own.homeState) merged.homeState = own.homeState;
-  if (own.insurer) merged.insurer = own.insurer;
-  if (answers.travel) merged.travelLimitMiles = own.travelLimitMiles;
-  if (own.goals && own.goals.length > 0) merged.goals = own.goals;
+  const merged: Case = {
+    ...record,
+    diseaseName: own.diseaseName ?? record.diseaseName,
+    homeCity: own.homeCity,
+    homeState: own.homeState,
+    insurer: own.insurer,
+    travelLimitMiles: own.travelLimitMiles,
+    goals: own.goals ?? [],
+  };
+  if (merged.diseaseName.trim().toLowerCase() !== record.diseaseName.trim().toLowerCase()) {
+    merged.diseaseCodes = undefined;
+    merged.subtype = undefined;
+    merged.stageSummary = undefined;
+  }
+  if (merged.insurer !== record.insurer) merged.planId = undefined;
   return merged;
 }
 
@@ -169,5 +180,19 @@ export function applyProfilePrefill(answers: PatientAnswers, profile: ProfilePre
     insurer: answers.insurer.trim() ? answers.insurer : (profile.insurer ?? ""),
     travel:
       answers.travel ?? (profile.travelLimitMiles !== undefined ? travelFromMiles(profile.travelLimitMiles) : null),
+    travelLimitMiles: answers.travel === null ? profile.travelLimitMiles : answers.travelLimitMiles,
+  };
+}
+
+/** Preserve exact extracted facts for the check screen; editing travel replaces the numeric limit. */
+export function recordToAnswers(record: Case): PatientAnswers {
+  return {
+    condition: record.diseaseName === NEEDS_REVIEW ? "" : record.diseaseName,
+    city: record.homeCity ?? "",
+    state: record.homeState ?? "",
+    travel: record.travelLimitMiles === undefined ? null : travelFromMiles(record.travelLimitMiles),
+    travelLimitMiles: record.travelLimitMiles,
+    goals: record.goals,
+    insurer: record.insurer ?? "",
   };
 }

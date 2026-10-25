@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import type { Case, CaseInput } from "@/lib/contracts";
+import { REPORT_TEXT_MIN, REPORT_TEXT_MAX, type Case, type CaseInput } from "@/lib/contracts";
 import {
   Button,
   Checkbox,
@@ -25,11 +25,10 @@ import {
 import type { DemoReport } from "../demos";
 import {
   InvalidFields,
-  ScopeRefusal,
   confirmAndResearch,
   extractCase,
 } from "../case-client";
-import { NEEDS_REVIEW, checkUpload, fallbackFor } from "../fallback";
+import { checkUpload, fallbackFor } from "../fallback";
 import { ReportStep } from "../ReportStep";
 import {
   PATIENT_QUESTIONS,
@@ -42,6 +41,7 @@ import {
   canAdvance,
   emptyAnswers,
   mergeExtracted,
+  recordToAnswers,
   questionError,
   type PatientAnswers,
   type PatientQuestionId,
@@ -75,31 +75,9 @@ const HEADING_CLASS =
 
 const fieldName = (key: string) => COPY.errors.fieldNames[key] ?? key;
 
-function recordToAnswers(record: Case): PatientAnswers {
-  const miles = record.travelLimitMiles;
-  const travel: TravelChoice | null =
-    miles === undefined
-      ? null
-      : miles <= 25
-        ? "local"
-        : miles <= 100
-          ? "regional"
-          : miles <= 500
-            ? "far"
-            : "anywhere";
-  return {
-    condition: record.diseaseName === NEEDS_REVIEW ? "" : record.diseaseName,
-    city: record.homeCity ?? "",
-    state: record.homeState ?? "",
-    travel,
-    goals: record.goals,
-    insurer: record.insurer ?? "",
-  };
-}
-
-function travelSummary(travel: TravelChoice | null): string {
-  if (!travel) return "";
-  const miles = TRAVEL_MILES[travel];
+function travelSummary(travel: TravelChoice | null, exactMiles?: number): string {
+  if (!travel && exactMiles === undefined) return "";
+  const miles = exactMiles ?? (travel ? TRAVEL_MILES[travel] : undefined);
   return miles === undefined
     ? COPY.travel.anywhereSummary
     : COPY.travel.milesSummary(miles);
@@ -151,7 +129,7 @@ function QuestionFields({
           aria-label={COPY.questions.travel.question}
           value={answers.travel ?? ""}
           onValueChange={(value) =>
-            onChange({ ...answers, travel: value as TravelChoice })
+            onChange({ ...answers, travel: value as TravelChoice, travelLimitMiles: undefined })
           }
         >
           {TRAVEL_CHOICES.map((choice) => (
@@ -295,7 +273,7 @@ function CheckScreen({
         .filter(Boolean)
         .join(", "),
     },
-    { id: "travel", value: travelSummary(answers.travel) },
+    { id: "travel", value: travelSummary(answers.travel, answers.travelLimitMiles) },
     {
       id: "goals",
       value: answers.goals.map((goal) => COPY.goals[goal]).join(", "),
@@ -371,6 +349,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const moved = useRef(false);
+  const busyRef = useRef(false);
 
   // Apply a profile that arrives after first render, once (adjusting state during render, not in an effect).
   if (profile !== null && !prefilled) {
@@ -391,6 +370,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   const questionId = PATIENT_QUESTIONS[step];
 
   function go(next: () => void) {
+    if (busyRef.current) return;
     moved.current = true;
     setError(null);
     setSubmitted(false);
@@ -432,6 +412,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
 
   function skipInsurance() {
     go(() => {
+      setAnswers((current) => ({ ...current, insurer: "" }));
       setFromCheck(false);
       setPhase("confirm");
     });
@@ -456,6 +437,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   }
 
   async function loadFile(file: File) {
+    if (busyRef.current) return;
     const check = checkUpload(file);
     if (!check.ok) return setError(check.reason);
     try {
@@ -467,11 +449,18 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
   }
 
   async function readReport() {
+    if (busyRef.current || phase !== "upload") return;
     if (!reportText.trim()) {
       setError(COPY.upload.empty);
       return;
     }
+    const length = reportText.trim().length;
+    if (length < REPORT_TEXT_MIN || length > REPORT_TEXT_MAX) {
+      setError(`Use between ${REPORT_TEXT_MIN} and ${REPORT_TEXT_MAX.toLocaleString("en-US")} characters from your report.`);
+      return;
+    }
     go(() => setPhase("reading"));
+    busyRef.current = true;
     try {
       const { record: extracted } = await extractCase(
         reportText,
@@ -484,14 +473,15 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
     } catch (failure) {
       setPhase("upload");
       setError(
-        failure instanceof ScopeRefusal
-          ? failure.message
-          : COPY.upload.readFailed,
+        failure instanceof Error ? failure.message : COPY.upload.readFailed,
       );
+    } finally {
+      busyRef.current = false;
     }
   }
 
   async function startLooking() {
+    if (busyRef.current || phase !== "confirm") return;
     if (!answers.condition.trim()) {
       // The condition is the one thing the search cannot run without: ask for it on its own screen.
       moved.current = true;
@@ -501,6 +491,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       setSubmitted(true);
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -522,12 +513,11 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
       router.push(`/cases/${merged.id}`);
     } catch (failure) {
       setError(
-        failure instanceof ScopeRefusal
-          ? failure.message
-          : failure instanceof InvalidFields
-            ? COPY.errors.fields(failure.fields.map(fieldName).join(" and "))
-            : COPY.errors.start,
+        failure instanceof InvalidFields
+          ? COPY.errors.fields(failure.fields.map(fieldName).join(" and "))
+          : failure instanceof Error ? failure.message : COPY.errors.start,
       );
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -574,7 +564,7 @@ export function PatientIntake({ demos }: { demos: DemoReport[] }) {
             busy={busy}
             error={error}
             back={
-              <BackButton onClick={backFromCheck}>
+              <BackButton onClick={backFromCheck} disabled={busy}>
                 {COPY.actions.back}
               </BackButton>
             }

@@ -108,6 +108,26 @@ export function swarmReducer(state: SwarmState, action: Action): SwarmState {
 
 const PREVIEW_AFTER_MS = 6000;
 
+/** Reconnect only after a restart is accepted or another active attempt is confirmed. */
+export async function restartResearch(caseId: string, fetchImpl: typeof fetch = fetch): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetchImpl(`/api/cases/${caseId}/research`, { method: "POST" });
+  } catch {
+    throw new Error("Could not reach the server. Check your connection and try again.");
+  }
+  if (response.ok) return;
+  if (response.status === 409) {
+    const current = await fetchImpl(`/api/cases/${caseId}/status`, { cache: "no-store" }).catch(() => null);
+    const progress = current?.ok ? await current.json().catch(() => null) as { caseStatus?: string } | null : null;
+    if (progress?.caseStatus === "researching") return;
+    throw new Error("The case could not be restarted. Refresh the page to check its latest progress.");
+  }
+  if (response.status === 429) throw new Error("Too many restarts in a short time. Please wait a little and try again.");
+  if (response.status === 404) throw new Error("This case is no longer available in this browser. Start a new case to continue.");
+  throw new Error("Could not restart the search. Please try again in a moment.");
+}
+
 /** Live research swarm: SSE from the stream route, with a labelled typed preview only in offline mode. */
 export function useSwarmStream(caseId: string) {
   const [state, dispatch] = useReducer(swarmReducer, INITIAL);
@@ -152,22 +172,13 @@ export function useSwarmStream(caseId: string) {
 
   const retry = useCallback(async () => {
     setRetrying(true);
-    setRetryError(undefined);
     try {
-      const response = await fetch(`/api/cases/${caseId}/research`, { method: "POST" });
-      // 409 means a run is already going (another tab or a double click): just attach to it.
-      if (!response.ok && response.status !== 409) {
-        setRetryError(
-          response.status === 429
-            ? "Too many restarts in a short time. Please wait a little and try again."
-            : "Could not restart the search. Please try again in a moment.",
-        );
-        return;
-      }
+      await restartResearch(caseId);
+      setRetryError(undefined);
       dispatch({ type: "reset" });
       setAttempt((n) => n + 1);
-    } catch {
-      setRetryError("Could not reach the server. Check your connection and try again.");
+    } catch (error) {
+      setRetryError(error instanceof Error ? error.message : "Could not restart the search. Please try again.");
     } finally {
       setRetrying(false);
     }

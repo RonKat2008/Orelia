@@ -9,6 +9,7 @@ import {
   emptyAnswers,
   mergeExtracted,
   questionError,
+  recordToAnswers,
   type PatientAnswers,
 } from "@/components/intake/patient/answers";
 import { INTAKE_COPY, intakeCopyStrings } from "@/components/intake/patient/copy";
@@ -106,8 +107,8 @@ describe("mergeExtracted", () => {
   };
 
   it("lets the patient's answers win and keeps extraction-only fields", () => {
-    const merged = mergeExtracted(record, base);
-    expect(merged.diseaseName).toBe("vascular Ehlers-Danlos syndrome");
+    const merged = mergeExtracted(record, { ...base, condition: record.diseaseName });
+    expect(merged.diseaseName).toBe(record.diseaseName);
     expect(merged.homeCity).toBe("Austin");
     expect(merged.insurer).toBe("Aetna");
     expect(merged.travelLimitMiles).toBe(100);
@@ -115,19 +116,44 @@ describe("mergeExtracted", () => {
     expect(merged.subtype).toBe("vascular");
     expect(merged.stageSummary).toBe("stable");
     expect(merged.diseaseCodes).toEqual({ orpha: "286" });
-    expect(merged.planId).toBe("PPO-1");
+    expect(merged.planId).toBeUndefined();
     expect(merged.id).toBe(record.id);
   });
 
-  it("keeps extracted values where the patient left a field blank", () => {
+  it("clears optional fields the patient leaves blank", () => {
     const merged = mergeExtracted(record, { ...emptyAnswers(), condition: "EDS" });
-    expect(merged.homeCity).toBe("Dallas");
-    expect(merged.insurer).toBe("Cigna");
-    expect(merged.goals).toEqual(["aid"]);
+    expect(merged.homeCity).toBeUndefined();
+    expect(merged.homeState).toBeUndefined();
+    expect(merged.insurer).toBeUndefined();
+    expect(merged.goals).toEqual([]);
   });
 
   it("clears the extracted travel limit for 'anywhere'", () => {
     expect(mergeExtracted(record, { ...base, travel: "anywhere" }).travelLimitMiles).toBeUndefined();
+  });
+
+  it("keeps exact uploaded distances until the patient changes travel", () => {
+    for (const miles of [0, 75, 250, 1200]) {
+      const extracted = { ...record, travelLimitMiles: miles };
+      const answers = recordToAnswers(extracted);
+      expect(mergeExtracted(extracted, answers).travelLimitMiles).toBe(miles);
+      expect(answersToReport(answers)).toContain(`up to ${miles} miles`);
+      expect(mergeExtracted(extracted, { ...answers, travel: "local", travelLimitMiles: undefined }).travelLimitMiles).toBe(25);
+    }
+  });
+
+  it("clears condition-specific facts when the diagnosis changes", () => {
+    const merged = mergeExtracted(record, { ...base, condition: "A different condition" });
+    expect(merged.diseaseCodes).toBeUndefined();
+    expect(merged.subtype).toBeUndefined();
+    expect(merged.stageSummary).toBeUndefined();
+  });
+
+  it("keeps exact profile distance rather than silently rounding it", () => {
+    const answers = applyProfilePrefill(base, { travelLimitMiles: 400 });
+    expect(answers.travelLimitMiles).toBeUndefined();
+    const unedited = applyProfilePrefill(emptyAnswers(), { travelLimitMiles: 400 });
+    expect(answersToCaseInput(unedited).travelLimitMiles).toBe(400);
   });
 
   it("does not mutate the record", () => {

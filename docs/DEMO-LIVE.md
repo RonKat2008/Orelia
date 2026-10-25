@@ -37,11 +37,36 @@ first on calls, no medical advice, at most 5 active contacts, cadence).
    placed. Say: "One click, but each item still went through the safety gate."
 3. (0:50) The call lane: ringing -> connected; transcript lines stream into the call panel, the AI disclosure is the
    first line. If the provider gives a listen-in link, the call panel shows **Listen in** (judge view only).
+   **If the phone line is unavailable** (Vapi's free number has a daily outbound limit; until a Twilio number is
+   imported every dial fails with `call.start.error-vapi-number-outbound-daily-limit`), the Approve-all list shows
+   "☎ Call: ... Phone line unavailable — take the call in your browser" with the reason, and the call lane shows the
+   same button. See "Browser call" below.
 4. (1:40) **Approve all** again when it shows "(1)": the Kernel browser has filled the demo form (screenshot in the
    timeline); approval submits it and the confirmation appears.
 5. (2:10) **Deliver replies now** (or wait up to a minute for cron): the coordinator's reply arrives, the lane turns
    "Replied", and a **Send records** task appears. **Skip ahead 3 business days**: the silent Aortic program gets a
    drafted follow-up, waiting for approval. Close: "Close the laptop and this keeps going: the server does it."
+
+## Browser call: you play the clinic coordinator (demo only)
+When the phone cannot ring (daily limit, or no test phone), take the same call through the laptop mic:
+1. On the console's call lane (any drafted call in demo mode), or in the Approve-all list after a daily-limit
+   failure, click **Take the call in your browser**. Allow the microphone (Chrome asks once).
+2. Say: "Same agent, same Claude model, same approved script; only the line is my laptop instead of a phone."
+   The assistant speaks the AI disclosure first; it appears as the first line of the call panel ("Live browser
+   call") a second later, then your answers stream in as "Callee" lines.
+3. Answer as the coordinator, e.g. "Yes, we see patients with this condition. Please fax a referral and the recent
+   imaging, and call back Monday." The agent stays on the script, shares only the ticked fields, and gives no
+   medical advice; say "that's all, goodbye" and it ends the call (or press **End call**).
+4. Within ~20 s: the call ends with a summary, the lane turns **Replied**, the inbox agent runs and a **referral**
+   task appears, exactly as for a phone call.
+
+How it is safe: the button is the approval (it runs the normal `checkOutbound`: approved_at, allowlist, ticked
+fields only, disclosure first, no medical advice, 5-contact cap, cadence) and is offered only when demo destinations
+are on (or the judge view in `WAYFINDER_MODE=demo`). The server creates the Vapi web call with the same assistant
+builder as the phone path (`buildVapiAssistant`) and the Vapi **public** key, and returns only the call id and room
+URL, so the webhook secret and private key never reach the browser. No number is dialed; the only person on the call
+is the presenter. The `calls` row is written as usual; `call_live.provider = 'vapi-web'` marks it as a browser call.
+Only the live console page allows the microphone and Daily's call servers in its CSP (`vercel.ts`).
 
 ## 7-minute version
 Do the 3-minute script, slower, and add:
@@ -60,7 +85,7 @@ Do the 3-minute script, slower, and add:
   cron tick). Only threads Wayfinder started are answered, once per thread. AgentMail's webhook stores the
   reply, the inbox agent classifies it, and the task appears. The console polls/streams every ~1.5 s.
 - Calls: provider webhooks write status and transcript turns (Vapi: `call_live` / `call_turns`; AgentCall: the
-  `calls` row). The console reads whichever exists. Simulated calls feed a scripted transcript through the same
+  `calls` row). Browser calls are Vapi web calls (`type: webCall`) and use the same webhook and secret header. The console reads whichever exists. Simulated calls feed a scripted transcript through the same
   ingest.
 - Browser: the application row's status (filled, approved, submitted) plus the screenshot.
 

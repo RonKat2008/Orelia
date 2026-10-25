@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import config, { contentSecurityPolicy } from "@/vercel";
+import config, { browserCallContentSecurityPolicy, contentSecurityPolicy, DEFAULT_HEADERS_SOURCE, LIVE_CONSOLE_SOURCE } from "@/vercel";
 
 function directive(name: string): string {
   const d = contentSecurityPolicy.split(";").map((s) => s.trim()).find((s) => s.startsWith(`${name} `) || s === name);
@@ -19,7 +19,7 @@ describe("vercel.ts", () => {
   });
 
   it("applies every security header to all routes", () => {
-    const rule = config.headers?.find((h) => h.source === "/(.*)");
+    const rule = config.headers?.find((h) => h.source === DEFAULT_HEADERS_SOURCE);
     const keys = (rule?.headers ?? []).map((h) => h.key);
     for (const k of [
       "Content-Security-Policy",
@@ -57,5 +57,22 @@ describe("vercel.ts", () => {
     expect(cmd).toContain('"$VERCEL_ENV" = "production"');
     expect(cmd).toContain("scripts/check-env.ts --strict");
     expect(cmd.endsWith("&& next build")).toBe(true);
+  });
+
+  it("relaxes CSP and the microphone only on the live console (demo browser call)", () => {
+    const re = new RegExp(`^${DEFAULT_HEADERS_SOURCE}$`);
+    expect(re.test("/cases/abc/live")).toBe(false);
+    for (const p of ["/", "/cases/abc", "/cases/abc/live/x", "/cases/abc/outbox", "/api/cases/abc/calls/live"]) expect(re.test(p)).toBe(true);
+    const live = config.headers?.find((h) => h.source === LIVE_CONSOLE_SOURCE);
+    const get = (k: string) => live?.headers.find((h) => h.key === k)?.value ?? "";
+    expect(get("Permissions-Policy")).toContain("microphone=(self)");
+    expect(get("Permissions-Policy")).toContain("camera=()");
+    expect(get("Content-Security-Policy")).toBe(browserCallContentSecurityPolicy);
+    expect(browserCallContentSecurityPolicy).toContain("frame-ancestors 'none'");
+    // Only WebAssembly compilation (Daily's Krisp noise filter), never JS eval; blob: for its audio worklet.
+    expect(browserCallContentSecurityPolicy).not.toContain("'unsafe-eval'");
+    expect(browserCallContentSecurityPolicy).toMatch(/script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https:\/\/c\.daily\.co blob:;/);
+    expect(contentSecurityPolicy).not.toContain("wasm-unsafe-eval");
+    expect(get("X-Frame-Options")).toBe("DENY");
   });
 });

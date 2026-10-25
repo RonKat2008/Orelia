@@ -7,6 +7,7 @@ import { isVapiStartError } from "@/lib/channels/vapi-limits";
 import { countdownLabel, relativeTime, stateLabel, stateTone } from "./format";
 import { LiveCallPanel } from "./LiveCallPanel";
 import { BrowserCallButton } from "./BrowserCallButton";
+import { useHasBrowserCall } from "./browser-call-store";
 
 interface LaneListProps {
   lanes: ActivityLane[];
@@ -24,6 +25,9 @@ export const canTakeInBrowser = (lane: Pick<ActivityLane, "channel" | "state" | 
 
 function LaneRow({ lane, active, onSelect, nowMs, browserCall }: { lane: ActivityLane; active: boolean; onSelect: () => void; nowMs: number; browserCall?: boolean }) {
   const Icon = CHANNEL_ICON[lane.channel];
+  // Once a browser call starts the lane leaves 'drafted'; its session (outside React) keeps the widget on screen.
+  const startedHere = useHasBrowserCall(lane.contactId);
+  const showBrowserCall = browserCall === true && (startedHere || canTakeInBrowser(lane));
   const countdown = countdownLabel(lane.nextFollowUpAt, nowMs);
   return (
     <li className={cn("grid gap-1.5 border-b border-line px-2 py-1.5 last:border-b-0", active && "bg-teal-soft")}>
@@ -45,7 +49,7 @@ function LaneRow({ lane, active, onSelect, nowMs, browserCall }: { lane: Activit
         {countdown ? <span className="text-small tabular-nums text-ink-2">{countdown}</span> : null}
       </button>
       {lane.call ? <LiveCallPanel call={lane.call} /> : null}
-      {browserCall && canTakeInBrowser(lane) ? <BrowserCallButton contactId={lane.contactId} phoneFailed={isVapiStartError(lane.call?.endedReason ?? lane.call?.outcome)} /> : null}
+      {showBrowserCall ? <BrowserCallButton contactId={lane.contactId} phoneFailed={isVapiStartError(lane.call?.endedReason ?? lane.call?.outcome)} /> : null}
       {lane.application ? (
         <p className="m-0 break-words text-small text-ink-2">
           Form: {stateLabel(lane.application.status)}

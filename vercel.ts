@@ -27,6 +27,24 @@ export const contentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+/**
+ * DEMO "take the call in your browser" (components/live/BrowserCallButton.tsx) runs only on the live console
+ * (/cases/<id>/live). That one page may load Daily's call machine (c.daily.co), talk to Daily/Vapi realtime servers
+ * and use the microphone. Daily's always-on Krisp noise filter needs 'wasm-unsafe-eval' (WebAssembly compile only, not
+ * JS eval) and a blob: audio worklet; without them the mic track never reaches Vapi (verified in Chrome).
+ * Every other page keeps the policy above and microphone=().
+ */
+export const BROWSER_CALL_ORIGINS = { script: "'wasm-unsafe-eval' https://c.daily.co blob:", connect: "https://*.daily.co wss://*.daily.co https://api.vapi.ai https://*.vapi.ai wss://*.vapi.ai" };
+export const browserCallContentSecurityPolicy = contentSecurityPolicy
+  .replace("script-src 'self' 'unsafe-inline'", `script-src 'self' 'unsafe-inline' ${BROWSER_CALL_ORIGINS.script}`)
+  .replace("connect-src 'self' https://vercel.com/api/blob/", `connect-src 'self' https://vercel.com/api/blob/ ${BROWSER_CALL_ORIGINS.connect}`)
+  .concat("; media-src 'self' blob:; worker-src 'self' blob:");
+
+/** Path of the live console, the only page with the browser-call policy. */
+export const LIVE_CONSOLE_SOURCE = "/cases/:id/live";
+/** Every other path (Vercel path-to-regexp with a negative lookahead). */
+export const DEFAULT_HEADERS_SOURCE = "/((?!cases/[^/]+/live$).*)";
+
 export const securityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -38,6 +56,11 @@ export const securityHeaders = [
     value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   },
 ];
+
+/** Same headers, with the browser-call CSP and microphone=(self) (see browserCallContentSecurityPolicy). */
+export const browserCallHeaders = securityHeaders.map((h) =>
+  h.key === "Content-Security-Policy" ? { ...h, value: browserCallContentSecurityPolicy }
+    : h.key === "Permissions-Policy" ? { ...h, value: h.value.replace("microphone=()", "microphone=(self)") } : h);
 
 /** Strict env check gates production builds only; other environments just report. */
 export const buildCommand =
@@ -71,7 +94,10 @@ export const config: VercelConfig = {
     // In-app appointment reminders (1 day ahead); no patient email/SMS.
     { path: "/api/cron/appointments", schedule: "15 * * * *" },
   ],
-  headers: [{ source: "/(.*)", headers: securityHeaders }],
+  headers: [
+    { source: DEFAULT_HEADERS_SOURCE, headers: securityHeaders },
+    { source: LIVE_CONSOLE_SOURCE, headers: browserCallHeaders },
+  ],
 };
 
 export default config;

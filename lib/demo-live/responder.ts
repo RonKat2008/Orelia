@@ -7,8 +7,9 @@
  * Safety:
  *   - Off unless demo destinations are on (WAYFINDER_DEMO_COORDINATORS=1 plus an allowlisted coordinator inbox)
  *     and AGENTMAIL_API_KEY is set.
- *   - It only ever replies from a coordinator inbox (which is on OUTBOUND_ALLOWLIST) to a sender that is itself
- *     an inbox of this same AgentMail account (our own Wayfinder case inboxes). It cannot reach a third party.
+ *   - It only ever replies from a coordinator inbox (which is on OUTBOUND_ALLOWLIST), in a thread that Wayfinder itself
+ *     started (an outbound message with that provider thread id exists in our database), and never to a coordinator
+ *     address. A reply in such a thread goes back to our own case inbox, so it cannot reach a third party.
  *   - One scripted reply per provider thread, ever: claimed in the OnceStore before sending (overlapping cron runs
  *     cannot double-reply). A failure before the provider accepted the reply releases the claim for a retry.
  */
@@ -54,6 +55,8 @@ export async function runDemoResponder(opts: {
   delayMs?: number;
   /** Ignore mail received before this (e.g. only one demo case's start). */
   notBefore?: Date;
+  /** True when Wayfinder sent the first message of this provider thread (our own outbound row exists). */
+  isOurThread: (threadId: string) => Promise<boolean>;
   /** True for a thread that must stay unanswered (its plan calls when there is no reply), so the follow-up fires. */
   isSilentThread?: (threadId: string) => Promise<boolean>;
   log?: (line: string) => void;
@@ -61,9 +64,8 @@ export async function runDemoResponder(opts: {
   const result: ResponderResult = { enabled: responderEnabled(opts.env), scanned: 0, replied: 0, skipped: 0, failed: 0 };
   if (!result.enabled) return result;
   const coordinatorAddresses = new Set(demoCoordinatorInboxes(opts.env));
-  const inboxes = await opts.mail.listInboxes();
-  const ownAddresses = new Set(inboxes.map((i) => i.address.toLowerCase()));
-  const coordinators = inboxes.filter((i) => coordinatorAddresses.has(i.address.toLowerCase()));
+  // AgentMail inbox ids are the inbox addresses, so no account-wide listing (which scoped keys may not allow) is needed.
+  const coordinators = [...coordinatorAddresses].map((address) => ({ inboxId: address, address }));
   const delay = opts.delayMs ?? DEFAULT_REPLY_DELAY_MS;
   const floor = Math.max(opts.now.getTime() - RESPONDER_LOOKBACK_MS, opts.notBefore?.getTime() ?? 0);
 
@@ -75,7 +77,7 @@ export async function runDemoResponder(opts: {
       const at = Date.parse(m.receivedAt);
       if (!Number.isFinite(at) || at < floor) continue;
       result.scanned += 1;
-      if (!replyAllowed(m, ownAddresses, coordinatorAddresses) || opts.now.getTime() < at + delay) {
+      if (!replyAllowed(m, coordinatorAddresses) || opts.now.getTime() < at + delay || !(await opts.isOurThread(m.threadId).catch(() => false))) {
         result.skipped += 1;
         continue;
       }
@@ -102,8 +104,8 @@ export async function runDemoResponder(opts: {
   return result;
 }
 
-/** The sender must be one of OUR inboxes (a Wayfinder case inbox), never a coordinator inbox and never anyone else. */
-export function replyAllowed(m: Pick<DemoMessage, 'from'>, ownAddresses: Set<string>, coordinatorAddresses: Set<string>): boolean {
+/** Never answer a coordinator's own mail (that would loop between demo inboxes). */
+export function replyAllowed(m: Pick<DemoMessage, 'from'>, coordinatorAddresses: Set<string>): boolean {
   const from = extractAddress(m.from);
-  return ownAddresses.has(from) && !coordinatorAddresses.has(from);
+  return from.includes('@') && !coordinatorAddresses.has(from);
 }

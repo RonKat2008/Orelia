@@ -56,7 +56,7 @@ export function selectChannels(env: Env = process.env, deps: { now?: () => Date;
   const mailKey = env.AGENTMAIL_API_KEY?.trim();
   const email = !offline && mailKey
     ? new AgentMailChannel({ apiKey: mailKey, guard, ...(env.AGENTMAIL_SENDER_INBOX_ID?.trim() ? { senderInboxId: env.AGENTMAIL_SENDER_INBOX_ID.trim() } : {}), ...(deps.now ? { now: deps.now } : {}), ...(deps.fetcher ? { fetcher: deps.fetcher } : {}) })
-    : new MockMailer(guard, deps.now);
+    : new MockMailer(guard, deps.now, env.DATABASE_URL ? `${Math.random().toString(36).slice(2, 10)}-` : '');
   const caller = offline ? new MockCaller(guard, deps.now) : selectVoiceCaller(env, guard, deps);
   // Demo mode: calls to the reserved demo sink are simulated in front of the caller (which would refuse the sink).
   const voice: Channel = demoDestinationsEnabled(env) ? new DemoCallSimulator(caller) : caller;

@@ -101,7 +101,8 @@ export class AgentMailDemoMail implements DemoMail {
   }
 
   async listReceived(inboxId: string): Promise<DemoMessage[]> {
-    const self = (await this.listInboxes()).find((i) => i.inboxId === inboxId)?.address ?? inboxId;
+    // AgentMail inbox ids are addresses; skip the account-wide listing (scoped keys may not allow it) when that holds.
+    const self = inboxId.includes("@") ? inboxId : (await this.listInboxes()).find((i) => i.inboxId === inboxId)?.address ?? inboxId;
     const items: MessageLike[] = [];
     let pageToken: string | undefined;
     do {

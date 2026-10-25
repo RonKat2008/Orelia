@@ -16,7 +16,8 @@ export class MockMailer implements Channel {
   readonly kind = 'email' as const;
   readonly sent: MockEmail[] = [];
   private seq = 0;
-  constructor(private guard: ChannelGuardOptions, private now = () => new Date()) {}
+  /** `runTag` keeps ids unique across process restarts when mock sends land in a persistent database. */
+  constructor(private guard: ChannelGuardOptions, private now = () => new Date(), private runTag = '') {}
 
   async send(gated: GatedDraft, thread?: OutboundThreadRef): Promise<ProviderRef> {
     const to = assertGated(gated, 'email', 'mock-mailer', this.guard);
@@ -25,7 +26,7 @@ export class MockMailer implements Channel {
     const prior = gated.contactId ? this.sent.find(m => m.contactId === gated.contactId) : undefined;
     const ref: ProviderRef = {
       provider: 'mock-mailer', channel: 'email', inboxId: thread?.inboxId ?? 'mock-inbox',
-      threadId: thread?.threadId ?? prior?.ref.threadId ?? `mock-thread-${n}`, messageId: `mock-message-${n}`, status: 'sent',
+      threadId: thread?.threadId ?? prior?.ref.threadId ?? `mock-thread-${this.runTag}${n}`, messageId: `mock-message-${this.runTag}${n}`, status: 'sent',
     };
     this.sent.push({
       to, body: gated.body, approvedAt: gated.approvedAt, ref, sentAt: this.now().toISOString(),

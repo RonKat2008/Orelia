@@ -19,7 +19,7 @@ function mail(received: DemoMessage[]): DemoMail & { reply: ReturnType<typeof vi
       { inboxId: 'i-coord', address: COORD, displayName: 'Coordinator' },
       { inboxId: 'i-ours', address: OURS, displayName: 'Case inbox' },
     ],
-    listReceived: async (id: string) => (id === 'i-coord' ? received : []),
+    listReceived: async (id: string) => (id === COORD ? received : []),
     reply: vi.fn(async () => {
       await new Promise((r) => setTimeout(r, 2));
       return { messageId: 'r1' };
@@ -36,24 +36,24 @@ describe('server-side demo coordinator', () => {
   it('answers our own case inbox once per thread, even with overlapping runs', async () => {
     const m = mail([msg({}), msg({ messageId: 'm2', threadId: 't1' }), msg({ messageId: 'm3', threadId: 't2' })]);
     const once = new InMemoryOnceStore();
-    const runs = await Promise.all([1, 2, 3].map(() => runDemoResponder({ env, mail: m, once, now: NOW })));
+    const runs = await Promise.all([1, 2, 3].map(() => runDemoResponder({ env, mail: m, isOurThread: async (t) => t !== 'foreign', once, now: NOW })));
     expect(runs.reduce((n, r) => n + r.replied, 0)).toBe(2);
     expect(m.reply).toHaveBeenCalledTimes(2);
-    expect(m.reply).toHaveBeenCalledWith('i-coord', 'm1', DEMO_RECORDS_REPLY);
-    expect(m.reply).toHaveBeenCalledWith('i-coord', 'm3', DEMO_RECORDS_REPLY);
+    expect(m.reply).toHaveBeenCalledWith(COORD, 'm1', DEMO_RECORDS_REPLY);
+    expect(m.reply).toHaveBeenCalledWith(COORD, 'm3', DEMO_RECORDS_REPLY);
   });
 
-  it('never replies to anyone who is not one of our inboxes', async () => {
-    const m = mail([msg({ from: 'someone@hospital.org' }), msg({ messageId: 'm2', threadId: 't2', from: COORD })]);
-    const r = await runDemoResponder({ env, mail: m, once: new InMemoryOnceStore(), now: NOW });
+  it('never replies outside a thread Wayfinder started, nor to a coordinator', async () => {
+    const m = mail([msg({ threadId: 'foreign', from: 'someone@hospital.org' }), msg({ messageId: 'm2', threadId: 't2', from: COORD })]);
+    const r = await runDemoResponder({ env, mail: m, isOurThread: async (t) => t !== 'foreign', once: new InMemoryOnceStore(), now: NOW });
     expect(r.replied).toBe(0);
     expect(m.reply).not.toHaveBeenCalled();
   });
 
   it('is off outside demo mode or without an AgentMail key', async () => {
     const m = mail([msg({})]);
-    expect(await runDemoResponder({ env: { ...env, WAYFINDER_DEMO_COORDINATORS: '0' }, mail: m, once: new InMemoryOnceStore(), now: NOW })).toMatchObject({ enabled: false, replied: 0 });
-    expect(await runDemoResponder({ env: { ...env, AGENTMAIL_API_KEY: '' }, mail: m, once: new InMemoryOnceStore(), now: NOW })).toMatchObject({ enabled: false });
+    expect(await runDemoResponder({ isOurThread: async () => true, env: { ...env, WAYFINDER_DEMO_COORDINATORS: '0' }, mail: m, once: new InMemoryOnceStore(), now: NOW })).toMatchObject({ enabled: false, replied: 0 });
+    expect(await runDemoResponder({ isOurThread: async () => true, env: { ...env, AGENTMAIL_API_KEY: '' }, mail: m, once: new InMemoryOnceStore(), now: NOW })).toMatchObject({ enabled: false });
     expect(m.reply).not.toHaveBeenCalled();
   });
 
@@ -63,13 +63,13 @@ describe('server-side demo coordinator', () => {
     const silent = msg({ messageId: 'm5', threadId: 't5' });
     const m = mail([fresh, old, silent]);
     const once = new InMemoryOnceStore();
-    const r1 = await runDemoResponder({ env, mail: m, once, now: NOW, isSilentThread: async (t) => t === 't5' });
+    const r1 = await runDemoResponder({ env, mail: m, isOurThread: async (t) => t !== 'foreign', once, now: NOW, isSilentThread: async (t) => t === 't5' });
     expect(r1.replied).toBe(0);
     m.reply.mockRejectedValueOnce(new Error('provider down'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const later = new Date(NOW.getTime() + 60_000);
-    expect(await runDemoResponder({ env, mail: m, once, now: later, isSilentThread: async (t) => t === 't5' })).toMatchObject({ replied: 0, failed: 1 });
-    expect(await runDemoResponder({ env, mail: m, once, now: later, isSilentThread: async (t) => t === 't5' })).toMatchObject({ replied: 1 });
+    expect(await runDemoResponder({ env, mail: m, isOurThread: async (t) => t !== 'foreign', once, now: later, isSilentThread: async (t) => t === 't5' })).toMatchObject({ replied: 0, failed: 1 });
+    expect(await runDemoResponder({ env, mail: m, isOurThread: async (t) => t !== 'foreign', once, now: later, isSilentThread: async (t) => t === 't5' })).toMatchObject({ replied: 1 });
     vi.restoreAllMocks();
   });
 

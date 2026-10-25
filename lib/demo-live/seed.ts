@@ -55,8 +55,9 @@ export const DEMO_RESOURCES: readonly DemoResourceSpec[] = [
   },
   {
     role: 'web_form', targetKind: 'organization', kind: 'travel_aid', name: 'Demo Rare Travel Fund (fictional)',
-    city: 'Cincinnati', state: 'OH', formPath: '/demo/apply',
-    summary: 'Fictional travel-aid fund that only takes applications through an online form.',
+    city: 'Cincinnati', state: 'OH', formPath: '/demo/apply', phone: '+12025550144',
+    // The phone gives the resource a contact (consent lives on a contact); the aid plan still applies by form only.
+    summary: 'Fictional travel-aid fund that takes applications through an online form.',
   },
   {
     role: 'email_then_call', targetKind: 'institution', kind: 'rare_disease_center', name: 'Demo Aortic Care Program (fictional)',
@@ -104,7 +105,7 @@ export async function seedLiveDemoCase(opts: { env: Env; now?: Date }): Promise<
     }
     await db.insert(evidence).values(contactPointRows(caseId, spec, targetId, opts.env, now));
     const [cand] = await db.insert(caseCandidates).values({
-      caseId, targetKind: spec.targetKind, targetId, rank: i + 1, score: 90 - i * 5, tier: 'best',
+      caseId, targetKind: spec.targetKind, targetId, rank: i + 1, score: 90 - i * 5, tier: 'best', selected: true,
       scoreBreakdown: [{ factor: 'demo', points: 90 - i * 5, text: 'Fictional demo resource chosen to exercise this channel.', evidenceIds: [] }],
     }).returning({ id: caseCandidates.id });
     out.push({ candidateId: cand!.id, role: spec.role, targetKind: spec.targetKind, targetId, name: spec.name });

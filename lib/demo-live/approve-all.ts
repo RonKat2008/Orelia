@@ -14,7 +14,7 @@ export interface ApproveItem {
   detail: string;
 }
 
-interface PlanBody { plan: { version: number; status: string } | null }
+interface PlanBody { plan: { version: number; status: string; resources?: { contactId: string | null; steps: { channel: string; enabled: boolean }[] }[] } | null }
 interface ContactsBody { contacts: { id: string; displayName: string; channel: string; state: string; consented: boolean; approved: boolean; followUpAwaitingApproval?: boolean }[] }
 interface AppsBody { applications: { id: string; status: string; url?: string }[] }
 
@@ -41,11 +41,29 @@ async function approvePlan(caseId: string, f: FetchFn): Promise<ApproveItem | nu
 }
 
 /** One approval per contact that has something waiting: a first message, a reply letter, or a drafted follow-up. */
+/** Contacts whose plan actually emails or calls them (a form-only resource's contact is never messaged). */
+async function plannedMessageContacts(caseId: string, f: FetchFn): Promise<Map<string, Set<string>> | null> {
+  const res = await f(`/api/cases/${caseId}/plan?optional=1`);
+  if (!res.ok) return null;
+  const { plan } = (await res.json()) as PlanBody;
+  if (!plan?.resources) return null;
+  const out = new Map<string, Set<string>>();
+  for (const r of plan.resources) {
+    if (!r.contactId) continue;
+    out.set(r.contactId, new Set(r.steps.filter((s) => s.enabled && s.channel !== 'web_form').map((s) => s.channel)));
+  }
+  return out;
+}
+
+const wantsMessage = (planned: Map<string, Set<string>> | null, c: ContactsBody['contacts'][number]) =>
+  c.followUpAwaitingApproval || !planned || (planned.get(c.id)?.has(c.channel) ?? false);
+
 async function approveMessages(caseId: string, f: FetchFn): Promise<ApproveItem[]> {
   const res = await f(`/api/cases/${caseId}/contacts`);
   if (!res.ok) return [{ kind: 'message', id: caseId, label: 'Contacts', ok: false, detail: await errorText(res) }];
   const { contacts } = (await res.json()) as ContactsBody;
-  const waiting = contacts.filter((c) => c.consented && (c.state === 'drafted' || c.followUpAwaitingApproval));
+  const planned = await plannedMessageContacts(caseId, f);
+  const waiting = contacts.filter((c) => c.consented && (c.state === 'drafted' || c.followUpAwaitingApproval) && wantsMessage(planned, c));
   const out: ApproveItem[] = [];
   for (const c of waiting) {
     const label = `${c.channel === 'voice' ? 'Call' : 'Email'}: ${c.displayName}`;
@@ -83,10 +101,11 @@ export async function pendingApprovals(caseId: string, f: FetchFn): Promise<{ pl
   const [p, c, a] = await Promise.all([f(`/api/cases/${caseId}/plan?optional=1`), f(`/api/cases/${caseId}/contacts`), f(`/api/cases/${caseId}/applications`)]);
   const plan = p.ok ? ((await p.json()) as PlanBody).plan : null;
   const contacts = c.ok ? ((await c.json()) as ContactsBody).contacts : [];
+  const planned = new Map((plan?.resources ?? []).flatMap((r) => (r.contactId ? [[r.contactId, new Set(r.steps.filter((s) => s.enabled && s.channel !== 'web_form').map((s) => s.channel))] as const] : [])));
   const apps = a.ok ? ((await a.json()) as AppsBody).applications : [];
   return {
     plan: !!plan && plan.status !== 'approved',
-    messages: contacts.filter((x) => x.consented && (x.state === 'drafted' || x.followUpAwaitingApproval)).length,
+    messages: contacts.filter((x) => x.consented && (x.state === 'drafted' || x.followUpAwaitingApproval) && wantsMessage(plan?.resources ? planned : null, x)).length,
     applications: apps.filter((x) => x.status === 'draft').length,
   };
 }

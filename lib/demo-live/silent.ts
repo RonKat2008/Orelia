@@ -2,7 +2,7 @@
  * DEMO ONLY: which demo threads the coordinator leaves unanswered. A resource whose plan says "email, then call if
  * there is no reply" must stay silent, or the follow-up call (the point of that combination) would never happen.
  */
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { contacts, contactPlans, messages } from '../../db/schema';
 import type { ContactPlan } from '../plan/contract';
@@ -27,4 +27,14 @@ export async function isSilentDemoThread(threadId: string): Promise<boolean> {
   if (!row) return false;
   const [planRow] = await db.select({ plan: contactPlans.plan }).from(contactPlans).where(eq(contactPlans.caseId, row.caseId)).limit(1);
   return planWantsSilence((planRow?.plan ?? null) as unknown as ContactPlan | null, row.contactId, `${row.targetKind}:${row.targetId}`);
+}
+
+/** True when Wayfinder itself sent a message in this provider thread (so a reply there goes back to our own inbox). */
+export async function isWayfinderThread(threadId: string): Promise<boolean> {
+  const [row] = await getDb()
+    .select({ id: messages.id })
+    .from(messages)
+    .where(and(eq(messages.providerThreadId, threadId), eq(messages.direction, 'outbound')))
+    .limit(1);
+  return Boolean(row);
 }

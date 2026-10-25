@@ -50,7 +50,7 @@ export const demoResponderStep: TickStep = {
   name: 'demoResponder',
   enabled: (env) => Boolean(env.DATABASE_URL),
   async run(ctx) {
-    const [{ runDemoResponder, responderEnabled }, { createDemoMail }, { PostgresOnceStore }, { isSilentDemoThread }] = await Promise.all([
+    const [{ runDemoResponder, responderEnabled }, { createDemoMail }, { PostgresOnceStore }, { isSilentDemoThread, isWayfinderThread }] = await Promise.all([
       import('../demo-live/responder'),
       import('../../scripts/demo/agentmail-mail'),
       import('./once'),
@@ -63,6 +63,7 @@ export const demoResponderStep: TickStep = {
       once: new PostgresOnceStore(),
       now: ctx.now,
       isSilentThread: isSilentDemoThread,
+      isOurThread: isWayfinderThread,
     });
     return { ...r };
   },

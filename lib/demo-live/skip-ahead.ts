@@ -36,8 +36,8 @@ export async function skipAhead(caseId: string, now = new Date()): Promise<{ shi
       WHERE contact_id = ${c.id} AND direction = 'outbound' AND sent_at IS NOT NULL
     `);
     await db.execute(sql`
-      UPDATE contacts SET first_sent_at = first_sent_at - ${shift}::interval,
-        last_activity_at = last_activity_at - ${shift}::interval,
+      UPDATE contacts SET first_sent_at = COALESCE(first_sent_at, ${now.toISOString()}::timestamptz) - ${shift}::interval,
+        last_activity_at = COALESCE(last_activity_at, ${now.toISOString()}::timestamptz) - ${shift}::interval,
         next_follow_up_at = ${now.toISOString()}::timestamptz
       WHERE id = ${c.id}
     `);

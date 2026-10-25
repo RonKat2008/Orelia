@@ -4,7 +4,8 @@ import { activeContactCount, MAX_ACTIVE_CONTACTS } from '../safety/caps';
 import { checkOutbound } from '../safety/outbound-gate';
 import { parseContactPoints } from '../contact-finder/contact-points';
 import { createDraft } from './draft';
-import { demoDestinationFor, outboundAllowlist, sharedDemoAddresses } from './demo-destinations';
+import { demoDestinationFor, demoDestinationsEnabled, outboundAllowlist, sharedDemoAddresses } from './demo-destinations';
+import { demoEmailAddressFor, emailDestinationGroups } from './demo-email-destination';
 import { contactRoutesOf, isWebFormOnly, type ReachabilityEvidence } from './reachability';
 import { isReplyClassification, OutreachError, type Candidate, type Channel, type Contact, type Draft, type OutreachStore, type ProviderRef } from './types';
 /**
@@ -29,6 +30,7 @@ export class OutreachService {
     // Demo mode (demo only, see demo-destinations.ts): the channel is chosen from the resource's REAL contact points
     // exactly as without demo mode; only the destination is swapped for our own test inbox / test phone / sink.
     const shared = sharedDemoAddresses(this.env);
+    const emailChoice = shared.length > 0 ? await this.store.demoEmailChoice?.(caseId) : undefined;
     const proposed = fresh.flatMap((c): Contact[] => {
       const door = address(c);
       if (!door && isWebFormOnly(c.evidence as ReachabilityEvidence[])) {
@@ -40,7 +42,7 @@ export class OutreachService {
         return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: 'web' as const, address: form.address, state: 'drafted' } satisfies Contact];
       }
       if (!door) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'No tool-sourced intake email or phone is available.' }); return []; }
-      const demo = demoDestinationFor(this.env, door.channel, `${c.targetKind}:${c.targetId}`);
+      const demo = demoDestinationFor(this.env, door.channel, `${c.targetKind}:${c.targetId}`, emailChoice);
       if (shared.length > 0 && !demo) { unavailable.push({ candidateId: c.id, channel: 'none', reason: 'Demo mode has no test destination configured for this channel.' }); return []; }
       return [{ id: crypto.randomUUID(), caseId, targetId: c.targetId, targetKind: c.targetKind, purpose: c.purpose, channel: door.channel, address: demo ?? door.address, state: 'drafted' } satisfies Contact];
     });
@@ -62,6 +64,23 @@ export class OutreachService {
     const own = (x: Contact) => candidates.some(c => x.targetId === c.targetId && x.targetKind === c.targetKind);
     const contacts = [...existing.filter(own), ...created.filter(own)].filter((x, i, all) => all.findIndex(y => y.id === x.id) === i);
     return { contacts, unavailable };
+  }
+  /**
+   * DEMO ONLY, send time: a first email to a demo-routed contact that has not been written to yet goes to the inbox
+   * the presenter has chosen for this case NOW (the choice may have changed since the draft was written). Only an
+   * address already in the configured coordinator inboxes can result; checkOutbound still runs on the final address.
+   * Returns the address the draft will be sent to.
+   */
+  private async applyDemoEmailChoice(contact: Contact, draft: Draft): Promise<string> {
+    if (!demoDestinationsEnabled(this.env) || contact.channel !== 'email' || contact.state !== 'drafted' || !this.store.rerouteContact) return draft.address;
+    const g = emailDestinationGroups(this.env);
+    const current = draft.address.trim().toLowerCase();
+    if (![...g.scripted, ...g.personal].includes(current)) return draft.address;
+    const choice = await this.store.demoEmailChoice?.(contact.caseId);
+    if (!choice) return draft.address;
+    const target = demoEmailAddressFor(this.env, choice, `${contact.targetKind}:${contact.targetId}`);
+    if (!target || target === current) return draft.address;
+    return (await this.store.rerouteContact(contact, target)) ? target : draft.address;
   }
   async requireContact(id: string) { const c = await this.store.contact(id); if (!c) throw new OutreachError(404, ['contact_not_found']); return c; }
   async consent(id: string, sharedFields: string[]) {
@@ -103,8 +122,9 @@ export class OutreachService {
    */
   async approve(id: string, draftId: string, opts: ApproveOptions = {}): Promise<ApproveResult> {
     const contact = await this.requireContact(id);
-    const draft = await this.store.draft(draftId, contact);
-    if (!draft || draft.contactId !== id) throw new OutreachError(404, ['draft_not_found']);
+    const found = await this.store.draft(draftId, contact);
+    if (!found || found.contactId !== id) throw new OutreachError(404, ['draft_not_found']);
+    let draft = found;
     if (draft.sentAt || draft.approvedAt) throw new OutreachError(409, ['already_approved']);
     const consent = await this.store.consent(id);
     if (!consent?.approvedAt) throw new OutreachError(422, ['consent_required']);
@@ -115,6 +135,7 @@ export class OutreachService {
       if (opts.voiceChannel) throw new OutreachError(409, ['first_call_only']);
       return this.approveReply(contact, draft, consent, record, now);
     }
+    draft = { ...draft, address: await this.applyDemoEmailChoice(contact, draft) };
     const contacts = await this.store.contacts(contact.caseId);
     const gate = checkOutbound({ draft: { ...draft, approvedAt: now }, caseRecord: record, consent, contacts, allowlist: outboundAllowlist(this.env), now, mode: this.env.NODE_ENV === 'production' ? 'prod' : 'dev' });
     const reasons = gate.ok ? [] : [...gate.reasons];

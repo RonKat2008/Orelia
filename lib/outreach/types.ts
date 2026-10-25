@@ -11,6 +11,7 @@ export const REPLY_CLASSIFICATION_PREFIX = 'reply_';
 export const isReplyClassification = (c: string | null | undefined): c is string => !!c && c.startsWith(REPLY_CLASSIFICATION_PREFIX);
 export interface ProviderRef { messageId?: string; threadId?: string; callId?: string; webCallUrl?: string }
 export interface Channel { kind: 'email' | 'voice'; send(draft: GatedDraft): Promise<ProviderRef> }
+import type { EmailDestinationChoice } from './demo-email-destination';
 export interface SelectOptions { sharedAddresses?: readonly string[] }
 /** Atomic methods must serialize competing requests in the backing store. */
 export interface OutreachStore {
@@ -24,6 +25,10 @@ export interface OutreachStore {
    * key is address + target, so each resource still gets at most one contact.
    */
   select(caseId: string, contacts: Contact[], cap: number, opts?: SelectOptions): Promise<Contact[]>;
+  /** Optional, DEMO ONLY: the presenter's per-case choice of where test emails go (demo-email-destination.ts). */
+  demoEmailChoice?(caseId: string): Promise<EmailDestinationChoice | undefined>;
+  /** Optional, DEMO ONLY: move a contact that has not been written to yet ('drafted') to another demo inbox. False when it was not moved. */
+  rerouteContact?(contact: Contact, address: string): Promise<boolean>;
   consent(id: string): Promise<Consent | undefined>;
   saveConsent(consent: Consent): Promise<void>;
   saveDraft(draft: Draft): Promise<void>;

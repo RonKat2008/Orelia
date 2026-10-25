@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { approveAll, pendingApprovals, type ApproveItem } from "@/lib/demo-live/approve-all";
 import { SKIP_AHEAD_LABEL, skipAheadNote } from "@/lib/demo-live/skip-ahead-days";
 import { BrowserCallButton } from "@/components/live/BrowserCallButton";
+import { EmailDestinationSwitch } from "@/components/demo/EmailDestinationSwitch";
+import type { UiAvailability, UiChoice } from "@/lib/demo-live/email-destination-ui";
 
 interface Props {
   caseId: string;
   /** DEMO ONLY: the browser call is available (server-checked again when started). */
   browserCall?: boolean;
+  /** Where this case's test emails go now, and which options this deployment has configured (never addresses). */
+  emailDestination?: { choice: UiChoice; available: UiAvailability };
 }
 
 type Pending = Awaited<ReturnType<typeof pendingApprovals>>;
@@ -22,7 +26,7 @@ const sameOrigin = (path: string, init?: RequestInit) => fetch(path, { ...init, 
  * the normal routes (each send still passes checkOutbound); the list below it shows what it approved, item by item.
  * "Deliver replies now" and "Skip ahead 5 days" run the same per-minute cron tick early.
  */
-export function LiveDemoControls({ caseId, browserCall = false }: Props) {
+export function LiveDemoControls({ caseId, browserCall = false, emailDestination }: Props) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [items, setItems] = useState<ApproveItem[]>([]);
@@ -90,6 +94,9 @@ export function LiveDemoControls({ caseId, browserCall = false }: Props) {
           <FastForward className="size-4" aria-hidden /> {SKIP_AHEAD_LABEL}
         </Button>
       </div>
+      {emailDestination ? (
+        <div className="mt-1.5"><EmailDestinationSwitch caseId={caseId} initial={emailDestination.choice} available={emailDestination.available} /></div>
+      ) : null}
       <p id="demo-approve-desc" className="mt-1.5 text-xs text-ink-2">
         {pending
           ? `Waiting for you: ${pending.plan ? "the contact plan, " : ""}${pending.messages} message(s) or call(s), ${pending.applications} online application(s). Each one still passes the safety gate.`

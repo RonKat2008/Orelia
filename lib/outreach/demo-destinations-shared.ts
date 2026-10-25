@@ -14,6 +14,7 @@ export const DEMO_CALL_SIMULATED_NOTE = 'demo: call simulated (no allowlisted nu
 
 export const DEMO_LABELS = {
   email: 'Demo: delivered to Orelia test inbox',
+  emailPersonal: 'Demo: delivered to your own inbox (safe mode)',
   voice: 'Demo: call simulated (no real number is dialed)',
   voiceTestNumber: 'Demo: rings the Orelia test phone',
   web_form: 'Demo: delivered to Orelia test form',

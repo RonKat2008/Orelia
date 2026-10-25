@@ -81,6 +81,14 @@ export class PostgresOutreachStore implements OutreachStore {
     if (!inserted.length && proposed.some(p => !present(p))) throw new OutreachError(422, ['contact_cap']);
     return all.filter(c => proposed.some(p => same(c, p)));
   }
+  async demoEmailChoice(caseId: string) {
+    const { getEmailDestinationChoice } = await import('../demo-live/email-destination');
+    return getEmailDestinationChoice(caseId);
+  }
+  async rerouteContact(contact: Contact, address: string): Promise<boolean> {
+    const rows = await this.db.update(s.contacts).set({ address }).where(and(eq(s.contacts.id, contact.id), eq(s.contacts.state, 'drafted'), eq(s.contacts.channel, 'email'))).returning({ id: s.contacts.id });
+    return rows.length === 1;
+  }
   async consent(id: string): Promise<Consent | undefined> {
     const [row] = await this.db.select().from(s.consents).where(eq(s.consents.contactId, id));
     return row?.approvedAt ? { contactId: id, sharedFields: row.sharedFields, approvedAt: row.approvedAt.toISOString() } : undefined;

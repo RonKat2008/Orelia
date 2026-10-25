@@ -16,7 +16,7 @@ describe("maskDestination", () => {
   });
 
   it("labels shared demo destinations", () => {
-    expect(destinationLabel("demo@example.test", "email", ["Demo@example.test"])).toBe("Test inbox (safe mode)");
+    expect(destinationLabel("demo@agentmail.to", "email", ["Demo@agentmail.to"])).toBe("Test inbox (safe mode)");
     expect(destinationLabel("real@clinic.org", "email", ["demo@example.test"])).toBe("clinic.org");
   });
 });

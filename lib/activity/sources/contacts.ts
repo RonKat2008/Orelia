@@ -20,7 +20,8 @@ const asTargetKind = (kind: string): LaneTargetKind => (TARGET_KINDS.includes(ki
 /** Safe-mode test inboxes / the simulated call sink are labelled as such instead of by address (display only). */
 export function destinationLabel(address: string | undefined, channel: "email" | "voice" | "web", demoAddresses: readonly string[]): string {
   if (address && demoAddresses.some((d) => d.toLowerCase() === address.toLowerCase())) {
-    return channel === "voice" ? "Test line (safe mode)" : "Test inbox (safe mode)";
+    if (channel === "voice") return "Test line (safe mode)";
+    return address.trim().toLowerCase().endsWith("@agentmail.to") ? "Test inbox (safe mode)" : "Your inbox (safe mode)";
   }
   return maskDestination(address, channel);
 }

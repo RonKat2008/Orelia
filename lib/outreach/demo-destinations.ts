@@ -17,6 +17,7 @@ import { parseAllowlist, normalizeAddress } from '../safety/allowlist';
 import { parseWebAllowlist } from '../safety/web-allowlist';
 import { demoCoordinatorsEnabled, demoCoordinatorInboxes, demoCoordinatorFor } from './demo-coordinators';
 import { DEMO_CALL_SINK, DEMO_FORM_PATH, demoFormResourceSegment } from './demo-destinations-shared';
+import { demoEmailAddressFor, type EmailDestinationChoice } from './demo-email-destination';
 
 export { DEMO_CALL_SINK, DEMO_FORM_PATH, DEMO_CALL_SIMULATED_NOTE, isDemoFormUrl } from './demo-destinations-shared';
 
@@ -43,9 +44,9 @@ export function demoCallDestination(env: Env, targetKey: string): string {
 }
 
 /** The demo destination for a contact on this channel, or undefined when demo mode is off / nothing is configured. */
-export function demoDestinationFor(env: Env, channel: 'email' | 'voice', targetKey: string): string | undefined {
+export function demoDestinationFor(env: Env, channel: 'email' | 'voice', targetKey: string, emailChoice?: EmailDestinationChoice): string | undefined {
   if (!demoDestinationsEnabled(env)) return undefined;
-  if (channel === 'email') return demoCoordinatorFor(targetKey, demoCoordinatorInboxes(env));
+  if (channel === 'email') return demoEmailAddressFor(env, emailChoice, targetKey);
   return demoCallDestination(env, targetKey);
 }
 

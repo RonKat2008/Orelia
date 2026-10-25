@@ -47,7 +47,7 @@ import { loadApplications, type ApiApplication } from "./applications";
 import { getPlan } from "@/components/plan/client";
 import { applicationStepContext, draftStepContext, stepContextText } from "@/components/plan/model";
 import type { ContactPlan } from "@/lib/plan/contract";
-import { isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
+import { DEMO_LABELS, isDemoFormUrl } from "@/lib/outreach/demo-destinations-shared";
 import { cn } from "@/lib/ui/cn";
 import { CASE_SECTION_HEADING, CASE_SUB_HEADING } from "./CasePage";
 
@@ -598,7 +598,7 @@ function DraftDetail({ caseId, row, caseRecord, docTitles, plan, onHold, onAppro
             }
           >
             <CheckItem ok>
-              {demoLabel ? "Test inbox: delivery goes to our own test destination." : "Allowlist checked again when you approve."}
+              {demoLabel ? (demoLabel === DEMO_LABELS.emailPersonal ? "Your inbox: delivery goes to your own inbox, not the resource." : "Test inbox: delivery goes to our own test destination.") : "Allowlist checked again when you approve."}
             </CheckItem>
             <CheckItem ok>
               Ticked fields only: {keys.length === 0 ? "no case details, just the request" : sharedLabels(keys).join(", ")}.

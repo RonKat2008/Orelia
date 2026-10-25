@@ -48,12 +48,15 @@ export function demoDestinationLabel(address: string | null | undefined, demo: D
   const normalized = address.trim().toLowerCase();
   if (normalized.replace(/[\s().-]/g, "") === DEMO_CALL_SINK) return DEMO_LABELS.voice;
   if (!demo.addresses.includes(normalized)) return null;
-  return normalized.includes("@") ? DEMO_LABELS.email : DEMO_LABELS.voiceTestNumber;
+  if (!normalized.includes("@")) return DEMO_LABELS.voiceTestNumber;
+  // The scripted coordinator lives on AgentMail; any other configured demo inbox is the presenter's own.
+  return normalized.endsWith("@agentmail.to") ? DEMO_LABELS.email : DEMO_LABELS.emailPersonal;
 }
 
 /** Short, calm word for a demo-remapped destination ("Test inbox"); the full honest label stays for screen readers. */
 export function shortDemoLabel(label: string): string {
   if (label === DEMO_LABELS.email) return "Test inbox";
+  if (label === DEMO_LABELS.emailPersonal) return "Your inbox";
   if (label === DEMO_LABELS.voiceTestNumber) return "Test phone";
   if (label === DEMO_LABELS.voice) return "Simulated call";
   if (label === DEMO_LABELS.web_form) return "Test form";

@@ -27,7 +27,7 @@ describe("healthReport", () => {
     expect(r.db).toBe("up");
     expect(r.ok).toBe(true);
     expect(r.env).toEqual({ ok: true, missing: [] });
-    expect(r.modelAccess).toBe("anthropic");
+    expect(r.modelAccess).toBe("direct");
   });
 
   it("reports db down when ping throws, without leaking the error", async () => {

@@ -212,9 +212,10 @@ export function inngestConfigured(source: EnvSource = process.env): boolean {
   return isSet(source, "INNGEST_EVENT_KEY") && isSet(source, "INNGEST_SIGNING_KEY");
 }
 
-function modelAccess(source: EnvSource): "gateway" | "anthropic" | "none" {
+/** Claude calls prefer the account's direct key when set; the gateway is used for them only without it. */
+function modelAccess(source: EnvSource): "direct" | "gateway" | "none" {
+  if (isSet(source, "ANTHROPIC_API_KEY")) return "direct";
   if (isSet(source, GATEWAY_BASE) && isSet(source, GATEWAY_TOKEN)) return "gateway";
-  if (isSet(source, "ANTHROPIC_API_KEY")) return "anthropic";
   return "none";
 }
 
@@ -275,7 +276,7 @@ export function deployStatus(source: EnvSource = process.env): {
   gateway: "configured" | "not";
   inngest: "configured" | "unconfigured";
   outbound: "allowlist" | "real";
-  modelAccess: "gateway" | "anthropic" | "none";
+  modelAccess: "direct" | "gateway" | "none";
 } {
   const mode = resolveMode(source);
   return {

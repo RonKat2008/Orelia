@@ -184,7 +184,9 @@ describe("deployStatus", () => {
       INNGEST_SIGNING_KEY: V,
     });
     expect(s).toEqual({ mode: "prod", gateway: "configured", inngest: "configured", outbound: "real", modelAccess: "gateway" });
-    expect(deployStatus({ ANTHROPIC_API_KEY: V }).modelAccess).toBe("anthropic");
+    expect(deployStatus({ ANTHROPIC_API_KEY: V }).modelAccess).toBe("direct");
+    // Since the direct key is preferred for Claude calls, a key beside the gateway reports "direct".
+    expect(deployStatus({ ANTHROPIC_API_KEY: V, NEON_AI_GATEWAY_BASE_URL: V, NEON_AI_GATEWAY_TOKEN: V }).modelAccess).toBe("direct");
     expect(deployStatus({ OUTBOUND_ALLOW_REAL: "true", WAYFINDER_DEMO: "1" }).outbound).toBe("allowlist");
     expect(deployStatus({ NEON_AI_GATEWAY_BASE_URL: V }).gateway).toBe("not");
   });

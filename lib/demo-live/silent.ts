@@ -2,7 +2,7 @@
  * DEMO ONLY: which demo threads the coordinator leaves unanswered. A resource whose plan says "email, then call if
  * there is no reply" must stay silent, or the follow-up call (the point of that combination) would never happen.
  */
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { contacts, contactPlans, messages } from '../../db/schema';
 import type { ContactPlan } from '../plan/contract';
@@ -16,13 +16,17 @@ export function planWantsSilence(plan: Pick<ContactPlan, 'resources'> | null, co
   return emailIdx >= 0 && steps.slice(emailIdx + 1).some((s) => s.channel === 'voice' && s.waitFor !== 'none');
 }
 
-export async function isSilentDemoThread(threadId: string): Promise<boolean> {
+/** Our outbound row for a received demo message: same provider thread, or (across inboxes) the same RFC Message-ID. */
+const sentAs = (threadId: string, messageId?: string) =>
+  messageId ? or(eq(messages.providerThreadId, threadId), eq(messages.providerMessageId, messageId)) : eq(messages.providerThreadId, threadId);
+
+export async function isSilentDemoThread(threadId: string, messageId?: string): Promise<boolean> {
   const db = getDb();
   const [row] = await db
     .select({ contactId: contacts.id, caseId: contacts.caseId, targetKind: contacts.targetKind, targetId: contacts.targetId })
     .from(messages)
     .innerJoin(contacts, eq(messages.contactId, contacts.id))
-    .where(eq(messages.providerThreadId, threadId))
+    .where(and(sentAs(threadId, messageId), eq(messages.direction, 'outbound')))
     .limit(1);
   if (!row) return false;
   const [planRow] = await db.select({ plan: contactPlans.plan }).from(contactPlans).where(eq(contactPlans.caseId, row.caseId)).limit(1);
@@ -30,11 +34,11 @@ export async function isSilentDemoThread(threadId: string): Promise<boolean> {
 }
 
 /** True when Wayfinder itself sent a message in this provider thread (so a reply there goes back to our own inbox). */
-export async function isWayfinderThread(threadId: string): Promise<boolean> {
+export async function isWayfinderThread(threadId: string, messageId?: string): Promise<boolean> {
   const [row] = await getDb()
     .select({ id: messages.id })
     .from(messages)
-    .where(and(eq(messages.providerThreadId, threadId), eq(messages.direction, 'outbound')))
+    .where(and(sentAs(threadId, messageId), eq(messages.direction, 'outbound')))
     .limit(1);
   return Boolean(row);
 }

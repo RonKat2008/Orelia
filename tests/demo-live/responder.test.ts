@@ -50,6 +50,19 @@ describe('server-side demo coordinator', () => {
     expect(m.reply).not.toHaveBeenCalled();
   });
 
+  it('recognises our mail by its RFC Message-ID when the coordinator inbox gives it its own thread id', async () => {
+    const m = mail([msg({ messageId: '<sent-1@ses>', threadId: 'coord-side-thread' })]);
+    const ourMessageIds = new Set(['<sent-1@ses>']);
+    const seen: Array<[string, string]> = [];
+    const r = await runDemoResponder({
+      env, mail: m, once: new InMemoryOnceStore(), now: NOW,
+      isOurThread: async (t, id) => ourMessageIds.has(id) || t === 'our-thread',
+      isSilentThread: async (t, id) => { seen.push([t, id]); return false; },
+    });
+    expect(r.replied).toBe(1);
+    expect(seen).toEqual([['coord-side-thread', '<sent-1@ses>']]);
+  });
+
   it('is off outside demo mode or without an AgentMail key', async () => {
     const m = mail([msg({})]);
     expect(await runDemoResponder({ isOurThread: async () => true, env: { ...env, WAYFINDER_DEMO_COORDINATORS: '0' }, mail: m, once: new InMemoryOnceStore(), now: NOW })).toMatchObject({ enabled: false, replied: 0 });

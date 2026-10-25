@@ -55,10 +55,13 @@ export async function runDemoResponder(opts: {
   delayMs?: number;
   /** Ignore mail received before this (e.g. only one demo case's start). */
   notBefore?: Date;
-  /** True when Wayfinder sent the first message of this provider thread (our own outbound row exists). */
-  isOurThread: (threadId: string) => Promise<boolean>;
+  /**
+   * True when Wayfinder sent this message (our own outbound row exists). AgentMail threads are per inbox, so the
+   * coordinator inbox's thread id differs from ours; the RFC Message-ID is the same on both sides.
+   */
+  isOurThread: (threadId: string, messageId: string) => Promise<boolean>;
   /** True for a thread that must stay unanswered (its plan calls when there is no reply), so the follow-up fires. */
-  isSilentThread?: (threadId: string) => Promise<boolean>;
+  isSilentThread?: (threadId: string, messageId: string) => Promise<boolean>;
   log?: (line: string) => void;
 }): Promise<ResponderResult> {
   const result: ResponderResult = { enabled: responderEnabled(opts.env), scanned: 0, replied: 0, skipped: 0, failed: 0 };
@@ -77,11 +80,11 @@ export async function runDemoResponder(opts: {
       const at = Date.parse(m.receivedAt);
       if (!Number.isFinite(at) || at < floor) continue;
       result.scanned += 1;
-      if (!replyAllowed(m, coordinatorAddresses) || opts.now.getTime() < at + delay || !(await opts.isOurThread(m.threadId).catch(() => false))) {
+      if (!replyAllowed(m, coordinatorAddresses) || opts.now.getTime() < at + delay || !(await opts.isOurThread(m.threadId, m.messageId).catch(() => false))) {
         result.skipped += 1;
         continue;
       }
-      if (opts.isSilentThread && (await opts.isSilentThread(m.threadId).catch(() => false))) {
+      if (opts.isSilentThread && (await opts.isSilentThread(m.threadId, m.messageId).catch(() => false))) {
         result.skipped += 1;
         continue;
       }

@@ -23,8 +23,8 @@ describe('AI gateway', () => {
     expect(hasClaudeCredentials()).toBe(true);
     expect(modelFor('research')).toBe('claude-haiku-4-5');
     expect(modelFor('curator')).toBe('claude-opus-5-5');
-    vi.stubEnv('WAYFINDER_MODEL_CURATOR', 'gemini-3-flash');
-    expect(modelFor('curator')).toBe('gemini-3-flash');
+    vi.stubEnv('WAYFINDER_MODEL_CURATOR', 'claude-sonnet-5-5');
+    expect(modelFor('curator')).toBe('claude-sonnet-5-5');
   });
   it('runs live with gateway credentials and no direct key', async () => {
     gateway(); vi.stubEnv('ANTHROPIC_API_KEY', ''); vi.stubEnv('WAYFINDER_RECORD_LLM', '');
@@ -41,12 +41,12 @@ describe('AI gateway', () => {
     expect(modelFor('research')).toBe('claude-haiku-5-5');
   });
   it('routes configured role chat through OpenAI-compatible gateway', async () => {
-    gateway(); vi.stubEnv('WAYFINDER_MODEL_INBOX', 'gpt-5-mini');
+    gateway(); vi.stubEnv('WAYFINDER_MODEL_INBOX', 'claude-haiku-5-5');
     const request = vi.fn().mockResolvedValue(Response.json({ choices: [{ message: { content: 'result' } }] }));
     vi.stubGlobal('fetch', request);
     expect(await chat({ role: 'inbox', messages: [{ role: 'user', content: 'hello' }] })).toBe('result');
     expect(request.mock.calls[0][0]).toBe('https://gateway.example/prefix/v1/chat/completions');
-    expect(JSON.parse(request.mock.calls[0][1].body).model).toBe('gpt-5-mini');
+    expect(JSON.parse(request.mock.calls[0][1].body).model).toBe('claude-haiku-5-5');
   });
 });
 describe('embeddings', () => {

@@ -277,7 +277,7 @@ Expected (green):
   "mode": "demo",
   "db": "up",
   "gateway": "not",
-  "modelAccess": "anthropic",
+  "modelAccess": "direct",
   "inngest": "configured",
   "outbound": "allowlist",
   "env": { "ok": true, "missing": [] },

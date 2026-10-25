@@ -174,7 +174,7 @@ Every item below is enforced in code, not by prompt.
 
 ## Screenshots
 
-Captured from production in the judge view (one patient-view shot for contrast) with a synthetic vascular Ehlers-Danlos patient in Houston, TX.
+Captured from production in the dark "Night" theme, in the judge view (one patient-view shot for contrast), with a synthetic vascular Ehlers-Danlos patient in Houston, TX.
 
 <table>
   <tr>

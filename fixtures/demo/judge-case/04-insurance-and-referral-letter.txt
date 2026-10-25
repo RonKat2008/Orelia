@@ -1,0 +1,43 @@
+SYNTHETIC — not a real patient. For software testing only.
+
+# INSURANCE SUMMARY AND REFERRAL LETTER
+
+## Insurance card summary
+
+| Field | Value |
+|---|---|
+| Member name | Marcus T. Delacroix |
+| Insurer | Bluepeak Health PPO |
+| Plan ID | BPH-7731-4402-AZ |
+| Group | 110-SV |
+| Plan type | PPO; out-of-network specialist visits covered at 60% after deductible |
+| Prior authorization | Required for out-of-state inpatient care; not required for a specialist consultation |
+| Member services | Printed on the back of the card |
+
+## Referral letter
+
+Date: 2024-05-06
+
+To the New Patient Coordinator,
+
+I am writing on behalf of my patient, Mr. Marcus T. Delacroix (date of birth 1983-01-19), a 41-year-old
+man recently diagnosed with epithelioid sarcoma, proximal-type, of the left proximal thigh. He underwent
+wide local excision on 2024-03-12. Final pathology showed a 7.2 cm, grade 3 tumor with loss of INI1
+(SMARCB1) expression and a positive deep margin. A post-operative MRI on 2024-04-22 showed an
+indeterminate 1.8 cm area at the deep margin and two mildly prominent left inguinal lymph nodes.
+
+Mr. Delacroix is seeking a second opinion from a sarcoma program and information about clinical trial
+screening. He lives in Tucson, Arizona, and is able to travel for care. He is insured through Bluepeak
+Health PPO.
+
+Enclosed or available on request: surgical pathology report (SP-24-018833), MRI report (MR-24-044120),
+my consultation note of 2024-05-02, and pathology slides and block A4 for outside review.
+
+Please contact the patient directly to arrange a new-patient appointment, or contact my office with any
+questions.
+
+Sincerely,
+
+Daniel Achterberg, MD
+Medical Oncology
+Saguaro Valley Oncology Associates, Tucson, AZ

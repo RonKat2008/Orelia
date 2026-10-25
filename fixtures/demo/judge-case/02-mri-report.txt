@@ -1,0 +1,50 @@
+SYNTHETIC — not a real patient. For software testing only.
+
+# MRI REPORT — LEFT THIGH AND PELVIS WITH AND WITHOUT CONTRAST
+
+**Facility:** Alderbrook Imaging Center, Tucson, AZ
+**Accession:** MR-24-044120
+**Report status:** FINAL
+
+| Field | Value |
+|---|---|
+| Patient name | Marcus T. Delacroix |
+| Age / Sex | 41 / M |
+| Ordering physician | Helena Okonkwo-Reyes, MD (Surgical Oncology) |
+| Radiologist | Priya Venkataraman, MD |
+| Date of exam | 2024-04-22 |
+| Comparison | Outside MRI 2024-02-28 (pre-operative) |
+
+## Clinical Indication
+
+Post-operative evaluation after wide local excision of a left proximal thigh / groin soft tissue mass
+(pathology: epithelioid sarcoma, proximal-type, positive deep margin). Assess for residual or recurrent
+tumor and regional nodal disease.
+
+## Technique
+
+Multiplanar, multisequence MRI of the left thigh and pelvis, including T1, T2 fat-saturated, STIR and
+post-contrast T1 fat-saturated sequences after 15 mL of gadolinium-based contrast. No complications.
+
+## Findings
+
+Post-surgical changes in the left proximal medial thigh with a seroma measuring 4.1 x 2.6 x 2.2 cm along
+the resection bed. Along the deep margin at the adductor fascia there is an ill-defined area of nodular
+enhancement measuring 1.8 x 1.2 cm, indeterminate for post-operative granulation tissue versus residual
+tumor. No discrete enhancing mass elsewhere in the thigh.
+
+Left inguinal lymph nodes: two nodes with short-axis diameter of 1.1 cm and 0.9 cm with mild cortical
+thickening. Right inguinal nodes are not enlarged. No pelvic sidewall lymphadenopathy.
+
+Bones: no marrow signal abnormality. Neurovascular bundle intact.
+
+## Impression
+
+1. Post-operative seroma in the left proximal thigh resection bed.
+2. 1.8 cm nodular enhancement at the deep margin, indeterminate for residual tumor. Short-interval follow-up
+   or tissue sampling could be considered by the treating team.
+3. Two mildly prominent left inguinal lymph nodes, nonspecific; correlate clinically.
+
+Electronically signed: Priya Venkataraman, MD
+Alderbrook Imaging Center, Tucson, AZ
+Report generated 2024-04-23 09:15

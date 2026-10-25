@@ -1,0 +1,74 @@
+SYNTHETIC — not a real patient. For software testing only.
+
+# MEDICAL ONCOLOGY CONSULTATION NOTE
+
+**Clinic:** Saguaro Valley Oncology Associates, Tucson, AZ
+**Date of visit:** 2024-05-02
+**Provider:** Daniel Achterberg, MD (Medical Oncology)
+**Referring:** Helena Okonkwo-Reyes, MD (Surgical Oncology)
+
+| Field | Value |
+|---|---|
+| Patient name | Marcus T. Delacroix |
+| Date of birth | 1983-01-19 |
+| Insurer | Bluepeak Health PPO, plan BPH-7731-4402-AZ |
+| Preferred contact | Mobile phone |
+
+## Reason for Consultation
+
+Newly diagnosed epithelioid sarcoma, proximal-type, of the left proximal thigh, status post wide local
+excision on 2024-03-12 with a positive deep margin. Referred to discuss next steps and options for a
+second opinion at a sarcoma center.
+
+## History of Present Illness
+
+Mr. Delacroix is a 41-year-old man who noticed an enlarging, firm mass in the left upper inner thigh
+about seven months before surgery. Outside biopsy was indeterminate. He underwent wide local excision.
+Final pathology showed a 7.2 cm, grade 3, INI1-deficient epithelioid sarcoma with a positive deep margin
+and focal lymphovascular invasion. Post-operative MRI on 2024-04-22 shows an indeterminate 1.8 cm area at
+the deep margin and two mildly prominent left inguinal nodes.
+
+He reports mild residual soreness at the surgical site, no fevers, no weight loss, no new lumps. He is
+working full time and would like to stay as active as possible.
+
+## Past Medical History
+
+Seasonal allergies. No prior cancers. No prior radiation. Appendectomy at age 17.
+
+## Medications
+
+Loratadine 10 mg daily as needed. Acetaminophen as needed for surgical-site soreness.
+
+## Allergies
+
+No known drug allergies.
+
+## Social History
+
+Lives in Tucson, AZ with his partner. Software support technician. Non-smoker. Occasional alcohol.
+States he can travel up to about 600 miles for specialist care and would consider further travel for a
+clinical trial.
+
+## Family History
+
+Father with hypertension. No known family history of sarcoma or cancer predisposition syndromes.
+
+## Assessment
+
+41-year-old man with proximal-type epithelioid sarcoma, grade 3, 7.2 cm, positive deep margin, with
+indeterminate post-operative imaging. This is a rare tumor and management is best decided at a center
+with a multidisciplinary sarcoma program.
+
+## Plan
+
+1. Refer for second opinion at an NCI-designated or high-volume sarcoma center; the patient is agreeable
+   and asks for help identifying the right program and getting an appointment.
+2. Request slides and the pathology block be made available for outside review on request.
+3. Discuss clinical trial screening for INI1-deficient sarcomas with the receiving center.
+4. Return visit in four weeks or sooner as the receiving center advises.
+
+The patient's goals today: a second opinion and information on clinical trials. He understands this note
+and the plan were discussed with him and that no treatment decision was made today.
+
+Electronically signed: Daniel Achterberg, MD
+Saguaro Valley Oncology Associates, Tucson, AZ

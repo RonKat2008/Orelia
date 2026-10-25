@@ -75,6 +75,8 @@ async function main() {
 
 main().then(() => process.exit(0), err => {
   const msg = String((err as Error)?.message ?? err).replace(/postgres(ql)?:\/\/\S+/gi, '[redacted]').replace(/wss?:\/\/\S+/gi, '[url]');
-  console.error(msg);
+  // ChannelError.body holds only Vapi's own error message (errorSummary), never the request.
+  const detail = (err as { body?: { message?: unknown } })?.body?.message;
+  console.error(typeof detail === 'string' ? `${msg} (${detail})` : msg);
   process.exit(1);
 });

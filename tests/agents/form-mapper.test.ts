@@ -56,6 +56,20 @@ describe("mapFormFields", () => {
     expect(r.usedDocIds).toEqual([row.id]);
   });
 
+  it("fills obvious labels from ticked fields when the model skips them, never from unticked ones", async () => {
+    live();
+    proposals = [];
+    const r = await run([f("diagnosis", "Diagnosis or condition *", "text", true), f("st", "State"), f("ins", "Insurance provider"), f("zip", "ZIP code")], new MemoryDocumentStore(), record);
+    expect(r.filled.map((x) => [x.fieldKey, x.value, x.source])).toEqual([
+      ["diagnosis", "Epithelioid sarcoma", { kind: "consent", key: "diseaseName" }],
+      ["st", "MA", { kind: "consent", key: "homeState" }],
+      ["ins", "Aetna", { kind: "consent", key: "insurer" }],
+    ]);
+    expect(r.missing.map((m) => m.fieldKey)).toEqual(["zip"]);
+    const narrow = await mapFormFields({ caseId: "a", contactId: "c1", fields: [f("ins", "Insurance provider")], caseRecord: record, sharedFields: ["diseaseName"], docStore: new MemoryDocumentStore(), client, runStore: new MemoryRunStore(), offlineKey: "x" });
+    expect(narrow.filled).toEqual([]);
+  });
+
   it("drops ungrounded doc values", async () => {
     live();
     const store = new MemoryDocumentStore();

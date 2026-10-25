@@ -149,6 +149,22 @@ function resolve(
   return { fieldKey: field.key, label: cleanField(field.label, LABEL_CHARS) ?? "", type: field.type, value: final, source };
 }
 
+/** Plain labels that map to one consented case field. Used only when the model skips the field; the value is still copied by code from a ticked field. */
+const LABEL_RULES: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\b(diagnos[ie]s|condition|disease)\b/i, "diseaseName"],
+  [/\bsub-?type\b/i, "subtype"],
+  [/^\s*(home\s+)?city\b/i, "homeCity"],
+  [/^\s*(home\s+)?state\b/i, "homeState"],
+  [/\binsur(?:ance|er)\b(?!.*\b(plan|member|id|number)\b)/i, "insurer"],
+  [/\b(insurance\s+)?plan\s*(id|number)?\b|\bmember\s+id\b/i, "planId"],
+];
+
+function ruleProposal(field: PageField, shared: ReadonlySet<string>): Proposal | undefined {
+  const label = cleanField(field.label, LABEL_CHARS) ?? "";
+  const hit = LABEL_RULES.find(([re, key]) => shared.has(key) && re.test(label));
+  return hit ? { fieldKey: field.key, source: { kind: "consent", key: hit[1] } } : undefined;
+}
+
 export async function mapFormFields(input: MapFormFieldsInput): Promise<MapFormFieldsResult> {
   const sharedKeys = input.sharedFields.filter((k) => (SHARED_FIELDS as readonly string[]).includes(k));
   const shared = new Set(sharedKeys);
@@ -182,6 +198,12 @@ export async function mapFormFields(input: MapFormFieldsInput): Promise<MapFormF
     const field = byKey.get(p.fieldKey);
     if (!field || accepted.has(field.key)) continue;
     const filled = resolve(field, p, { shared, consented, docs });
+    if (filled) accepted.set(field.key, filled);
+  }
+  for (const field of mappable) {
+    if (accepted.has(field.key)) continue;
+    const p = ruleProposal(field, shared);
+    const filled = p && resolve(field, p, { shared, consented, docs });
     if (filled) accepted.set(field.key, filled);
   }
 

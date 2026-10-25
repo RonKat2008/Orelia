@@ -5,7 +5,8 @@ export type ModelRole = typeof ROLES[number];
 export type ModelId = string;
 export function modelFor(role: ModelRole): ModelId {
   const override = process.env[`WAYFINDER_MODEL_${role.toUpperCase()}`]?.trim();
-  if (override) return override;
+  // Every language model is Claude: an override may only pick another Claude model (the embedding index excepted).
+  if (override && (role === 'embedding' || override.startsWith('claude-'))) return override;
   if (role === 'embedding') return 'qwen3-embedding-0-6b';
   if (role === 'research') return gatewayConfig() ? 'claude-haiku-4-5' : 'claude-haiku-5-5';
   // Mid tier: the needs analyst must be fast. The judge stays on the top tier (judge >= generator).

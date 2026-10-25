@@ -1,8 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createDefaultDeps } from "@/lib/workflows/default-deps";
-import { PostgresFollowUpSweepStore, runFollowUpSweep } from "@/lib/workflows/follow-up-sweep";
-import { schedulingConnected } from "@/lib/workflows/scheduler";
+import { runCronTick } from "@/lib/workflows/cron-tick";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,26 +15,25 @@ function authorized(request: Request, secret: string | undefined): boolean {
 }
 
 /**
- * GET /api/cron/follow-ups -> Vercel Cron (hourly). Sweeps contacts whose next follow-up is due and runs the
- * same follow-up logic as the Inngest workflow (pre-approved send or unapproved draft, stall after day 7+).
+ * GET /api/cron/follow-ups -> Vercel Cron, every minute (vercel.ts). Runs the cron tick (lib/workflows/cron-tick.ts):
+ * the follow-up sweep (same logic as the Inngest workflow: pre-approved send or unapproved draft, stall after day
+ * 10), the demo coordinator's scripted replies (demo mode only) and any due resource agents. Every step leases its
+ * work atomically, so overlapping ticks never act twice. Inngest, when connected, owns the follow-up timers and the
+ * sweep step skips itself.
  * Vercel sends `Authorization: Bearer $CRON_SECRET` automatically when CRON_SECRET is set.
  */
 export async function GET(request: Request) {
   if (!authorized(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
-  if (schedulingConnected()) {
-    // Inngest owns the timers; sweeping too could double-handle a contact.
-    return NextResponse.json({ ok: true, skipped: "inngest_active" }, { headers: { "Cache-Control": "no-store" } });
-  }
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ ok: false, error: "database_not_configured" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
   try {
-    const result = await runFollowUpSweep({ store: new PostgresFollowUpSweepStore(), deps: createDefaultDeps() });
-    return NextResponse.json({ ok: result.failed === 0, ...result }, { headers: { "Cache-Control": "no-store" } });
+    const result = await runCronTick();
+    return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("[cron/follow-ups] sweep failed", error instanceof Error ? error.name : "error");
+    console.error("[cron/follow-ups] tick failed", error instanceof Error ? error.name : "error");
     return NextResponse.json({ ok: false, error: "sweep_failed" }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }

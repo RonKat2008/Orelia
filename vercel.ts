@@ -50,16 +50,20 @@ export const config: VercelConfig = {
   functions: {
     "app/api/inngest/route.ts": { maxDuration: 300 },
     "app/api/cases/[id]/stream/route.ts": { maxDuration: 300 },
+    "app/api/cases/[id]/activity/stream/route.ts": { maxDuration: 300 },
     "app/api/cases/[id]/research/route.ts": { maxDuration: 300 },
     "app/api/cases/route.ts": { maxDuration: 120 },
     "app/api/cron/follow-ups/route.ts": { maxDuration: 120 },
     "app/api/cron/research-watchdog/route.ts": { maxDuration: 60 },
+    "app/api/cases/[id]/demo-live/route.ts": { maxDuration: 120 },
+    "app/api/demo/live/start/route.ts": { maxDuration: 60 },
   },
-  // Follow-ups without Inngest: hourly sweep of contacts whose next_follow_up_at has passed.
+  // The cron tick, every minute (Pro plan minimum): follow-ups whose next_follow_up_at has passed, demo coordinator
+  // replies (demo mode only) and due resource agents. Every step leases its rows, so overlapping runs never double-send.
   // Vercel sends Authorization: Bearer $CRON_SECRET; the route rejects anything else.
   // Research watchdog: ends research whose function died (no agent_runs progress for 6 min) so the UI offers a retry.
   crons: [
-    { path: "/api/cron/follow-ups", schedule: "0 * * * *" },
+    { path: "/api/cron/follow-ups", schedule: "* * * * *" },
     { path: "/api/cron/research-watchdog", schedule: "*/10 * * * *" },
     // In-app appointment reminders (1 day ahead); no patient email/SMS.
     { path: "/api/cron/appointments", schedule: "15 * * * *" },

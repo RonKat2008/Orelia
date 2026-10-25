@@ -230,7 +230,7 @@ for (const { route, method, handler } of inventory) {
 // rather than silently escaping admission-control coverage.
 const limitedRoutes = routeFiles().filter(file => /checkRateLimit|rateLimitedResponse|withModelRateLimit/.test(readFileSync(file, 'utf8'))).map(routePath);
 it('has a route-level saturation probe for every directly rate-limited route', () => {
-  expect(limitedRoutes.sort()).toEqual(['/api/cases', '/api/cases/[id]', '/api/cases/[id]/condition-brief', '/api/cases/[id]/experts/refresh', '/api/cases/[id]/history', '/api/cases/[id]/plan', '/api/cases/[id]/research', '/api/review/[token]']);
+  expect(limitedRoutes.sort()).toEqual(['/api/cases', '/api/cases/[id]', '/api/cases/[id]/condition-brief', '/api/cases/[id]/experts/refresh', '/api/cases/[id]/history', '/api/cases/[id]/plan', '/api/cases/[id]/research', '/api/demo/live/start', '/api/review/[token]']);
 });
 it('research accepts the configured case quota, then returns 429 with Retry-After', async () => {
   const entry = inventory.find(item => item.route === '/api/cases/[id]/research' && item.method === 'POST')!;

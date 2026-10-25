@@ -35,15 +35,16 @@ describe('GET /api/cron/follow-ups auth', () => {
     vi.stubEnv('DATABASE_URL', 'postgres://x');
     const res = await GET(req('Bearer s3cret'));
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ ok: true, claimed: 2, stalled: 1 });
+    expect(await res.json()).toMatchObject({ ok: true, steps: { followUps: { claimed: 2, stalled: 1 } } });
     expect(sweep).toHaveBeenCalledOnce();
   });
   it('does not sweep when Inngest owns the timers', async () => {
     vi.stubEnv('CRON_SECRET', 's3cret');
     vi.stubEnv('INNGEST_EVENT_KEY', 'k');
     vi.stubEnv('INNGEST_SIGNING_KEY', 's');
+    vi.stubEnv('DATABASE_URL', 'postgres://x');
     const res = await GET(req('Bearer s3cret'));
-    expect(await res.json()).toMatchObject({ skipped: 'inngest_active' });
+    expect(await res.json()).toMatchObject({ steps: { followUps: { skipped: 'disabled' } } });
     expect(sweep).not.toHaveBeenCalled();
   });
 });

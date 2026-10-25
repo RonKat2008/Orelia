@@ -5,6 +5,7 @@ import { demoDestinationsEnabled } from './demo-destinations';
 import type { SimulatedCallIngest } from './demo-call';
 import { workflowSendEvents } from '../workflows/inline-events';
 let handlers: ReturnType<typeof outreachHandlers> | undefined;
+let service: WiredOutreachService | undefined;
 
 /** DEMO ONLY: simulated demo calls feed their scripted transcript through the normal AgentCall ingest steps. */
 const simulatedCallIngest: SimulatedCallIngest = async (input) => {
@@ -19,9 +20,13 @@ const simulatedCallIngest: SimulatedCallIngest = async (input) => {
  * keys are present (see selectChannels); every send still passes checkOutbound and OUTBOUND_ALLOWLIST.
  * Without Inngest, workflow events run inline (follow-up timers are not scheduled; see inline-events).
  */
-export function getOutreachHandlers() {
-  return handlers ??= outreachHandlers(new WiredOutreachService(
+export function getOutreachService(): WiredOutreachService {
+  return service ??= new WiredOutreachService(
     new PostgresOutreachStore(), selectChannels().channels, workflowSendEvents(), process.env, () => new Date(), new PostgresFollowUpStore(),
     demoDestinationsEnabled(process.env) ? simulatedCallIngest : undefined,
-  ));
+  );
+}
+
+export function getOutreachHandlers() {
+  return handlers ??= outreachHandlers(getOutreachService());
 }

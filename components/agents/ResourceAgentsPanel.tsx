@@ -1,5 +1,7 @@
 "use client";
 
+import { readPlanStatus, type JourneyPlanStatus } from "@/components/journey/model";
+import { agentsEmptyCopy } from "./empty-copy";
 import { PendingFormQuestions } from "@/components/outreach/FormQuestionsCard";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -308,6 +310,7 @@ function AgentCard({
 export function ResourceAgentsPanel({ caseId }: { caseId: string }) {
   const [agents, setAgents] = useState<AgentView[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [planStatus, setPlanStatus] = useState<JourneyPlanStatus | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -318,8 +321,14 @@ export function ResourceAgentsPanel({ caseId }: { caseId: string }) {
       });
       if (!response.ok) throw new Error(String(response.status));
       const data = (await response.json()) as { agents?: AgentView[] };
-      setAgents(Array.isArray(data.agents) ? data.agents : []);
+      const list = Array.isArray(data.agents) ? data.agents : [];
+      setAgents(list);
       setFailed(false);
+      if (list.length === 0) {
+        // No agents yet: only say "start when you approve" if the plan really is not approved.
+        const planResponse = await fetch(`/api/cases/${caseId}/plan?optional=1`, { credentials: "same-origin", cache: "no-store" }).catch(() => null);
+        setPlanStatus(planResponse?.ok ? readPlanStatus(await planResponse.json().catch(() => null)) : null);
+      }
     } catch {
       setFailed(true);
     }
@@ -353,7 +362,7 @@ export function ResourceAgentsPanel({ caseId }: { caseId: string }) {
         </div>
       ) : agents.length === 0 ? (
         <p className="m-0 text-small text-ink-2">
-          Agents start when you approve the contact plan.
+          {agentsEmptyCopy(planStatus)}
         </p>
       ) : (
         <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),1fr))] grid-flow-row-dense gap-3 p-0">

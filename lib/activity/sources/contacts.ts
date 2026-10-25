@@ -18,7 +18,7 @@ const TARGET_KINDS: readonly string[] = ["expert", "institution", "trial", "orga
 const asTargetKind = (kind: string): LaneTargetKind => (TARGET_KINDS.includes(kind) ? (kind as LaneTargetKind) : "unknown");
 
 /** Safe-mode test inboxes / the simulated call sink are labelled as such instead of by address (display only). */
-export function destinationLabel(address: string | undefined, channel: "email" | "voice", demoAddresses: readonly string[]): string {
+export function destinationLabel(address: string | undefined, channel: "email" | "voice" | "web", demoAddresses: readonly string[]): string {
   if (address && demoAddresses.some((d) => d.toLowerCase() === address.toLowerCase())) {
     return channel === "voice" ? "Test line (safe mode)" : "Test inbox (safe mode)";
   }

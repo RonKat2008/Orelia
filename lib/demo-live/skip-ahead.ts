@@ -11,7 +11,8 @@ import { and, eq, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { contacts, evidence } from '../../db/schema';
 
-export const SKIP_AHEAD_MS = 5 * 24 * 60 * 60 * 1000;
+export { SKIP_AHEAD_MS } from './skip-ahead-days';
+import { SKIP_AHEAD_MS } from './skip-ahead-days';
 export const DEMO_MARKER_CLAIM = 'fictional_demo_resource';
 
 export async function isLiveDemoCase(caseId: string): Promise<boolean> {

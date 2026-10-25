@@ -33,8 +33,8 @@ export function RunFullDemo() {
         {busy ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <PlayCircle className="size-4" aria-hidden />}
         Run full demo
       </Button>
-      <p className="text-xs text-[var(--color-ink-muted,#5b6666)]">Synthetic vEDS patient, four fictional resources: email, call, online form, email then call. Nothing is sent until you approve.</p>
-      {error ? <p role="alert" className="text-xs text-[var(--color-terracotta,#a4532f)]">{error}</p> : null}
+      <p className="text-xs text-ink-2">Synthetic vEDS patient, four fictional resources: email, call, online form, email then call. Nothing is sent until you approve.</p>
+      {error ? <p role="alert" className="text-xs text-terracotta">{error}</p> : null}
     </div>
   );
 }

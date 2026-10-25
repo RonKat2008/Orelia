@@ -16,12 +16,14 @@ import { isCallEvent, isMailEvent } from "./timeline";
 
 const kind = z.enum(["expert", "institution", "trial", "organization"]);
 const channel = z.enum(["email", "voice"]);
+/** A contact can also be an online application (the "web" channel); messages and calls never are. */
+const contactChannel = z.enum(["email", "voice", "web"]);
 export const contactViewSchema = z.object({
   id: z.uuid(),
   targetKind: kind,
   targetId: z.uuid(),
   displayName: z.string(),
-  channel,
+  channel: contactChannel,
   state: z.string(),
   nextFollowUpAt: z.string().nullable(),
   lastActivityAt: z.string().nullable(),

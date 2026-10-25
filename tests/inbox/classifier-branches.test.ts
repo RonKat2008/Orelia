@@ -50,6 +50,24 @@ describe('createRuntimeClassifier: an over-long rationale', () => {
   });
 });
 
+describe('createRuntimeClassifier: output that still fails validation', () => {
+  it('falls back to the unclear task (never leaves the contact stuck) when the model output fails validation after retry', async () => {
+    const res = await classifierThrowing(new Error('Agent inbox output failed validation after retry: [too_big]')).classify(input);
+    expect(res.class).toBe('unclear');
+  });
+  it('falls back to unclear when the returned object does not parse', async () => {
+    const run = (async () => ({ class: 'not_a_class', confidence: 2 })) as never;
+    expect((await createRuntimeClassifier({ store, run }).classify(input)).class).toBe('unclear');
+  });
+  it('accepts and shortens an over-long quote from a call transcript', async () => {
+    const body = 'Agent: hello. Office: '.concat('we need the referral letter first. '.repeat(30));
+    const run = (async () => ({ class: 'needs_referral', confidence: 0.8, rationale: 'Needs a referral.', quote: body.slice(0, 900) })) as never;
+    const res = await createRuntimeClassifier({ store, run }).classify({ ...input, channel: 'voice' as never, body });
+    expect(res.class).toBe('needs_referral');
+    expect((res.quote ?? '').length).toBeLessThanOrEqual(500);
+  });
+});
+
 describe('FixtureClassifier', () => {
   it('is empty and answers unclear/0 when the fixture directory does not exist', async () => {
     const c = new FixtureClassifier(path.join(os.tmpdir(), 'wayfinder-no-such-fixture-dir'));

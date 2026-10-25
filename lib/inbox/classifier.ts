@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -7,7 +8,7 @@ import { MedicalAdviceError, runAgent, type MessagesClient, type AgentTool } fro
 import type { RunStore } from '../agents/run-store';
 import { skeleton } from '../safety/confusables';
 import { isPhoneGrounded } from '../safety/phone-grounding';
-import { inboxClassificationSchema, inboxModelOutputSchema, RATIONALE_MAX, type InboxClassification } from './schema';
+import { inboxClassificationSchema, inboxModelOutputSchema, QUOTE_MAX, RATIONALE_MAX, type InboxClassification } from './schema';
 
 export interface ClassifyInput {
   tools?: AgentTool[];
@@ -68,7 +69,9 @@ export function looksLikeInjection(body: string): boolean {
 export function parseClassification(raw: unknown, body: string): InboxClassification {
   const loose = inboxModelOutputSchema.parse(raw);
   const rationale = loose.rationale.length > RATIONALE_MAX ? `${loose.rationale.slice(0, RATIONALE_MAX - 1).trimEnd()}…` : loose.rationale;
-  const parsed = inboxClassificationSchema.parse({ ...loose, rationale });
+  // A shortened quote is still a verbatim prefix of what they said, so the in-message check below still applies.
+  const quote = loose.quote !== undefined && loose.quote.length > QUOTE_MAX ? loose.quote.slice(0, QUOTE_MAX) : loose.quote;
+  const parsed = inboxClassificationSchema.parse({ ...loose, rationale, ...(quote !== undefined ? { quote } : {}) });
   const text = norm(body);
   const inBody = (value?: string) => !!value && norm(value) !== '' && text.includes(norm(value));
   // A phone must be one phone-shaped token in the message; digits are never joined across unrelated numbers.
@@ -135,6 +138,9 @@ export function createRuntimeClassifier(deps: RuntimeClassifierDeps): InboxClass
       } catch (e) {
         const msg = e instanceof Error ? e.message : '';
         if (e instanceof MedicalAdviceError || /^Offline fixture not found|^Unsafe fixture path segment/.test(msg)) return { ...UNCLEAR_FALLBACK };
+        // runAgent already retried once with the validation error. Output that still does not fit becomes an
+        // 'unclear' task for the patient to read, so the reply or transcript is never stuck (contact left in 'sent').
+        if (e instanceof z.ZodError || /output failed validation after retry/.test(msg)) return { ...UNCLEAR_FALLBACK };
         throw e;
       }
     },

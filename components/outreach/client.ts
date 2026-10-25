@@ -218,7 +218,11 @@ export async function approveContactDraft(
     body: JSON.stringify(approvalBody(draftId)),
   });
   const data = await readJson(response);
-  if (!response.ok) return { ok: false, status: response.status, reasons: refusalMessages(data.reasons) };
+  if (!response.ok) {
+    // The provider's own reason (plan limit, unverified destination) is the one line that tells the patient what to fix.
+    const detail = typeof data.detail === "string" && data.detail.trim() ? [`Provider said: ${data.detail.trim()}`] : [];
+    return { ok: false, status: response.status, reasons: [...refusalMessages(data.reasons), ...detail] };
+  }
   if (typeof data.approvedAt !== "string") {
     return { ok: false, status: response.status, reasons: ["The server did not confirm approval. Nothing is marked approved."] };
   }

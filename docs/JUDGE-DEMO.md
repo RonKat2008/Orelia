@@ -42,6 +42,17 @@ npx inngest-cli@latest dev -u http://localhost:3000/api/inngest --no-discovery
 Check http://localhost:3000/api/health says `"db": "up"` and `"scheduler": "inngest"`. Put the team phone where
 everyone can hear it. Sign in as the demo account (account icon, top right → Sign in).
 
+**AgentCall account, the day before.** A new AgentCall account is a 72-hour free trial that allows inbound AI calls
+only: outbound calls need the Pro plan ($19.99/month plus about $0.40 per AI minute), and a new account is also
+"restricted" until the destination number is verified. With the trial plan every approved call is refused by the
+provider and the outbox shows "Provider said: agentcall: HTTP 403 plan_limit_…". Before the demo:
+
+1. Upgrade at https://agentcall.co/billing (the account owner does this; it needs a card).
+2. Add the team phone as a verified destination in the AgentCall dashboard (or `POST /v1/verified-destinations/`
+   then `/confirm` with the code it texts), so the account's trust state is no longer restricted.
+3. Check `GET https://api.agentcall.co/v1/account/` shows `maxCallMinutesPerMonth` above 0, and
+   `GET /v1/verified-destinations/` lists the team number.
+
 ## The walkthrough, page by page
 
 The header has a **Patient / Judge** toggle. Patient view shows one plain next step. Judge view shows every agent,
@@ -136,6 +147,8 @@ npx tsx scripts/demo-coordinators.ts --live --once
 - **Sends refused with "Inngest is not configured"**: Terminal 2 is not running.
 - **No "Phone" rows in the shortlist**: expand "Show more" and pick a clinical trial; trial central contacts are
   phone numbers. In demo mode the call still rings the team phone, never the trial.
+- **"Provider said: agentcall: HTTP 403 plan_limit…"**: the AgentCall account is still on the trial plan or the
+  destination is unverified. See "AgentCall account, the day before" above. Nothing was dialed; approve again after.
 - **Transcript never arrives**: expected on a laptop, since AgentCall's webhook cannot reach localhost. The call
   itself still happens. A public tunnel (or the Vercel deployment) is needed for the reply-to-task step.
 

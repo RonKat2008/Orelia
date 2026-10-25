@@ -84,9 +84,13 @@ describe('stress: consent and approve edge cases', () => {
   });
   it('a definite provider rejection (HTTP 403, nothing sent) does not leave the draft permanently approved', async () => {
     const ctx = setup(); const { contact, draft } = await ready(ctx);
-    ctx.email.send = async () => { throw new ChannelError('agentmail', 'inbox limit', 403, false); };
+    ctx.email.send = async () => { throw new ChannelError('agentmail', 'inbox limit', 403, false, { code: 'plan_limit_outbound', message: 'Outbound sends need a paid plan', upgradeUrl: 'https://provider.example/billing', apiKey: 'never-shown' }); };
     const rejected = await ctx.api.approve(req({ draftId: draft.id }), contact.id);
-    expect(rejected.status).toBe(502); expect((await rejected.json()).reasons).toEqual(['send_rejected']);
+    expect(rejected.status).toBe(502);
+    const body = await rejected.json();
+    expect(body.reasons).toEqual(['send_rejected']);
+    expect(body.detail).toBe('agentmail: HTTP 403 plan_limit_outbound. Outbound sends need a paid plan. Upgrade: https://provider.example/billing');
+    expect(body.detail).not.toContain('never-shown');
     ctx.email.send = async () => ({ messageId: 'm1', threadId: 't1' });
     expect((await ctx.api.approve(req({ draftId: draft.id }), contact.id)).status).toBe(200);
   });

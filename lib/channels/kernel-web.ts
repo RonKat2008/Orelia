@@ -23,7 +23,7 @@ import { LIVE_VIEW_HOLD_MS, recordLiveView, type LiveViewHandle, type LiveViewSi
 /** Minimal slices of @onkernel/sdk and playwright-core, so tests inject fakes and nothing needs the network. */
 export interface KernelClientLike {
   browsers: {
-    create(body?: { timeout_seconds?: number }): Promise<{ cdp_ws_url: string; session_id: string; browser_live_view_url?: string }>;
+    create(body?: { timeout_seconds?: number; kiosk_mode?: boolean }): Promise<{ cdp_ws_url: string; session_id: string; browser_live_view_url?: string }>;
     deleteByID(idOrName: string): Promise<void>;
   };
 }
@@ -229,7 +229,7 @@ export class KernelBrowserProvider implements BrowserProvider {
   async launch(): Promise<BrowserSession> {
     if (this.status !== 'ready') throw new ChannelError('kernel', 'Kernel is not configured (KERNEL_API_KEY missing)');
     const client = await this.getClient();
-    const created = await client.browsers.create({ timeout_seconds: KERNEL_SESSION_TIMEOUT_SECONDS });
+    const created = await client.browsers.create({ timeout_seconds: KERNEL_SESSION_TIMEOUT_SECONDS, kiosk_mode: true });
     const live = await recordLiveView(created.browser_live_view_url, KERNEL_SESSION_TIMEOUT_SECONDS, this.liveViewSink);
     const cleanup = async () => { await live?.end(); await client.browsers.deleteByID(created.session_id); };
     let browser: PlaywrightBrowserLike | undefined;

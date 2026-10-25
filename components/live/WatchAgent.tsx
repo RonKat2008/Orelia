@@ -18,7 +18,7 @@ export function WatchAgent({ lane }: { lane: ActivityLane }) {
   const view = lane.liveView;
   if (!view || !isKernelLiveViewUrl(view.url)) return null;
   return (
-    <section aria-labelledby="watch-agent-heading" className="grid min-w-0 gap-1.5 rounded-md border border-line bg-card p-2">
+    <section aria-labelledby="watch-agent-heading" className="grid min-w-0 max-w-[46rem] gap-1.5 rounded-md border border-line bg-card p-2">
       <h2 id="watch-agent-heading" className="m-0 flex items-center gap-1.5 text-body font-semibold text-ink">
         <Eye aria-hidden className="size-4 text-teal" />
         Watch the agent: {PHASE_TEXT[view.phase]} for {lane.resourceName}

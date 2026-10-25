@@ -43,7 +43,7 @@ describe('KernelBrowserProvider', () => {
     const p = new KernelBrowserProvider({ apiKey: 'k', client: f.client, connect: f.connect });
     expect(p.status).toBe('ready');
     const s = await p.launch();
-    expect(f.client.browsers.create).toHaveBeenCalledWith({ timeout_seconds: expect.any(Number) });
+    expect(f.client.browsers.create).toHaveBeenCalledWith({ timeout_seconds: expect.any(Number), kiosk_mode: true });
     expect(f.connect).toHaveBeenCalledWith('wss://cdp');
     await s.close(); await s.close();
     expect(f.browser.close).toHaveBeenCalledTimes(1);

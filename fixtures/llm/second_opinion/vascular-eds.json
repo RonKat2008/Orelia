@@ -1,0 +1,129 @@
+{
+  "records": [
+    {
+      "kind": "institution",
+      "id": "inst:cleveland-clinic-center-rare-diseases",
+      "name": "Cleveland Clinic Center for Rare Diseases",
+      "institutionKind": "rare_disease_center",
+      "city": "Cleveland",
+      "state": "OH",
+      "evidenceRefs": [
+        "https://newsroom.clevelandclinic.org/2023/05/04/cleveland-clinic-rare-disease-center-recognized-as-a-national-center-of-excellence-by-national-organization-for-rare-disorders"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:cincinnati-childrens-cardiovascular-genetics",
+      "name": "Cincinnati Children's Hospital Medical Center - Cardiovascular Genetics",
+      "institutionKind": "rare_disease_center",
+      "city": "Cincinnati",
+      "state": "OH",
+      "evidenceRefs": [
+        "https://www.cincinnatichildrens.org/service/h/human-genetics/services"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:mayo-clinic-cardiovascular-genomics",
+      "name": "Mayo Clinic Cardiovascular Genomics Program",
+      "institutionKind": "hospital",
+      "state": "MN",
+      "evidenceRefs": [
+        "https://www.mayoclinic.org/departments-centers/cardiovascular-genomics-program/overview/ovc-20442075"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:mayo-clinic-eds-florida",
+      "name": "Mayo Clinic Ehlers-Danlos Syndrome Clinic - Florida",
+      "institutionKind": "hospital",
+      "city": "Jacksonville",
+      "state": "FL",
+      "evidenceRefs": [
+        "https://www.mayoclinic.org/departments-centers/ehlers-danlos-syndrome-clinic-florida/overview/ovc-20522975"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:keck-medicine-usc-genetic-vascular",
+      "name": "Keck Medicine of USC - Genetic Aortic and Vascular Disorders",
+      "institutionKind": "hospital",
+      "city": "Los Angeles",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://www.keckmedicine.org/conditions/genetic-aortic-and-vascular-disorders/"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:northwell-marfan-connective-tissue",
+      "name": "Northwell Health - Marfan Syndrome and Connective Tissue Disorders Program",
+      "institutionKind": "hospital",
+      "state": "NY",
+      "evidenceRefs": [
+        "https://heart.northwell.edu/areas-of-care/center-for-vascular-disease/marfan-syndrome-connective-tissue-disorders"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:university-mississippi-eds-clinic",
+      "name": "University of Mississippi Medical Center - Ehlers-Danlos Syndrome Clinic",
+      "institutionKind": "hospital",
+      "state": "MS",
+      "evidenceRefs": [
+        "https://umc.edu/Healthcare/Genetics-Genomics/clinics/Ehler-Danlos-Syndrome.html"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:eds-clinic-telehealth",
+      "name": "The EDS Clinic",
+      "institutionKind": "rare_disease_center",
+      "evidenceRefs": [
+        "https://www.eds.clinic/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "rare_disease_center",
+      "claim": "Cleveland Clinic Center for Rare Diseases designated NORD Rare Disease Center of Excellence",
+      "sourceUrl": "https://newsroom.clevelandclinic.org/2023/05/04/cleveland-clinic-rare-disease-center-recognized-as-a-national-center-of-excellence-by-national-organization-for-rare-disorders"
+    },
+    {
+      "claimType": "genetics_clinic",
+      "claim": "Cincinnati Children's Cardiovascular Genetics specializes in diagnosing and managing heritable cardiovascular disease and arterial disorders including vascular Ehlers Danlos syndrome",
+      "sourceUrl": "https://www.cincinnatichildrens.org/service/h/human-genetics/services"
+    },
+    {
+      "claimType": "genetics_clinic",
+      "claim": "Mayo Clinic Cardiovascular Genomics Program offers comprehensive cardiovascular evaluation and genetic counseling and testing for inherited heart and blood vessel disorders",
+      "sourceUrl": "https://www.mayoclinic.org/departments-centers/cardiovascular-genomics-program/overview/ovc-20442075"
+    },
+    {
+      "claimType": "genetics_clinic",
+      "claim": "Mayo Clinic Ehlers-Danlos Syndrome Clinic in Florida provides expert evaluation and treatment for all forms of EDS",
+      "sourceUrl": "https://www.mayoclinic.org/departments-centers/ehlers-danlos-syndrome-clinic-florida/overview/ovc-20522975"
+    },
+    {
+      "claimType": "telehealth_program",
+      "claim": "Keck Medicine of USC offers treatment for genetic aortic and vascular disorders with telehealth appointments available",
+      "sourceUrl": "https://www.keckmedicine.org/conditions/genetic-aortic-and-vascular-disorders/"
+    },
+    {
+      "claimType": "genetics_clinic",
+      "claim": "Northwell Health Marfan Syndrome and Connective Tissue Disorders Program provides comprehensive services including genetic testing for connective tissue disorders",
+      "sourceUrl": "https://heart.northwell.edu/areas-of-care/center-for-vascular-disease/marfan-syndrome-connective-tissue-disorders"
+    },
+    {
+      "claimType": "genetics_clinic",
+      "claim": "University of Mississippi Medical Center Ehlers-Danlos Syndrome Clinic provides comprehensive care for patients with EDS and related conditions with clinical team including medical geneticist and genetic counselor",
+      "sourceUrl": "https://umc.edu/Healthcare/Genetics-Genomics/clinics/Ehler-Danlos-Syndrome.html"
+    },
+    {
+      "claimType": "telehealth_program",
+      "claim": "The EDS Clinic provides evaluation, diagnosis and treatment for EDS via telehealth",
+      "sourceUrl": "https://www.eds.clinic/"
+    }
+  ]
+}

@@ -40,7 +40,7 @@ afterEach(() => {
 describe("registry", () => {
   it("has one agent per AgentName in a fixed order", () => {
     expect(researchAgents.map((a) => a.name)).toEqual([
-      "literature", "trials", "identity", "centers", "advocacy", "aid", "contact_finder", "network", "logistics",
+      "literature", "trials", "identity", "centers", "advocacy", "aid", "rare_network", "disease_funds", "second_opinion", "contact_finder", "network", "logistics",
     ]);
     for (const name of agentNameSchema.options) expect(researchRegistry[name].name).toBe(name);
   });

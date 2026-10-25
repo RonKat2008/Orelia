@@ -1,0 +1,66 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:trend-connect-igg4rd",
+      "name": "TREND Connect",
+      "organizationKind": "registry",
+      "url": "https://connect.trend.community/register/IGG4RD",
+      "evidenceRefs": [
+        "https://connect.trend.community/register/IGG4RD"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:oxford-igg4rd-registry",
+      "name": "IgG4-RD Registry Study",
+      "organizationKind": "registry",
+      "url": "https://www.expmedndm.ox.ac.uk/research/igg4-rd-study/igg4-rd-studies/igg4-rd-registry-study",
+      "evidenceRefs": [
+        "https://www.expmedndm.ox.ac.uk/research/igg4-rd-study/igg4-rd-studies/igg4-rd-registry-study"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:rdcrn-contact-registry",
+      "name": "RDCRN Contact Registry",
+      "organizationKind": "registry",
+      "url": "https://www.rarediseasesnetwork.org/registry",
+      "evidenceRefs": [
+        "https://www.rarediseasesnetwork.org/registry"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:cords-registry",
+      "name": "Coordination of Rare Diseases at Sanford (CoRDS) Registry",
+      "organizationKind": "registry",
+      "url": "https://research.sanfordhealth.org/rare-disease-registry/represented-diseases",
+      "evidenceRefs": [
+        "https://research.sanfordhealth.org/rare-disease-registry/represented-diseases"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "registry",
+      "claim": "TREND Connect accepts participants with IgG4-RD diagnosis, those who suspect IgG4-RD, caregivers, family members, and clinicians.",
+      "sourceUrl": "https://connect.trend.community/register/IGG4RD"
+    },
+    {
+      "claimType": "registry",
+      "claim": "IgG4-RD Registry Study is a European anonymized database of patients with IgG4-RD established to determine epidemiology, clinical course, response to treatment and prognosis.",
+      "sourceUrl": "https://www.expmedndm.ox.ac.uk/research/igg4-rd-study/igg4-rd-studies/igg4-rd-registry-study"
+    },
+    {
+      "claimType": "registry",
+      "claim": "RDCRN Contact Registry collects contact information of people who want to participate in RDCRN-sponsored research or learn more about rare diseases research.",
+      "sourceUrl": "https://www.rarediseasesnetwork.org/registry"
+    },
+    {
+      "claimType": "registry",
+      "claim": "CoRDS is a general rare disease registry where individuals with any rare disease may participate, created to support research by collecting information from individuals and families affected by rare conditions.",
+      "sourceUrl": "https://research.sanfordhealth.org/rare-disease-registry/represented-diseases"
+    }
+  ]
+}

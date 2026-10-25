@@ -26,7 +26,7 @@ export const AGENT_LABEL: Record<AgentName, string> = {
   aid: "Financial and travel aid",
   rare_network: "Research networks",
   disease_funds: "Disease funds",
-  second_opinion: "Second opinions",
+  second_opinion: "Expert centers",
   contact_finder: "Intake contacts",
   network: "Insurance network",
   logistics: "Travel and logistics",

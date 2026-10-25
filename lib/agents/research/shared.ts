@@ -77,6 +77,7 @@ export class ProvenanceTracker {
   private readonly webForms = new Map<string, WebFormPoint[]>();
   private readonly paperAffiliations = new Map<string, string>();
   private readonly papers = new Map<string, { title: string; journal?: string; year?: number }>();
+  private readonly urlTags = new Map<string, string>();
   private corpus = "";
 
   constructor(private readonly now: () => Date = () => new Date()) {}
@@ -131,6 +132,15 @@ export class ProvenanceTracker {
   /** Lowercased text of the tool record(s) that carried this URL; empty when no tool returned it. */
   recordText(url: string): string {
     return this.recordTexts.get(url) ?? "";
+  }
+
+  /** Code-side label for which tool returned a URL (first tool wins), used to stamp claim types by code. */
+  tagUrl(url: string, tag: string): void {
+    if (!this.urlTags.has(url)) this.urlTags.set(url, tag);
+  }
+
+  urlTag(url: string): string | undefined {
+    return this.urlTags.get(url);
   }
 
   allowNctId(nctId: string): void {
@@ -218,6 +228,13 @@ export interface FinalizeRules {
    * If set, replaces the model's claim with deterministic text built from the tool record (null drops the item).
    * Used where the claim is fully determined by tool facts, so no model prose reaches the user at all.
    */
+  /**
+   * If set, the claim type is decided by code from the tool record (e.g. which official site returned the URL); the
+   * model's claimType is ignored. null drops the item.
+   */
+  claimTypeFor?: (item: ResearchOutput["evidence"][number], tracker: ProvenanceTracker) => string | null;
+  /** Organizations also cite the (grounded, tool-returned) evidence at their own url when the model mislabels refs. */
+  citeOwnUrl?: boolean;
   restateClaim?: (item: ResearchOutput["evidence"][number], tracker: ProvenanceTracker) => string | null;
   /**
    * Code-stamped rows built from tool records for a kept record (e.g. identity.affiliation). Each must carry an id;
@@ -240,7 +257,7 @@ export function finalizeOutput(
   const evidenceByUrl = new Map<string, Evidence[]>();
   const evidenceById = new Map<string, Evidence>();
   const seenClaims = new Set<string>();
-  for (const item of raw.evidence) {
+  for (let item of raw.evidence) {
     const source = tracker.sourceFor(item.sourceUrl);
     if (!source) {
       onDrop(item, "no tool returned this sourceUrl");
@@ -249,6 +266,14 @@ export function finalizeOutput(
     if (rules.sourceKinds && !rules.sourceKinds.includes(source.kind)) {
       onDrop(item, `source kind ${source.kind} is not allowed for this agent`);
       continue;
+    }
+    if (rules.claimTypeFor) {
+      const claimType = rules.claimTypeFor(item, tracker);
+      if (!claimType) {
+        onDrop(item, "claim type could not be decided from the tool record");
+        continue;
+      }
+      item = { ...item, claimType };
     }
     if (isContactPointClaimType(item.claimType)) {
       onDrop(item, "contact points are stamped from tool output by code, never by a model");
@@ -304,7 +329,8 @@ export function finalizeOutput(
   const contactEvidence = new Map<string, Evidence>();
   for (const candidate of raw.records) {
     if (!rules.allowedKinds.includes(candidate.kind) || seenIds.has(candidate.id)) continue;
-    const refs = [...new Set(candidate.evidenceRefs.filter((ref) => resolve(ref).length > 0))];
+    const cites = rules.citeOwnUrl && candidate.kind === "organization" && candidate.url ? [...candidate.evidenceRefs, candidate.url] : candidate.evidenceRefs;
+    const refs = [...new Set(cites.filter((ref) => resolve(ref).length > 0))];
     if (refs.length === 0) continue;
     const sanitized = sanitizeRecord(candidate, refs, tracker, rules);
     if (!sanitized) continue;

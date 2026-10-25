@@ -29,13 +29,13 @@ export const SOURCE_NAMES: Record<string, string> = {
   aid: "financial and travel help programs",
   rare_network: "rare disease research networks and registries",
   disease_funds: "charity funds that help pay for treatment",
-  second_opinion: "second-opinion and video-visit programs",
+  second_opinion: "expert centers, second opinions and video visits",
   contact_finder: "public contact pages",
   network: "referral networks",
   logistics: "travel and distance details",
 };
 
-/** Rows the pipeline writes after the nine sources (lib/agents/phase-runs), worded while they run. */
+/** Rows the pipeline writes after the twelve sources (lib/agents/phase-runs), worded while they run. */
 const PHASE_WORDS: Record<string, string> = {
   verifier: "Checking every name against its public source…",
   ranker: "Sorting the best matches for you…",

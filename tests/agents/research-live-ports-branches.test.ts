@@ -38,7 +38,7 @@ describe("createLivePorts defaults", () => {
     // Act
     const ports = createLivePorts();
     // Assert
-    expect(Object.keys(ports).sort()).toEqual(["centers", "ctgov", "exa", "nppes", "pubmed"]);
+    expect(Object.keys(ports).sort()).toEqual(["centers", "ctgov", "exa", "exaDirectory", "nppes", "pubmed"]);
   });
 
   it("passes request keys through keyFor but never overrides an explicit client key", async () => {

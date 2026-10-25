@@ -86,6 +86,6 @@ describe("reduced motion renders the final state", () => {
     expect(html).toContain("Published research");
     expect(html).toContain("3 papers");
     expect(html).toContain('aria-live="polite"');
-    expect(html.match(/<li /g)).toHaveLength(9);
+    expect(html.match(/<li /g)).toHaveLength(12);
   });
 });

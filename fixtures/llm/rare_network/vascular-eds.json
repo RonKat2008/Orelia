@@ -1,0 +1,81 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:dice-eds-hsd-global-registry",
+      "name": "DICE EDS and HSD Global Registry",
+      "organizationKind": "registry",
+      "url": "https://www.ehlers-danlos.com/eds-global-registry/",
+      "evidenceRefs": [
+        "https://www.ehlers-danlos.com/eds-global-registry/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:veds-collaborative",
+      "name": "VEDS Collaborative",
+      "organizationKind": "registry",
+      "url": "https://thevedsmovement.org/research/veds-collaborative/",
+      "evidenceRefs": [
+        "https://thevedsmovement.org/research/veds-collaborative/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:rdcrn-contact-registry",
+      "name": "RDCRN Contact Registry",
+      "organizationKind": "registry",
+      "url": "https://www.rarediseasesnetwork.org/registry",
+      "evidenceRefs": [
+        "https://www.rarediseasesnetwork.org/registry"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:red-registry-eds",
+      "name": "Registry of Ehlers-Danlos Syndrome (RED)",
+      "organizationKind": "registry",
+      "url": "https://clinicaltrials.gov/study/NCT04133272",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT04133272"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:annabelles-challenge-veds-research",
+      "name": "Annabelle's Challenge - Vascular EDS Research",
+      "organizationKind": "registry",
+      "url": "https://www.annabelleschallenge.org/research",
+      "evidenceRefs": [
+        "https://www.annabelleschallenge.org/research"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "registry",
+      "claim": "The DICE EDS and HSD Global Registry allows members of the EDS and HSD community to complete surveys and share medical information to assist with research into Ehlers-Danlos syndromes and hypermobility spectrum disorders.",
+      "sourceUrl": "https://www.ehlers-danlos.com/eds-global-registry/"
+    },
+    {
+      "claimType": "registry",
+      "claim": "The VEDS Collaborative is a group of patients, family members, researchers, and clinicians dedicated to developing a patient-centered plan for scientific research to improve the management of Vascular Ehlers-Danlos Syndrome.",
+      "sourceUrl": "https://thevedsmovement.org/research/veds-collaborative/"
+    },
+    {
+      "claimType": "registry",
+      "claim": "The RDCRN Contact Registry connects interested patients to clinical trials underway within the RDCRN and allows patients to connect with research teams focused on particular diseases.",
+      "sourceUrl": "https://www.rarediseasesnetwork.org/registry"
+    },
+    {
+      "claimType": "registry",
+      "claim": "RED is a retrospective and prospective registry that collects clinical, functional, genetic, genealogical, imaging, surgical, treatment, and quality of life data for Ehlers-Danlos Syndrome, currently recruiting participants.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT04133272"
+    },
+    {
+      "claimType": "registry",
+      "claim": "Annabelle's Challenge is committed to driving person-centered research that transforms the landscape of vascular Ehlers-Danlos Syndrome management.",
+      "sourceUrl": "https://www.annabelleschallenge.org/research"
+    }
+  ]
+}

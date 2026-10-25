@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:nord-igg4rd-premium-copay-assistance",
+      "name": "NORD - IgG4-RD Premium Copay Assistance",
+      "organizationKind": "financial_aid",
+      "url": "https://rarediseases.org/patient-assistance/igg4-rd-premium-copay-assistance/",
+      "evidenceRefs": [
+        "evidence-0"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "fund",
+      "claim": "IgG4-RD Premium Copay Assistance - Accepting Applications",
+      "sourceUrl": "https://rarediseases.org/patient-assistance/igg4-rd-premium-copay-assistance/"
+    }
+  ]
+}

@@ -7,8 +7,8 @@ import {
 } from "@/lib/contracts/agent-io";
 
 describe("agent I/O", () => {
-  it("accepts the nine research agents and run statuses", () => {
-    expect(agentNameSchema.options).toHaveLength(9);
+  it("accepts the twelve research agents and run statuses", () => {
+    expect(agentNameSchema.options).toHaveLength(12);
     expect(agentNameSchema.parse("contact_finder")).toBe("contact_finder");
     expect(agentRunStatusSchema.parse("not_implemented")).toBe("not_implemented");
   });

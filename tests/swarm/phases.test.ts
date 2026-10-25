@@ -14,7 +14,7 @@ describe("post-search phases", () => {
     const s = parseRunsSnapshot(snapshot([{ agent: "verifier", status: "done", startedAt: at(11), finishedAt: at(40) }, { agent: "ranker", status: "running", startedAt: at(41) }]))!;
     expect(s.phases.verify?.status).toBe("done");
     expect(s.phases.rank?.status).toBe("running");
-    expect(s.cards).toHaveLength(9);
+    expect(s.cards).toHaveLength(12);
   });
 
   it("advances the stepper verify -> rank -> curate -> ready", () => {

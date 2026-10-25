@@ -3,7 +3,9 @@ import type { AgentTool } from "@/lib/agents/runtime";
 import { classifyIntakeDoors } from "@/lib/contact-finder";
 import { contactPointsFromDoors } from "@/lib/contact-finder/contact-points";
 import { webFormsOnPage } from "@/lib/contact-finder/web-forms";
+import type { CaseInput, ResearchResult } from "@/lib/contracts";
 import type { ExaPort, SourcePorts } from "./source-ports";
+import type { ResearchContext } from "./types";
 import { trackedTool, type ProvenanceTracker } from "./shared";
 import { UNTRUSTED_NOTICE, cleanField, wrapUntrusted } from "./untrusted";
 
@@ -48,6 +50,7 @@ export function siteSearchTool(exa: ExaPort, tracker: ProvenanceTracker, spec: S
         fixtureKey: spec.fixtureKey,
       });
       for (const r of results) {
+        tracker.tagUrl(r.url, spec.fixtureKey);
         tracker.rememberContactPoints(contactPointsFromDoors(classifyIntakeDoors(r)));
         tracker.rememberWebForms(webFormsOnPage(r));
       }
@@ -62,4 +65,42 @@ export function siteSearchTool(exa: ExaPort, tracker: ProvenanceTracker, spec: S
       };
     },
   });
+}
+
+/** Host of a URL, lowercased without "www."; "" when it does not parse. */
+export function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+/** Path of a URL, lowercased; "" when it does not parse. */
+export function pathOf(url: string): string {
+  try {
+    return new URL(url).pathname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+/** Per-agent budget for the directory agents: a slow source ends as a clean error well before the swarm-wide ceiling. */
+export const DIRECTORY_AGENT_BUDGET_MS = 60_000;
+
+export function withBudget(
+  run: (c: CaseInput, ctx: ResearchContext) => Promise<ResearchResult>,
+  budgetMs: number = DIRECTORY_AGENT_BUDGET_MS,
+): (c: CaseInput, ctx: ResearchContext) => Promise<ResearchResult> {
+  return async (c, ctx) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<ResearchResult>((resolve) => {
+      timer = setTimeout(() => resolve({ status: "error", message: `timed out after ${budgetMs}ms` }), budgetMs);
+    });
+    try {
+      return await Promise.race([run(c, ctx), timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
 }

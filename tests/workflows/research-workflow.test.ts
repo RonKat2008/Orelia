@@ -79,8 +79,8 @@ describe("research durability", () => {
     await executeResearch(c.id, deps, step);
     expect(run).toHaveBeenCalledTimes(1);
     expect(save).toHaveBeenCalledTimes(2);
-    // Nine agents + needs/verifier/ranker/judge phase rows; the persistence retry added none.
-    expect(await deps.store.listByCase(c.id)).toHaveLength(13);
+    // Twelve agents + needs/verifier/ranker/judge phase rows; the persistence retry added none.
+    expect(await deps.store.listByCase(c.id)).toHaveLength(16);
     expect(step.calls).toEqual(["deadline", "queue", "run-agents", "verify", "contacts", "rank", "judge", "persist", "persist"]);
     expect((await deps.cases.get(c.id))?.status).toBe("ready");
     // Full replay performs no writes and doesn't regress ready -> researching.

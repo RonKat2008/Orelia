@@ -1,0 +1,97 @@
+{
+  "records": [
+    {
+      "kind": "institution",
+      "id": "inst:cleveland-clinic-sarcoma",
+      "name": "Cleveland Clinic Sarcoma Program",
+      "institutionKind": "hospital",
+      "state": "OH",
+      "evidenceRefs": [
+        "https://my.clevelandclinic.org/departments/cancer/depts/sarcoma"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:cedars-sinai-second-opinion",
+      "name": "Cedars-Sinai Virtual Second Opinion for Sarcoma",
+      "institutionKind": "hospital",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://secondopinion.cedars-sinai.org/condition/sarcoma/"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:stanford-second-opinion",
+      "name": "Stanford Medicine Online Second Opinion Program",
+      "institutionKind": "hospital",
+      "state": "CA",
+      "evidenceRefs": [
+        "https://stanfordhealthcare.org/second-opinion/overview.html"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:johns-hopkins-sarcoma",
+      "name": "Johns Hopkins Kimmel Cancer Center Sarcoma Center",
+      "institutionKind": "hospital",
+      "state": "MD",
+      "evidenceRefs": [
+        "https://www.hopkinsmedicine.org/kimmel-cancer-center/cancers-we-treat/sarcoma"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:karmanos-second-opinion",
+      "name": "Karmanos Cancer Institute Second Opinion",
+      "institutionKind": "hospital",
+      "state": "MI",
+      "evidenceRefs": [
+        "https://www.karmanos.org/karmanos/getting-a-second-opinion-at-karmanos"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:mayo-clinic-az",
+      "name": "Mayo Clinic Arizona - NORD Rare Disease Center of Excellence",
+      "institutionKind": "rare_disease_center",
+      "city": "Arizona",
+      "state": "AZ",
+      "evidenceRefs": [
+        "https://rarediseases.org/center-of-excellence/mayo-clinic/"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Cleveland Clinic Sarcoma Program offers virtual second opinion for sarcoma",
+      "sourceUrl": "https://my.clevelandclinic.org/departments/cancer/depts/sarcoma"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Cedars-Sinai offers Virtual Second Opinion for sarcoma with matching to expert doctors",
+      "sourceUrl": "https://secondopinion.cedars-sinai.org/condition/sarcoma/"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Stanford Medicine Online Second Opinion Program offers remote second opinions for diagnosis and treatment recommendations",
+      "sourceUrl": "https://stanfordhealthcare.org/second-opinion/overview.html"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Johns Hopkins Kimmel Cancer Center Sarcoma Center offers multidisciplinary sarcoma clinic for children and adults",
+      "sourceUrl": "https://www.hopkinsmedicine.org/kimmel-cancer-center/cancers-we-treat/sarcoma"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Karmanos Cancer Institute offers cancer second opinions for diagnosis and treatment plan review",
+      "sourceUrl": "https://www.karmanos.org/karmanos/getting-a-second-opinion-at-karmanos"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Mayo Clinic Arizona is designated a NORD Rare Disease Center of Excellence serving children and adults",
+      "sourceUrl": "https://rarediseases.org/center-of-excellence/mayo-clinic/"
+    }
+  ]
+}

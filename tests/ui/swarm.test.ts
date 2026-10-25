@@ -45,7 +45,7 @@ describe("phases, narrative and totals", () => {
   });
 
   it("sums counts", () => {
-    expect(swarmTotals(settled)).toMatchObject({ settled: 9, total: 9, records: 18, evidence: 27 });
+    expect(swarmTotals(settled)).toMatchObject({ settled: 12, total: 12, records: 24, evidence: 36 });
   });
 
   it("narrates what is happening without medical language", () => {
@@ -61,7 +61,7 @@ describe("describeProgress", () => {
     const running = before.map((c) => (c.agent === "trials" ? { ...c, status: "running" as const } : c));
     const done = before.map((c) => (c.agent === "trials" ? { ...c, status: "done" as const } : c));
     expect(describeProgress(before, running)).toBeNull();
-    expect(describeProgress(running, done)).toContain("1 of 9");
+    expect(describeProgress(running, done)).toContain("1 of 12");
   });
 });
 
@@ -89,8 +89,8 @@ describe("sourcesFromShortlist", () => {
 });
 
 describe("preview script and constellation", () => {
-  it("covers all nine agents", () => {
-    expect(new Set(mockSwarmScript().map((e) => e.agent)).size).toBe(9);
+  it("covers all twelve agents", () => {
+    expect(new Set(mockSwarmScript().map((e) => e.agent)).size).toBe(12);
   });
 
   it("renders the map without the legend for the swarm page", () => {

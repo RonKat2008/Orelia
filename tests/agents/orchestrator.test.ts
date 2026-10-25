@@ -60,7 +60,7 @@ describe("runResearch", () => {
     expect((await cases.get(c.id))?.status).toBe("ready");
   });
 
-  it("creates all nine runs as queued before any agent starts", async () => {
+  it("creates all twelve runs as queued before any agent starts", async () => {
     const cases = new MemoryCaseStore();
     const store = new MemoryRunStore();
     const c = await cases.create({ diseaseName: "X", goals: [] }, "confirmed");
@@ -74,7 +74,7 @@ describe("runResearch", () => {
         }),
       ],
     });
-    expect(seenAtStart).toBe(10); // nine agents + the needs phase row, all created before any search starts
+    expect(seenAtStart).toBe(13); // twelve agents + the needs phase row, all created before any search starts
   });
 
   it("a hung agent is cut off by the timeout and marked failed", async () => {

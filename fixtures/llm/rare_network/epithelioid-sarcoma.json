@@ -1,0 +1,51 @@
+{
+  "records": [
+    {
+      "kind": "organization",
+      "id": "org:ehe-global-patient-registry",
+      "name": "EHE Global Patient Registry – Natural History Study",
+      "organizationKind": "registry",
+      "url": "https://eheregistry.iamrare.org/",
+      "evidenceRefs": [
+        "https://eheregistry.iamrare.org/"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:epithelioid-sarcoma-observational-study",
+      "name": "An Observational Study on Epithelioid Sarcoma",
+      "organizationKind": "registry",
+      "url": "https://clinicaltrials.gov/study/NCT03099681",
+      "evidenceRefs": [
+        "https://clinicaltrials.gov/study/NCT03099681"
+      ]
+    },
+    {
+      "kind": "organization",
+      "id": "org:rdcrn-contact-registry",
+      "name": "RDCRN Contact Registry",
+      "organizationKind": "registry",
+      "url": "https://www.rarediseasesnetwork.org/registry",
+      "evidenceRefs": [
+        "https://www.rarediseasesnetwork.org/registry"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "registry",
+      "claim": "EHE Global Patient Registry empowers people with Epithelioid Hemangioendothelioma (EHE), an ultra-rare sarcoma, to join together to improve understanding of this disease. People who have been diagnosed with EHE from anywhere in the world are encouraged to join.",
+      "sourceUrl": "https://eheregistry.iamrare.org/"
+    },
+    {
+      "claimType": "registry",
+      "claim": "An Observational Study on Epithelioid Sarcoma is a prospective Italian study aimed to provide a description of the population affected by Epithelioid Sarcoma and insight into the natural history of the disease. Status: RECRUITING.",
+      "sourceUrl": "https://clinicaltrials.gov/study/NCT03099681"
+    },
+    {
+      "claimType": "registry",
+      "claim": "RDCRN Contact Registry connects interested patients to clinical trials underway within the RDCRN and allows patients to receive information about rare diseases research and learn about opportunities to participate in research.",
+      "sourceUrl": "https://www.rarediseasesnetwork.org/registry"
+    }
+  ]
+}

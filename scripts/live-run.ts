@@ -19,6 +19,9 @@ const ROLE_MARKERS: [string, string][] = [
   ["Centers agent", "centers"],
   ["Advocacy agent", "advocacy"],
   ["Aid agent", "aid"],
+  ["Research network agent", "rare_network"],
+  ["Disease fund agent", "disease_funds"],
+  ["Expert center agent", "second_opinion"],
 ];
 
 /** Published list rates, USD per million tokens. Opus 5.5 has no confirmed public list price; 15/75 is the Opus 4.1 stand-in. */

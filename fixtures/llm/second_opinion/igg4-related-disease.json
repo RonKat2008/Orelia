@@ -1,0 +1,118 @@
+{
+  "records": [
+    {
+      "kind": "institution",
+      "id": "inst:atrium-health-rare-disease-center",
+      "name": "Atrium Health Rare Disease Center",
+      "institutionKind": "rare_disease_center",
+      "city": "Charlotte",
+      "state": "NC",
+      "evidenceRefs": [
+        "https://rarediseases.org/center-of-excellence/atrium-health-rare-disease-center/"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:duke-health-rare-disease-center",
+      "name": "Duke Health Rare Disease Center",
+      "institutionKind": "rare_disease_center",
+      "city": "Durham",
+      "state": "NC",
+      "evidenceRefs": [
+        "https://pediatrics.duke.edu/news/duke-health-designated-nord-rare-disease-center-excellence"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:unc-rare-disease-network",
+      "name": "Rare Disease Network at UNC",
+      "institutionKind": "rare_disease_center",
+      "city": "Chapel Hill",
+      "state": "NC",
+      "evidenceRefs": [
+        "https://www.med.unc.edu/raredisease/"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:mass-general-brigham-igg4",
+      "name": "Mass General Brigham IgG4-Related Systemic Disease Program",
+      "institutionKind": "hospital",
+      "city": "Boston",
+      "state": "MA",
+      "evidenceRefs": [
+        "https://www.massgeneralbrigham.org/en/services/igg4-related-systemic-disease"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:uchicago-medicine-igg4",
+      "name": "UChicago Medicine IgG4-Related Disease Clinical Consortium",
+      "institutionKind": "hospital",
+      "city": "Chicago",
+      "state": "IL",
+      "evidenceRefs": [
+        "https://www.uchicagomedicine.org/conditions-services/gastroenterology/igg4-related-disease-igg4-rd"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:henry-ford-igg4",
+      "name": "Henry Ford Health IgG4 Related Disease Center",
+      "institutionKind": "hospital",
+      "city": "Detroit",
+      "state": "MI",
+      "evidenceRefs": [
+        "https://www.henryford.com/services/rheumatology/igg4-related-disease-center"
+      ]
+    },
+    {
+      "kind": "institution",
+      "id": "inst:nyu-langone-inflammatory-genetics",
+      "name": "NYU Langone Health Inflammatory Disease Genetics Program",
+      "institutionKind": "hospital",
+      "city": "New York",
+      "state": "NY",
+      "evidenceRefs": [
+        "https://nyulangone.org/care-services/inflammatory-disease-genetics-program"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "claimType": "rare_disease_center",
+      "claim": "Atrium Health Rare Disease Center designated NORD Rare Disease Center of Excellence, located in North Carolina",
+      "sourceUrl": "https://rarediseases.org/center-of-excellence/atrium-health-rare-disease-center/"
+    },
+    {
+      "claimType": "rare_disease_center",
+      "claim": "Duke Health designated a NORD Rare Disease Center of Excellence",
+      "sourceUrl": "https://pediatrics.duke.edu/news/duke-health-designated-nord-rare-disease-center-excellence"
+    },
+    {
+      "claimType": "rare_disease_center",
+      "claim": "Rare Disease Network at UNC designated as NORD Rare Disease Center of Excellence",
+      "sourceUrl": "https://www.med.unc.edu/raredisease/"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Mass General Brigham IgG4-Related Systemic Disease Program is a national leader in clinical care and research for IgG4-related disease",
+      "sourceUrl": "https://www.massgeneralbrigham.org/en/services/igg4-related-systemic-disease"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "UChicago Medicine offers the Midwest's only dedicated clinical consortium for IgG4-Related Disease with multidisciplinary experts",
+      "sourceUrl": "https://www.uchicagomedicine.org/conditions-services/gastroenterology/igg4-related-disease-igg4-rd"
+    },
+    {
+      "claimType": "second_opinion_program",
+      "claim": "Henry Ford Health is home to one of only a few centers in the country dedicated to treating IgG4-related disease with a multidisciplinary team",
+      "sourceUrl": "https://www.henryford.com/services/rheumatology/igg4-related-disease-center"
+    },
+    {
+      "claimType": "genetics_clinic",
+      "claim": "NYU Langone Inflammatory Disease Genetics Program serves adults and children with autoinflammatory conditions using genetic testing and research-based analysis",
+      "sourceUrl": "https://nyulangone.org/care-services/inflammatory-disease-genetics-program"
+    }
+  ]
+}

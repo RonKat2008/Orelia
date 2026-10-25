@@ -35,7 +35,7 @@ describe('intake doors', () => {
     const root = join(process.cwd(),'fixtures/api/exa');
     let pages = 0, doors = 0;
     for (const disease of readdirSync(root,{withFileTypes:true}).filter(d => d.isDirectory())) {
-      for (const file of readdirSync(join(root,disease.name)).filter(f => f.endsWith('.json'))) {
+      for (const file of readdirSync(join(root,disease.name)).filter(f => /^\d+\.json$/.test(f))) {
         const data = JSON.parse(readFileSync(join(root,disease.name,file),'utf8')) as {results:ExaPage[]};
         for (const page of data.results) {
           pages++;

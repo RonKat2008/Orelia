@@ -163,7 +163,7 @@ describe('calendar feed routes', () => {
 
   it('refuses a forged or malformed token with 404', async () => {
     const { id } = await mintFeed('alice');
-    for (const token of [`${id}.forged.ics`, 'nonsense', `${id}`, signFeedToken('cccccccc-cccc-4ccc-8ccc-cccccccccccc')]) {
+    for (const token of [`${id}.forged.ics`, 'nonsense', `${id}`, signFeedToken('cccccccc-cccc-4ccc-8ccc-cccccccccccc'), '%E0%A4%A.ics', `${id}.%zz.ics`]) {
       expect((await getFeed(req(`/api/calendar/feed/${token}`, null), ctx({ token }))).status).toBe(404);
     }
   });

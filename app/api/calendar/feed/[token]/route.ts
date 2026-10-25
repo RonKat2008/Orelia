@@ -7,6 +7,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ token: string }> };
 
+/** A malformed %-escape in the URL is just an unknown feed, not a server error. */
+function decodeToken(raw: string): string | null {
+  try { return decodeURIComponent(raw); } catch { return null; }
+}
+
 const missing = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
 /**
@@ -14,7 +19,8 @@ const missing = () => new Response('Not found', { status: 404, headers: { 'Cache
  * Google "From URL"). No cookie: the signed token is the credential. Event text never includes the diagnosis.
  */
 export async function GET(req: Request, { params }: Ctx) {
-  const feedId = verifyFeedToken(decodeURIComponent((await params).token));
+  const token = decodeToken((await params).token);
+  const feedId = token ? verifyFeedToken(token) : null;
   if (!feedId) return missing();
   try {
     const store = getAppointmentStore();

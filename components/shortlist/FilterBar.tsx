@@ -30,8 +30,8 @@ export function FilterBar({
   ];
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <div role="group" aria-label="Kind of help" className="flex max-w-full gap-1 overflow-x-auto rounded-pill bg-paper-2 p-1 [scrollbar-width:none] sm:flex-wrap">
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div role="group" aria-label="Kind of help" className="flex min-w-0 max-w-full gap-1 overflow-x-auto rounded-pill bg-paper-2 p-1 [scrollbar-width:none] sm:flex-wrap">
         {options.map((option) => {
           const active = filters.kind === option.id;
           const empty = option.id !== "all" && option.count === 0;

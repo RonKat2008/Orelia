@@ -528,7 +528,7 @@ export function ConsentForm({ caseId }: { caseId: string }) {
             ? "Saved for each contact."
             : `Sharing ${totalShared} detail${totalShared === 1 ? "" : "s"} across ${contacts.length} contact${contacts.length === 1 ? "" : "s"}. Only ticked details are shared; every message says an AI helped. Nothing is sent from here.`}
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 sm:w-auto">
           <Button type="button" variant="ghost" disabled={saving || contacts.length === 0} onClick={() => void save(false)}>
             {saved ? "Save again" : "Save only"}
           </Button>

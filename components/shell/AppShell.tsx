@@ -48,7 +48,7 @@ export interface AppShellProps {
 function TitleBlock({ eyebrow, title, lede, actions }: Pick<AppShellProps, "eyebrow" | "title" | "lede" | "actions">) {
   if (!title && !eyebrow && !actions) return null;
   return (
-    <div className="mb-10 flex flex-col gap-6 border-b border-line pb-8 md:flex-row md:items-end md:justify-between">
+    <div className="mb-6 flex flex-col gap-4 border-b border-line pb-5 md:flex-row md:items-end md:justify-between">
       <div className="grid max-w-3xl gap-3">
         {eyebrow ? <p className="m-0 text-small font-semibold text-ink-2">{eyebrow}</p> : null}
         {title ? (
@@ -101,8 +101,7 @@ export function AppShell({
           </main>
         </div>
       ) : (
-        <div className="page-container pb-section pt-10 sm:pt-14">
-          <TitleBlock eyebrow={eyebrow} title={title} lede={lede} actions={actions} />
+        <div className="page-container pb-12 pt-6 sm:pt-10">
           <div className={cn(sidebar && "grid gap-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-14")}>
             {sidebar ? (
               <aside className="lg:sticky lg:top-28 lg:self-start" aria-label="Case progress">
@@ -110,6 +109,7 @@ export function AppShell({
               </aside>
             ) : null}
             <main id="main" className={cn("min-w-0", column)}>
+              <TitleBlock eyebrow={eyebrow} title={title} lede={lede} actions={actions} />
               {children}
               {footer}
             </main>

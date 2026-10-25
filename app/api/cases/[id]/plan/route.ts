@@ -8,6 +8,7 @@ import { planPatchBodySchema } from '@/lib/plan/contract';
 import { loadPlanInputs } from '@/lib/plan/inputs';
 import { getPlanStore } from '@/lib/plan/store';
 import { emitPlanApproved } from '@/lib/plan/approved-event';
+import { spawnForApprovedPlan } from '@/lib/agents/factory';
 import { materializePlan } from '@/lib/plan/materialize-wiring';
 import { validatePlanAgainstInputs } from '@/lib/plan/validate';
 import { planEvidenceMeta } from '@/lib/plan/evidence-meta';
@@ -101,7 +102,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (current.status !== 'approved' && saved.status === 'approved') {
       await emitPlanApproved(id, saved.version);
       // Writes outbox drafts / application drafts for the steps that are ready now. Nothing is sent.
-      return NextResponse.json({ plan: saved, materialized: await materializePlan(saved), evidence: await metaFor(id, saved, inputs) });
+      const materialized = await materializePlan(saved);
+      // Agent factory: one persistent ResourceAgent per planned resource (idempotent; never sends). Never fails the approval.
+      const agents = await spawnForApprovedPlan(saved);
+      return NextResponse.json({ plan: saved, materialized, ...(agents ? { agents } : {}), evidence: await metaFor(id, saved, inputs) });
     }
     return NextResponse.json({ plan: saved, evidence: await metaFor(id, saved, inputs) });
   } catch (err) {

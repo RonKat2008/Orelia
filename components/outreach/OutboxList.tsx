@@ -40,6 +40,7 @@ import {
 import { loadCaseContacts } from "./case-activity";
 import { followUpLabel, formatWhen, titleCase } from "./format";
 import { LetterSheet, MessageBody } from "./LetterSheet";
+import { ApproveAllPanel, type BatchItem, type BatchResult } from "./ApproveAllPanel";
 import { ApplicationCard, STATUS_COPY, hostOf } from "./ApplicationCard";
 import { loadApplications, type ApiApplication } from "./applications";
 import { getPlan } from "@/components/plan/client";
@@ -80,6 +81,7 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const [applications, setApplications] = useState<ApiApplication[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [batchSnapshot, setBatchSnapshot] = useState<BatchItem[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -151,6 +153,19 @@ export function OutboxList({ caseId }: { caseId: string }) {
     });
   }
 
+  /** One item of "Approve all": the same per-item approve request as the single button, with state updated and no toast. */
+  async function approveForBatch(contactId: string): Promise<BatchResult> {
+    const row = rows.find((entry) => entry.contact.id === contactId);
+    if (!row?.draft) return { ok: false, reasons: ["There is no draft to approve."] };
+    const result = await approveContactDraft(row.contact.id, row.draft.id);
+    if (!result.ok) {
+      patch(row.contact.id, { approvedAt: null, error: result.reasons });
+      return { ok: false, reasons: result.reasons };
+    }
+    patch(row.contact.id, { approvedAt: result.approvedAt, sentAt: result.sentAt, error: null });
+    return { ok: true };
+  }
+
   if (phase === "loading") {
     return (
       <LoadingState label="Loading drafts">
@@ -180,6 +195,15 @@ export function OutboxList({ caseId }: { caseId: string }) {
   const blockedCount = rows.filter((row) => !row.draft).length;
   const replaceApplication = (next: ApiApplication) =>
     setApplications((current) => current.map((app) => (app.id === next.id ? next : app)));
+
+  const batchItems: BatchItem[] = rows
+    .filter((row) => row.draft && !row.approvedAt && !row.held)
+    .map((row) => ({
+      id: row.contact.id,
+      recipient: titleCase(contactLabel(row.contact)),
+      channel: (row.draft?.channel ?? row.contact.channel) === "email" ? "email" : "voice",
+      summary: row.draft?.subject?.trim() || (row.draft?.body ?? "").split("\n").find((line) => line.trim()) || "No preview",
+    }));
 
   const keys = [
     ...applications.map((app) => `app:${app.id}`),
@@ -249,6 +273,15 @@ export function OutboxList({ caseId }: { caseId: string }) {
       <p role="status" aria-live="polite" className="m-0 text-body text-ink-2">
         {statusLine}
       </p>
+      {batchSnapshot ? (
+        <ApproveAllPanel items={batchSnapshot} approveOne={approveForBatch} onClose={() => setBatchSnapshot(null)} />
+      ) : batchItems.length >= 2 && !pending ? (
+        <div>
+          <Button variant="secondary" onClick={() => setBatchSnapshot(batchItems)}>
+            Approve all ({batchItems.length})
+          </Button>
+        </div>
+      ) : null}
       <TwoPane
         listLabel="Drafts"
         detailLabel="Selected draft"

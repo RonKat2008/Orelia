@@ -89,6 +89,8 @@ async function main() {
     console.log(`\n===== ${slug} =====`);
     failures.push(...(await runCase(slug, top)).map((f) => `${slug}: ${f}`));
   }
+  const { runAgentFactoryDemo } = await import("./demo/agent-factory");
+  failures.push(...(await runAgentFactoryDemo()).map((f) => `agent-factory: ${f}`));
   if (failures.length) {
     console.error(`\nFAILED:\n - ${failures.join("\n - ")}`);
     process.exit(1);

@@ -1,3 +1,4 @@
+import { ResourceAgentsPanel } from "@/components/agents/ResourceAgentsPanel";
 import { ProposedAppointmentsNotice } from "@/components/appointments/ProposedAppointmentsNotice";
 import { CASE_PAGE_HEADING, CasePage } from "@/components/outreach/CasePage";
 import { PatientTracker } from "@/components/patient/views";
@@ -17,6 +18,7 @@ export default async function TrackerPage({
   return (
     <CasePage
       patient={<PatientTracker caseId={id} titleAs={CASE_PAGE_HEADING} focusContactId={contact} />} title="Replies and follow-ups" lede="See who answered, what they asked for, and when we follow up next." eyebrow="Tracker">
+      <ResourceAgentsPanel caseId={id} />
       <ProposedAppointmentsNotice caseId={id} />
       <TrackerBoard caseId={id} tasks={[]} schedulingPaused={followUpScheduler() === "none"} focusContactId={contact} />
     </CasePage>

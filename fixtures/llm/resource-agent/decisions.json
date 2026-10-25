@@ -1,0 +1,17 @@
+{
+  "appointment:answer_request+escalate+wait": { "action": "answer_request", "reason": "They asked for records; answer with the documents the patient marked shareable before raising the open question." },
+  "appointment:draft_email+wait": { "action": "draft_email", "reason": "Email is first in the plan and nothing has been written yet; draft the intro for the patient to approve." },
+  "appointment:switch_channel+wait": { "action": "switch_channel", "reason": "No reply by the cadence deadline; the plan's next channel is a call." },
+  "appointment:follow_up+switch_channel+wait": { "action": "switch_channel", "reason": "No reply after the follow-up window; switching to a call reaches the intake desk faster." },
+  "appointment:draft_call+wait": { "action": "draft_call", "reason": "A call is the current channel; prepare the script with the AI disclosure for approval." },
+  "appointment:answer_request+wait": { "action": "answer_request", "reason": "They asked for records; prepare a reply with the shareable documents." },
+  "appointment:escalate+wait": { "action": "escalate", "reason": "Their reply needs the patient's decision before the agent can continue." },
+  "trial_screening:draft_call+wait": { "action": "draft_call", "reason": "The trial site only lists a phone; prepare a screening call for approval." },
+  "trial_screening:draft_email+wait": { "action": "draft_email", "reason": "Email the trial coordinator first; the patient approves before it is sent." },
+  "trial_screening:answer_request+wait": { "action": "answer_request", "reason": "The coordinator asked for records for pre-screening; prepare the shareable ones." },
+  "aid_application:fill_web+wait": { "action": "fill_web", "reason": "They take requests through an online form; fill it in for the patient to review." },
+  "aid_application:switch_channel+wait": { "action": "switch_channel", "reason": "No confirmation after the application; email is next to check it arrived." },
+  "aid_application:draft_email+wait": { "action": "draft_email", "reason": "Email the program to ask about eligibility; the patient approves first." },
+  "membership:draft_email+wait": { "action": "draft_email", "reason": "Introduce the patient to the group by email; nothing goes out before approval." },
+  "membership:fill_web+wait": { "action": "fill_web", "reason": "Membership is through their online form; fill it in for review." }
+}

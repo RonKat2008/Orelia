@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import { getDb } from '../../../../db/client';
 import * as s from '../../../../db/schema';
@@ -132,6 +133,22 @@ export function postgresInboundDeps(provider: 'agentmail' | 'agentcall' | 'vapi'
   };
   return {
     secret: provider === 'agentmail' ? env.AGENTMAIL_WEBHOOK_SECRET : provider === 'vapi' ? env.VAPI_WEBHOOK_SECRET : env.AGENTCALL_WEBHOOK_SECRET,
+    async agentForContact(contactId) {
+      const { getAgentStore } = await import('../../../../lib/agents/factory/store');
+      return getAgentStore().byContact(contactId).catch(() => null);
+    },
+    async patientReplyThread(threadId) {
+      const { digestThreadCase } = await import('../../../../lib/agents/factory/chat-deps');
+      return digestThreadCase(threadId).catch(() => null);
+    },
+    async handlePatientReply(input) {
+      const { handleDigestReply } = await import('../../../../lib/agents/factory/chat-deps');
+      return handleDigestReply(input);
+    },
+    wakeAgent(contactId, trigger) {
+      // Runs after the response is sent, so the provider never waits on the agent's model call.
+      after(async () => { const { wakeAgent } = await import('../../../../lib/agents/factory'); await wakeAgent(contactId, trigger); });
+    },
     async lookupThread(threadId) {
       const [row] = await db().select({ contactId: s.messages.contactId }).from(s.messages)
         .where(and(eq(s.messages.providerThreadId, threadId), eq(s.messages.direction, 'outbound'))).limit(1);

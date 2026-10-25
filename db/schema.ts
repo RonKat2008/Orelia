@@ -659,3 +659,73 @@ export const calendarConnections = pgTable("calendar_connections", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [primaryKey({ columns: [table.ownerKey, table.provider] })]);
 // ---- end calendar lane ----
+
+// ---- agent factory lane: one persistent ResourceAgent per selected resource ----
+/** A self-managing agent for one resource. Owns its channels (inbox, calls, web applications), memory and events. */
+export const resourceAgents = pgTable("resource_agents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
+  /** `${targetKind}:${targetId}`; one agent per resource per case (spawn is idempotent on this). */
+  resourceKey: text("resource_key").notNull(),
+  name: text("name").notNull(),
+  goal: text("goal").notNull(),
+  strategy: jsonb("strategy").$type<string[]>().notNull(),
+  strategyStep: integer("strategy_step").notNull().default(0),
+  state: text("state").notNull().default("planning"),
+  nextAction: text("next_action"),
+  nextActionAt: timestamp("next_action_at", { withTimezone: true }),
+  memory: jsonb("memory").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+  inboxMode: text("inbox_mode").notNull().default("pending"),
+  inboxId: text("inbox_id"),
+  inboxAddress: text("inbox_address"),
+  leaseOwner: text("lease_owner"),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("resource_agents_case_resource_key").on(table.caseId, table.resourceKey),
+  uniqueIndex("resource_agents_contact_key").on(table.contactId),
+  index("resource_agents_due_idx").on(table.nextActionAt),
+  index("resource_agents_inbox_idx").on(table.inboxId),
+]);
+
+/** One row per agent decision (reason, action, result) for the live console and the judge view. */
+export const agentEvents = pgTable("agent_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id").notNull().references(() => resourceAgents.id, { onDelete: "cascade" }),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  trigger: text("trigger"),
+  reason: text("reason"),
+  action: text("action"),
+  result: text("result"),
+  data: jsonb("data").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("agent_events_case_idx").on(table.caseId, table.createdAt),
+  index("agent_events_agent_idx").on(table.agentId, table.createdAt),
+]);
+/** Chat with one agent (app or patient email reply), plus queued patient updates (role 'agent', data.notify). */
+export const agentMessages = pgTable("agent_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id").references(() => resourceAgents.id, { onDelete: "cascade" }),
+  caseId: uuid("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  body: text("body").notNull(),
+  via: text("via").notNull().default("app"),
+  data: jsonb("data").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("agent_messages_agent_idx").on(table.agentId, table.createdAt),
+  index("agent_messages_case_idx").on(table.caseId, table.createdAt),
+]);
+
+/** Single-use ledger for approve-by-email tokens (jti). A replayed token finds its row and is refused. */
+export const agentApprovalTokens = pgTable("agent_approval_tokens", {
+  jti: text("jti").primaryKey(),
+  agentId: uuid("agent_id").notNull().references(() => resourceAgents.id, { onDelete: "cascade" }),
+  draftId: uuid("draft_id").notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }).notNull().defaultNow(),
+});
+// ---- end agent factory lane ----

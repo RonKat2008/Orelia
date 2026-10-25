@@ -3,6 +3,8 @@ import { parseAgentMailWebhook } from '../../../../lib/channels/agentmail';
 import { ChannelError } from '../../../../lib/channels/types';
 import type { WebhookInboundEvent } from './ingest';
 import { contactReplyEvent, type SendEvents } from '../../../../lib/workflows/events';
+import { routeInboundEmail } from '../../../../lib/agents/factory/inbox';
+import type { AgentTrigger, ResourceAgent } from '../../../../lib/agents/factory/types';
 
 export const BODY_TOO_LARGE_TEXT = '[Reply body too large to receive automatically. Open it in AgentMail.]';
 
@@ -65,7 +67,19 @@ export interface InboundDeps {
   ingestInbound(event: WebhookInboundEvent): Promise<unknown>;
   /** Optional: AI verification calls (lib/verification), which have no contact row. */
   verification?: VerificationInboundDeps;
+  /** Optional: the ResourceAgent owning a contact (inbox routing guard: mail for agent A never reaches agent B). */
+  agentForContact?(contactId: string): Promise<Pick<ResourceAgent, 'inboxMode' | 'inboxId'> | null>;
+  /** Optional: a patient replying to an agent digest (thread is ours, not a contact's). Returns the case, else null. */
+  patientReplyThread?(providerThreadId: string): Promise<string | null>;
+  /** Optional: acts on a patient digest reply (verified sender only; see lib/agents/factory/report.ts). */
+  handlePatientReply?(input: { threadId: string; from: string; body: string }): Promise<unknown>;
+  /** Optional: wake the contact's ResourceAgent after an inbound event was ingested. Must not throw. */
+  wakeAgent?(contactId: string, trigger: AgentTrigger): void | Promise<void>;
   now?: () => Date;
+}
+
+async function wake(deps: InboundDeps, contactId: string, trigger: AgentTrigger): Promise<void> {
+  try { await deps.wakeAgent?.(contactId, trigger); } catch { /* the inbound event is already stored; the sweep retries */ }
 }
 
 export interface VerificationInboundDeps {
@@ -138,12 +152,24 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
   const raw = await req.text();
   const now = deps.now ?? (() => new Date());
   let owner: Owner | undefined;
+  let patientCase: string | null = null;
   try {
     const parsed = await parseAgentMailWebhook(raw, req.headers, deps.secret, async id => {
       owner = await deps.lookupThread(id);
-      return owner?.contactId;
+      if (!owner && deps.patientReplyThread) patientCase = await deps.patientReplyThread(id);
+      return owner?.contactId ?? (patientCase ? 'patient-reply' : undefined);
     }, now);
+    if (!owner && patientCase && deps.handlePatientReply && parsed.threadId) {
+      if (parsed.automated) return json(200, { ignored: true, automated: true });
+      await deps.handlePatientReply({ threadId: parsed.threadId, from: parsed.from ?? '', body: parsed.body });
+      return json(200, { ok: true, patientReply: true });
+    }
     if (!owner || !parsed.threadId || !parsed.messageId) return json(404, { reasons: ['unknown_thread'] });
+    if (deps.agentForContact) {
+      // A thread owned by an agent with its own inbox must arrive in that inbox; anything else is refused, never re-routed.
+      const routed = routeInboundEmail({ inboxId: parsed.inboxId, threadOwner: owner, ownerAgent: await deps.agentForContact(owner.contactId), inboxAgent: null });
+      if ('refused' in routed) return json(409, { reasons: [routed.refused] });
+    }
     const tooLarge = bodyOmitted(raw);
     const receivedAt = new Date(parsed.receivedAt);
     // 'duplicate' only means the row exists; whether it was ingested is the ledger's call.
@@ -160,7 +186,7 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
     const storedMessageId = typeof stored === 'object' ? stored.id : undefined;
     const o = owner;
     const { threadId, messageId } = parsed;
-    return await ingestOnce(deps, { kind: 'email', providerMessageId: messageId }, async () => {
+    const res = await ingestOnce(deps, { kind: 'email', providerMessageId: messageId }, async () => {
       await deps.ingestInbound({
         channel: 'email', contactId: o.contactId, caseId: o.caseId,
         body: tooLarge ? BODY_TOO_LARGE_TEXT : parsed.body, providerId: messageId, providerThreadId: threadId,
@@ -173,6 +199,8 @@ export async function handleAgentMailWebhook(req: Request, deps: InboundDeps): P
         contactId: o.contactId, caseId: o.caseId, dedupeKey: messageId, messageId, receivedAt: receivedAt.toISOString(),
       }));
     });
+    if (res.ok) await wake(deps, o.contactId, 'webhook:email');
+    return res;
   } catch (err) { return errorResponse(err, 'agentmail'); }
 }
 
@@ -209,7 +237,7 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
       });
       const o = owner;
       const callId = parsed.callId;
-      return await ingestOnce(deps, { kind: 'call', providerCallId: callId, contactId: o.contactId }, async () => {
+      const res = await ingestOnce(deps, { kind: 'call', providerCallId: callId, contactId: o.contactId }, async () => {
         await deps.ingestInbound({
           channel: 'voice', contactId: o.contactId, caseId: o.caseId,
           body: parsed.body, providerId: callId, receivedAt: receivedAt.toISOString(),
@@ -218,6 +246,8 @@ export async function handleAgentCallWebhook(req: Request, deps: InboundDeps): P
           contactId: o.contactId, caseId: o.caseId, dedupeKey: `${callId}-transcript`, callId, receivedAt: receivedAt.toISOString(),
         }));
       });
+      if (res.ok) await wake(deps, o.contactId, 'webhook:voice');
+      return res;
     }
     if (parsed.eventType === 'call.status') {
       await deps.storeCallEvent({

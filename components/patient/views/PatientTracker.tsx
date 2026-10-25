@@ -7,6 +7,7 @@ import { Button, Details, EmptyState, List, ListRow, LoadingState, PageHeader, S
 import type { ApiContact } from "@/components/outreach/client";
 import { loadCaseContacts, loadCaseTasks } from "@/components/outreach/case-activity";
 import type { OutreachTask } from "@/components/outreach/types";
+import { PatientAgentsSection } from "@/components/agents/PatientAgentsSection";
 import { usePatientStatus } from "../usePatientStatus";
 import { TRACKER_COPY as copy } from "./tracker/copy";
 import { STATUS_ICON, detailLines, followUpLine, needsYouIds, orderContacts, statusWord, trackerPrimary, type StatusIcon } from "./tracker/model";
@@ -143,6 +144,7 @@ export function PatientTracker({ caseId, titleAs = "h1", focusContactId = null }
           })}
         </List>
       )}
+      <PatientAgentsSection caseId={caseId} />
       {primary ? (
         <div>
           <Button asChild size="lg">

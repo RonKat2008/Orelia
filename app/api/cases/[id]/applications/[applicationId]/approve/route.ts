@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
+import { wakeAgentForApplication } from '@/lib/agents/factory';
 import { z } from 'zod';
 import { guardCase } from '@/lib/auth/ownership';
 import { approveApplication } from '@/lib/web-application/approve';
@@ -31,6 +32,8 @@ export async function POST(req: Request, { params }: Ctx) {
     const app = await getApplicationStore().get(applicationId);
     if (!app || app.caseId !== id) return NextResponse.json({ reasons: ['application_not_found'] }, { status: 404 });
     const res = await approveApplication(applicationId, parsed.data, defaultApproveDeps());
+    // Kernel completion: the owning resource agent records the submission and plans its next step.
+    if (res.ok) after(() => wakeAgentForApplication(id, app.contactId ?? null));
     return res.ok ? NextResponse.json(res) : NextResponse.json({ reasons: res.reasons }, { status: res.status });
   } catch (err) {
     return jsonError(500, 'Unable to approve the application', err);

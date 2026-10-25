@@ -69,8 +69,22 @@ export const demoResponderStep: TickStep = {
   },
 };
 
-/** Lane F adds its resource-agent wake step here (see scratchpad briefs/r3-lease-contract.md). */
-export const TICK_STEPS: TickStep[] = [followUpsStep, demoResponderStep];
+/**
+ * Resource agents (lane F): wakes agents whose next_action_at is due. Each agent is claimed with an atomic
+ * UPDATE ... RETURNING lease (resource_agents.lease_until), so overlapping ticks never run the same agent.
+ * Steps only draft; nothing is sent without approval. Also sends batched patient digests.
+ */
+export const resourceAgentsStep: TickStep = {
+  name: 'resourceAgents',
+  enabled: (env) => Boolean(env.DATABASE_URL),
+  async run() {
+    const { runDueAgents } = await import('../agents/factory');
+    const r = await runDueAgents();
+    return { ran: r.ran, skipped: r.skipped, failed: r.failed, digestsSent: r.digests?.sent ?? 0 };
+  },
+};
+
+export const TICK_STEPS: TickStep[] = [followUpsStep, demoResponderStep, resourceAgentsStep];
 
 export async function runCronTick(opts: { env?: Env; now?: Date; steps?: TickStep[] } = {}): Promise<TickResult> {
   const env = opts.env ?? process.env;

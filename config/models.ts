@@ -1,6 +1,6 @@
 import { directAnthropicKey, gatewayConfig } from '@/lib/ai/gateway';
 
-export const ROLES = ['orchestrator', 'intake', 'verifier', 'inbox', 'curator', 'needs', 'judge', 'research', 'form', 'history', 'verification', 'embedding', 'voice'] as const;
+export const ROLES = ['orchestrator', 'intake', 'verifier', 'inbox', 'curator', 'needs', 'judge', 'research', 'form', 'history', 'verification', 'resource_agent', 'embedding', 'voice'] as const;
 export type ModelRole = typeof ROLES[number];
 export type ModelId = string;
 export function modelFor(role: ModelRole): ModelId {
@@ -15,6 +15,8 @@ export function modelFor(role: ModelRole): ModelId {
   if (role === 'voice') return 'claude-sonnet-5';
   // Mid tier: the needs analyst must be fast. The judge stays on the top tier (judge >= generator).
   if (role === 'needs') return 'claude-sonnet-5-5';
+  // Resource agents decide often and only choose among code-allowed actions: mid tier keeps them fast.
+  if (role === 'resource_agent') return 'claude-sonnet-5-5';
   return 'claude-opus-5-5';
 }
 /** Compatibility exports for existing agents. New callers should select a role. */

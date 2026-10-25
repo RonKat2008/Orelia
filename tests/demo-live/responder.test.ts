@@ -63,6 +63,20 @@ describe('server-side demo coordinator', () => {
     expect(seen).toEqual([['coord-side-thread', '<sent-1@ses>']]);
   });
 
+  it('only answers from AgentMail inboxes (a real person\'s mailbox in the coordinator list replies by hand)', async () => {
+    const gmail = 'patient.demo@gmail.com';
+    const listed: string[] = [];
+    const m = mail([msg({})]);
+    const listReceived = m.listReceived;
+    m.listReceived = async (id: string) => { listed.push(id); return listReceived(id); };
+    const r = await runDemoResponder({
+      env: { ...env, OUTBOUND_ALLOWLIST: `${COORD},${gmail}`, DEMO_COORDINATOR_INBOXES: `${gmail},${COORD}` },
+      mail: m, isOurThread: async () => true, once: new InMemoryOnceStore(), now: NOW,
+    });
+    expect(listed).toEqual([COORD]);
+    expect(r.replied).toBe(1);
+  });
+
   it('is off outside demo mode or without an AgentMail key', async () => {
     const m = mail([msg({})]);
     expect(await runDemoResponder({ isOurThread: async () => true, env: { ...env, WAYFINDER_DEMO_COORDINATORS: '0' }, mail: m, once: new InMemoryOnceStore(), now: NOW })).toMatchObject({ enabled: false, replied: 0 });

@@ -68,7 +68,8 @@ export async function runDemoResponder(opts: {
   if (!result.enabled) return result;
   const coordinatorAddresses = new Set(demoCoordinatorInboxes(opts.env));
   // AgentMail inbox ids are the inbox addresses, so no account-wide listing (which scoped keys may not allow) is needed.
-  const coordinators = [...coordinatorAddresses].map((address) => ({ inboxId: address, address }));
+  // Only AgentMail inboxes can be read and answered here; any other listed mailbox (a presenter's own) replies by hand.
+  const coordinators = [...coordinatorAddresses].filter((a) => a.endsWith('@agentmail.to')).map((address) => ({ inboxId: address, address }));
   const delay = opts.delayMs ?? DEFAULT_REPLY_DELAY_MS;
   const floor = Math.max(opts.now.getTime() - RESPONDER_LOOKBACK_MS, opts.notBefore?.getTime() ?? 0);
 

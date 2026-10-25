@@ -1,5 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+/** The account's own Anthropic API key. When set, every Claude call goes straight to Anthropic with it. */
+export function directAnthropicKey(): string | undefined {
+  return process.env.ANTHROPIC_API_KEY?.trim() || undefined;
+}
+
+/** Neon AI Gateway: used for Claude only when no direct key is set, and always for embeddings (Claude has none). */
 export function gatewayConfig() {
   const base = process.env.NEON_AI_GATEWAY_BASE_URL?.replace(/\/+$/, '');
   const token = process.env.NEON_AI_GATEWAY_TOKEN;
@@ -14,12 +20,17 @@ export const MODEL_CALL_TIMEOUT_MS = 100_000;
 const CLIENT_LIMITS = { timeout: MODEL_CALL_TIMEOUT_MS, maxRetries: 1 } as const;
 
 export function createClaudeClient() {
+  const key = directAnthropicKey();
   const gateway = gatewayConfig();
-  return gateway
-    ? new Anthropic({ apiKey: null, authToken: gateway.token, baseURL: `${gateway.base}/anthropic`, ...CLIENT_LIMITS })
-    : new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, ...CLIENT_LIMITS });
+  if (key || !gateway) return new Anthropic({ apiKey: key, ...CLIENT_LIMITS });
+  return new Anthropic({ apiKey: null, authToken: gateway.token, baseURL: `${gateway.base}/anthropic`, ...CLIENT_LIMITS });
 }
 
 export function hasClaudeCredentials() {
-  return Boolean(gatewayConfig() || process.env.ANTHROPIC_API_KEY);
+  return Boolean(directAnthropicKey() || gatewayConfig());
+}
+
+/** Text of a Messages API response (concatenated text blocks). */
+export function messageText(message: { content: { type: string; text?: string }[] }): string {
+  return message.content.filter((block) => block.type === 'text').map((block) => block.text ?? '').join('');
 }

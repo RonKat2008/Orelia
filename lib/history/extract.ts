@@ -1,5 +1,5 @@
 import { chat } from '@/lib/ai/chat';
-import { gatewayConfig } from '@/lib/ai/gateway';
+import { hasClaudeCredentials } from '@/lib/ai/gateway';
 import type { ExtractionResult, HistoryDocument } from './contract';
 import { buildLlmMessages, groundLlmOutput } from './extract-llm';
 import { extractEventsWithRules } from './extract-rules';
@@ -17,7 +17,7 @@ export async function extractEvents(
   opts: { llm?: boolean; chatFn?: typeof chat } = {},
 ): Promise<ExtractionResult> {
   const rules = (): ExtractionResult => ({ events: extractEventsWithRules(doc), extractedBy: 'rules' });
-  if (!opts.llm || !(opts.chatFn || gatewayConfig())) return rules();
+  if (!opts.llm || !(opts.chatFn || hasClaudeCredentials())) return rules();
   try {
     const raw = await (opts.chatFn ?? chat)({ role: 'history', messages: buildLlmMessages(doc) });
     const events = groundLlmOutput(doc, raw);

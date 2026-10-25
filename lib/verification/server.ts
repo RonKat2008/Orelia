@@ -5,7 +5,7 @@
  * Lazy: nothing touches the database or credentials until a request arrives.
  */
 import { chat } from '../ai/chat';
-import { gatewayConfig } from '../ai/gateway';
+import { hasClaudeCredentials } from '../ai/gateway';
 import { MockCaller } from '../channels/mock-caller';
 import { resolveMode } from '../env';
 import { transcriptToText } from '../channels/agentcall';
@@ -64,7 +64,7 @@ export async function createVerificationService(env: Env = process.env): Promise
     contacts: caseId => loadContacts(caseId, env),
     voice,
     env,
-    ...(gatewayConfig() && !offline(env) ? { extractor: defaultExtractor } : {}),
+    ...(hasClaudeCredentials() && !offline(env) ? { extractor: defaultExtractor } : {}),
     ...(mock ? {
       simulate: request => {
         const turns = syntheticVerificationTranscript(request);

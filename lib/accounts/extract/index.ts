@@ -3,7 +3,7 @@
  * sanitizeRecordText. Never log extracted text (only error names, if anything).
  */
 import { sanitizeRecordText } from '@/lib/history/sanitize';
-import { gatewayConfig } from '@/lib/ai/gateway';
+import { hasClaudeCredentials } from '@/lib/ai/gateway';
 import { ACCEPTED_TYPES, ExtractionError, MAX_FILE_BYTES, type ExtractedPage, type ExtractionOutput } from '../contract';
 import { extractDocxPages } from './docx';
 import { extractPdfPages } from './pdf';
@@ -32,7 +32,7 @@ function finish(method: ExtractionOutput['method'], pages: ExtractedPage[], empt
 }
 
 async function extractImage(input: ExtractionInput, deps: ExtractionDeps): Promise<ExtractionOutput> {
-  const vision = deps.vision ?? (!deps.offline && gatewayConfig() ? defaultVision : undefined);
+  const vision = deps.vision ?? (!deps.offline && hasClaudeCredentials() ? defaultVision : undefined);
   if (deps.offline || !vision) return none(VISION_OFF_NOTE);
   if (input.bytes.byteLength > MAX_VISION_IMAGE_BYTES) {
     throw new ExtractionError('image_too_large', 'Images over 5 MB cannot be read yet; please upload a smaller photo or a PDF.');

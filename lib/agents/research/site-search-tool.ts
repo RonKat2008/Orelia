@@ -55,7 +55,8 @@ export function siteSearchTool(exa: ExaPort, tracker: ProvenanceTracker, spec: S
         tracker.rememberWebForms(webFormsOnPage(r));
       }
       return {
-        query,
+        // Nested so the query (which names the disease) never counts as page text for a result URL.
+        request: { query },
         notice: UNTRUSTED_NOTICE,
         results: results.map((r) => ({
           title: cleanField(r.title),

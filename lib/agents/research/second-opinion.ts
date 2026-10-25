@@ -1,6 +1,7 @@
 import { HAIKU } from "@/lib/agents/models";
 import { isUndiagnosed, type CaseInput } from "@/lib/contracts";
 import { RARE_CLAIM_TYPES } from "@/lib/rare-disease/tags";
+import { mentionStrength } from "@/lib/agents/relevance";
 import { runResearch, type FinalizeRules } from "./shared";
 import { directoryExa, withBudget, siteSearchTool } from "./site-search-tool";
 import type { ResearchAgent } from "./types";
@@ -19,13 +20,18 @@ const NORD_COE = /center[s]? of excellence/;
 const NORD_NAME = /\bnord\b|national organization for rare disorders/;
 
 /** NORD designation is stamped only when the NORD search returned the page AND the page text states it. */
-export const secondOpinionClaimType: NonNullable<FinalizeRules["claimTypeFor"]> = (item, tracker) => {
-  const tag = tracker.urlTag(item.sourceUrl);
-  const text = tracker.recordText(item.sourceUrl);
-  if (tag === "nord-coe") return NORD_COE.test(text) && NORD_NAME.test(text) ? RARE_CLAIM_TYPES.nordCenterOfExcellence : null;
-  if (tag === "second-opinion" || tag === "telehealth") return PROGRAM_CLAIMS.has(item.claimType) ? item.claimType : "second_opinion_program";
-  return null;
-};
+export function secondOpinionClaimType(c: CaseInput): NonNullable<FinalizeRules["claimTypeFor"]> {
+  const undiagnosed = isUndiagnosed(c);
+  return (item, tracker) => {
+    const tag = tracker.urlTag(item.sourceUrl);
+    const text = tracker.recordText(item.sourceUrl);
+    if (tag === "nord-coe") return NORD_COE.test(text) && NORD_NAME.test(text) ? RARE_CLAIM_TYPES.nordCenterOfExcellence : null;
+    if (tag !== "second-opinion" && tag !== "telehealth") return null;
+    // A program page must be about this condition (or its disease family), or about undiagnosed disease.
+    if (undiagnosed ? !/undiagnos|diagnostic/.test(text) : mentionStrength(text, c) === "none") return null;
+    return PROGRAM_CLAIMS.has(item.claimType) ? item.claimType : "second_opinion_program";
+  };
+}
 
 function topic(c: CaseInput): string {
   return isUndiagnosed(c) ? "undiagnosed rare disease diagnostic program" : c.diseaseName;
@@ -34,10 +40,10 @@ function topic(c: CaseInput): string {
 export const secondOpinionAgent: ResearchAgent = {
   name: "second_opinion",
   model: HAIKU,
-  run: withBudget(runResearch({
+  run: withBudget((c, ctx) => runResearch({
     name: "second_opinion",
     instructions: INSTRUCTIONS,
-    rules: { allowedKinds: ["institution"], sourceKinds: ["exa"], claimTypeFor: secondOpinionClaimType },
+    rules: { allowedKinds: ["institution"], sourceKinds: ["exa"], claimTypeFor: secondOpinionClaimType(c) },
     makeTools: (ports, tracker) => [
       siteSearchTool(directoryExa(ports), tracker, {
         name: "search_nord_coe",
@@ -67,5 +73,5 @@ export const secondOpinionAgent: ResearchAgent = {
       ]);
       return { nordCoe, secondOpinion, telehealth };
     },
-  })),
+  })(c, ctx)),
 };

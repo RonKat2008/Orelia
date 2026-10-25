@@ -1,6 +1,7 @@
 import { HAIKU } from "@/lib/agents/models";
-import { isUndiagnosed, type CaseInput } from "@/lib/contracts";
+import { isUndiagnosed, type CaseInput, type Evidence, type ResearchResult } from "@/lib/contracts";
 import { RARE_CLAIM_TYPES } from "@/lib/rare-disease/tags";
+import { mentionStrength } from "@/lib/agents/relevance";
 import { runResearch, type FinalizeRules } from "./shared";
 import { directoryExa, withBudget, hostOf, pathOf, siteSearchTool } from "./site-search-tool";
 import type { ResearchAgent } from "./types";
@@ -19,16 +20,50 @@ Output records of kind "organization" with organizationKind "registry": {"kind":
 - At most 5 records. If nothing fits, return {"records":[],"evidence":[]}. The initial tool results are usually enough: call a tool again at most once, and only if they are empty. No medical advice; never say a person qualifies for a study.`;
 
 /** Claim type from the official site that returned the URL (never from the model): drives the rare-disease tags. */
-export const rareNetworkClaimType: NonNullable<FinalizeRules["claimTypeFor"]> = (item, tracker) => {
-  const tag = tracker.urlTag(item.sourceUrl);
-  const host = hostOf(item.sourceUrl);
-  if (tag === "udn" && host.endsWith("undiagnosed.hms.harvard.edu")) return RARE_CLAIM_TYPES.udnIntake;
-  if (tag === "rdcrn" && host.endsWith("rarediseasesnetwork.org")) {
-    return /registry/.test(pathOf(item.sourceUrl)) ? RARE_CLAIM_TYPES.patientRegistry : RARE_CLAIM_TYPES.rdcrnConsortium;
-  }
-  if (tag === "registries" && /registr/.test(tracker.recordText(item.sourceUrl))) return RARE_CLAIM_TYPES.patientRegistry;
-  return null;
-};
+const GENERIC_WORDS = /\b(vascular|type|syndromes?|diseases?|disorders?|related|chronic|primary|hereditary)\b/gi;
+
+/**
+ * The page names the condition: its full name, or its core name without generic words as one phrase
+ * ("Ehlers-Danlos" for vascular Ehlers-Danlos syndrome). A shared single word is not enough, so a registry for
+ * epithelioid hemangioendothelioma never counts for epithelioid sarcoma.
+ */
+export function namesCondition(text: string, c: Pick<CaseInput, "diseaseName" | "subtype">): boolean {
+  if (mentionStrength(text, c) === "exact") return true;
+  const core = c.diseaseName.replace(GENERIC_WORDS, " ").replace(/\s+/g, " ").trim();
+  return core.length >= 4 && mentionStrength(text, { diseaseName: core }) === "exact";
+}
+
+export function rareNetworkClaimType(c: CaseInput): NonNullable<FinalizeRules["claimTypeFor"]> {
+  const undiagnosed = isUndiagnosed(c);
+  // A consortium or registry page must name the patient's condition in full (or, undiagnosed, speak to that path).
+  const aboutCase = (text: string): boolean => (undiagnosed ? /undiagnos/.test(text) : namesCondition(text, c));
+  return (item, tracker) => {
+    const tag = tracker.urlTag(item.sourceUrl);
+    const host = hostOf(item.sourceUrl);
+    const text = tracker.recordText(item.sourceUrl);
+    if (tag === "udn") return undiagnosed && host.endsWith("undiagnosed.hms.harvard.edu") ? RARE_CLAIM_TYPES.udnIntake : null;
+    if (tag === "rdcrn" && host.endsWith("rarediseasesnetwork.org")) {
+      if (/registry/.test(pathOf(item.sourceUrl))) return RARE_CLAIM_TYPES.patientRegistry;
+      return aboutCase(text) ? RARE_CLAIM_TYPES.rdcrnConsortium : null;
+    }
+    if (tag === "registries" && /registr|natural history/.test(text) && aboutCase(text)) return RARE_CLAIM_TYPES.patientRegistry;
+    return null;
+  };
+}
+
+const isRdcrnRegistry = (e: Evidence): boolean => e.claimType === RARE_CLAIM_TYPES.patientRegistry && hostOf(e.sourceUrl).endsWith("rarediseasesnetwork.org");
+
+/** The RDCRN Contact Registry is kept only beside an RDCRN consortium for this disease, or for an undiagnosed case. */
+export function keepContactRegistry(result: ResearchResult, c: CaseInput): ResearchResult {
+  if (result.status !== "ok" || isUndiagnosed(c) || result.evidence.some((e) => e.claimType === RARE_CLAIM_TYPES.rdcrnConsortium)) return result;
+  const drop = new Set(result.evidence.filter(isRdcrnRegistry));
+  const records = result.records.filter((r) => {
+    const cited = result.evidence.filter((e) => r.evidenceRefs.includes(e.id ?? e.sourceUrl) || r.evidenceRefs.includes(e.sourceUrl));
+    return !(cited.length > 0 && cited.every((e) => drop.has(e) || e.id?.startsWith("cp:") || e.claimType.startsWith("contact") || e.claimType.startsWith("web_form")) && cited.some((e) => drop.has(e)));
+  });
+  const kept = new Set(records.flatMap((r) => r.evidenceRefs));
+  return { ...result, records, evidence: result.evidence.filter((e) => kept.has(e.id ?? "") || kept.has(e.sourceUrl)) };
+}
 
 function registryQuery(c: CaseInput): string {
   return isUndiagnosed(c) ? "registry for people with undiagnosed rare disease United States" : `${c.diseaseName} patient registry join`;
@@ -37,10 +72,10 @@ function registryQuery(c: CaseInput): string {
 export const rareNetworkAgent: ResearchAgent = {
   name: "rare_network",
   model: HAIKU,
-  run: withBudget(runResearch({
+  run: withBudget(async (c, ctx) => keepContactRegistry(await runResearch({
     name: "rare_network",
     instructions: INSTRUCTIONS,
-    rules: { allowedKinds: ["organization"], organizationKinds: ["registry"], sourceKinds: ["exa"], citeOwnUrl: true, claimTypeFor: rareNetworkClaimType },
+    rules: { allowedKinds: ["organization"], organizationKinds: ["registry"], sourceKinds: ["exa"], citeOwnUrl: true, claimTypeFor: rareNetworkClaimType(c) },
     makeTools: (ports, tracker) => [
       siteSearchTool(directoryExa(ports), tracker, {
         name: "search_rdcrn",
@@ -70,5 +105,5 @@ export const rareNetworkAgent: ResearchAgent = {
       ]);
       return { undiagnosed, rdcrn, registries, ...(udn ? { udn } : {}) };
     },
-  })),
+  })(c, ctx), c)),
 };

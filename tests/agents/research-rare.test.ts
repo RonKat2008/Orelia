@@ -3,7 +3,7 @@ import { createFixturePorts } from "@/lib/agents/research/fixture-ports";
 import { researchRegistry } from "@/lib/agents/research";
 import type { ResearchContext } from "@/lib/agents/research";
 import { diseaseFundClaimType } from "@/lib/agents/research/disease-funds";
-import { rareNetworkClaimType } from "@/lib/agents/research/rare-network";
+import { keepContactRegistry, rareNetworkClaimType } from "@/lib/agents/research/rare-network";
 import { secondOpinionClaimType } from "@/lib/agents/research/second-opinion";
 import { ProvenanceTracker } from "@/lib/agents/research/shared";
 import { withBudget } from "@/lib/agents/research/site-search-tool";
@@ -17,6 +17,9 @@ const CASES: CaseInput[] = [
   { diseaseName: "Vascular Ehlers-Danlos syndrome", homeState: "OH", travelLimitMiles: 300, goals: ["second_opinion"] },
   { diseaseName: "IgG4-related disease", homeState: "NC", travelLimitMiles: 150, goals: ["second_opinion", "aid"] },
 ];
+const VEDS = CASES[1];
+const IGG4 = CASES[2];
+const UNDIAGNOSED: CaseInput = { diseaseName: "Undiagnosed condition", undiagnosed: true, goals: ["second_opinion"] };
 const RARE = ["rare_network", "disease_funds", "second_opinion"] as const;
 const CLAIM_TYPES: Record<(typeof RARE)[number], readonly string[]> = {
   rare_network: ["rdcrn_consortium", "patient_registry", "udn_intake"],
@@ -72,28 +75,57 @@ describe("claim types are decided by code, never by the model", () => {
 
   it("stamps NORD Center of Excellence only when the NORD search returned a page that says so", () => {
     const yes = "https://hospital.example.org/nord";
-    expect(secondOpinionClaimType(item(yes, "second_opinion_program"), tracker(yes, "nord-coe", "Named a NORD Rare Disease Center of Excellence"))).toBe("nord_center_of_excellence");
-    expect(secondOpinionClaimType(item(yes), tracker(yes, "nord-coe", "A great hospital"))).toBeNull();
+    expect(secondOpinionClaimType(VEDS)(item(yes, "second_opinion_program"), tracker(yes, "nord-coe", "Named a NORD Rare Disease Center of Excellence"))).toBe("nord_center_of_excellence");
+    expect(secondOpinionClaimType(VEDS)(item(yes), tracker(yes, "nord-coe", "A great hospital"))).toBeNull();
     // A model claiming the designation for a page from another search gets a program claim instead.
-    expect(secondOpinionClaimType(item(yes, "nord_center_of_excellence"), tracker(yes, "telehealth", "NORD Center of Excellence"))).toBe("second_opinion_program");
+    expect(secondOpinionClaimType(VEDS)(item(yes, "nord_center_of_excellence"), tracker(yes, "telehealth", "NORD Center of Excellence telehealth for vascular Ehlers-Danlos syndrome"))).toBe("second_opinion_program");
   });
 
   it("maps RDCRN pages to consortium or registry and UDN only from its own site", () => {
     const consortium = "https://vcrc.rarediseasesnetwork.org/our-consortium";
     const registry = "https://www.rarediseasesnetwork.org/registry";
-    expect(rareNetworkClaimType(item(consortium), tracker(consortium, "rdcrn", "consortium"))).toBe("rdcrn_consortium");
-    expect(rareNetworkClaimType(item(registry), tracker(registry, "rdcrn", "contact registry"))).toBe("patient_registry");
+    expect(rareNetworkClaimType(VEDS)(item(consortium), tracker(consortium, "rdcrn", "consortium studying vascular Ehlers-Danlos syndrome"))).toBe("rdcrn_consortium");
+    expect(rareNetworkClaimType(VEDS)(item(registry), tracker(registry, "rdcrn", "contact registry"))).toBe("patient_registry");
     const fakeUdn = "https://udn.example.com/apply";
-    expect(rareNetworkClaimType(item(fakeUdn), tracker(fakeUdn, "udn", "apply"))).toBeNull();
+    expect(rareNetworkClaimType(UNDIAGNOSED)(item(fakeUdn), tracker(fakeUdn, "udn", "apply"))).toBeNull();
     const udn = "https://undiagnosed.hms.harvard.edu/participate/how-to-apply/";
-    expect(rareNetworkClaimType(item(udn), tracker(udn, "udn", "how to apply"))).toBe("udn_intake");
+    expect(rareNetworkClaimType(UNDIAGNOSED)(item(udn), tracker(udn, "udn", "how to apply"))).toBe("udn_intake");
+  });
+
+  it("drops registries and consortia for a different disease that shares a word", () => {
+    const ehe = "https://ehefoundation.example.org/registry";
+    const t = tracker(ehe, "registries", "EHE global patient registry for epithelioid hemangioendothelioma, a rare vascular sarcoma");
+    expect(rareNetworkClaimType(CASES[0])(item(ehe), t)).toBeNull();
+    const consortium = "https://other.rarediseasesnetwork.org/";
+    expect(rareNetworkClaimType(VEDS)(item(consortium), tracker(consortium, "rdcrn", "consortium for vasculitis"))).toBeNull();
+    // UDN is never stamped for a diagnosed case.
+    const udn = "https://undiagnosed.hms.harvard.edu/participate/";
+    expect(rareNetworkClaimType(VEDS)(item(udn), tracker(udn, "udn", "apply"))).toBeNull();
   });
 
   it("fund claims need a foundation host from the fund search", () => {
     const fund = "https://www.healthwellfoundation.org/fund/iga-nephropathy/";
-    expect(diseaseFundClaimType(item(fund), tracker(fund, "funds", "Status Closed"))).toBe("disease_fund");
+    expect(diseaseFundClaimType(IGG4)(item(fund), tracker(fund, "funds", "IgG4-related disease fund Status Closed"))).toBe("disease_fund");
     const other = "https://funds.example.com/x";
-    expect(diseaseFundClaimType(item(other), tracker(other, "funds", "Status Open"))).toBeNull();
+    expect(diseaseFundClaimType(IGG4)(item(other), tracker(other, "funds", "IgG4-related disease Status Open"))).toBeNull();
+  });
+});
+
+describe("RDCRN Contact Registry rule", () => {
+  const at = "2026-10-24T00:00:00.000Z";
+  const reg = { claimType: "patient_registry", claim: "RDCRN Contact Registry", sourceUrl: "https://www.rarediseasesnetwork.org/registry", sourceKind: "exa" as const, fetchedAt: at };
+  const org = { kind: "organization" as const, id: "org:rdcrn-cr", name: "RDCRN Contact Registry", organizationKind: "registry" as const, evidenceRefs: [reg.sourceUrl] };
+  it("drops the Contact Registry when no consortium for the disease was kept", () => {
+    const out = keepContactRegistry({ status: "ok", records: [org], evidence: [reg] }, VEDS);
+    expect(out.status === "ok" && out.records).toEqual([]);
+  });
+  it("keeps it beside a consortium, and always for an undiagnosed case", () => {
+    const cons = { ...reg, claimType: "rdcrn_consortium", sourceUrl: "https://x.rarediseasesnetwork.org/" };
+    const consOrg = { ...org, id: "org:x", evidenceRefs: [cons.sourceUrl] };
+    const both = keepContactRegistry({ status: "ok", records: [org, consOrg], evidence: [reg, cons] }, VEDS);
+    expect(both.status === "ok" && both.records).toHaveLength(2);
+    const undiagnosed = keepContactRegistry({ status: "ok", records: [org], evidence: [reg] }, UNDIAGNOSED);
+    expect(undiagnosed.status === "ok" && undiagnosed.records).toHaveLength(1);
   });
 });
 
